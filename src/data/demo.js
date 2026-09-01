@@ -13,10 +13,11 @@ export const units = [
   "Asokwa Ward", "Bantama Ward", "Kwadaso Ward", "Ahodwo Ward",
   "Ayigya Ward", "Dichemso Branch", "Suame Ward", "Oduom Ward",
   "Santasi Ward", "Tafo Ward", "Nhyiaeso Ward", "Ejisu Branch",
-  "Abrepo Ward", "Tech Junction Branch",
+  "Abrepo Ward", "Tech Junction Branch", "Atonsu Ward", "Obuasi Ward",
+  "Konongo Branch", "Mampong Branch", "Ejura Branch", "Bekwai Ward",
 ];
 
-export function createDemoParticipants(count = 724) {
+export function createDemoParticipants(count = 1640) {
   return Array.from({ length: count }, (_, index) => {
     const number = index + 1;
     const firstName = firstNames[(index * 7 + Math.floor(index / 11)) % firstNames.length];
@@ -31,17 +32,30 @@ export function createDemoParticipants(count = 724) {
       sex: index % 2 === 0 ? "Female" : "Male",
       age: 14 + (index % 5),
       unit,
-      status: index < 698 ? "Expected" : "Review",
+      status: index < Math.floor(count * 0.97) ? "Expected" : "Review",
     };
   });
 }
 
+export const demoStaffSummary = {
+  ysaStaff: 188,
+  counselors: 164,
+  assistantCoordinators: 28,
+  coordinators: 6,
+};
+
 export const demoUsers = [
-  { name: "Ama Boateng", email: "ama.boateng@example.org", role: "Assistant coordinator", scope: "Companies 1–3", status: "Active" },
-  { name: "Kofi Mensah", email: "kofi.mensah@example.org", role: "Coordinator", scope: "Companies 1–6", status: "Active" },
-  { name: "Esi Owusu", email: "esi.owusu@example.org", role: "Logistical administrator", scope: "Whole session", status: "Active" },
-  { name: "Daniel Asare", email: "daniel.asare@example.org", role: "Session directing couple", scope: "Whole session", status: "Active" },
-  { name: "Mabel Osei", email: "mabel.osei@example.org", role: "Committee viewer", scope: "Food overview", status: "Invited" },
+  { name: "Ama Boateng", email: "ama.boateng@example.org", role: "Assistant coordinator", roleKey: "assistant_coordinator", scope: "Companies 1–4", status: "Active" },
+  { name: "Kofi Mensah", email: "kofi.mensah@example.org", role: "Coordinator", roleKey: "coordinator", scope: "Whole session", status: "Active" },
+  { name: "Esi Owusu", email: "esi.owusu@example.org", role: "Logistical administrator", roleKey: "logistics_admin", scope: "Whole session", status: "Active" },
+  { name: "Daniel Asare", email: "daniel.asare@example.org", role: "Session directing couple", roleKey: "session_director", scope: "Whole session", status: "Active" },
+  { name: "Mabel Osei", email: "mabel.osei@example.org", role: "Committee viewer", roleKey: "committee_viewer", scope: "Food overview", status: "Pending" },
+];
+
+export const demoAccessRequests = [
+  { id: "req-1", name: "Mabel Osei", email: "mabel.osei@example.org", role: "committee_viewer", scope: "Food overview", requested: "18 min ago", status: "pending" },
+  { id: "req-2", name: "Yaw Boadu", email: "yaw.boadu@example.org", role: "assistant_coordinator", scope: "Companies 21–24", requested: "34 min ago", status: "pending" },
+  { id: "req-3", name: "Akosua Frimpong", email: "akosua.frimpong@example.org", role: "coordinator", scope: "Whole session", requested: "1 hr ago", status: "pending" },
 ];
 
 export const setupSteps = [
@@ -54,10 +68,14 @@ export const setupSteps = [
   { id: "ready", label: "Ready for check-in", short: "Ready" },
 ];
 
-export const demoHeadcountRows = Array.from({ length: 12 }, (_, index) => ({
-  company: `Company ${index + 1}`,
-  assistantCoordinator: ["Ama Boateng", "Yaw Owusu", "Akosua Nyarko", "Kofi Mensah"][index % 4],
-  expected: 58 + (index % 5),
-  accounted: index < 8 ? 58 + (index % 5) : index === 8 ? 59 : 0,
-  status: index < 8 ? "Reported" : index === 8 ? "Exception" : "Awaiting",
-}));
+export const demoHeadcountRows = Array.from({ length: 82 }, (_, index) => {
+  const expected = 18 + (index % 5);
+  const status = index < 76 ? "Reported" : index < 79 ? "Exception" : "Awaiting";
+  return {
+    company: `Company ${index + 1}`,
+    assistantCoordinator: ["Ama Boateng", "Yaw Owusu", "Akosua Nyarko", "Kofi Mensah", "Ruth Adjei"][index % 5],
+    expected,
+    accounted: status === "Reported" ? expected : status === "Exception" ? expected - 1 : 0,
+    status,
+  };
+});

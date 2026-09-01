@@ -12,8 +12,10 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 
 - The selected visual direction combines the calm, exception-first command centre with a guided conference-readiness journey.
 - Desktop and mobile are first-class. Mobile should prioritize the next action, stack operational summaries, avoid hover-only controls, and keep touch targets at least 44px.
-- Version 0.0 uses synthetic participant data. Real participant files must enter through the authenticated CSV/XLSX import workflow, not through chat or source control.
+- Use the 2026 FSY theme palette supplied by the user as the product color foundation: Blue 35 `#005175`, Blue 25 `#007DA5`, Blue 5 `#C4E9F5`, Green 20 `#8DBF67`, Green 20 soft `#BED7A7`, Yellow 15 `#FCB449`. Use abstract theme geometry without implying this is an official Church product.
+- Version 0.0/0.1 uses a full-scale synthetic rehearsal of roughly 1,640 youth plus YSA planning counts. Real participant files must enter through the authenticated CSV/XLSX import workflow, not through chat or source control.
 - Counselor records and assignments are managed in the system, but counselors do not receive accounts in this version.
-- Assistant coordinators see their assigned scope. Coordinators see their hierarchy. Logistical administrators and session directing couples have session-wide access.
-- Same ward, branch, or unit is prohibited within one counselor group but allowed within a company. Proposed groups target 8-10 participants.
+- Assistant coordinators see their assigned scope. Coordinators have whole-session operational visibility. Logistical administrators and session directing couples also have whole-session visibility.
+- Only logistical administrators and session directing couples may approve or reject access requests for lower roles. Coordinators may see the access state but do not approve access.
+- Same ward, branch, or unit is prohibited within one counselor group but allowed within a company. Proposed groups target 8–10 participants.
 - The visual identity must not imitate the Church logo or present the app as an official Church product.
