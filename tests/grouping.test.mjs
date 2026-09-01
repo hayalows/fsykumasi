@@ -4,18 +4,28 @@ import { buildBalancedAssignments, distributeSizes } from "../src/lib/grouping.j
 import { createDemoParticipants } from "../src/data/demo.js";
 
 test("group sizes remain within 8–10 for a conference-sized pool", () => {
-  const sizes = distributeSizes(362);
-  assert.equal(sizes.reduce((sum, size) => sum + size, 0), 362);
+  const sizes = distributeSizes(820);
+  assert.equal(sizes.reduce((sum, size) => sum + size, 0), 820);
   assert.ok(sizes.every((size) => size >= 8 && size <= 10));
 });
 
-test("every synthetic participant is assigned once", () => {
-  const participants = createDemoParticipants(724);
+test("every participant in a 1,640-youth rehearsal is assigned exactly once", () => {
+  const participants = createDemoParticipants(1640);
   const result = buildBalancedAssignments(participants);
   const ids = result.groups.flatMap((group) => group.members.map((member) => member.id));
   assert.equal(ids.length, participants.length);
   assert.equal(new Set(ids).size, participants.length);
   assert.ok(result.groups.every((group) => group.members.length >= 8 && group.members.length <= 10));
+  assert.equal(result.companies.length, 82);
+});
+
+test("synthetic full-scale assignment keeps duplicate units out of counselor groups", () => {
+  const result = buildBalancedAssignments(createDemoParticipants(1640));
+  for (const group of result.groups) {
+    const units = group.members.map((member) => member.unit);
+    assert.equal(new Set(units).size, units.length);
+  }
+  assert.equal(result.issues.length, 0);
 });
 
 test("sex-specific groups are paired into companies", () => {
