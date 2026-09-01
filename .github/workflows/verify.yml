@@ -21,4 +21,11 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - name: Upload verified frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: fsy-kumasi-frontend
+          path: dist/client
+          if-no-files-found: error
+          retention-days: 7
       - run: npm run test:sites
