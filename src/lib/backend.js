@@ -65,6 +65,17 @@ export async function loadProfile(userId) {
   return data;
 }
 
+export async function loadSession(sessionId) {
+  const client = requireClient();
+  const { data, error } = await client
+    .from("sessions")
+    .select("id, name, year, starts_on, ends_on, status, access_code")
+    .eq("id", sessionId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function loadParticipants(sessionId) {
   const client = requireClient();
   const { data, error } = await client
@@ -153,6 +164,27 @@ export async function loadAccessRequests(sessionId) {
     requested: new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.requested_at)),
     status: row.status,
     note: row.decision_note,
+  }));
+}
+
+export async function loadAccessRoster(sessionId) {
+  const client = requireClient();
+  const { data, error } = await client
+    .from("access_assignments")
+    .select("id, user_id, role, company_ids, committee_scope, active, profiles!access_assignments_user_id_fkey(display_name,email)")
+    .eq("session_id", sessionId)
+    .eq("active", true)
+    .order("role", { ascending: true });
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    name: row.profiles?.display_name || "FSY leader",
+    email: row.profiles?.email || "",
+    role: row.role,
+    companyIds: row.company_ids || [],
+    committeeScope: row.committee_scope || [],
+    active: row.active,
   }));
 }
 
