@@ -7,3 +7,6 @@ dist/
 *.log
 coverage/
 supabase/.temp/
+
+.vercel
+.env*
