@@ -75,6 +75,15 @@ export async function loadProfile(userId) {
   return data;
 }
 
+export async function updateMyProfile(displayName) {
+  const client = requireClient();
+  const { data, error } = await client.rpc("update_my_profile", {
+    p_display_name: displayName,
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function loadSession(sessionId) {
   const client = requireClient();
   const { data, error } = await client

@@ -28,6 +28,7 @@ import {
   subscribeToAccessRequests,
   subscribeToHeadcount,
   submitCompanyHeadcount,
+  updateMyProfile,
 } from "./lib/backend.js";
 import { loadArrivedParticipantIds, subscribeToCheckins } from "./lib/checkins.js";
 import { Overview } from "./pages/Overview.jsx";
@@ -36,6 +37,7 @@ import { Groups } from "./pages/Groups.jsx";
 import { Checkin } from "./pages/Checkin.jsx";
 import { Headcount } from "./pages/Headcount.jsx";
 import { Access, createInitialAccessRequests } from "./pages/Access.jsx";
+import { Profile } from "./pages/Profile.jsx";
 
 export function App() {
   const [active, setActive] = useState("overview");
@@ -176,13 +178,31 @@ export function App() {
     };
   }, [runtimeStatus, sessionInfo?.id]);
 
+  const saveProfile = async (displayName) => {
+    const updated = await updateMyProfile(displayName);
+    setProfile((current) => ({ ...current, display_name: updated?.display_name || displayName }));
+    return updated;
+  };
+
+  const handleSignOut = async () => {
+    setRuntimeError("");
+    try {
+      await signOut();
+      setActive("overview");
+      await hydrateLive(null);
+    } catch (error) {
+      setRuntimeError(error.message || "Unable to sign out. Please try again.");
+      throw error;
+    }
+  };
+
   if (isSupabaseConfigured) {
     if (runtimeStatus === "loading") return <LoadingScreen />;
     if (runtimeStatus === "signed-out") return <SignInScreen onSendLink={sendMagicLink} />;
     if (runtimeStatus === "error") return <main className="auth-page"><section className="auth-card"><h1>Connection problem</h1><p>{runtimeError}</p><button className="primary full" onClick={() => hydrateLive(authSession)}>Try again</button></section></main>;
     if (runtimeStatus === "awaiting-access") {
       const pending = accessState.find((item) => item.request_status === "pending");
-      return <AccessRequestScreen profile={profile} request={pending} onRequest={async (form) => { await requestSessionAccess(form); await hydrateLive(authSession); }} onBootstrap={async (form) => { await bootstrapSessionAdmin(form); await hydrateLive(authSession); }} onSignOut={signOut} />;
+      return <AccessRequestScreen profile={profile} request={pending} onRequest={async (form) => { if (form.displayName?.trim()) await saveProfile(form.displayName); await requestSessionAccess(form); await hydrateLive(authSession); }} onBootstrap={async (form) => { if (form.displayName?.trim()) await saveProfile(form.displayName); await bootstrapSessionAdmin(form); await hydrateLive(authSession); }} onSignOut={handleSignOut} />;
     }
   }
 
@@ -264,7 +284,9 @@ export function App() {
           ? <Checkin participants={participants} checkedIds={checkedIds} onRecord={handleCheckin} live={live} canRecord={canRecordCheckin} />
           : active === "headcount"
             ? <Headcount live={live} companies={companies} headcount={headcount} currentRole={currentRole} onOpen={handleOpenHeadcount} onSubmit={handleHeadcountSubmit} />
-            : <Access requests={accessRequests} setRequests={setAccessRequests} currentRole={currentRole} onDecision={handleAccessDecision} onRotateCode={handleRotateAccessCode} roster={live ? accessRoster : undefined} companies={companyOptions} sessionAccessCode={sessionAccessCode} live={live} />;
+            : active === "profile"
+              ? <Profile currentUser={live ? profile : { display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} grantedAccess={grantedAccess} companies={companyOptions} sessionInfo={sessionInfo} live={live} onSave={saveProfile} onSignOut={handleSignOut} />
+              : <Access requests={accessRequests} setRequests={setAccessRequests} currentRole={currentRole} onDecision={handleAccessDecision} onRotateCode={handleRotateAccessCode} roster={live ? accessRoster : undefined} companies={companyOptions} sessionAccessCode={sessionAccessCode} live={live} />;
 
-  return <AppShell active={active} setActive={setActive} attentionCount={pendingAccess} currentUser={live ? profile : undefined} currentRole={currentRole} onSignOut={live ? signOut : undefined} syncError={live ? runtimeError : ""} onRefresh={() => hydrateLive(authSession)}>{content}</AppShell>;
+  return <AppShell active={active} setActive={setActive} attentionCount={pendingAccess} currentUser={live ? profile : undefined} currentRole={currentRole} onSignOut={live ? handleSignOut : undefined} syncError={live ? runtimeError : ""} onRefresh={() => hydrateLive(authSession)}>{content}</AppShell>;
 }
