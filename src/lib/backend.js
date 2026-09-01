@@ -69,9 +69,16 @@ export async function loadSession(sessionId) {
   const client = requireClient();
   const { data, error } = await client
     .from("sessions")
-    .select("id, name, year, starts_on, ends_on, status, access_code")
+    .select("id, name, year, starts_on, ends_on, status")
     .eq("id", sessionId)
     .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function loadSessionAccessCode(sessionId) {
+  const client = requireClient();
+  const { data, error } = await client.rpc("get_session_access_code", { p_session_id: sessionId });
   if (error) throw error;
   return data;
 }
