@@ -68,9 +68,11 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
           ))}
         </nav>
         <div className="sidebar-foot">
-          <span className="avatar">{avatar}</span>
-          <div><b>{displayName}</b><small>{displayRole}</small></div>
-          <button className="sidebar-signout" onClick={onSignOut} aria-label="Sign out"><SignOut size={18} /></button>
+          <button className={active === "profile" ? "sidebar-profile active" : "sidebar-profile"} onClick={() => navigate("profile")} aria-label="Open your profile">
+            <span className="avatar">{avatar}</span>
+            <span className="sidebar-account-copy"><b>{displayName}</b><small>{displayRole}</small></span>
+          </button>
+          {onSignOut ? <button className="sidebar-signout" onClick={onSignOut} aria-label="Sign out" title="Sign out"><SignOut size={18} /></button> : null}
         </div>
       </aside>
 
@@ -86,7 +88,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
               {!online ? "Offline" : isSupabaseConfigured ? `${supabaseEnvironment === "production" ? "Production" : "Development"} data` : "Demo data"}
             </span>
             <button className="icon-button notification-button" aria-label="Notifications"><Bell />{attentionCount > 0 ? <i>{attentionCount}</i> : null}</button>
-            <span className="avatar small">{avatar}</span>
+            <button className="top-profile-button" onClick={() => navigate("profile")} aria-label="Open your profile" title="Profile"><span className="avatar small">{avatar}</span></button>
           </div>
         </header>
         {syncError ? <div className="sync-warning" role="alert"><span>Live updates paused: {syncError}</span><button onClick={onRefresh}>Reconnect</button></div> : null}
