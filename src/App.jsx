@@ -10,6 +10,7 @@ import {
   importParticipants,
   loadAccessRequests,
   loadAccessRoster,
+  loadCompanies,
   loadParticipants,
   loadProfile,
   loadSession,
@@ -35,6 +36,7 @@ export function App() {
   const [assignment, setAssignment] = useState(null);
   const [accessRequests, setAccessRequests] = useState(createInitialAccessRequests);
   const [accessRoster, setAccessRoster] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [checkedIds, setCheckedIds] = useState([]);
   const [authSession, setAuthSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -59,6 +61,7 @@ export function App() {
       setImported([]);
       setAccessRequests([]);
       setAccessRoster([]);
+      setCompanies([]);
       setCheckedIds([]);
       setRuntimeStatus("signed-out");
       return;
@@ -80,17 +83,19 @@ export function App() {
         setImported([]);
         setAccessRoster([]);
         setAccessRequests([]);
+        setCompanies([]);
         setCheckedIds([]);
         setRuntimeStatus("awaiting-access");
         return;
       }
 
       const canApprove = ["logistics_admin", "session_director"].includes(granted.role);
-      const [nextSession, nextParticipants, nextRequests, nextRoster, nextChecked, nextAccessCode] = await Promise.all([
+      const [nextSession, nextParticipants, nextRequests, nextRoster, nextCompanies, nextChecked, nextAccessCode] = await Promise.all([
         loadSession(granted.session_id),
         loadParticipants(granted.session_id),
         loadAccessRequests(granted.session_id),
         loadAccessRoster(granted.session_id),
+        loadCompanies(granted.session_id),
         loadArrivedParticipantIds(granted.session_id),
         canApprove ? loadSessionAccessCode(granted.session_id) : Promise.resolve(""),
       ]);
@@ -100,6 +105,7 @@ export function App() {
       setImported(nextParticipants);
       setAccessRequests(nextRequests);
       setAccessRoster(nextRoster);
+      setCompanies(nextCompanies);
       setCheckedIds(nextChecked);
       setRuntimeStatus("ready");
     } catch (error) {
@@ -161,19 +167,24 @@ export function App() {
   const pendingAccess = accessRequests.filter((request) => request.status === "pending").length;
   const canImport = !live || ["logistics_admin", "session_director"].includes(currentRole);
   const canRecordCheckin = !live || ["coordinator", "logistics_admin", "session_director"].includes(currentRole);
+  const companyOptions = live
+    ? companies
+    : (assignment?.companies || []).map((company, index) => ({
+        id: company.id || `demo-company-${index + 1}`,
+        name: company.name || `Company ${String(index + 1).padStart(2, "0")}`,
+      }));
 
   const applyImport = live ? async ({ participants: nextParticipants, sourceFilename }) => {
     await importParticipants({
       sessionId: sessionInfo.id,
-      userId: authSession.user.id,
       sourceFilename,
       participants: nextParticipants,
     });
     setImported(await loadParticipants(sessionInfo.id));
   } : null;
 
-  const handleAccessDecision = live ? async (id, status) => {
-    await decideAccessRequest(id, status);
+  const handleAccessDecision = live ? async (id, status, options) => {
+    await decideAccessRequest(id, status, options);
     const [nextRequests, nextRoster] = await Promise.all([
       loadAccessRequests(sessionInfo.id),
       loadAccessRoster(sessionInfo.id),
@@ -201,7 +212,7 @@ export function App() {
           ? <Checkin participants={participants} checkedIds={checkedIds} onRecord={handleCheckin} live={live} canRecord={canRecordCheckin} />
           : active === "headcount"
             ? <Headcount />
-            : <Access requests={accessRequests} setRequests={setAccessRequests} currentRole={currentRole} onDecision={handleAccessDecision} roster={live ? accessRoster : undefined} sessionAccessCode={sessionAccessCode} live={live} />;
+            : <Access requests={accessRequests} setRequests={setAccessRequests} currentRole={currentRole} onDecision={handleAccessDecision} roster={live ? accessRoster : undefined} companies={companyOptions} sessionAccessCode={sessionAccessCode} live={live} />;
 
   return <AppShell active={active} setActive={setActive} attentionCount={pendingAccess} currentUser={live ? profile : undefined} currentRole={currentRole} onSignOut={live ? signOut : undefined}>{content}</AppShell>;
 }
