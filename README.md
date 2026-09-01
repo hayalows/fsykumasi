@@ -11,12 +11,13 @@ An operations workspace for preparing and running FSY Kumasi. This is not a repl
 - Atomic counselor-group and company publishing with 8–10 youth per group
 - Same-unit conflict detection and YM/YW group separation
 - Database-backed arrival check-in and exception-first head-count rounds
-- Supabase Auth with email magic-link sign-in
+- Supabase Auth with normal email + password sign-in
+- Administrator-issued one-time setup invitations for first-time leader onboarding
+- Forgot-password email plus short-lived administrator recovery-code fallback
 - Role hierarchy for assistant coordinators, coordinators, logistical administrators, session directors, and committee viewers
 - Coordinators have whole-session operational visibility
-- Logistical administrators and session directors can approve or reject lower-role access requests
-- One-time first-administrator bootstrap that rotates the session code after a successful claim
-- Session access codes are stored outside public session rows and can only be read by access approvers
+- Logistical administrators and session directors manage leader invitations and access
+- One-time invite and recovery secrets are email-bound, short-lived, hashed at rest, and audited
 - Supabase Row Level Security and Realtime support for operational updates
 - Responsive desktop and mobile layouts
 
@@ -46,14 +47,13 @@ For Vercel, point Preview/Development deployments at the main Supabase project a
 
 ## Access flow
 
-1. A leader signs in with their email address.
-2. For a brand-new session, the trusted first Logistics Administrator or Session Directing Couple uses the existing session code to initialize access. This succeeds only while the session has no active assignments and rotates the code immediately.
-3. Other leaders enter the new session access code and request one of the allowed lower roles.
-4. Until approval, RLS prevents access to participant and operational data.
-5. A logistical administrator or session director approves or rejects the request.
-6. Approval creates the session access assignment automatically.
-7. Coordinators can see the whole operational session but cannot approve access.
-8. Assistant coordinators remain limited to their assigned companies.
+1. Existing leaders sign in with their email address and password.
+2. A Logistical Administrator or member of the Session Directing Couple chooses **Invite leader** and enters the leader's name, email, role, and required scope.
+3. The system creates a one-time setup code/link that is valid only for that email and expires automatically.
+4. The leader uses the setup link once, creates their own password, and receives the role/scope already selected by the administrator.
+5. Assistant Coordinators are limited to assigned companies. Committee viewers are limited to assigned committee scope. Coordinators can see the whole operational session but cannot manage access.
+6. Logistical Administrators and the Session Directing Couple can revoke open invitations, create replacements, and issue short-lived recovery codes when email recovery is unavailable or rate-limited.
+7. Password changes never change a leader's operational permissions. Authorization remains enforced by database Row Level Security.
 
 Participant imports use merge semantics: matching registration IDs are updated and new IDs are added. Omitting a participant from a later file does not delete them. Imports lock after the grouping plan is published so live company and head-count totals cannot silently drift.
 
@@ -79,10 +79,10 @@ The repository also runs these checks in GitHub Actions for pull requests and pu
 1. Select the development Supabase project.
 2. Apply every migration in `supabase/migrations` in timestamp order.
 3. Load `supabase/seed.sql` only in development.
-4. Retrieve the existing session access code securely, sign in, and use **I am the trusted first administrator**. Do not send the code through chat or commit it to source control.
+4. Create or preserve the approved top-level administrator assignment.
 5. Add the project URL and publishable key to the development Vercel environment.
 6. Run Supabase security and performance advisors.
-7. Test every role against synthetic data.
+7. Test password sign-in, invitations, recovery, and every role against synthetic data.
 8. Repeat the reviewed migrations in production, without the synthetic seed.
 9. Add production Supabase values only to the Vercel Production environment.
 10. Import the approved real participant export only after the security rehearsal passes.
