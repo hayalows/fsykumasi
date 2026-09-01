@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell } from "@phosphor-icons/react/Bell";
 import { Buildings } from "@phosphor-icons/react/Buildings";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
@@ -10,7 +10,7 @@ import { SquaresFour } from "@phosphor-icons/react/SquaresFour";
 import { Users } from "@phosphor-icons/react/Users";
 import { X } from "@phosphor-icons/react/X";
 import { BrandMark } from "./BrandMark.jsx";
-import { isSupabaseConfigured } from "../lib/supabase.js";
+import { isSupabaseConfigured, supabaseEnvironment } from "../lib/supabase.js";
 import { roleLabel } from "../lib/access.js";
 
 const nav = [
@@ -28,13 +28,24 @@ function initials(name = "FSY") {
   return name.split(/\s+/).filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase();
 }
 
-export function AppShell({ active, setActive, attentionCount = 0, currentUser, currentRole = "logistics_admin", onSignOut, children }) {
+export function AppShell({ active, setActive, attentionCount = 0, currentUser, currentRole = "logistics_admin", onSignOut, syncError = "", onRefresh, children }) {
   const [menu, setMenu] = useState(false);
+  const [online, setOnline] = useState(() => navigator.onLine);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
   const navigate = (id) => {
     setActive(id);
     setMenu(false);
+    window.scrollTo({ top: 0, behavior: "auto" });
   };
-  const displayName = currentUser?.display_name || "Esi Owusu";
+  const displayName = currentUser?.display_name || "FSY Leader";
   const displayRole = roleLabel(currentRole);
   const avatar = initials(displayName);
 
@@ -68,11 +79,17 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
           <button className="icon-button menu-button" onClick={() => setMenu(true)} aria-label="Open menu"><List /></button>
           <div className="session"><span>FSY Kumasi 2026</span><small>Planning workspace</small></div>
           <div className="top-actions">
-            <span className={`connection ${isSupabaseConfigured ? "live" : "demo"}`}>{isSupabaseConfigured ? "Connected" : "Demo data"}</span>
+            <span
+              className={`connection ${isSupabaseConfigured && online ? "live" : "demo"}`}
+              data-backend-environment={supabaseEnvironment}
+            >
+              {!online ? "Offline" : isSupabaseConfigured ? `${supabaseEnvironment === "production" ? "Production" : "Development"} data` : "Demo data"}
+            </span>
             <button className="icon-button notification-button" aria-label="Notifications"><Bell />{attentionCount > 0 ? <i>{attentionCount}</i> : null}</button>
             <span className="avatar small">{avatar}</span>
           </div>
         </header>
+        {syncError ? <div className="sync-warning" role="alert"><span>Live updates paused: {syncError}</span><button onClick={onRefresh}>Reconnect</button></div> : null}
         {children}
         <nav className="mobile-nav">
           {nav.filter(([id]) => mobileNav.includes(id)).map(([id, label, Icon]) => (

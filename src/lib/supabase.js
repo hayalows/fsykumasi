@@ -37,9 +37,12 @@ function runtimeFallback() {
 const fallback = runtimeFallback();
 const url = import.meta.env.VITE_SUPABASE_URL || fallback?.url;
 const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || fallback?.publishableKey;
+const localDemo = typeof window !== "undefined"
+  && ["localhost", "127.0.0.1"].includes(window.location.hostname)
+  && new URLSearchParams(window.location.search).get("demo") === "1";
 
-export const isSupabaseConfigured = Boolean(url && publishableKey);
-export const supabaseEnvironment = fallback === BUILTIN_PROJECTS.production ? "production" : fallback ? "development" : "environment";
+export const isSupabaseConfigured = !localDemo && Boolean(url && publishableKey);
+export const supabaseEnvironment = localDemo ? "local-demo" : fallback === BUILTIN_PROJECTS.production ? "production" : fallback ? "development" : "environment";
 
 export const supabase = isSupabaseConfigured
   ? createClient(url, publishableKey, {

@@ -54,6 +54,16 @@ export async function requestSessionAccess({ accessCode, role, scopeNote }) {
   return data;
 }
 
+export async function bootstrapSessionAdmin({ accessCode, role }) {
+  const client = requireClient();
+  const { data, error } = await client.rpc("bootstrap_session_admin", {
+    p_access_code: accessCode,
+    p_role: role,
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function loadProfile(userId) {
   const client = requireClient();
   const { data, error } = await client
@@ -103,13 +113,21 @@ export async function loadCompanies(sessionId) {
 
 export async function loadParticipants(sessionId) {
   const client = requireClient();
-  const { data, error } = await client
-    .from("participants")
-    .select("id, registration_id, first_name, last_name, sex, age, unit_name, group_id")
-    .eq("session_id", sessionId)
-    .order("last_name", { ascending: true });
-  if (error) throw error;
-  return (data || []).map((row) => ({
+  const pageSize = 1000;
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await client
+      .from("participants")
+      .select("id, registration_id, first_name, last_name, sex, age, unit_name, group_id")
+      .eq("session_id", sessionId)
+      .order("last_name", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+  return rows.map((row) => ({
     id: row.id,
     registrationId: row.registration_id,
     firstName: row.first_name,
@@ -213,14 +231,104 @@ export function subscribeToAccessRequests(sessionId, callback) {
   return () => { supabase.removeChannel(channel); };
 }
 
-export async function recordCheckin({ sessionId, participantId, status, userId }) {
+export async function recordCheckin({ sessionId, participantId, status }) {
   const client = requireClient();
-  const { error } = await client.from("check_ins").upsert({
-    session_id: sessionId,
-    participant_id: participantId,
-    status,
-    recorded_by: userId,
-    recorded_at: new Date().toISOString(),
-  }, { onConflict: "session_id,participant_id" });
+  const { error } = await client.rpc("record_participant_checkin", {
+    p_session_id: sessionId,
+    p_participant_id: participantId,
+    p_status: status,
+    p_note: null,
+  });
   if (error) throw error;
+}
+
+export async function publishGroupingPlan(sessionId, assignment) {
+  const client = requireClient();
+  const plan = assignment.companies.map((company) => ({
+    name: company.name,
+    groups: company.groups.map((group) => ({
+      name: group.name,
+      sex: group.sex.toLowerCase(),
+      participant_ids: group.members.map((member) => member.id),
+    })),
+  }));
+  const { data, error } = await client.rpc("publish_grouping_plan", {
+    p_session_id: sessionId,
+    p_plan: plan,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function loadGroupingPlan(sessionId) {
+  const client = requireClient();
+  const [{ data: companyRows, error: companyError }, { data: groupRows, error: groupError }] = await Promise.all([
+    client.from("companies").select("id, name, color").eq("session_id", sessionId).order("name"),
+    client.from("counselor_groups").select("id, company_id, name, sex, state, participants(count)").eq("session_id", sessionId).order("name"),
+  ]);
+  if (companyError) throw companyError;
+  if (groupError) throw groupError;
+  const groups = (groupRows || []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    sex: row.sex === "female" ? "Female" : "Male",
+    companyId: row.company_id,
+    state: row.state,
+    memberCount: row.participants?.[0]?.count || 0,
+  }));
+  const companies = (companyRows || []).map((company) => ({
+    ...company,
+    groups: groups.filter((group) => group.companyId === company.id),
+  }));
+  return { groups, companies, published: groups.some((group) => group.state === "published") };
+}
+
+export async function loadHeadcount(sessionId) {
+  const client = requireClient();
+  const { data: rounds, error: roundsError } = await client
+    .from("headcount_rounds")
+    .select("id, label, opens_at, closes_at")
+    .eq("session_id", sessionId)
+    .order("opens_at", { ascending: false })
+    .limit(1);
+  if (roundsError) throw roundsError;
+  const round = rounds?.[0] || null;
+  if (!round) return { round: null, submissions: [] };
+  const { data, error } = await client
+    .from("headcount_submissions")
+    .select("company_id, expected_count, accounted_count, status, note, submitted_at")
+    .eq("round_id", round.id);
+  if (error) throw error;
+  return { round, submissions: data || [] };
+}
+
+export async function openHeadcountRound(sessionId, label) {
+  const client = requireClient();
+  const { data, error } = await client.rpc("open_headcount_round", {
+    p_session_id: sessionId,
+    p_label: label,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function submitCompanyHeadcount({ roundId, companyId, accountedCount, note }) {
+  const client = requireClient();
+  const { error } = await client.rpc("submit_company_headcount", {
+    p_round_id: roundId,
+    p_company_id: companyId,
+    p_accounted_count: accountedCount,
+    p_note: note || null,
+  });
+  if (error) throw error;
+}
+
+export function subscribeToHeadcount(sessionId, callback) {
+  if (!isSupabaseConfigured || !supabase || !sessionId) return () => {};
+  const channel = supabase
+    .channel(`session:${sessionId}:headcount`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "headcount_rounds", filter: `session_id=eq.${sessionId}` }, callback)
+    .on("postgres_changes", { event: "*", schema: "public", table: "headcount_submissions" }, callback)
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
 }

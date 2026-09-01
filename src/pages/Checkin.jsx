@@ -8,6 +8,8 @@ export function Checkin({ participants, checkedIds = [], onRecord, live = false,
   const [query, setQuery] = useState("");
   const [checked, setChecked] = useState(new Set(checkedIds));
   const [busyId, setBusyId] = useState("");
+  const [confirmUndoId, setConfirmUndoId] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => { setChecked(new Set(checkedIds)); }, [checkedIds]);
 
@@ -20,7 +22,12 @@ export function Checkin({ participants, checkedIds = [], onRecord, live = false,
   const toggle = async (id) => {
     if (!canRecord) return;
     const arriving = !checked.has(id);
+    if (!arriving && confirmUndoId !== id) {
+      setConfirmUndoId(id);
+      return;
+    }
     setBusyId(id);
+    setError("");
     try {
       if (onRecord) await onRecord(id, arriving ? "arrived" : "expected");
       setChecked((current) => {
@@ -28,6 +35,9 @@ export function Checkin({ participants, checkedIds = [], onRecord, live = false,
         arriving ? next.add(id) : next.delete(id);
         return next;
       });
+      setConfirmUndoId("");
+    } catch (err) {
+      setError(err.message || "Check-in could not be saved. Try again before moving to the next participant.");
     } finally {
       setBusyId("");
     }
@@ -37,6 +47,7 @@ export function Checkin({ participants, checkedIds = [], onRecord, live = false,
     <section className="page">
       <PageHead title="Check-in" description="Search, confirm, tap once. Exceptions should move to a separate queue instead of slowing the main line." />
       {!canRecord ? <div className="notice"><WarningCircle/><div><b>View-only check-in</b><p>Your role can see current arrival information, but it cannot change check-in records.</p></div></div> : null}
+      {error ? <div className="form-error page-error" role="alert"><WarningCircle />{error}</div> : null}
       <div className="metrics-grid compact">
         <Metric label="Expected" value={participants.length.toLocaleString()} note="approved participant list" />
         <Metric label="Checked in" value={checked.size.toLocaleString()} note={live ? "saved in Supabase" : "prototype device state"} tone="green" />
@@ -49,7 +60,7 @@ export function Checkin({ participants, checkedIds = [], onRecord, live = false,
             <button key={person.id} disabled={!canRecord || busyId === person.id} onClick={() => toggle(person.id)} className={checked.has(person.id) ? "checked" : ""}>
               <span className="person-avatar">{person.firstName[0]}{person.lastName[0]}</span>
               <span><b>{person.fullName}</b><small>{person.registrationId} · {person.unit}</small></span>
-              <span className="check-action">{busyId === person.id ? "Saving…" : checked.has(person.id) ? <><CheckCircle weight="fill"/>Arrived</> : canRecord ? "Check in" : "View only"}</span>
+              <span className="check-action">{busyId === person.id ? "Saving…" : confirmUndoId === person.id ? "Tap again to undo" : checked.has(person.id) ? <><CheckCircle weight="fill"/>Arrived</> : canRecord ? "Check in" : "View only"}</span>
             </button>
           ))}
         </div>
