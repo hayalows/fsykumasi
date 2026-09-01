@@ -83,6 +83,24 @@ export async function loadSessionAccessCode(sessionId) {
   return data;
 }
 
+export async function rotateSessionAccessCode(sessionId) {
+  const client = requireClient();
+  const { data, error } = await client.rpc("rotate_session_access_code", { p_session_id: sessionId });
+  if (error) throw error;
+  return data;
+}
+
+export async function loadCompanies(sessionId) {
+  const client = requireClient();
+  const { data, error } = await client
+    .from("companies")
+    .select("id, name, color")
+    .eq("session_id", sessionId)
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
 export async function loadParticipants(sessionId) {
   const client = requireClient();
   const { data, error } = await client
@@ -105,25 +123,9 @@ export async function loadParticipants(sessionId) {
   }));
 }
 
-export async function importParticipants({ sessionId, userId, sourceFilename, participants }) {
+export async function importParticipants({ sessionId, sourceFilename, participants }) {
   const client = requireClient();
-  const { data: batch, error: batchError } = await client
-    .from("import_batches")
-    .insert({
-      session_id: sessionId,
-      imported_by: userId,
-      source_filename: sourceFilename,
-      record_count: participants.length,
-      error_count: 0,
-      status: "validated",
-    })
-    .select("id")
-    .single();
-  if (batchError) throw batchError;
-
-  const rows = participants.map((participant) => ({
-    session_id: sessionId,
-    import_batch_id: batch.id,
+  const payload = participants.map((participant) => ({
     registration_id: participant.registrationId,
     first_name: participant.firstName,
     last_name: participant.lastName,
@@ -132,32 +134,20 @@ export async function importParticipants({ sessionId, userId, sourceFilename, pa
     unit_name: participant.unit,
   }));
 
-  const chunkSize = 400;
-  try {
-    for (let index = 0; index < rows.length; index += chunkSize) {
-      const { error } = await client
-        .from("participants")
-        .upsert(rows.slice(index, index + chunkSize), { onConflict: "session_id,registration_id" });
-      if (error) throw error;
-    }
-    const { error: applyError } = await client
-      .from("import_batches")
-      .update({ status: "applied" })
-      .eq("id", batch.id);
-    if (applyError) throw applyError;
-  } catch (error) {
-    await client.from("import_batches").update({ status: "rejected" }).eq("id", batch.id);
-    throw error;
-  }
-
-  return batch.id;
+  const { data, error } = await client.rpc("apply_participant_import", {
+    p_session_id: sessionId,
+    p_source_filename: sourceFilename,
+    p_participants: payload,
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function loadAccessRequests(sessionId) {
   const client = requireClient();
   const { data, error } = await client
     .from("access_requests")
-    .select("id, requested_by, requested_role, requested_scope_note, status, requested_at, decision_note, profiles!access_requests_requested_by_fkey(display_name,email)")
+    .select("id, requested_by, requested_role, requested_scope_note, company_ids, committee_scope, status, requested_at, decision_note, profiles!access_requests_requested_by_fkey(display_name,email)")
     .eq("session_id", sessionId)
     .order("requested_at", { ascending: false });
   if (error) throw error;
@@ -168,6 +158,8 @@ export async function loadAccessRequests(sessionId) {
     email: row.profiles?.email || "",
     role: row.requested_role,
     scope: row.requested_scope_note || (row.requested_role === "coordinator" ? "Whole session" : "Scope to assign"),
+    companyIds: row.company_ids || [],
+    committeeScope: row.committee_scope || [],
     requested: new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.requested_at)),
     status: row.status,
     note: row.decision_note,
@@ -195,12 +187,15 @@ export async function loadAccessRoster(sessionId) {
   }));
 }
 
-export async function decideAccessRequest(requestId, status, note = null) {
+export async function decideAccessRequest(requestId, status, { companyIds = [], committeeScope = [], note = null } = {}) {
   const client = requireClient();
-  const { error } = await client
-    .from("access_requests")
-    .update({ status, decision_note: note })
-    .eq("id", requestId);
+  const { error } = await client.rpc("review_access_request", {
+    p_request_id: requestId,
+    p_decision: status,
+    p_company_ids: companyIds,
+    p_committee_scope: committeeScope,
+    p_note: note,
+  });
   if (error) throw error;
 }
 

@@ -2,14 +2,16 @@ import { useMemo, useState } from "react";
 import { Check } from "@phosphor-icons/react/Check";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { Copy } from "@phosphor-icons/react/Copy";
+import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { ShieldCheck } from "@phosphor-icons/react/ShieldCheck";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { X } from "@phosphor-icons/react/X";
 import { demoAccessRequests, demoUsers } from "../data/demo.js";
 import { canApproveAccess, REQUESTABLE_ROLES, roleLabel, roleVisibility } from "../lib/access.js";
 import { Empty, PageHead, Status } from "../components/UI.jsx";
+import "./access-review.css";
 
-function AccessRequest({ request, onDecision, canReview, processing }) {
+function AccessRequest({ request, onReview, canReview, processing }) {
   return (
     <div className="access-request">
       <div className="person-avatar">{request.name.split(" ").map((part) => part[0]).slice(0, 2).join("")}</div>
@@ -20,8 +22,8 @@ function AccessRequest({ request, onDecision, canReview, processing }) {
       </div>
       {request.status === "pending" && canReview ? (
         <div className="decision-actions">
-          <button className="approve" disabled={processing} onClick={() => onDecision(request.id, "approved")}><Check />Approve</button>
-          <button className="reject" disabled={processing} onClick={() => onDecision(request.id, "rejected")}><X />Reject</button>
+          <button className="approve" disabled={processing} onClick={() => onReview(request, "approved")}><Check />Review</button>
+          <button className="reject" disabled={processing} onClick={() => onReview(request, "rejected")}><X />Reject</button>
         </div>
       ) : <Status tone={request.status === "approved" ? "good" : request.status === "rejected" ? "danger" : "warn"}>{request.status}</Status>}
     </div>
@@ -36,12 +38,88 @@ function scopeForRoster(user) {
   return roleVisibility(user.role);
 }
 
+function ReviewModal({ request, decision, companies, processing, onClose, onSubmit }) {
+  const [companySearch, setCompanySearch] = useState("");
+  const [companyIds, setCompanyIds] = useState(request.companyIds || []);
+  const [committeeText, setCommitteeText] = useState((request.committeeScope || []).join(", "));
+  const [note, setNote] = useState("");
+  const [error, setError] = useState("");
+
+  const filteredCompanies = useMemo(() => {
+    const query = companySearch.trim().toLowerCase();
+    if (!query) return companies;
+    return companies.filter((company) => company.name.toLowerCase().includes(query));
+  }, [companies, companySearch]);
+
+  const toggleCompany = (id) => {
+    setCompanyIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setError("");
+    const committeeScope = committeeText.split(",").map((item) => item.trim()).filter(Boolean);
+
+    if (decision === "approved" && request.role === "assistant_coordinator" && companyIds.length === 0) {
+      setError(companies.length ? "Select at least one company before approving this Assistant Coordinator." : "Create and publish companies before approving an Assistant Coordinator.");
+      return;
+    }
+    if (decision === "approved" && request.role === "committee_viewer" && committeeScope.length === 0) {
+      setError("Add at least one committee area before approving this viewer.");
+      return;
+    }
+
+    await onSubmit(request.id, decision, { companyIds, committeeScope, note });
+  };
+
+  return (
+    <div className="modal-backdrop" onMouseDown={onClose}>
+      <form className="modal access-review-modal" onMouseDown={(event) => event.stopPropagation()} onSubmit={submit}>
+        <button type="button" className="icon-button modal-close" onClick={onClose} aria-label="Close review"><X/></button>
+        <span className="kicker">Access review</span>
+        <h2>{decision === "approved" ? `Approve ${request.name}` : `Reject ${request.name}`}</h2>
+        <p className="review-summary"><b>{roleLabel(request.role)}</b> · {request.email}</p>
+        {request.scope ? <div className="request-note"><span>Requested scope</span><p>{request.scope}</p></div> : null}
+
+        {decision === "approved" && request.role === "assistant_coordinator" ? (
+          <div className="scope-editor">
+            <div className="scope-editor-head"><div><b>Assigned companies</b><small>This controls which youth and group data the AC can actually read.</small></div><Status tone={companyIds.length ? "good" : "warn"}>{companyIds.length} selected</Status></div>
+            <div className="company-search"><MagnifyingGlass/><input value={companySearch} onChange={(event) => setCompanySearch(event.target.value)} placeholder="Find a company" /></div>
+            <div className="company-picker">
+              {filteredCompanies.length ? filteredCompanies.map((company) => (
+                <label key={company.id} className={companyIds.includes(company.id) ? "selected" : ""}>
+                  <input type="checkbox" checked={companyIds.includes(company.id)} onChange={() => toggleCompany(company.id)} />
+                  <span>{company.name}</span>
+                </label>
+              )) : <p className="scope-empty">{companies.length ? "No companies match this search." : "No companies exist yet. Build and publish companies first."}</p>}
+            </div>
+          </div>
+        ) : null}
+
+        {decision === "approved" && request.role === "committee_viewer" ? (
+          <label>Committee scope<input value={committeeText} onChange={(event) => setCommitteeText(event.target.value)} placeholder="e.g. Food, Housing"/><small className="field-help">Separate multiple areas with commas.</small></label>
+        ) : null}
+
+        {decision === "approved" && request.role === "coordinator" ? <div className="notice green compact-notice"><ShieldCheck weight="fill"/><div><b>Whole-session visibility</b><p>Coordinators can see the same operational session data as Logistics and Session Directors, but cannot approve access.</p></div></div> : null}
+
+        <label>Decision note <span className="optional">Optional</span><textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder={decision === "approved" ? "Anything the leader should know about their access" : "Reason for rejection"}/></label>
+        {error ? <p className="form-error">{error}</p> : null}
+        <div className="review-actions">
+          <button type="button" className="secondary" onClick={onClose}>Cancel</button>
+          <button className={decision === "approved" ? "primary" : "danger-button"} disabled={processing}>{processing ? "Saving…" : decision === "approved" ? "Approve access" : "Reject request"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export function Access({
   requests,
   setRequests,
   currentRole = "logistics_admin",
   onDecision,
   roster = demoUsers,
+  companies = [],
   sessionAccessCode,
   live = false,
 }) {
@@ -49,15 +127,31 @@ export function Access({
   const [created, setCreated] = useState(false);
   const [processing, setProcessing] = useState("");
   const [copied, setCopied] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [reviewDecision, setReviewDecision] = useState("approved");
   const [form, setForm] = useState({ name: "", email: "", role: "assistant_coordinator", scope: "" });
   const canReview = canApproveAccess(currentRole);
   const pending = useMemo(() => requests.filter((request) => request.status === "pending"), [requests]);
 
-  const decide = async (id, status) => {
+  const openReview = (request, decision) => {
+    setReviewTarget(request);
+    setReviewDecision(decision);
+  };
+
+  const decide = async (id, status, options = {}) => {
     setProcessing(id);
     try {
-      if (onDecision) await onDecision(id, status);
-      setRequests((current) => current.map((request) => request.id === id ? { ...request, status } : request));
+      if (onDecision) {
+        await onDecision(id, status, options);
+      } else {
+        setRequests((current) => current.map((request) => request.id === id ? {
+          ...request,
+          status,
+          companyIds: options.companyIds || [],
+          committeeScope: options.committeeScope || [],
+        } : request));
+      }
+      setReviewTarget(null);
     } finally {
       setProcessing("");
     }
@@ -94,13 +188,13 @@ export function Access({
 
       <div className="notice green"><ShieldCheck weight="fill"/><div><b>Access follows responsibility</b><p>Coordinators, logistical administrators and the session directing couple have whole-session operational visibility. Only logistical administrators and session directors can approve or reject access requests for lower roles.</p></div></div>
 
-      {live && canReview && sessionAccessCode ? <div className="access-code-strip"><span>Session access code</span><b>{sessionAccessCode}</b><small>Share only with leaders who need to request access. It does not expose participant data by itself.</small></div> : null}
+      {live && canReview && sessionAccessCode ? <div className="access-code-strip"><span>Session access code</span><b>{sessionAccessCode}</b><small>Share only with leaders who need to request access. The code alone does not reveal participant data.</small></div> : null}
 
       <div className="access-layout">
         <article className="panel approval-panel">
           <div className="panel-head"><div><span className="kicker">Approval queue</span><h2>{pending.length} waiting for review</h2></div><span className="count">{pending.length}</span></div>
           <div className="request-list">
-            {requests.length ? requests.map((request) => <AccessRequest key={request.id} request={request} onDecision={decide} canReview={canReview} processing={processing === request.id} />) : <Empty icon={ShieldCheck} title="No access requests" text="New requests will appear here for review." />}
+            {requests.length ? requests.map((request) => <AccessRequest key={request.id} request={request} onReview={openReview} canReview={canReview} processing={processing === request.id} />) : <Empty icon={ShieldCheck} title="No access requests" text="New requests will appear here for review." />}
           </div>
         </article>
 
@@ -120,6 +214,8 @@ export function Access({
         <div className="panel-head"><div><span className="kicker">Current access</span><h2>Authorized leaders</h2></div><Status>{roster.filter((user) => user.active !== false && user.status !== "Invited").length} active</Status></div>
         <div className="table-wrap"><table><thead><tr><th>Leader</th><th>Role</th><th>Visibility</th><th>Status</th></tr></thead><tbody>{roster.map((user) => <tr key={user.id || user.email}><td><b>{user.name}</b><small className="cell-sub">{user.email}</small></td><td>{user.role?.includes(" ") ? user.role : roleLabel(user.role)}</td><td>{scopeForRoster(user)}</td><td><Status tone={user.status === "Invited" || user.active === false ? "warn" : "good"}>{user.status || "Active"}</Status></td></tr>)}</tbody></table></div>
       </article>
+
+      {reviewTarget ? <ReviewModal key={`${reviewTarget.id}-${reviewDecision}`} request={reviewTarget} decision={reviewDecision} companies={companies} processing={processing === reviewTarget.id} onClose={() => setReviewTarget(null)} onSubmit={decide} /> : null}
 
       {show && (
         <div className="modal-backdrop" onMouseDown={() => setShow(false)}>
