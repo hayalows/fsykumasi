@@ -95,62 +95,62 @@ $$;
 drop policy if exists "members read scoped participants" on public.participants;
 create policy "members read scoped participants" on public.participants for select to authenticated
   using (
-    private.has_session_wide_visibility(session_id)
+    private.has_session_wide_visibility(participants.session_id)
     or exists (
       select 1
       from public.counselor_groups g
-      where g.id = group_id
-        and private.can_access_company(session_id, g.company_id)
+      where g.id = participants.group_id
+        and private.can_access_company(participants.session_id, g.company_id)
     )
   );
 
 drop policy if exists "members read scoped checkins" on public.check_ins;
 create policy "members read scoped checkins" on public.check_ins for select to authenticated
   using (
-    private.has_session_wide_visibility(session_id)
+    private.has_session_wide_visibility(check_ins.session_id)
     or exists (
       select 1
       from public.participants p
       join public.counselor_groups g on g.id = p.group_id
-      where p.id = participant_id
-        and private.can_access_company(session_id, g.company_id)
+      where p.id = check_ins.participant_id
+        and private.can_access_company(check_ins.session_id, g.company_id)
     )
   );
 
 drop policy if exists "top leaders read imports" on public.import_batches;
 create policy "session-wide leaders read imports" on public.import_batches for select to authenticated
-  using (private.has_session_wide_visibility(session_id));
+  using (private.has_session_wide_visibility(import_batches.session_id));
 
 grant select on public.audit_events to authenticated;
 create policy "session-wide leaders read audit" on public.audit_events for select to authenticated
-  using (private.has_session_wide_visibility(session_id));
+  using (private.has_session_wide_visibility(audit_events.session_id));
 
 create policy "requester and session-wide leaders read access requests"
   on public.access_requests for select to authenticated
   using (
-    requested_by = (select auth.uid())
-    or private.has_session_wide_visibility(session_id)
+    access_requests.requested_by = (select auth.uid())
+    or private.has_session_wide_visibility(access_requests.session_id)
   );
 
 create policy "users submit own access request"
   on public.access_requests for insert to authenticated
   with check (
-    requested_by = (select auth.uid())
-    and requested_role in ('assistant_coordinator', 'coordinator', 'committee_viewer')
-    and status = 'pending'
+    access_requests.requested_by = (select auth.uid())
+    and access_requests.requested_role in ('assistant_coordinator', 'coordinator', 'committee_viewer')
+    and access_requests.status = 'pending'
   );
 
 create policy "top leaders review access requests"
   on public.access_requests for update to authenticated
   using (
     private.has_session_role(
-      session_id,
+      access_requests.session_id,
       array['logistics_admin', 'session_director']::public.app_role[]
     )
   )
   with check (
     private.has_session_role(
-      session_id,
+      access_requests.session_id,
       array['logistics_admin', 'session_director']::public.app_role[]
     )
   );

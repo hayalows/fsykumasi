@@ -50,11 +50,10 @@ $$;
 alter table public.access_requests
   add column if not exists requested_scope_note text;
 
--- Let top leaders see the profile details of people whose request they are reviewing.
 drop policy if exists "users read own profile" on public.profiles;
 create policy "users and reviewers read profiles" on public.profiles for select to authenticated
   using (
-    user_id = (select auth.uid())
+    profiles.user_id = (select auth.uid())
     or exists (
       select 1
       from public.access_assignments viewer
@@ -137,7 +136,6 @@ $$;
 revoke all on function public.request_session_access(text, public.app_role, text) from public;
 grant execute on function public.request_session_access(text, public.app_role, text) to authenticated;
 
--- A safe summary RPC lets an authenticated user learn only their own session/access state.
 create or replace function public.my_access_state()
 returns table (
   session_id uuid,
@@ -154,40 +152,42 @@ stable
 security definer
 set search_path = ''
 as $$
-  select
-    s.id,
-    s.name,
-    s.status,
-    aa.role,
-    aa.active,
-    null::public.access_request_status,
-    null::public.app_role,
-    null::timestamptz
-  from public.access_assignments aa
-  join public.sessions s on s.id = aa.session_id
-  where aa.user_id = (select auth.uid()) and aa.active
+  select * from (
+    select
+      s.id as session_id,
+      s.name as session_name,
+      s.status as session_status,
+      aa.role as role,
+      aa.active as active,
+      null::public.access_request_status as request_status,
+      null::public.app_role as requested_role,
+      null::timestamptz as requested_at
+    from public.access_assignments aa
+    join public.sessions s on s.id = aa.session_id
+    where aa.user_id = (select auth.uid()) and aa.active
 
-  union all
+    union all
 
-  select
-    s.id,
-    s.name,
-    s.status,
-    null::public.app_role,
-    false,
-    ar.status,
-    ar.requested_role,
-    ar.requested_at
-  from public.access_requests ar
-  join public.sessions s on s.id = ar.session_id
-  where ar.requested_by = (select auth.uid())
-    and ar.status = 'pending'
-    and not exists (
-      select 1 from public.access_assignments aa2
-      where aa2.session_id = ar.session_id
-        and aa2.user_id = (select auth.uid())
-        and aa2.active
-    )
+    select
+      s.id as session_id,
+      s.name as session_name,
+      s.status as session_status,
+      null::public.app_role as role,
+      false as active,
+      ar.status as request_status,
+      ar.requested_role as requested_role,
+      ar.requested_at as requested_at
+    from public.access_requests ar
+    join public.sessions s on s.id = ar.session_id
+    where ar.requested_by = (select auth.uid())
+      and ar.status = 'pending'
+      and not exists (
+        select 1 from public.access_assignments aa2
+        where aa2.session_id = ar.session_id
+          and aa2.user_id = (select auth.uid())
+          and aa2.active
+      )
+  ) access_state
   order by active desc, requested_at desc nulls last;
 $$;
 
