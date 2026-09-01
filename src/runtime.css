@@ -1,6 +1,25 @@
+.sidebar-foot {
+  grid-template-columns: 38px minmax(0, 1fr) 40px;
+}
+.sidebar-foot > div {
+  min-width: 0;
+  overflow: hidden;
+}
+.sidebar-foot b,
+.sidebar-foot small {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar-foot b { font-size: 13px; line-height: 1.3; }
+.sidebar-foot small { font-size: 11px; line-height: 1.35; }
 .sidebar-signout {
   width: 40px;
   height: 40px;
+  flex: none;
   display: grid;
   place-items: center;
   border: 0;
