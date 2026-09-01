@@ -13,6 +13,7 @@ import {
   loadParticipants,
   loadProfile,
   loadSession,
+  loadSessionAccessCode,
   onAuthChange,
   recordCheckin,
   requestSessionAccess,
@@ -39,6 +40,7 @@ export function App() {
   const [profile, setProfile] = useState(null);
   const [accessState, setAccessState] = useState([]);
   const [sessionInfo, setSessionInfo] = useState(null);
+  const [sessionAccessCode, setSessionAccessCode] = useState("");
   const [runtimeStatus, setRuntimeStatus] = useState(isSupabaseConfigured ? "loading" : "demo");
   const [runtimeError, setRuntimeError] = useState("");
   const demoParticipants = useMemo(() => createDemoParticipants(), []);
@@ -53,6 +55,7 @@ export function App() {
       setProfile(null);
       setAccessState([]);
       setSessionInfo(null);
+      setSessionAccessCode("");
       setImported([]);
       setAccessRequests([]);
       setAccessRoster([]);
@@ -73,6 +76,7 @@ export function App() {
       const granted = nextAccessState.find((item) => item.active && item.role);
       if (!granted) {
         setSessionInfo(null);
+        setSessionAccessCode("");
         setImported([]);
         setAccessRoster([]);
         setAccessRequests([]);
@@ -81,15 +85,18 @@ export function App() {
         return;
       }
 
-      const [nextSession, nextParticipants, nextRequests, nextRoster, nextChecked] = await Promise.all([
+      const canApprove = ["logistics_admin", "session_director"].includes(granted.role);
+      const [nextSession, nextParticipants, nextRequests, nextRoster, nextChecked, nextAccessCode] = await Promise.all([
         loadSession(granted.session_id),
         loadParticipants(granted.session_id),
         loadAccessRequests(granted.session_id),
         loadAccessRoster(granted.session_id),
         loadArrivedParticipantIds(granted.session_id),
+        canApprove ? loadSessionAccessCode(granted.session_id) : Promise.resolve(""),
       ]);
 
       setSessionInfo(nextSession);
+      setSessionAccessCode(nextAccessCode || "");
       setImported(nextParticipants);
       setAccessRequests(nextRequests);
       setAccessRoster(nextRoster);
@@ -185,7 +192,7 @@ export function App() {
   } : null;
 
   const content = active === "overview"
-    ? <Overview setActive={setActive} imported={live ? imported : imported} assignment={assignment} pendingAccess={pendingAccess} />
+    ? <Overview setActive={setActive} imported={imported} assignment={assignment} pendingAccess={pendingAccess} />
     : active === "registration"
       ? <Registration imported={imported} setImported={setImported} onApply={applyImport} live={live} canManage={canImport} />
       : active === "groups"
@@ -194,7 +201,7 @@ export function App() {
           ? <Checkin participants={participants} checkedIds={checkedIds} onRecord={handleCheckin} live={live} canRecord={canRecordCheckin} />
           : active === "headcount"
             ? <Headcount />
-            : <Access requests={accessRequests} setRequests={setAccessRequests} currentRole={currentRole} onDecision={handleAccessDecision} roster={live ? accessRoster : undefined} sessionAccessCode={sessionInfo?.access_code} live={live} />;
+            : <Access requests={accessRequests} setRequests={setAccessRequests} currentRole={currentRole} onDecision={handleAccessDecision} roster={live ? accessRoster : undefined} sessionAccessCode={sessionAccessCode} live={live} />;
 
   return <AppShell active={active} setActive={setActive} attentionCount={pendingAccess} currentUser={live ? profile : undefined} currentRole={currentRole} onSignOut={live ? signOut : undefined}>{content}</AppShell>;
 }
