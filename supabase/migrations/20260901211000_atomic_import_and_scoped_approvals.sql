@@ -1,6 +1,7 @@
--- Close two production-safety gaps before connecting real FSY data.
+-- Close production-safety gaps before connecting real FSY data.
 -- 1) Participant imports run inside one database transaction.
 -- 2) Scoped roles cannot be approved without a real structured scope.
+-- 3) Assistant coordinators cannot browse unrelated companies or staff.
 
 create or replace function private.ensure_session_access_code()
 returns trigger
@@ -26,7 +27,6 @@ create trigger session_private_access_code_trigger
   after insert on public.sessions
   for each row execute function private.ensure_session_access_code();
 
--- Backfill any sessions created after the earlier migration but before this trigger existed.
 insert into private.session_access_codes(session_id, access_code)
 select
   s.id,
@@ -66,6 +66,24 @@ $$;
 
 revoke all on function public.rotate_session_access_code(uuid) from public;
 grant execute on function public.rotate_session_access_code(uuid) to authenticated;
+
+-- Scoped roles should see only their assigned operational area.
+drop policy if exists "members read companies" on public.companies;
+create policy "scoped company visibility" on public.companies for select to authenticated
+  using (
+    private.has_session_wide_visibility(session_id)
+    or private.can_access_company(session_id, id)
+  );
+
+drop policy if exists "members read staff" on public.staff;
+create policy "scoped staff visibility" on public.staff for select to authenticated
+  using (
+    private.has_session_wide_visibility(session_id)
+    or (
+      assigned_company_id is not null
+      and private.can_access_company(session_id, assigned_company_id)
+    )
+  );
 
 -- Reviews must go through this RPC so scoped roles receive actual structured access.
 revoke update on public.access_requests from authenticated;
@@ -143,9 +161,9 @@ begin
     committee_scope = case
       when target.requested_role = 'committee_viewer' and p_decision = 'approved'
         then array(
-          select distinct trim(scope)
-          from unnest(coalesce(p_committee_scope, '{}'::text[])) as scope
-          where trim(scope) <> ''
+          select distinct trim(x.scope)
+          from unnest(coalesce(p_committee_scope, '{}'::text[])) as x(scope)
+          where trim(x.scope) <> ''
         )
       else '{}'::text[]
     end,
@@ -223,7 +241,9 @@ begin
     where nullif(trim(registration_id), '') is null
        or nullif(trim(first_name), '') is null
        or nullif(trim(last_name), '') is null
+       or sex is null
        or lower(trim(sex)) not in ('female','male')
+       or age is null
        or age not between 14 and 18
        or nullif(trim(unit_name), '') is null
   ) then
