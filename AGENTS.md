@@ -18,5 +18,9 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Counselor records and assignments are managed in the system, but counselors do not receive accounts in this version.
 - Assistant coordinators see their assigned scope. Coordinators have whole-session operational visibility. Logistical administrators and session directing couples also have whole-session visibility.
 - Only logistical administrators and session directing couples may approve or reject access requests for lower roles. Coordinators may see the access state but do not approve access.
+- Authentication is password-first for daily use. Leaders sign in with their own email and password rather than repeated magic-link emails.
+- New accounts are created from administrator-issued, one-time invitations. The inviter chooses the person's name, email, role and scope before activation. Shared session access codes are deprecated for new onboarding.
+- One-time invite and administrator-assisted recovery codes must be short-lived, tied to the intended email, stored only as cryptographic hashes, and shared directly rather than in group chats.
+- Logistical administrators and session directing couples can issue or revoke leader invitations and recovery codes. Coordinators cannot manage access.
 - Same ward, branch, or unit is prohibited within one counselor group but allowed within a company. Proposed groups target 8–10 participants.
 - The visual identity must not imitate the Church logo or present the app as an official Church product.
