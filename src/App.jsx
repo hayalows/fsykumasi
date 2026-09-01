@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "./components/AppShell.jsx";
-import { AccessRequestScreen, LoadingScreen, SignInScreen } from "./components/AuthGate.jsx";
+import { InviteClaimScreen, LoadingScreen, PasswordRecoveryScreen, SignInScreen } from "./components/AuthGate.jsx";
 import { createDemoParticipants } from "./data/demo.js";
 import { isSupabaseConfigured } from "./lib/supabase.js";
 import {
-  bootstrapSessionAdmin,
   decideAccessRequest,
   getCurrentAuthSession,
   getMyAccessState,
@@ -16,20 +15,31 @@ import {
   loadParticipants,
   loadProfile,
   loadSession,
-  loadSessionAccessCode,
-  onAuthChange,
   openHeadcountRound,
   publishGroupingPlan,
   recordCheckin,
-  requestSessionAccess,
-  rotateSessionAccessCode,
-  sendMagicLink,
-  signOut,
   subscribeToAccessRequests,
   subscribeToHeadcount,
   submitCompanyHeadcount,
   updateMyProfile,
 } from "./lib/backend.js";
+import {
+  activateLeaderAccount,
+  changePassword,
+  requestPasswordReset,
+  signInWithPassword,
+  signOutAccount,
+  subscribeToAuth,
+  updateRecoveredPassword,
+} from "./lib/auth.js";
+import {
+  claimInviteWhileSignedIn,
+  createLeaderInvite,
+  createLeaderRecoveryCode,
+  loadLeaderInvites,
+  revokeLeaderInvite,
+  subscribeToLeaderInvites,
+} from "./lib/invites.js";
 import { loadArrivedParticipantIds, subscribeToCheckins } from "./lib/checkins.js";
 import { Overview } from "./pages/Overview.jsx";
 import { Registration } from "./pages/Registration.jsx";
@@ -44,6 +54,7 @@ export function App() {
   const [imported, setImported] = useState([]);
   const [assignment, setAssignment] = useState(null);
   const [accessRequests, setAccessRequests] = useState(createInitialAccessRequests);
+  const [leaderInvites, setLeaderInvites] = useState([]);
   const [accessRoster, setAccessRoster] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [headcount, setHeadcount] = useState({ round: null, submissions: [] });
@@ -52,10 +63,10 @@ export function App() {
   const [profile, setProfile] = useState(null);
   const [accessState, setAccessState] = useState([]);
   const [sessionInfo, setSessionInfo] = useState(null);
-  const [sessionAccessCode, setSessionAccessCode] = useState("");
   const [runtimeStatus, setRuntimeStatus] = useState(isSupabaseConfigured ? "loading" : "demo");
   const [runtimeError, setRuntimeError] = useState("");
   const demoParticipants = useMemo(() => createDemoParticipants(), []);
+  const initialInvite = useMemo(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("invite") || "", []);
 
   const hydrateLive = useCallback(async (sessionOverride) => {
     if (!isSupabaseConfigured) return;
@@ -67,9 +78,9 @@ export function App() {
       setProfile(null);
       setAccessState([]);
       setSessionInfo(null);
-      setSessionAccessCode("");
       setImported([]);
       setAccessRequests([]);
+      setLeaderInvites([]);
       setAccessRoster([]);
       setCompanies([]);
       setHeadcount({ round: null, submissions: [] });
@@ -90,10 +101,10 @@ export function App() {
       const granted = nextAccessState.find((item) => item.active && item.role);
       if (!granted) {
         setSessionInfo(null);
-        setSessionAccessCode("");
         setImported([]);
         setAccessRoster([]);
         setAccessRequests([]);
+        setLeaderInvites([]);
         setCompanies([]);
         setHeadcount({ round: null, submissions: [] });
         setCheckedIds([]);
@@ -101,23 +112,23 @@ export function App() {
         return;
       }
 
-      const canApprove = ["logistics_admin", "session_director"].includes(granted.role);
-      const [nextSession, nextParticipants, nextRequests, nextRoster, nextGrouping, nextChecked, nextAccessCode, nextHeadcount] = await Promise.all([
+      const canManageAccess = ["logistics_admin", "session_director"].includes(granted.role);
+      const [nextSession, nextParticipants, nextRequests, nextRoster, nextInvites, nextGrouping, nextChecked, nextHeadcount] = await Promise.all([
         loadSession(granted.session_id),
         loadParticipants(granted.session_id),
         loadAccessRequests(granted.session_id),
         loadAccessRoster(granted.session_id),
+        canManageAccess ? loadLeaderInvites(granted.session_id) : Promise.resolve([]),
         loadGroupingPlan(granted.session_id),
         loadArrivedParticipantIds(granted.session_id),
-        canApprove ? loadSessionAccessCode(granted.session_id) : Promise.resolve(""),
         loadHeadcount(granted.session_id),
       ]);
 
       setSessionInfo(nextSession);
-      setSessionAccessCode(nextAccessCode || "");
       setImported(nextParticipants);
       setAccessRequests(nextRequests);
       setAccessRoster(nextRoster);
+      setLeaderInvites(nextInvites);
       setCompanies(nextGrouping.companies);
       setAssignment(nextGrouping.published ? nextGrouping : null);
       setCheckedIds(nextChecked);
@@ -137,8 +148,14 @@ export function App() {
       setRuntimeError(error.message || "Unable to connect to Supabase.");
       setRuntimeStatus("error");
     });
-    const unsubscribe = onAuthChange((session) => {
-      if (activeSubscription) hydrateLive(session);
+    const unsubscribe = subscribeToAuth((event, session) => {
+      if (!activeSubscription) return;
+      if (event === "PASSWORD_RECOVERY") {
+        setAuthSession(session);
+        setRuntimeStatus("password-recovery");
+        return;
+      }
+      hydrateLive(session);
     });
     return () => {
       activeSubscription = false;
@@ -148,14 +165,19 @@ export function App() {
 
   useEffect(() => {
     if (!isSupabaseConfigured || runtimeStatus !== "ready" || !sessionInfo?.id) return undefined;
+    const currentGrant = accessState.find((item) => item.active && item.role);
+    const canManageAccess = ["logistics_admin", "session_director"].includes(currentGrant?.role);
+
     const reloadRequests = async () => {
       try {
-        const [nextRequests, nextRoster] = await Promise.all([
+        const [nextRequests, nextRoster, nextInvites] = await Promise.all([
           loadAccessRequests(sessionInfo.id),
           loadAccessRoster(sessionInfo.id),
+          canManageAccess ? loadLeaderInvites(sessionInfo.id) : Promise.resolve([]),
         ]);
         setAccessRequests(nextRequests);
         setAccessRoster(nextRoster);
+        setLeaderInvites(nextInvites);
       } catch (error) {
         setRuntimeError(error.message || "Access updates could not be refreshed.");
       }
@@ -168,15 +190,18 @@ export function App() {
       try { setHeadcount(await loadHeadcount(sessionInfo.id)); }
       catch (error) { setRuntimeError(error.message || "Head-count updates could not be refreshed."); }
     };
+
     const unsubscribeAccess = subscribeToAccessRequests(sessionInfo.id, reloadRequests);
+    const unsubscribeInvites = canManageAccess ? subscribeToLeaderInvites(sessionInfo.id, reloadRequests) : () => {};
     const unsubscribeCheckins = subscribeToCheckins(sessionInfo.id, reloadCheckins);
     const unsubscribeHeadcount = subscribeToHeadcount(sessionInfo.id, reloadHeadcount);
     return () => {
       unsubscribeAccess();
+      unsubscribeInvites();
       unsubscribeCheckins();
       unsubscribeHeadcount();
     };
-  }, [runtimeStatus, sessionInfo?.id]);
+  }, [runtimeStatus, sessionInfo?.id, accessState]);
 
   const saveProfile = async (displayName) => {
     const updated = await updateMyProfile(displayName);
@@ -187,7 +212,7 @@ export function App() {
   const handleSignOut = async () => {
     setRuntimeError("");
     try {
-      await signOut();
+      await signOutAccount();
       setActive("overview");
       await hydrateLive(null);
     } catch (error) {
@@ -196,13 +221,33 @@ export function App() {
     }
   };
 
+  const clearRecoveryUrl = () => {
+    if (typeof window !== "undefined") window.history.replaceState({}, "", window.location.pathname);
+  };
+
   if (isSupabaseConfigured) {
     if (runtimeStatus === "loading") return <LoadingScreen />;
-    if (runtimeStatus === "signed-out") return <SignInScreen onSendLink={sendMagicLink} />;
+    if (runtimeStatus === "signed-out") {
+      return <SignInScreen
+        initialInvite={initialInvite}
+        onSignIn={async (email, password) => hydrateLive(await signInWithPassword(email, password))}
+        onActivate={async (values) => hydrateLive(await activateLeaderAccount(values))}
+        onForgot={requestPasswordReset}
+      />;
+    }
+    if (runtimeStatus === "password-recovery") {
+      return <PasswordRecoveryScreen
+        onUpdate={updateRecoveredPassword}
+        onCancel={async () => { clearRecoveryUrl(); await hydrateLive(authSession); }}
+      />;
+    }
     if (runtimeStatus === "error") return <main className="auth-page"><section className="auth-card"><h1>Connection problem</h1><p>{runtimeError}</p><button className="primary full" onClick={() => hydrateLive(authSession)}>Try again</button></section></main>;
     if (runtimeStatus === "awaiting-access") {
-      const pending = accessState.find((item) => item.request_status === "pending");
-      return <AccessRequestScreen profile={profile} request={pending} onRequest={async (form) => { if (form.displayName?.trim()) await saveProfile(form.displayName); await requestSessionAccess(form); await hydrateLive(authSession); }} onBootstrap={async (form) => { if (form.displayName?.trim()) await saveProfile(form.displayName); await bootstrapSessionAdmin(form); await hydrateLive(authSession); }} onSignOut={handleSignOut} />;
+      return <InviteClaimScreen
+        profile={profile}
+        onClaim={async (code) => { await claimInviteWhileSignedIn(code); await hydrateLive(authSession); }}
+        onSignOut={handleSignOut}
+      />;
     }
   }
 
@@ -210,7 +255,7 @@ export function App() {
   const grantedAccess = live ? accessState.find((item) => item.active && item.role) : null;
   const currentRole = grantedAccess?.role || "logistics_admin";
   const participants = live ? imported : imported.length ? imported : demoParticipants;
-  const pendingAccess = accessRequests.filter((request) => request.status === "pending").length;
+  const pendingAccess = accessRequests.filter((request) => request.status === "pending").length + leaderInvites.filter((invite) => invite.status === "pending").length;
   const importLocked = live && Boolean(assignment?.published);
   const canImport = (!live || ["logistics_admin", "session_director"].includes(currentRole)) && !importLocked;
   const canRecordCheckin = !live || ["coordinator", "logistics_admin", "session_director"].includes(currentRole);
@@ -222,11 +267,7 @@ export function App() {
       }));
 
   const applyImport = live ? async ({ participants: nextParticipants, sourceFilename }) => {
-    await importParticipants({
-      sessionId: sessionInfo.id,
-      sourceFilename,
-      participants: nextParticipants,
-    });
+    await importParticipants({ sessionId: sessionInfo.id, sourceFilename, participants: nextParticipants });
     setImported(await loadParticipants(sessionInfo.id));
   } : null;
 
@@ -240,12 +281,21 @@ export function App() {
     setAccessRoster(nextRoster);
   } : null;
 
+  const handleCreateInvite = live ? async (values) => {
+    const created = await createLeaderInvite({ sessionId: sessionInfo.id, ...values });
+    setLeaderInvites(await loadLeaderInvites(sessionInfo.id));
+    return created;
+  } : null;
+
+  const handleRevokeInvite = live ? async (inviteId) => {
+    await revokeLeaderInvite(inviteId);
+    setLeaderInvites(await loadLeaderInvites(sessionInfo.id));
+  } : null;
+
+  const handleRecoveryCode = live ? async (userId) => createLeaderRecoveryCode(sessionInfo.id, userId) : null;
+
   const handleCheckin = live && canRecordCheckin ? async (participantId, status) => {
-    await recordCheckin({
-      sessionId: sessionInfo.id,
-      participantId,
-      status,
-    });
+    await recordCheckin({ sessionId: sessionInfo.id, participantId, status });
   } : null;
 
   const handlePublishGrouping = live ? async (nextAssignment) => {
@@ -269,11 +319,6 @@ export function App() {
     setHeadcount(await loadHeadcount(sessionInfo.id));
   } : null;
 
-  const handleRotateAccessCode = live ? async () => {
-    const nextCode = await rotateSessionAccessCode(sessionInfo.id);
-    setSessionAccessCode(nextCode || "");
-  } : null;
-
   const content = active === "overview"
     ? <Overview setActive={setActive} imported={imported} assignment={assignment} pendingAccess={pendingAccess} live={live} companies={companies} checkedCount={checkedIds.length} />
     : active === "registration"
@@ -285,8 +330,8 @@ export function App() {
           : active === "headcount"
             ? <Headcount live={live} companies={companies} headcount={headcount} currentRole={currentRole} onOpen={handleOpenHeadcount} onSubmit={handleHeadcountSubmit} />
             : active === "profile"
-              ? <Profile currentUser={live ? profile : { display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} grantedAccess={grantedAccess} companies={companyOptions} sessionInfo={sessionInfo} live={live} onSave={saveProfile} onSignOut={handleSignOut} />
-              : <Access requests={accessRequests} setRequests={setAccessRequests} currentRole={currentRole} onDecision={handleAccessDecision} onRotateCode={handleRotateAccessCode} roster={live ? accessRoster : undefined} companies={companyOptions} sessionAccessCode={sessionAccessCode} live={live} />;
+              ? <Profile currentUser={live ? profile : { display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} grantedAccess={grantedAccess} companies={companyOptions} sessionInfo={sessionInfo} live={live} onSave={saveProfile} onChangePassword={changePassword} onSignOut={handleSignOut} />
+              : <Access requests={accessRequests} setRequests={setAccessRequests} invites={leaderInvites} currentRole={currentRole} onDecision={handleAccessDecision} onCreateInvite={handleCreateInvite} onRevokeInvite={handleRevokeInvite} onCreateRecovery={handleRecoveryCode} roster={live ? accessRoster : undefined} companies={companyOptions} live={live} />;
 
   return <AppShell active={active} setActive={setActive} attentionCount={pendingAccess} currentUser={live ? profile : undefined} currentRole={currentRole} onSignOut={live ? handleSignOut : undefined} syncError={live ? runtimeError : ""} onRefresh={() => hydrateLive(authSession)}>{content}</AppShell>;
 }
