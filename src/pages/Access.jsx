@@ -69,7 +69,11 @@ function ReviewModal({ request, decision, companies, processing, onClose, onSubm
       return;
     }
 
-    await onSubmit(request.id, decision, { companyIds, committeeScope, note });
+    try {
+      await onSubmit(request.id, decision, { companyIds, committeeScope, note });
+    } catch (err) {
+      setError(err.message || "Unable to save this access decision.");
+    }
   };
 
   return (
@@ -118,6 +122,7 @@ export function Access({
   setRequests,
   currentRole = "logistics_admin",
   onDecision,
+  onRotateCode,
   roster = demoUsers,
   companies = [],
   sessionAccessCode,
@@ -129,6 +134,9 @@ export function Access({
   const [copied, setCopied] = useState(false);
   const [reviewTarget, setReviewTarget] = useState(null);
   const [reviewDecision, setReviewDecision] = useState("approved");
+  const [confirmRotate, setConfirmRotate] = useState(false);
+  const [rotating, setRotating] = useState(false);
+  const [pageError, setPageError] = useState("");
   const [form, setForm] = useState({ name: "", email: "", role: "assistant_coordinator", scope: "" });
   const canReview = canApproveAccess(currentRole);
   const pending = useMemo(() => requests.filter((request) => request.status === "pending"), [requests]);
@@ -176,8 +184,21 @@ export function Access({
     window.setTimeout(() => setCopied(false), 1800);
   };
 
+  const rotateCode = async () => {
+    setRotating(true);
+    setPageError("");
+    try {
+      await onRotateCode();
+      setConfirmRotate(false);
+    } catch (error) {
+      setPageError(error.message || "Unable to rotate the session access code.");
+    } finally {
+      setRotating(false);
+    }
+  };
+
   const action = live && sessionAccessCode && canReview
-    ? <button className="primary" onClick={copyCode}><Copy />{copied ? "Access code copied" : "Copy session access code"}</button>
+    ? <div className="page-head-actions"><button className="secondary" onClick={() => setConfirmRotate(true)}>Rotate code</button><button className="primary" onClick={copyCode}><Copy />{copied ? "Access code copied" : "Copy session code"}</button></div>
     : !live
       ? <button className="primary" onClick={() => { setCreated(false); setShow(true); }}><UserPlus />New access request</button>
       : null;
@@ -187,6 +208,9 @@ export function Access({
       <PageHead title="People & access" description="Access is role-based, scope-aware and approval-controlled. Visibility can be broad without giving everyone the same authority." action={action} />
 
       <div className="notice green"><ShieldCheck weight="fill"/><div><b>Access follows responsibility</b><p>Coordinators, logistical administrators and the session directing couple have whole-session operational visibility. Only logistical administrators and session directors can approve or reject access requests for lower roles.</p></div></div>
+
+      {pageError ? <div className="form-error page-error" role="alert">{pageError}</div> : null}
+      {confirmRotate ? <div className="notice rotate-confirm"><ShieldCheck weight="fill"/><div><b>Rotate the session code?</b><p>The current code will stop working immediately. Existing approved access stays active.</p><div className="confirm-actions"><button className="secondary" onClick={() => setConfirmRotate(false)}>Cancel</button><button className="primary" disabled={rotating} onClick={rotateCode}>{rotating ? "Rotating…" : "Rotate now"}</button></div></div></div> : null}
 
       {live && canReview && sessionAccessCode ? <div className="access-code-strip"><span>Session access code</span><b>{sessionAccessCode}</b><small>Share only with leaders who need to request access. The code alone does not reveal participant data.</small></div> : null}
 

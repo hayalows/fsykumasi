@@ -5,19 +5,21 @@ import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { PageHead, Status } from "../components/UI.jsx";
 import { downloadCsvTemplate, parseParticipantFile } from "../lib/import.js";
 
-export function Registration({ imported, setImported, onApply, live = false, canManage = true }) {
+export function Registration({ imported, setImported, onApply, live = false, canManage = true, lockedReason = "" }) {
   const input = useRef();
-  const [result, setResult] = useState(imported.length ? { participants: imported, errors: [] } : null);
+  const [result, setResult] = useState(null);
   const [filename, setFilename] = useState("");
   const [busy, setBusy] = useState(false);
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState("");
+  const [appliedCount, setAppliedCount] = useState(0);
 
   const choose = async (file) => {
     if (!file) return;
     setBusy(true);
     setApplyError("");
     setFilename(file.name);
+    setAppliedCount(0);
     try {
       setResult(await parseParticipantFile(file));
     } catch (error) {
@@ -34,7 +36,8 @@ export function Registration({ imported, setImported, onApply, live = false, can
     setApplyError("");
     try {
       if (onApply) await onApply({ participants: result.participants, sourceFilename: filename || "participant-import" });
-      setImported(result.participants);
+      if (!onApply) setImported(result.participants);
+      setAppliedCount(result.participants.length);
     } catch (error) {
       setApplyError(error.message || "Unable to apply participant records.");
     } finally {
@@ -47,7 +50,8 @@ export function Registration({ imported, setImported, onApply, live = false, can
       <PageHead title="Registration data" description="Bring the approved participant export into the operations workspace with a review step before anything changes." action={<button className="secondary" onClick={downloadCsvTemplate}>Download template</button>} />
       <div className="notice"><WarningCircle size={21}/><div><b>{live ? "Connected import" : "Real data comes later"}</b><p>{live ? "This deployment writes validated participant records to Supabase only after you review the file. Use the approved registration export and keep it out of chat and source control." : "Keep using synthetic data until Supabase, login, role permissions and row-level security have been tested. The real export should enter through this screen, not chat or source control."}</p></div></div>
 
-      {!canManage ? <div className="notice"><WarningCircle size={21}/><div><b>View-only access</b><p>Your role can see registration progress, but only logistical administrators and the session directing couple can apply participant imports.</p></div></div> : null}
+      {!canManage ? <div className="notice"><WarningCircle size={21}/><div><b>{lockedReason ? "Import locked" : "View-only access"}</b><p>{lockedReason || "Your role can see registration progress, but only logistical administrators and the session directing couple can apply participant imports."}</p></div></div> : null}
+      {imported.length ? <div className="notice green"><Check weight="bold"/><div><b>{imported.length.toLocaleString()} participants in the current session</b><p>Uploading another file updates matching registration IDs and adds new records. It does not remove people omitted from the new file.</p></div></div> : null}
 
       <article className="panel import-card">
         <div className="step-badge">Step 1</div>
@@ -68,7 +72,8 @@ export function Registration({ imported, setImported, onApply, live = false, can
             <div className="table-wrap"><table><thead><tr><th>Name</th><th>Sex</th><th>Age</th><th>Unit</th></tr></thead><tbody>{result.participants.slice(0, 8).map((p) => <tr key={p.id}><td><b>{p.fullName}</b></td><td>{p.sex}</td><td>{p.age}</td><td>{p.unit}</td></tr>)}</tbody></table></div>
           )}
           {applyError ? <div className="form-error">{applyError}</div> : null}
-          <div className="panel-actions"><span>{result.participants.length > 8 ? `Showing 8 of ${result.participants.length.toLocaleString()}` : "Review every issue before continuing"}</span><button className="primary" disabled={hasBlockingErrors || applying || !canManage} onClick={apply}>{applying ? "Applying…" : imported.length ? "Applied" : "Apply validated records"}<Check /></button></div>
+          {appliedCount ? <div className="auth-success"><Check weight="bold"/><div><b>Import applied</b><span>{appliedCount.toLocaleString()} rows were saved successfully.</span></div></div> : null}
+          <div className="panel-actions"><span>{result.participants.length > 8 ? `Showing 8 of ${result.participants.length.toLocaleString()}` : "Review every issue before continuing"}</span><button className="primary" disabled={hasBlockingErrors || applying || !canManage || Boolean(appliedCount)} onClick={apply}>{applying ? "Applying…" : appliedCount ? "Applied" : "Apply validated records"}<Check /></button></div>
         </article>
       )}
     </section>

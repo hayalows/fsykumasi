@@ -16,9 +16,9 @@
   place-items: center;
   padding: 28px 18px;
   background:
-    radial-gradient(circle at 82% 12%, rgba(252,180,73,.23), transparent 25%),
-    radial-gradient(circle at 18% 88%, rgba(141,191,103,.20), transparent 28%),
-    linear-gradient(145deg, #f7fbfd 0%, #eef8fb 52%, #f7faf2 100%);
+    radial-gradient(circle at 82% 12%, rgba(196,233,245,.65), transparent 25%),
+    radial-gradient(circle at 18% 88%, rgba(190,215,167,.28), transparent 28%),
+    linear-gradient(145deg, #ffffff 0%, var(--blue-5-tint) 58%, var(--green-20-tint) 100%);
 }
 .auth-card {
   width: min(100%, 510px);
@@ -29,6 +29,8 @@
   box-shadow: 0 28px 70px rgba(0,81,117,.13);
 }
 .auth-card .brand-symbol { margin-bottom: 22px; }
+.auth-card .brand-symbol { width: 92px; height: 92px; }
+.auth-card > .kicker { display: block; }
 .auth-card h1 { font-size: clamp(34px, 6vw, 50px); margin-bottom: 12px; }
 .auth-card > p { color: var(--muted); line-height: 1.65; margin-bottom: 26px; }
 .auth-card form { display: grid; gap: 16px; }
@@ -79,6 +81,7 @@
   font-weight: 800;
   padding: 0;
 }
+.bootstrap-toggle { margin-top: 12px; }
 .form-error {
   margin: 12px 0;
   padding: 11px 13px;

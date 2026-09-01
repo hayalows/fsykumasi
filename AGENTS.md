@@ -12,7 +12,8 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 
 - The selected visual direction combines the calm, exception-first command centre with a guided conference-readiness journey.
 - Desktop and mobile are first-class. Mobile should prioritize the next action, stack operational summaries, avoid hover-only controls, and keep touch targets at least 44px.
-- Use the 2026 FSY theme palette supplied by the user as the product color foundation: Blue 35 `#005175`, Blue 25 `#007DA5`, Blue 5 `#C4E9F5`, Green 20 `#8DBF67`, Green 20 soft `#BED7A7`, Yellow 15 `#FCB449`. Use abstract theme geometry without implying this is an official Church product.
+- Use the 2026 FSY theme palette supplied by the user as the product color foundation: Blue 35 `#005175`, Blue 25 `#007DA5`, Blue 5 `#C4E9F5`, Green 20 `#8DBF67`, Green 20 soft `#BED7A7`, Yellow 15 `#FCB449`.
+- Use the supplied official 2026 `Walk with Me` identifier asset where it adds context (sign-in, navigation identity, and theme banner). Preserve its artwork and colours, use approved quiet backgrounds, never add effects to the identifier, and keep the operations product name visually separate so the app does not imply it is an official Church registration system.
 - Version 0.0/0.1 uses a full-scale synthetic rehearsal of roughly 1,640 youth plus YSA planning counts. Real participant files must enter through the authenticated CSV/XLSX import workflow, not through chat or source control.
 - Counselor records and assignments are managed in the system, but counselors do not receive accounts in this version.
 - Assistant coordinators see their assigned scope. Coordinators have whole-session operational visibility. Logistical administrators and session directing couples also have whole-session visibility.

@@ -48,8 +48,9 @@ export function SignInScreen({ onSendLink }) {
   );
 }
 
-export function AccessRequestScreen({ profile, request, onRequest, onSignOut }) {
+export function AccessRequestScreen({ profile, request, onRequest, onBootstrap, onSignOut }) {
   const [form, setForm] = useState({ accessCode: "", role: "assistant_coordinator", scopeNote: "" });
+  const [bootstrap, setBootstrap] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(Boolean(request));
@@ -59,8 +60,12 @@ export function AccessRequestScreen({ profile, request, onRequest, onSignOut }) 
     setBusy(true);
     setError("");
     try {
-      await onRequest(form);
-      setSubmitted(true);
+      if (bootstrap) {
+        await onBootstrap({ accessCode: form.accessCode, role: form.role });
+      } else {
+        await onRequest(form);
+        setSubmitted(true);
+      }
     } catch (err) {
       setError(err.message || "Unable to request access.");
     } finally {
@@ -81,15 +86,18 @@ export function AccessRequestScreen({ profile, request, onRequest, onSignOut }) 
           </>
         ) : (
           <>
-            <h1>Request session access</h1>
-            <p>Enter the access code given to you by FSY leadership. Your role request will stay pending until an authorized leader approves it.</p>
+            <h1>{bootstrap ? "Initialize leadership access" : "Request session access"}</h1>
+            <p>{bootstrap ? "Use this once, only if you are the trusted first logistical administrator or session directing couple. The code rotates immediately after a successful claim." : "Enter the access code given to you by FSY leadership. Your role request will stay pending until an authorized leader approves it."}</p>
             <form onSubmit={submit}>
               <label>Session access code<input required value={form.accessCode} onChange={(event) => setForm({ ...form, accessCode: event.target.value.toUpperCase() })} placeholder="e.g. A1B2C3D4E5" autoComplete="off" /></label>
-              <label>Role<select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>{REQUESTABLE_ROLES.map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}</select></label>
-              {form.role !== "coordinator" ? <label>Assignment / scope note<input value={form.scopeNote} onChange={(event) => setForm({ ...form, scopeNote: event.target.value })} placeholder={form.role === "assistant_coordinator" ? "e.g. AC for Companies 21–24" : "e.g. Food committee"} /></label> : null}
+              <label>Role<select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>{(bootstrap ? ["logistics_admin", "session_director"] : REQUESTABLE_ROLES).map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}</select></label>
+              {!bootstrap && form.role !== "coordinator" ? <label>Assignment / scope note<input value={form.scopeNote} onChange={(event) => setForm({ ...form, scopeNote: event.target.value })} placeholder={form.role === "assistant_coordinator" ? "e.g. AC for Companies 21–24" : "e.g. Food committee"} /></label> : null}
               {error ? <div className="form-error">{error}</div> : null}
-              <button className="primary full" disabled={busy}>{busy ? "Submitting…" : "Request access"}<ArrowRight /></button>
+              <button className="primary full" disabled={busy}>{busy ? "Submitting…" : bootstrap ? "Initialize secure access" : "Request access"}<ArrowRight /></button>
             </form>
+            <button className="text-action bootstrap-toggle" onClick={() => { setBootstrap((value) => !value); setForm({ accessCode: "", role: bootstrap ? "assistant_coordinator" : "logistics_admin", scopeNote: "" }); setError(""); }}>
+              <LockKey />{bootstrap ? "I need to request regular access" : "I am the trusted first administrator"}
+            </button>
           </>
         )}
         <button className="text-action" onClick={onSignOut}><SignOut />Sign out</button>

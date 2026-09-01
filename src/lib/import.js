@@ -27,7 +27,7 @@ function normalizeSex(value) {
   return "";
 }
 
-function rowsToParticipants(rows) {
+export function rowsToParticipants(rows) {
   const [headers = [], ...body] = rows;
   const participants = body
     .filter((row) => row.some((cell) => String(cell ?? "").trim()))
@@ -37,8 +37,8 @@ function rowsToParticipants(rows) {
       const firstName = String(findValue(row, headers, "firstName") || split[0] || "").trim();
       const lastName = String(findValue(row, headers, "lastName") || split.slice(1).join(" ") || "").trim();
       return {
-        id: String(findValue(row, headers, "registrationId") || `IMPORT-${index + 1}`).trim(),
-        registrationId: String(findValue(row, headers, "registrationId") || `IMPORT-${index + 1}`).trim(),
+        id: String(findValue(row, headers, "registrationId") || `row-${index + 2}`).trim(),
+        registrationId: String(findValue(row, headers, "registrationId") || "").trim(),
         firstName,
         lastName,
         fullName: `${firstName} ${lastName}`.trim(),
@@ -53,18 +53,22 @@ function rowsToParticipants(rows) {
   const seen = new Set();
   participants.forEach((participant, index) => {
     const row = index + 2;
-    if (!participant.fullName) errors.push({ row, field: "Name", message: "Participant name is required", severity: "blocking" });
+    if (!participant.registrationId) errors.push({ row, field: "Registration ID", message: "Registration ID is required", severity: "blocking" });
+    if (!participant.firstName) errors.push({ row, field: "First name", message: "First name is required", severity: "blocking" });
+    if (!participant.lastName) errors.push({ row, field: "Last name", message: "Last name is required", severity: "blocking" });
     if (!participant.sex) errors.push({ row, field: "Sex", message: "Sex is required for counselor-group assignment", severity: "blocking" });
-    if (!participant.age || participant.age < 14 || participant.age > 18) errors.push({ row, field: "Age", message: "Review age; expected 14–18", severity: "warning" });
+    if (!participant.age || participant.age < 14 || participant.age > 18) errors.push({ row, field: "Age", message: "Age must be between 14 and 18", severity: "blocking" });
     if (!participant.unit) errors.push({ row, field: "Unit", message: "Ward, branch, or unit is required", severity: "blocking" });
-    if (seen.has(participant.registrationId)) errors.push({ row, field: "Registration ID", message: "Possible duplicate registration ID", severity: "warning" });
-    seen.add(participant.registrationId);
+    if (participant.registrationId && seen.has(participant.registrationId)) errors.push({ row, field: "Registration ID", message: "Duplicate registration ID", severity: "blocking" });
+    if (participant.registrationId) seen.add(participant.registrationId);
   });
   return { participants, errors, headers };
 }
 
 export async function parseParticipantFile(file) {
   const extension = file.name.split(".").pop()?.toLowerCase();
+  if (!["csv", "xlsx", "xls"].includes(extension)) throw new Error("Choose a CSV or Excel file.");
+  if (file.size > 10 * 1024 * 1024) throw new Error("File is larger than the 10 MB import limit.");
   if (extension === "xlsx" || extension === "xls") {
     const { default: readXlsxFile } = await import("read-excel-file/browser");
     const rows = await readXlsxFile(file);
