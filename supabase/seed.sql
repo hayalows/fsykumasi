@@ -1,0 +1,2 @@
+-- Intentionally empty. Never store real participant or staff data in source control.
+-- The application includes deterministic synthetic planning data in src/data/demo.js.
