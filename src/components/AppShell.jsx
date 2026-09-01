@@ -11,6 +11,7 @@ import { Users } from "@phosphor-icons/react/Users";
 import { X } from "@phosphor-icons/react/X";
 import { BrandMark } from "./BrandMark.jsx";
 import { isSupabaseConfigured } from "../lib/supabase.js";
+import { roleLabel } from "../lib/access.js";
 
 const nav = [
   ["overview", "Overview", SquaresFour],
@@ -23,12 +24,19 @@ const nav = [
 
 const mobileNav = ["overview", "checkin", "headcount", "groups", "access"];
 
-export function AppShell({ active, setActive, attentionCount = 0, children }) {
+function initials(name = "FSY") {
+  return name.split(/\s+/).filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase();
+}
+
+export function AppShell({ active, setActive, attentionCount = 0, currentUser, currentRole = "logistics_admin", onSignOut, children }) {
   const [menu, setMenu] = useState(false);
   const navigate = (id) => {
     setActive(id);
     setMenu(false);
   };
+  const displayName = currentUser?.display_name || "Esi Owusu";
+  const displayRole = roleLabel(currentRole);
+  const avatar = initials(displayName);
 
   return (
     <div className="app-shell">
@@ -49,9 +57,9 @@ export function AppShell({ active, setActive, attentionCount = 0, children }) {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <span className="avatar">EO</span>
-          <div><b>Esi Owusu</b><small>Logistical administrator</small></div>
-          <SignOut size={18} />
+          <span className="avatar">{avatar}</span>
+          <div><b>{displayName}</b><small>{displayRole}</small></div>
+          <button className="sidebar-signout" onClick={onSignOut} aria-label="Sign out"><SignOut size={18} /></button>
         </div>
       </aside>
 
@@ -62,7 +70,7 @@ export function AppShell({ active, setActive, attentionCount = 0, children }) {
           <div className="top-actions">
             <span className={`connection ${isSupabaseConfigured ? "live" : "demo"}`}>{isSupabaseConfigured ? "Connected" : "Demo data"}</span>
             <button className="icon-button notification-button" aria-label="Notifications"><Bell />{attentionCount > 0 ? <i>{attentionCount}</i> : null}</button>
-            <span className="avatar small">EO</span>
+            <span className="avatar small">{avatar}</span>
           </div>
         </header>
         {children}
