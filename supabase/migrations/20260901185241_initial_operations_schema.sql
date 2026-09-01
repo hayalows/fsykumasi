@@ -210,10 +210,10 @@ grant insert on public.audit_events to authenticated;
 grant usage, select on sequence public.audit_events_id_seq to authenticated;
 
 create policy "members read sessions" on public.sessions for select to authenticated
-  using (private.has_session_access(id));
+  using (private.has_session_access(sessions.id));
 create policy "users read own profile" on public.profiles for select to authenticated
   using (
-    user_id = (select auth.uid())
+    profiles.user_id = (select auth.uid())
     or exists (
       select 1 from public.access_assignments viewer
       join public.access_assignments subject on subject.session_id = viewer.session_id
@@ -221,67 +221,67 @@ create policy "users read own profile" on public.profiles for select to authenti
     )
   );
 create policy "leaders read access roster" on public.access_assignments for select to authenticated
-  using (private.has_session_access(session_id));
+  using (private.has_session_access(access_assignments.session_id));
 create policy "top leaders manage access" on public.access_assignments for all to authenticated
-  using (private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[]))
-  with check (private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[]));
+  using (private.has_session_role(access_assignments.session_id, array['logistics_admin','session_director']::public.app_role[]))
+  with check (private.has_session_role(access_assignments.session_id, array['logistics_admin','session_director']::public.app_role[]));
 
 create policy "members read companies" on public.companies for select to authenticated
-  using (private.has_session_access(session_id));
+  using (private.has_session_access(companies.session_id));
 create policy "top leaders manage companies" on public.companies for all to authenticated
-  using (private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[]))
-  with check (private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[]));
+  using (private.has_session_role(companies.session_id, array['logistics_admin','session_director']::public.app_role[]))
+  with check (private.has_session_role(companies.session_id, array['logistics_admin','session_director']::public.app_role[]));
 
 create policy "members read staff" on public.staff for select to authenticated
-  using (private.has_session_access(session_id));
+  using (private.has_session_access(staff.session_id));
 create policy "top leaders manage staff" on public.staff for all to authenticated
-  using (private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[]))
-  with check (private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[]));
+  using (private.has_session_role(staff.session_id, array['logistics_admin','session_director']::public.app_role[]))
+  with check (private.has_session_role(staff.session_id, array['logistics_admin','session_director']::public.app_role[]));
 
 create policy "members read scoped groups" on public.counselor_groups for select to authenticated
-  using (private.can_access_company(session_id, company_id) or private.has_session_role(session_id, array['coordinator']::public.app_role[]));
+  using (private.can_access_company(counselor_groups.session_id, counselor_groups.company_id) or private.has_session_role(counselor_groups.session_id, array['coordinator']::public.app_role[]));
 create policy "operations manage groups" on public.counselor_groups for all to authenticated
-  using (private.has_session_role(session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]))
-  with check (private.has_session_role(session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]));
+  using (private.has_session_role(counselor_groups.session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]))
+  with check (private.has_session_role(counselor_groups.session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]));
 
 create policy "members read scoped participants" on public.participants for select to authenticated
   using (
-    private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[])
-    or exists (select 1 from public.counselor_groups g where g.id = group_id and private.can_access_company(session_id, g.company_id))
+    private.has_session_role(participants.session_id, array['logistics_admin','session_director']::public.app_role[])
+    or exists (select 1 from public.counselor_groups g where g.id = participants.group_id and private.can_access_company(participants.session_id, g.company_id))
   );
 create policy "top leaders manage participants" on public.participants for all to authenticated
-  using (private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[]))
-  with check (private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[]));
+  using (private.has_session_role(participants.session_id, array['logistics_admin','session_director']::public.app_role[]))
+  with check (private.has_session_role(participants.session_id, array['logistics_admin','session_director']::public.app_role[]));
 
 create policy "top leaders read imports" on public.import_batches for select to authenticated
-  using (private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[]));
+  using (private.has_session_role(import_batches.session_id, array['logistics_admin','session_director']::public.app_role[]));
 create policy "top leaders manage imports" on public.import_batches for all to authenticated
-  using (private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[]))
-  with check (private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[]));
+  using (private.has_session_role(import_batches.session_id, array['logistics_admin','session_director']::public.app_role[]))
+  with check (private.has_session_role(import_batches.session_id, array['logistics_admin','session_director']::public.app_role[]));
 
 create policy "members read scoped checkins" on public.check_ins for select to authenticated
   using (
-    private.has_session_role(session_id, array['logistics_admin','session_director']::public.app_role[])
-    or exists (select 1 from public.participants p join public.counselor_groups g on g.id=p.group_id where p.id=participant_id and private.can_access_company(session_id,g.company_id))
+    private.has_session_role(check_ins.session_id, array['logistics_admin','session_director']::public.app_role[])
+    or exists (select 1 from public.participants p join public.counselor_groups g on g.id=p.group_id where p.id=check_ins.participant_id and private.can_access_company(check_ins.session_id,g.company_id))
   );
 create policy "operations record checkins" on public.check_ins for all to authenticated
-  using (private.has_session_role(session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]))
-  with check (private.has_session_role(session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]));
+  using (private.has_session_role(check_ins.session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]))
+  with check (private.has_session_role(check_ins.session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]));
 
 create policy "members read headcount rounds" on public.headcount_rounds for select to authenticated
-  using (private.has_session_access(session_id));
+  using (private.has_session_access(headcount_rounds.session_id));
 create policy "leaders manage rounds" on public.headcount_rounds for all to authenticated
-  using (private.has_session_role(session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]))
-  with check (private.has_session_role(session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]));
+  using (private.has_session_role(headcount_rounds.session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]))
+  with check (private.has_session_role(headcount_rounds.session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]));
 
 create policy "members read scoped submissions" on public.headcount_submissions for select to authenticated
-  using (exists (select 1 from public.headcount_rounds r where r.id=round_id and private.can_access_company(r.session_id,company_id)));
+  using (exists (select 1 from public.headcount_rounds r where r.id=headcount_submissions.round_id and private.can_access_company(r.session_id,headcount_submissions.company_id)));
 create policy "leaders manage scoped submissions" on public.headcount_submissions for all to authenticated
-  using (exists (select 1 from public.headcount_rounds r where r.id=round_id and private.can_access_company(r.session_id,company_id)))
-  with check (exists (select 1 from public.headcount_rounds r where r.id=round_id and private.can_access_company(r.session_id,company_id)));
+  using (exists (select 1 from public.headcount_rounds r where r.id=headcount_submissions.round_id and private.can_access_company(r.session_id,headcount_submissions.company_id)))
+  with check (exists (select 1 from public.headcount_rounds r where r.id=headcount_submissions.round_id and private.can_access_company(r.session_id,headcount_submissions.company_id)));
 
 create policy "members write audit events" on public.audit_events for insert to authenticated
-  with check (private.has_session_access(session_id) and actor_id = (select auth.uid()));
+  with check (private.has_session_access(audit_events.session_id) and audit_events.actor_id = (select auth.uid()));
 
 do $$ begin
   alter publication supabase_realtime add table public.check_ins;
