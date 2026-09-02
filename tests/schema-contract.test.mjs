@@ -8,6 +8,7 @@ const scopedCheckinMigration = readFileSync(new URL("../supabase/migrations/2026
 const planningRepublishMigration = readFileSync(new URL("../supabase/migrations/20260902071000_allow_structure_republish_while_planning.sql", import.meta.url), "utf8");
 const mixedAgeMigration = readFileSync(new URL("../supabase/migrations/20260902080000_mixed_age_structure_default.sql", import.meta.url), "utf8");
 const staffingMigration = readFileSync(new URL("../supabase/migrations/20260902080500_atomic_staff_assignment_plan.sql", import.meta.url), "utf8");
+const onSitePeopleMigration = readFileSync(new URL("../supabase/migrations/20260902083500_on_site_people_capture_v2.sql", import.meta.url), "utf8");
 const app = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 
 test("capability override is explicit, constrained, and cannot be delegated by an overridden coordinator", () => {
@@ -54,4 +55,21 @@ test("bulk staffing validates the full plan and never silently overwrites existi
   assert.match(staffingMigration, /Bulk staffing will not overwrite an existing company Assistant Coordinator assignment/);
   assert.match(staffingMigration, /A Counselor can only appear once in a bulk assignment plan/);
   assert.match(staffingMigration, /staff_assignment_plan_applied/);
+});
+
+test("day-of participant capture calculates age from session date and keeps contact data private", () => {
+  assert.match(onSitePeopleMigration, /create or replace function public\.add_on_site_participant_v2/);
+  assert.match(onSitePeopleMigration, /select starts_on into session_start from public\.sessions/);
+  assert.match(onSitePeopleMigration, /extract\(year from age\(session_start, p_date_of_birth\)\)/);
+  assert.match(onSitePeopleMigration, /insert into public\.participant_private_details/);
+  assert.match(onSitePeopleMigration, /p_contact_phone/);
+  assert.match(onSitePeopleMigration, /verification_status[\s\S]*'pending'/);
+});
+
+test("day-of staff capture is distinct, auditable, and uses the private-detail table", () => {
+  assert.match(onSitePeopleMigration, /staff_source_kind_check/);
+  assert.match(onSitePeopleMigration, /create or replace function public\.add_on_site_staff/);
+  assert.match(onSitePeopleMigration, /p_operational_role not in \('counselor','assistant_coordinator','committee_member','other'\)/);
+  assert.match(onSitePeopleMigration, /insert into public\.staff_private_details/);
+  assert.match(onSitePeopleMigration, /'on_site_staff_added'/);
 });
