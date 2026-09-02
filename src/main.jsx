@@ -5,6 +5,7 @@ import "./styles.css";
 import "./runtime.css";
 import "./progressive.css";
 import "./refinement.css";
+import "./mobile-pwa.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -12,3 +13,10 @@ createRoot(document.getElementById("root")).render(
   </React.StrictMode>,
 );
 
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").then((registration) => registration.update()).catch(() => {
+      // The app remains fully usable online if service-worker registration is unavailable.
+    });
+  });
+}
