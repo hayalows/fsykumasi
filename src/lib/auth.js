@@ -5,6 +5,24 @@ function client() {
   return supabase;
 }
 
+async function invokeAccountSetup(body) {
+  const { data, error } = await client().functions.invoke("activate-leader", { body });
+  if (error) {
+    let message = data?.error || error.message || "Unable to continue account setup.";
+    if (error.context instanceof Response) {
+      try {
+        const responseBody = await error.context.clone().json();
+        if (responseBody?.error) message = responseBody.error;
+      } catch {
+        // Keep the SDK message when the function response is not JSON.
+      }
+    }
+    throw new Error(message);
+  }
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
 export function subscribeToAuth(callback) {
   if (!isSupabaseConfigured || !supabase) return () => {};
   const { data } = supabase.auth.onAuthStateChange((event, session) => callback(event, session));
@@ -31,7 +49,7 @@ export async function requestPasswordReset(email) {
   });
   if (error) {
     if (/rate limit/i.test(error.message || "")) {
-      throw new Error("Too many email requests were sent recently. Wait a little, or ask a logistical administrator for a recovery code.");
+      throw new Error("Email reset is temporarily rate-limited. Use a recovery code from an FSY administrator instead.");
     }
     throw error;
   }
@@ -52,24 +70,14 @@ export async function changePassword(currentPassword, newPassword) {
   if (error) throw error;
 }
 
-export async function activateLeaderAccount({ email, code, displayName, password }) {
-  const { data, error } = await client().functions.invoke("activate-leader", {
-    body: { email, code, displayName, password },
-  });
-  if (error) {
-    let message = data?.error || error.message || "Unable to activate this account.";
-    if (error.context instanceof Response) {
-      try {
-        const body = await error.context.clone().json();
-        if (body?.error) message = body.error;
-      } catch {
-        // Keep the SDK error message when the function response is not JSON.
-      }
-    }
-    throw new Error(message);
-  }
-  if (data?.error) throw new Error(data.error);
-  return signInWithPassword(email, password);
+export async function inspectLeaderInvite(code) {
+  return invokeAccountSetup({ action: "inspect", code });
+}
+
+export async function activateLeaderAccount({ code, password }) {
+  const data = await invokeAccountSetup({ action: "activate", code, password });
+  if (!data?.email) throw new Error("Account setup finished, but automatic sign-in could not continue. Return to sign in and use your new password.");
+  return signInWithPassword(data.email, password);
 }
 
 export async function signOutAccount() {
