@@ -1,0 +1,22 @@
+{
+  "id": "/",
+  "name": "FSY Kumasi 2026 Operations",
+  "short_name": "FSY Kumasi",
+  "description": "A focused operations workspace for the FSY Kumasi 2026 session.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#f5fbfd",
+  "theme_color": "#005175",
+  "orientation": "any",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
