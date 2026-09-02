@@ -9,7 +9,7 @@ export const DEFAULT_STRUCTURE_SETTINGS = {
   groupMinSize: 8,
   groupMaxSize: 10,
   groupsPerCompany: 2,
-  useAgeBands: true,
+  useAgeBands: false,
   avoidSameUnit: true,
   balanceSexes: true,
 };
