@@ -28,4 +28,13 @@ jobs:
           path: dist/client
           if-no-files-found: error
           retention-days: 7
+      - name: Package source for implementation handoff
+        run: tar -czf fsy-kumasi-source.tgz --exclude=node_modules --exclude=dist --exclude=.git .
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: fsy-kumasi-source
+          path: fsy-kumasi-source.tgz
+          if-no-files-found: error
+          retention-days: 1
       - run: npm run test:sites
