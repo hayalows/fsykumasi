@@ -1,7 +1,27 @@
-export function isOperationalParticipant(person) {
-  return person.isCurrent !== false
-    && (person.registrationStatus || "approved") === "approved"
-    && (person.verificationStatus || "verified") === "verified";
+export const DEFAULT_OPERATIONAL_AGE_RANGE = { participantMinAge: 13, participantMaxAge: 20 };
+
+export function operationalAgeRange(settings = {}) {
+  const min = Number(settings.participantMinAge ?? DEFAULT_OPERATIONAL_AGE_RANGE.participantMinAge);
+  const max = Number(settings.participantMaxAge ?? DEFAULT_OPERATIONAL_AGE_RANGE.participantMaxAge);
+  return {
+    min: Number.isFinite(min) ? min : DEFAULT_OPERATIONAL_AGE_RANGE.participantMinAge,
+    max: Number.isFinite(max) ? max : DEFAULT_OPERATIONAL_AGE_RANGE.participantMaxAge,
+  };
+}
+
+export function operationalEligibility(person, settings = {}) {
+  if (person.isCurrent === false) return { ok: false, reason: "Not current" };
+  if ((person.registrationStatus || "approved") === "awaiting") return { ok: false, reason: "Awaiting approval" };
+  if ((person.registrationStatus || "approved") === "cancelled") return { ok: false, reason: "Cancelled" };
+  if ((person.verificationStatus || "verified") !== "verified") return { ok: false, reason: "Needs verification" };
+  const { min, max } = operationalAgeRange(settings);
+  const age = Number(person.age);
+  if (!Number.isFinite(age) || age < min || age > max) return { ok: false, reason: `Age review · ${min}–${max} configured` };
+  return { ok: true, reason: "Operationally eligible" };
+}
+
+export function isOperationalParticipant(person, settings = {}) {
+  return operationalEligibility(person, settings).ok;
 }
 
 function dateOnly(value) {
