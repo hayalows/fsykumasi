@@ -8,9 +8,20 @@ function distributeSizes(total, minSize = 8, maxSize = 10) {
   return Array.from({ length: groupCount }, (_, index) => base + (index < remainder ? 1 : 0));
 }
 
+function participantAge(participant) {
+  const value = Number(participant?.age);
+  return Number.isFinite(value) ? value : 16;
+}
+
 function averageAge(members) {
   if (!members.length) return 16;
-  return members.reduce((sum, member) => sum + Number(member.age || 16), 0) / members.length;
+  return members.reduce((sum, member) => sum + participantAge(member), 0) / members.length;
+}
+
+function ageRange(members) {
+  if (!members.length) return 0;
+  const ages = members.map(participantAge);
+  return Math.max(...ages) - Math.min(...ages);
 }
 
 function ageBand(age) {
@@ -20,7 +31,45 @@ function ageBand(age) {
   return "Other ages";
 }
 
-function buildPoolGroups(pool, prefix, ageBandLabel, minSize, maxSize, avoidSameUnit) {
+function buildAgeMixedOrder(pool, unitFrequency) {
+  const byAge = pool.reduce((map, participant) => {
+    const age = participantAge(participant);
+    if (!map.has(age)) map.set(age, []);
+    map.get(age).push(participant);
+    return map;
+  }, new Map());
+
+  for (const bucket of byAge.values()) {
+    bucket.sort((left, right) => {
+      const unitDifference = (unitFrequency.get(right.unit || "Missing unit") || 0)
+        - (unitFrequency.get(left.unit || "Missing unit") || 0);
+      if (unitDifference) return unitDifference;
+      return String(left.id || "").localeCompare(String(right.id || ""));
+    });
+  }
+
+  const ages = [...byAge.keys()].sort((left, right) => left - right);
+  const alternatingAges = [];
+  let left = 0;
+  let right = ages.length - 1;
+  while (left <= right) {
+    alternatingAges.push(ages[left]);
+    if (right !== left) alternatingAges.push(ages[right]);
+    left += 1;
+    right -= 1;
+  }
+
+  const ordered = [];
+  while ([...byAge.values()].some((bucket) => bucket.length)) {
+    for (const age of alternatingAges) {
+      const bucket = byAge.get(age);
+      if (bucket?.length) ordered.push(bucket.shift());
+    }
+  }
+  return ordered;
+}
+
+function buildPoolGroups(pool, prefix, ageBandLabel, minSize, maxSize, avoidSameUnit, mixAges) {
   const sizes = distributeSizes(pool.length, minSize, maxSize);
   const groups = sizes.map((capacity, index) => ({
     id: `${prefix}-${ageBandLabel.replace(/[^0-9A-Za-z]/g, "")}-${index + 1}`,
@@ -38,12 +87,15 @@ function buildPoolGroups(pool, prefix, ageBandLabel, minSize, maxSize, avoidSame
     return map;
   }, new Map());
 
-  const ordered = [...pool].sort((left, right) => {
-    const unitDifference = (unitFrequency.get(right.unit || "Missing unit") || 0)
-      - (unitFrequency.get(left.unit || "Missing unit") || 0);
-    if (unitDifference) return unitDifference;
-    return Number(left.age || 16) - Number(right.age || 16);
-  });
+  const poolAverage = averageAge(pool);
+  const ordered = mixAges
+    ? buildAgeMixedOrder(pool, unitFrequency)
+    : [...pool].sort((left, right) => {
+        const unitDifference = (unitFrequency.get(right.unit || "Missing unit") || 0)
+          - (unitFrequency.get(left.unit || "Missing unit") || 0);
+        if (unitDifference) return unitDifference;
+        return participantAge(left) - participantAge(right);
+      });
 
   for (const participant of ordered) {
     const available = groups.filter((group) => group.members.length < group.capacity);
@@ -51,11 +103,19 @@ function buildPoolGroups(pool, prefix, ageBandLabel, minSize, maxSize, avoidSame
       ? available.filter((group) => !group.members.some((member) => member.unit === participant.unit))
       : available;
     const candidates = sameUnitFree.length ? sameUnitFree : available;
-    const selected = [...candidates].sort((left, right) => {
-      const fillDifference = left.members.length / left.capacity - right.members.length / right.capacity;
-      if (fillDifference) return fillDifference;
-      return Math.abs(averageAge(left.members) - Number(participant.age || 16))
-        - Math.abs(averageAge(right.members) - Number(participant.age || 16));
+    const selected = [...candidates].sort((leftGroup, rightGroup) => {
+      const score = (group) => {
+        const fillRatio = group.members.length / group.capacity;
+        if (!mixAges) {
+          return fillRatio * 100 + Math.abs(averageAge(group.members) - participantAge(participant));
+        }
+        const sameAgeCount = group.members.filter((member) => participantAge(member) === participantAge(participant)).length;
+        const projected = [...group.members, participant];
+        const projectedMeanDifference = Math.abs(averageAge(projected) - poolAverage);
+        const projectedRange = ageRange(projected);
+        return (fillRatio * 100) + (sameAgeCount * 4) + (projectedMeanDifference * 0.8) - (projectedRange * 0.35);
+      };
+      return score(leftGroup) - score(rightGroup);
     })[0];
 
     if (!selected) continue;
@@ -133,6 +193,7 @@ export function buildBalancedAssignments(participants, options = {}) {
   const useAgeBands = options.useAgeBands ?? false;
   const avoidSameUnit = options.avoidSameUnit ?? true;
   const balanceSexes = options.balanceSexes ?? true;
+  const mixAges = !useAgeBands;
 
   const pools = participants.reduce((map, participant) => {
     const band = useAgeBands ? ageBand(participant.age) : "All ages";
@@ -145,7 +206,7 @@ export function buildBalancedAssignments(participants, options = {}) {
   const groups = [];
   for (const { sex, band, members } of pools.values()) {
     const prefix = sex === "Female" ? "YW" : sex === "Male" ? "YM" : "MX";
-    groups.push(...buildPoolGroups(members, prefix, band, minSize, maxSize, avoidSameUnit));
+    groups.push(...buildPoolGroups(members, prefix, band, minSize, maxSize, avoidSameUnit, mixAges));
   }
 
   const { companies, warnings } = buildCompanies(groups, groupsPerCompany, balanceSexes);
@@ -155,8 +216,8 @@ export function buildBalancedAssignments(participants, options = {}) {
     companies,
     issues,
     warnings,
-    settings: { minSize, maxSize, groupsPerCompany, useAgeBands, avoidSameUnit, balanceSexes },
+    settings: { minSize, maxSize, groupsPerCompany, useAgeBands, avoidSameUnit, balanceSexes, mixAges },
   };
 }
 
-export { ageBand, distributeSizes };
+export { ageBand, ageRange, distributeSizes };
