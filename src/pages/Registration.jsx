@@ -6,7 +6,7 @@ import { operationalEligibility } from "../lib/registration.js";
 import "./registration-review.css";
 
 export function Registration(props) {
-  const { imported = [], live = false, sessionId } = props;
+  const { imported = [], live = false, sessionId, sessionName } = props;
   const [mode, setMode] = useState("registration");
   const [structureSettings, setStructureSettings] = useState(DEFAULT_STRUCTURE_SETTINGS);
 
@@ -34,8 +34,9 @@ export function Registration(props) {
     </div>
 
     {mode === "registration"
-      ? <RegistrationLegacy {...props} imported={operationallyMapped}/>
-      : <RegistrationReviewInbox {...props} structureSettings={structureSettings}/>
+      ? <RegistrationLegacy {...props} imported={operationallyMapped} sessionName={sessionName}/>
+      : <RegistrationReviewInbox {...props} structureSettings={structureSettings} sessionName={sessionName}/>
     }
   </div>;
 }
+

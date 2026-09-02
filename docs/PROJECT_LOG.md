@@ -2,6 +2,26 @@
 
 This file records product and engineering decisions that materially change how the operations system behaves. Pull requests and migration files remain the source of truth for implementation details.
 
+## 2026-09-02 · Mobile-first operations UI refinement
+
+Production status: **release candidate; production deployment follows the reviewed PR**
+
+### Decisions
+
+- The operations IA is grouped into Daily work (Overview, Check-in, Head count, Groups & companies) and People & setup (Registration, People, Assignments, Birthdays, Access). Account remains in the profile entry rather than becoming another permanent task destination.
+- Mobile exposes four frequent actions plus More in the bottom navigation. More is a dismissible drawer with backdrop, Escape, navigation, close control, body-scroll lock, and focus restoration behavior. Desktop keeps a grouped sidebar with an internal scroll area so short screens do not push the account out of view.
+- Account starts with a compact Navii-backed identity summary. Name editing is explicit; permissions and security are collapsed until requested; sign-out is a compact account action. Avatar seeds use a stable user ID or fixed demo seed, never a raw email.
+- People is a search-first responsive directory. Mobile participant and review details use bottom-sheet surfaces with grouped age/sex facts, progressive sensitive fields, backdrop/Escape dismissal, and focus return to the originating row.
+- Access is invite-first, with role policy, current-roster details, recovery/admin controls, and older request history disclosed on demand. Assignments leads with role classification and keeps the suggestion helper behind an advanced disclosure.
+- Head count follows round → company → report. A pending company has one quick `All here` action; an open company has one save action and immediate saved feedback.
+- Session-facing identity is configuration-driven (`KCC FSY 2026` in the rehearsal), while Overview retains the supplied `Walk With Me · Moses 6:34` theme treatment.
+
+### Compatibility and verification
+
+- This pass does not change Supabase schema, RLS, permissions, or backend data contracts. Demo grouping and head-count interactions remain in-memory rehearsal state only.
+- The verified online baseline was `main` at `9869e990f08621fd94dc2998f1a824e16d9dca39`; the newer registration review inbox and assignment center were preserved.
+- Verification includes local synthetic browser review at 390px and desktop widths, `npm test`, `npm run build`, and `npm run test:sites`. Authenticated production data was not accessed; the public deployment remains behind its password-first sign-in gate.
+
 ## 2026-09-02 · Mobile progressive operations pass
 
 Branch: `ux/mobile-progressive-operations`
@@ -102,3 +122,4 @@ Production status: **development / dev database first**
 ### Release rule
 
 Validate role/assignment conflicts and operational eligibility in development, run CI/build, then apply the same reviewed migrations to production before deploying the matching merged commit.
+

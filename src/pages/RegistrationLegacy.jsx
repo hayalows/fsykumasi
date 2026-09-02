@@ -28,7 +28,7 @@ function roleLabel(role) {
   return ({ counselor: "Counselor", assistant_coordinator: "Assistant Coordinator", committee_member: "Committee member", other: "Other staff" })[role] || role;
 }
 
-export function Registration({ imported, setImported, groups = [], onApply, onAdd, onVerify, onAssign, live = false, canManage = true, canAdd = true, canVerify = false, sessionId }) {
+export function Registration({ imported, setImported, groups = [], onApply, onAdd, onVerify, onAssign, live = false, canManage = true, canAdd = true, canVerify = false, sessionId, sessionName }) {
   const input = useRef();
   const [tab, setTab] = useState("snapshot");
   const [result, setResult] = useState(null);
@@ -167,7 +167,7 @@ export function Registration({ imported, setImported, groups = [], onApply, onAd
   };
 
   return <section className="page">
-    <PageHead title="Registration" description="Keep one current registration list, update it safely, and resolve day-of exceptions without making people rebuild spreadsheets." />
+    <PageHead title="Registration" sessionName={sessionName} description="Keep one current registration list, update it safely, and resolve day-of exceptions without making people rebuild spreadsheets." />
     <div className="segmented registration-tabs" role="tablist">
       <button className={tab === "snapshot" ? "active" : ""} onClick={() => setTab("snapshot")}>Current list</button>
       <button className={tab === "onsite" ? "active" : ""} onClick={() => setTab("onsite")}>Add on-site{pending.length ? ` (${pending.length})` : ""}</button>
@@ -209,3 +209,4 @@ export function Registration({ imported, setImported, groups = [], onApply, onAd
     {tab === "quality" ? <article className="panel"><div className="panel-head"><div><span className="kicker">Operational exceptions</span><h2>Data quality</h2></div><Status tone={quality.awaiting + quality.cancelled + quality.omitted + pending.length ? "warn" : "good"}>Current snapshot</Status></div><div className="quality-grid"><div><strong>{quality.awaiting}</strong><span>Awaiting approval</span><small>Visible, not operationally eligible</small></div><div><strong>{quality.cancelled}</strong><span>Cancelled</span><small>Excluded from groups and check-in</small></div><div><strong>{quality.omitted}</strong><span>Missing from latest</span><small>Protected because operational work exists</small></div><div><strong>{quality.unassigned}</strong><span>Approved, unassigned</span><small>Needs a counselor group</small></div></div></article> : null}
   </section>;
 }
+

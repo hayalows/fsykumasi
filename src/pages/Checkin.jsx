@@ -13,7 +13,7 @@ function eligibility(person, groupsPublished, structureSettings) {
   return { ok: true, label: "Ready" };
 }
 
-export function Checkin({ participants, checkedIds = [], onRecord, onAddMissing, live = false, canRecord = true, groupsPublished = false, structureSettings = {} }) {
+export function Checkin({ participants, checkedIds = [], onRecord, onAddMissing, live = false, canRecord = true, groupsPublished = false, structureSettings = {}, sessionName }) {
   const [query, setQuery] = useState("");
   const [checked, setChecked] = useState(new Set(checkedIds));
   const [busyId, setBusyId] = useState("");
@@ -59,7 +59,7 @@ export function Checkin({ participants, checkedIds = [], onRecord, onAddMissing,
   };
 
   return <section className="page">
-    <PageHead title="Check-in" description="Find the person by their original registration name, confirm the record, and mark them arrived. Exceptions stay visible without slowing the main line." />
+    <PageHead title="Check-in" sessionName={sessionName} description="Find the person by their original registration name, confirm the record, and mark them arrived. Exceptions stay visible without slowing the main line." />
     {!canRecord ? <div className="notice"><WarningCircle/><div><b>View-only check-in</b><p>Your role can see current arrival information, but it cannot change check-in records.</p></div></div> : null}
     {error ? <div className="form-error page-error" role="alert"><WarningCircle/>{error}</div> : null}
     <div className="metrics-grid compact"><Metric label="Expected" value={eligibleCount.toLocaleString()} note={groupsPublished ? "eligible and assigned" : "operationally eligible"}/><Metric label="Checked in" value={checked.size.toLocaleString()} note={live ? "saved in Supabase" : "prototype device state"} tone="green"/><Metric label="Need attention" value={(attentionCount + ageReviewCount).toLocaleString()} note={ageReviewCount ? `${ageReviewCount} age review` : attentionCount ? "verification or group assignment" : "no unresolved blockers"} tone="yellow"/></div>
@@ -70,3 +70,4 @@ export function Checkin({ participants, checkedIds = [], onRecord, onAddMissing,
     {lastAction ? <div className="undo-toast" role="status"><span><b>{lastAction.name}</b> marked as arrived.</span><button disabled={busyId === lastAction.id} onClick={undoLast}>Undo</button></div> : null}
   </section>;
 }
+

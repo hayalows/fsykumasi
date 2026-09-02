@@ -7,7 +7,7 @@ import "./operations.css";
 
 function formatDate(value) { return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", weekday: "short", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`)); }
 
-export function Birthdays({ birthdays = [], onSetAcknowledgement }) {
+export function Birthdays({ birthdays = [], onSetAcknowledgement, sessionName }) {
   const [busyId, setBusyId] = useState(""); const [error, setError] = useState("");
   const grouped = useMemo(() => birthdays.reduce((days, birthday) => { (days[birthday.date] ||= []).push(birthday); return days; }, {}), [birthdays]);
   const update = async (person, acknowledged) => {
@@ -17,7 +17,7 @@ export function Birthdays({ birthdays = [], onSetAcknowledgement }) {
     finally { setBusyId(""); }
   };
   return <section className="page">
-    <PageHead title="Birthdays this FSY" description="A quiet leadership view for participants celebrating during 14–19 September. If somebody is marked by mistake, the acknowledgement can be undone." />
+    <PageHead title="Birthdays this FSY" sessionName={sessionName} description="A quiet leadership view for participants celebrating during 14–19 September. If somebody is marked by mistake, the acknowledgement can be undone." />
     {error ? <div className="form-error page-error" role="alert">{error}</div> : null}
     {!birthdays.length ? <article className="panel"><Empty icon={Cake} title="No birthdays in your current scope" text="Birthdays appear after a registration snapshot with dates of birth is applied." /></article> : Object.entries(grouped).map(([date, people]) => <article className="panel birthday-day" key={date}>
       <div className="panel-head"><div><span className="kicker">{formatDate(date)}</span><h2>{people.length} celebrating</h2></div><Cake size={24}/></div>
@@ -25,3 +25,4 @@ export function Birthdays({ birthdays = [], onSetAcknowledgement }) {
     </article>)}
   </section>;
 }
+
