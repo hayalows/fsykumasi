@@ -7,6 +7,10 @@ export const WORKSPACE_VIEWS = [
   "groups",
   "checkin",
   "headcount",
+  "housing",
+  "wellness",
+  "food",
+  "reports",
   "profile",
   "access",
 ];

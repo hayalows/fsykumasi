@@ -1,44 +1,9 @@
 import { operationalEligibility } from "./registration.js";
 import { buildRegistrationReview } from "./review.js";
 
-export function formatCount(value) {
-  return Number(value || 0).toLocaleString();
+export function formatCount(value){return Number(value||0).toLocaleString();}
+export function summarizeCohort(participants=[],settings={}){
+ const records=Array.isArray(participants)?participants:[];const review=buildRegistrationReview(records,settings);const exceptionKeys=["awaiting","age_review","verification","missing_unit","not_attending","omitted","cancelled"];const exceptionPeople=new Set(exceptionKeys.flatMap((key)=>review.queues[key].map((person)=>person.id)));const eligible=records.filter((person)=>operationalEligibility(person,settings).ok);const approved=records.filter((person)=>(person.registrationStatus||"approved")==="approved");const awaiting=records.filter((person)=>person.registrationStatus==="awaiting");const cancelled=records.filter((person)=>person.registrationStatus==="cancelled");
+ return{records:records.length,eligible:eligible.length,approved:approved.length,awaiting:awaiting.length,cancelled:cancelled.length,review:review.totalUnique,reviewExceptions:exceptionPeople.size,unassigned:review.queues.unassigned.filter((person)=>!exceptionPeople.has(person.id)).length,ageReview:review.counts.age_review||0,verification:review.counts.verification||0,notAttending:review.counts.not_attending||0,omitted:review.counts.omitted||0,queues:review.queues};
 }
-
-/**
- * Keep the language on operational screens tied to the actual data boundary.
- * A registration record is not automatically an eligible youth record.
- */
-export function summarizeCohort(participants = [], settings = {}) {
-  const records = Array.isArray(participants) ? participants : [];
-  const review = buildRegistrationReview(records, settings);
-  const exceptionKeys = ["awaiting", "age_review", "verification", "missing_unit", "omitted", "cancelled"];
-  const exceptionPeople = new Set(exceptionKeys.flatMap((key) => review.queues[key].map((person) => person.id)));
-  const eligible = records.filter((person) => operationalEligibility(person, settings).ok);
-  const approved = records.filter((person) => (person.registrationStatus || "approved") === "approved");
-  const awaiting = records.filter((person) => person.registrationStatus === "awaiting");
-  const cancelled = records.filter((person) => person.registrationStatus === "cancelled");
-
-  return {
-    records: records.length,
-    eligible: eligible.length,
-    approved: approved.length,
-    awaiting: awaiting.length,
-    cancelled: cancelled.length,
-    review: review.totalUnique,
-    reviewExceptions: exceptionPeople.size,
-    unassigned: review.queues.unassigned.filter((person) => !exceptionPeople.has(person.id)).length,
-    ageReview: review.counts.age_review || 0,
-    verification: review.counts.verification || 0,
-    omitted: review.counts.omitted || 0,
-    queues: review.queues,
-  };
-}
-
-export function cohortContext(summary) {
-  if (!summary) return "Eligible youth";
-  const exceptions = summary.reviewExceptions || 0;
-  const unassigned = summary.unassigned || 0;
-  const tail = exceptions ? `${formatCount(exceptions)} data exceptions` : unassigned ? `${formatCount(unassigned)} ready for placement` : "no open exceptions";
-  return `${formatCount(summary.eligible)} eligible youth · ${formatCount(summary.records)} registration records · ${tail}`;
-}
+export function cohortContext(summary){if(!summary)return "Eligible youth";const exceptions=summary.reviewExceptions||0;const unassigned=summary.unassigned||0;const tail=exceptions?`${formatCount(exceptions)} data or attendance exceptions`:unassigned?`${formatCount(unassigned)} ready for placement`:"no open exceptions";return `${formatCount(summary.eligible)} eligible youth · ${formatCount(summary.records)} registration records · ${tail}`;}
