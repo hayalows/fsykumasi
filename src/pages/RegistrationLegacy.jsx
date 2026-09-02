@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check } from "@phosphor-icons/react/Check";
 import { CloudArrowUp } from "@phosphor-icons/react/CloudArrowUp";
-import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
-import { PageHead, Status } from "../components/UI.jsx";
+import { PageHead, SearchField, SegmentedControl, Status } from "../components/UI.jsx";
 import { parseParticipantFile } from "../lib/import.js";
 import { loadParticipants } from "../lib/backend.js";
 import { loadLatestImport, loadStaff } from "../lib/operations.js";
@@ -168,12 +167,8 @@ export function Registration({ imported, setImported, groups = [], onApply, onAd
 
   return <section className="page">
     <PageHead title="Registration" sessionName={sessionName} description="Keep one current registration list, update it safely, and resolve day-of exceptions without making people rebuild spreadsheets." />
-    <div className="segmented registration-tabs" role="tablist">
-      <button className={tab === "snapshot" ? "active" : ""} onClick={() => setTab("snapshot")}>Current list</button>
-      <button className={tab === "onsite" ? "active" : ""} onClick={() => setTab("onsite")}>Add on-site{pending.length ? ` (${pending.length})` : ""}</button>
-      <button className={tab === "quality" ? "active" : ""} onClick={() => setTab("quality")}>Data quality</button>
-    </div>
-    {message.text ? <div className={message.tone === "error" ? "form-error page-error" : "auth-success"} role="status">{message.tone === "success" ? <Check weight="bold" /> : <WarningCircle />}<span>{message.text}</span></div> : null}
+    <SegmentedControl className="registration-tabs" label="Registration actions" value={tab} onChange={setTab} options={[{ value: "snapshot", label: "Current list", id: "registration-action-snapshot" }, { value: "onsite", label: "Add on-site", count: pending.length, id: "registration-action-onsite" }, { value: "quality", label: "Data quality", id: "registration-action-quality" }]} />
+    {message.text ? <div className={message.tone === "error" ? "form-error page-error" : "auth-success"} role={message.tone === "error" ? "alert" : "status"}>{message.tone === "success" ? <Check weight="bold" /> : <WarningCircle />}<span>{message.text}</span></div> : null}
 
     {tab === "snapshot" ? <>
       {latestImport ? <article className="panel current-registration-card"><div className="snapshot-main"><span className="snapshot-check"><Check weight="bold" size={22}/></span><div><span className="kicker">Current registration</span><h2>{latestImport.recordCount.toLocaleString()} people loaded</h2><p>Last updated {formatDate(latestImport.createdAt)} · {latestImport.sourceFilename}</p><div className="snapshot-metrics"><span><b>{latestImport.participantCount.toLocaleString()}</b><small>participants</small></span><span><b>{latestImport.staffCount.toLocaleString()}</b><small>staff</small></span><span><b>{latestImport.omittedCount}</b><small>omitted in update</small></span><span><b>{latestImport.exceptionCount}</b><small>protected exceptions</small></span></div></div></div>{canManage ? <button className="secondary" onClick={() => setUploadOpen((open) => !open)}><CloudArrowUp/>{uploadOpen ? "Close update" : "Upload updated export"}</button> : null}</article> : null}
@@ -187,7 +182,7 @@ export function Registration({ imported, setImported, groups = [], onApply, onAd
     </> : null}
 
     {tab === "onsite" ? <>
-      <article className="panel"><span className="kicker">1 · Search first</span><h2>Find the person before adding them</h2><p className="form-hint">Searches both youth and staff already in this session. This keeps day-of fixes from creating duplicate records.</p><div className="search"><MagnifyingGlass/><input value={search} onChange={(event) => { setSearch(event.target.value); setManualOpen(false); }} placeholder="Search name, registration ID, ward, stake or staff role" autoComplete="off"/></div>{search.trim().length >= 2 ? <div className="check-list onsite-search-results">{matches.map((person) => <div className="onsite-match" key={`${person.personKind}-${person.id}`}><span className="person-avatar">{person.firstName?.[0]}{person.lastName?.[0]}</span><span><b>{person.fullName}</b><small>{person.personKind} · {person.unit || "Unit missing"}{person.personKind === "Staff" ? ` · ${roleLabel(person.operationalRole)}` : ` · ${person.registrationStatus}`}</small></span><Status tone={person.personKind === "Staff" || person.status === "Expected" ? "good" : "warn"}>{person.personKind === "Staff" ? "Already listed" : person.status}</Status></div>)}{!matches.length ? <div className="empty-inline"><b>No close match found</b><span>Check the spelling and ward or branch before creating a new record.</span></div> : null}</div> : null}{canAdd && search.trim().length >= 2 ? <button className="secondary add-after-search" onClick={() => setManualOpen(true)}><UserPlus/>Still not listed — add on-site</button> : null}</article>
+      <article className="panel"><span className="kicker">1 · Search first</span><h2>Find the person before adding them</h2><p className="form-hint">Searches both youth and staff already in this session. This keeps day-of fixes from creating duplicate records.</p><SearchField value={search} onChange={(value) => { setSearch(value); setManualOpen(false); }} label="Search existing people" placeholder="Search name, registration ID, ward, stake or staff role" />{search.trim().length >= 2 ? <div className="check-list onsite-search-results">{matches.map((person) => <div className="onsite-match" key={`${person.personKind}-${person.id}`}><span className="person-avatar">{person.firstName?.[0]}{person.lastName?.[0]}</span><span><b>{person.fullName}</b><small>{person.personKind} · {person.unit || "Unit missing"}{person.personKind === "Staff" ? ` · ${roleLabel(person.operationalRole)}` : ` · ${person.registrationStatus}`}</small></span><Status tone={person.personKind === "Staff" || person.status === "Expected" ? "good" : "warn"}>{person.personKind === "Staff" ? "Already listed" : person.status}</Status></div>)}{!matches.length ? <div className="empty-inline"><b>No close match found</b><span>Check the spelling and ward or branch before creating a new record.</span></div> : null}</div> : null}{canAdd && search.trim().length >= 2 ? <button className="secondary add-after-search" onClick={() => setManualOpen(true)}><UserPlus/>Still not listed — add on-site</button> : null}</article>
 
       {manualOpen ? <form className="panel onsite-form manual-v2" onSubmit={addManual}>
         <div className="panel-head"><div><span className="kicker">2 · Capture the minimum useful record</span><h2>{manualKind === "participant" ? "On-site youth participant" : "On-site staff member"}</h2></div><Status tone={manualKind === "participant" ? "warn" : "good"}>{manualKind === "participant" ? "Needs verification" : "Available after save"}</Status></div>

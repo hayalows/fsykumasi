@@ -30,6 +30,8 @@ import {
   verifyOnSiteParticipant,
 } from "./lib/backend.js";
 import { canApproveAccess } from "./lib/access.js";
+import { summarizeCohort } from "./lib/cohort.js";
+import { readWorkspaceLocation, writeWorkspaceLocation } from "./lib/navigation.js";
 import { isOperationalParticipant } from "./lib/registration.js";
 import { DEFAULT_STRUCTURE_SETTINGS, loadStructureSettings, setBirthdayAcknowledgement } from "./lib/operations.js";
 import {
@@ -79,7 +81,9 @@ function normalizeDemoGrouping(nextAssignment) {
 }
 
 export function App() {
-  const [active, setActive] = useState("overview");
+  const initialWorkspace = useMemo(() => readWorkspaceLocation(), []);
+  const [active, setActive] = useState(initialWorkspace.view);
+  const [selectedPersonId, setSelectedPersonId] = useState(initialWorkspace.personId);
   const [imported, setImported] = useState([]);
   const [assignment, setAssignment] = useState(null);
   const [structureSettings, setStructureSettings] = useState(DEFAULT_STRUCTURE_SETTINGS);
@@ -102,6 +106,24 @@ export function App() {
   const [runtimeError, setRuntimeError] = useState("");
   const demoParticipants = useMemo(() => createDemoParticipants(), []);
   const initialInvite = useMemo(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("invite") || "", []);
+
+  const navigate = useCallback((nextView, options = {}) => {
+    const view = nextView || "overview";
+    const personId = view === "people" ? (options.personId || "") : "";
+    setActive(view);
+    setSelectedPersonId(personId);
+    writeWorkspaceLocation(view, { personId, replace: Boolean(options.replace) });
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const next = readWorkspaceLocation();
+      setActive(next.view);
+      setSelectedPersonId(next.personId);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const hydrateLive = useCallback(async (sessionOverride, requestedSessionOverride = "") => {
     if (!isSupabaseConfigured) return;
@@ -199,13 +221,13 @@ export function App() {
   };
   const handleSignOut = async () => {
     setRuntimeError("");
-    try { await signOutAccount(); setActive("overview"); await hydrateLive(null); }
+    try { await signOutAccount(); navigate("overview", { replace: true }); await hydrateLive(null); }
     catch (error) { setRuntimeError(error.message || "Unable to sign out. Please try again."); throw error; }
   };
   const handleSessionChange = async (sessionId) => {
     const next = accessState.find((item) => item.session_id === sessionId && item.active && item.role);
     if (!next || sessionId === sessionInfo?.id) return;
-    setSelectedSessionId(sessionId); setActive("overview");
+    setSelectedSessionId(sessionId); navigate("overview", { replace: true });
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       if (next.session_status === "training") url.searchParams.set("session", sessionId); else url.searchParams.delete("session");
@@ -229,6 +251,7 @@ export function App() {
   const currentCapabilities = grantedAccess?.capabilities || [];
   const participants = live ? imported : imported.length ? imported : demoParticipants;
   const operationalParticipants = participants.filter((person) => isOperationalParticipant(person, structureSettings));
+  const cohort = summarizeCohort(participants, structureSettings);
   const operationalParticipantIds = new Set(operationalParticipants.map((person) => person.id));
   const operationalCheckedIds = checkedIds.filter((id) => operationalParticipantIds.has(id));
   const pendingAccess = accessRequests.filter((request) => request.status === "pending").length + leaderInvites.filter((invite) => invite.status === "pending").length;
@@ -274,25 +297,25 @@ export function App() {
   };
 
   const content = active === "overview"
-    ? <Overview setActive={setActive} imported={operationalParticipants} assignment={assignment} pendingAccess={pendingAccess} birthdays={birthdays} live={live} companies={companies} checkedCount={operationalCheckedIds.length} sessionName={sessionName}/>
+    ? <Overview setActive={navigate} imported={operationalParticipants} allParticipants={participants} cohort={cohort} assignment={assignment} pendingAccess={pendingAccess} birthdays={birthdays} live={live} companies={companies} checkedCount={operationalCheckedIds.length} sessionName={sessionName}/>
     : active === "registration"
-      ? <Registration imported={imported} setImported={setImported} groups={assignment?.groups || []} onApply={applyImport} onAdd={handleAddOnSite} onVerify={handleVerifyOnSite} onAssign={handleAssignParticipant} live={live} canManage={canImport} canAdd={!live || ["coordinator","logistics_admin","session_director"].includes(currentRole)} canVerify={canManageAccess} sessionId={sessionInfo?.id} sessionName={sessionName}/>
+      ? <Registration imported={imported} cohort={cohort} setImported={setImported} groups={assignment?.groups || []} onApply={applyImport} onAdd={handleAddOnSite} onVerify={handleVerifyOnSite} onAssign={handleAssignParticipant} live={live} canManage={canImport} canAdd={!live || ["coordinator","logistics_admin","session_director"].includes(currentRole)} canVerify={canManageAccess} sessionId={sessionInfo?.id} sessionName={sessionName}/>
       : active === "people"
-        ? <People sessionId={sessionInfo?.id} participants={participants} assignment={assignment} canManage={canManageAccess} structureSettings={structureSettings} sessionName={sessionName}/>
+        ? <People sessionId={sessionInfo?.id} participants={participants} cohort={cohort} assignment={assignment} canManage={canManageAccess} structureSettings={structureSettings} selectedPersonId={selectedPersonId} onSelectPerson={(id) => navigate("people", { personId: id })} onClearSelectedPerson={() => navigate("people", { replace: true })} sessionName={sessionName}/>
         : active === "assignments"
           ? <Assignments sessionId={sessionInfo?.id} canManage={canManageAccess} sessionName={sessionName}/>
           : active === "birthdays"
             ? <Birthdays birthdays={birthdays} onSetAcknowledgement={handleBirthday} sessionName={sessionName}/>
             : active === "groups"
-              ? <Groups participants={operationalParticipants} assignment={assignment} onPublish={handlePublishGrouping} live={live} canManage={canManageAccess} sessionId={sessionInfo?.id} onNavigatePeople={() => setActive("people")} onSettingsChange={setStructureSettings} sessionName={sessionName}/>
+              ? <Groups participants={operationalParticipants} assignment={assignment} onPublish={handlePublishGrouping} live={live} canManage={canManageAccess} sessionId={sessionInfo?.id} onNavigatePeople={() => navigate("people")} onSettingsChange={setStructureSettings} sessionName={sessionName}/>
               : active === "checkin"
-                ? <Checkin participants={participants} checkedIds={operationalCheckedIds} onRecord={handleCheckin} onAddMissing={() => setActive("registration")} live={live} canRecord={canRecordCheckin} groupsPublished={Boolean(assignment?.published)} structureSettings={structureSettings} sessionName={sessionName}/>
+                ? <Checkin participants={participants} cohort={cohort} checkedIds={operationalCheckedIds} onRecord={handleCheckin} onAddMissing={() => navigate("registration")} live={live} canRecord={canRecordCheckin} groupsPublished={Boolean(assignment?.published)} structureSettings={structureSettings} sessionName={sessionName}/>
                 : active === "headcount"
                   ? <Headcount live={live} companies={companies} headcount={headcount} currentRole={currentRole} onOpen={handleOpenHeadcount} onSubmit={handleHeadcountSubmit} sessionName={sessionName}/>
                   : active === "profile"
                     ? <Profile currentUser={live ? profile : { user_id: "demo-fsy-kumasi-leader", display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} grantedAccess={grantedAccess} companies={companyOptions} sessionInfo={sessionInfo} sessionName={sessionName} live={live} onSave={saveProfile} onChangePassword={changePassword} onSignOut={handleSignOut}/>
                     : <Access requests={accessRequests} setRequests={setAccessRequests} invites={leaderInvites} currentRole={currentRole} currentCapabilities={currentCapabilities} onDecision={handleAccessDecision} onCreateInvite={handleCreateInvite} onRevokeInvite={handleRevokeInvite} onCreateRecovery={handleRecoveryCode} onSetAdminOverride={handleSetAdminOverride} roster={live ? accessRoster : undefined} companies={companyOptions} live={live} sessionName={sessionName}/>;
 
-  return <AppShell active={active} setActive={setActive} attentionCount={pendingAccess} currentUser={live ? profile : { user_id: "demo-fsy-kumasi-leader", display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} sessionInfo={sessionInfo} sessions={activeSessions} selectedSessionId={sessionInfo?.id || selectedSessionId} onSessionChange={live ? handleSessionChange : undefined} onSignOut={live ? handleSignOut : undefined} syncError={live ? runtimeError : ""} onRefresh={() => hydrateLive(authSession, sessionInfo?.id)}>{content}</AppShell>;
+  return <AppShell active={active} setActive={navigate} attentionCount={pendingAccess} currentUser={live ? profile : { user_id: "demo-fsy-kumasi-leader", display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} sessionInfo={sessionInfo} sessions={activeSessions} selectedSessionId={sessionInfo?.id || selectedSessionId} onSessionChange={live ? handleSessionChange : undefined} onSignOut={live ? handleSignOut : undefined} syncError={live ? runtimeError : ""} onRefresh={() => hydrateLive(authSession, sessionInfo?.id)}>{content}</AppShell>;
 }
 

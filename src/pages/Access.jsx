@@ -3,13 +3,12 @@ import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { CaretDown } from "@phosphor-icons/react/CaretDown";
 import { Copy } from "@phosphor-icons/react/Copy";
 import { Key } from "@phosphor-icons/react/Key";
-import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { ShieldCheck } from "@phosphor-icons/react/ShieldCheck";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { X } from "@phosphor-icons/react/X";
 import { demoAccessRequests, demoUsers } from "../data/demo.js";
 import { canApproveAccess, roleLabel, roleVisibility } from "../lib/access.js";
-import { DismissibleLayer, Empty, PageHead, Status } from "../components/UI.jsx";
+import { DismissibleLayer, Empty, PageHead, SearchField, Status } from "../components/UI.jsx";
 import "./access-review.css";
 import "./access-invites.css";
 
@@ -88,7 +87,7 @@ function InviteModal({ companies, live, onClose, onCreate, restoreFocusRef }) {
           <div className="scope-editor">
             <div className="scope-editor-head"><div><b>Assigned companies</b><small>The AC only sees youth and operations in these companies.</small></div><Status tone={companyIds.length ? "good" : "warn"}>{companyIds.length} selected</Status></div>
             {companies.length ? <>
-              <div className="company-search"><MagnifyingGlass /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a company" /></div>
+              <SearchField value={search} onChange={setSearch} label="Search assigned companies" placeholder="Find a company" />
               <div className="company-picker">{filteredCompanies.map((company) => (
                 <label key={company.id} className={companyIds.includes(company.id) ? "selected" : ""}>
                   <input type="checkbox" checked={companyIds.includes(company.id)} onChange={() => toggleCompany(company.id)} /><span>{company.name}</span>

@@ -11,8 +11,8 @@ import { PageHead, Status } from "../components/UI.jsx";
 import { demoSession } from "../data/session.js";
 import { roleLabel } from "../lib/access.js";
 
-function accessScope(grantedAccess, companies) {
-  if (!grantedAccess) return "No active session access";
+function accessScope(grantedAccess, companies, currentRole, live) {
+  if (!grantedAccess) return !live && ["coordinator", "logistics_admin", "session_director"].includes(currentRole) ? "Whole session · demo" : "No active session access";
   if (["coordinator", "logistics_admin", "session_director"].includes(grantedAccess.role)) return "Whole session";
   if (grantedAccess.role === "assistant_coordinator") {
     const names = (grantedAccess.company_ids || []).map((id) => companies.find((company) => company.id === id)?.name).filter(Boolean);
@@ -37,7 +37,7 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
 
   useEffect(() => { setName(displayName); }, [displayName]);
 
-  const scope = useMemo(() => accessScope(grantedAccess, companies), [grantedAccess, companies]);
+  const scope = useMemo(() => accessScope(grantedAccess, companies, currentRole, live), [grantedAccess, companies, currentRole, live]);
   const activeSessionName = sessionInfo?.name || sessionName;
 
   const submit = async (event) => {
@@ -104,7 +104,7 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
             <div><dt>Visibility</dt><dd>{scope}</dd></div>
             <div><dt>Session</dt><dd>{activeSessionName}</dd></div>
           </dl>
-          {grantedAccess?.capabilities?.length ? <div className="profile-capabilities"><span className="kicker">Additional capabilities</span><div>{grantedAccess.capabilities.map((capability) => <Status key={capability}>{capability.replace(/_/g, " ")}</Status>)}</div></div> : null}
+          {grantedAccess?.capabilities?.length ? <div className="profile-capabilities"><span className="kicker">Additional capabilities</span><div>{grantedAccess.capabilities.map((capability) => <Status key={capability}>{capability === "access_admin" ? "Access administration" : capability.replace(/_/g, " ")}</Status>)}</div></div> : <p className="form-hint">No additional capabilities are attached to this session access.</p>}
         </div>
       </details>
 
@@ -121,10 +121,10 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
         </div>
       </details>
 
-      <article className="panel profile-account-card">
-        <div><span className="kicker">Account</span><b>Signed in as {email}</b></div>
+      <div className="profile-signout-row">
+        <span className="kicker">Session</span>
         <button className="secondary compact-button" onClick={onSignOut} disabled={!onSignOut}><SignOut />Sign out</button>
-      </article>
+      </div>
     </section>
   );
 }
