@@ -30,7 +30,7 @@ import {
 } from "./lib/backend.js";
 import { canApproveAccess } from "./lib/access.js";
 import { isOperationalParticipant } from "./lib/registration.js";
-import { setBirthdayAcknowledgement } from "./lib/operations.js";
+import { DEFAULT_STRUCTURE_SETTINGS, loadStructureSettings, setBirthdayAcknowledgement } from "./lib/operations.js";
 import {
   activateLeaderAccount,
   changePassword,
@@ -53,6 +53,7 @@ import { Overview } from "./pages/Overview.jsx";
 import { Birthdays } from "./pages/Birthdays.jsx";
 import { Registration } from "./pages/Registration.jsx";
 import { People } from "./pages/People.jsx";
+import { Assignments } from "./pages/Assignments.jsx";
 import { Groups } from "./pages/Groups.jsx";
 import { Checkin } from "./pages/Checkin.jsx";
 import { Headcount } from "./pages/Headcount.jsx";
@@ -63,6 +64,7 @@ export function App() {
   const [active, setActive] = useState("overview");
   const [imported, setImported] = useState([]);
   const [assignment, setAssignment] = useState(null);
+  const [structureSettings, setStructureSettings] = useState(DEFAULT_STRUCTURE_SETTINGS);
   const [accessRequests, setAccessRequests] = useState(createInitialAccessRequests);
   const [leaderInvites, setLeaderInvites] = useState([]);
   const [accessRoster, setAccessRoster] = useState([]);
@@ -92,7 +94,7 @@ export function App() {
     if (!session) {
       setProfile(null); setAccessState([]); setSessionInfo(null); setImported([]); setAccessRequests([]);
       setLeaderInvites([]); setAccessRoster([]); setCompanies([]); setHeadcount({ round: null, submissions: [] });
-      setCheckedIds([]); setBirthdays([]); setRuntimeStatus("signed-out");
+      setCheckedIds([]); setBirthdays([]); setStructureSettings(DEFAULT_STRUCTURE_SETTINGS); setRuntimeStatus("signed-out");
       return;
     }
 
@@ -111,13 +113,13 @@ export function App() {
       if (!granted) {
         setSessionInfo(null); setImported([]); setAccessRoster([]); setAccessRequests([]); setLeaderInvites([]);
         setCompanies([]); setHeadcount({ round: null, submissions: [] }); setCheckedIds([]); setBirthdays([]);
-        setRuntimeStatus("awaiting-access");
+        setStructureSettings(DEFAULT_STRUCTURE_SETTINGS); setRuntimeStatus("awaiting-access");
         return;
       }
 
       if (granted.session_id !== selectedSessionId) setSelectedSessionId(granted.session_id);
       const canManageAccess = canApproveAccess(granted.role, granted.capabilities || []);
-      const [nextSession, nextParticipants, nextRequests, nextRoster, nextInvites, nextGrouping, nextChecked, nextHeadcount, nextBirthdays] = await Promise.all([
+      const [nextSession, nextParticipants, nextRequests, nextRoster, nextInvites, nextGrouping, nextChecked, nextHeadcount, nextBirthdays, nextStructureSettings] = await Promise.all([
         loadSession(granted.session_id),
         loadParticipants(granted.session_id),
         loadAccessRequests(granted.session_id),
@@ -127,11 +129,12 @@ export function App() {
         loadArrivedParticipantIds(granted.session_id),
         loadHeadcount(granted.session_id),
         loadSessionBirthdays(granted.session_id),
+        loadStructureSettings(granted.session_id),
       ]);
 
       setSessionInfo(nextSession); setImported(nextParticipants); setAccessRequests(nextRequests); setAccessRoster(nextRoster);
       setLeaderInvites(nextInvites); setCompanies(nextGrouping.companies); setAssignment(nextGrouping.published ? nextGrouping : null);
-      setCheckedIds(nextChecked); setHeadcount(nextHeadcount); setBirthdays(nextBirthdays); setRuntimeStatus("ready");
+      setCheckedIds(nextChecked); setHeadcount(nextHeadcount); setBirthdays(nextBirthdays); setStructureSettings(nextStructureSettings); setRuntimeStatus("ready");
     } catch (error) {
       setRuntimeError(error.message || "Unable to load FSY operations data.");
       setRuntimeStatus("error");
@@ -207,7 +210,7 @@ export function App() {
   const currentRole = grantedAccess?.role || "logistics_admin";
   const currentCapabilities = grantedAccess?.capabilities || [];
   const participants = live ? imported : imported.length ? imported : demoParticipants;
-  const operationalParticipants = participants.filter(isOperationalParticipant);
+  const operationalParticipants = participants.filter((person) => isOperationalParticipant(person, structureSettings));
   const operationalParticipantIds = new Set(operationalParticipants.map((person) => person.id));
   const operationalCheckedIds = checkedIds.filter((id) => operationalParticipantIds.has(id));
   const pendingAccess = accessRequests.filter((request) => request.status === "pending").length + leaderInvites.filter((invite) => invite.status === "pending").length;
@@ -240,22 +243,24 @@ export function App() {
   const handleHeadcountSubmit = live ? async (values) => { await submitCompanyHeadcount(values); setHeadcount(await loadHeadcount(sessionInfo.id)); } : null;
 
   const content = active === "overview"
-    ? <Overview setActive={setActive} imported={imported} assignment={assignment} pendingAccess={pendingAccess} birthdays={birthdays} live={live} companies={companies} checkedCount={operationalCheckedIds.length}/>
+    ? <Overview setActive={setActive} imported={operationalParticipants} assignment={assignment} pendingAccess={pendingAccess} birthdays={birthdays} live={live} companies={companies} checkedCount={operationalCheckedIds.length}/>
     : active === "registration"
       ? <Registration imported={imported} setImported={setImported} groups={assignment?.groups || []} onApply={applyImport} onAdd={handleAddOnSite} onVerify={handleVerifyOnSite} onAssign={handleAssignParticipant} live={live} canManage={canImport} canAdd={!live || ["coordinator","logistics_admin","session_director"].includes(currentRole)} canVerify={canManageAccess} sessionId={sessionInfo?.id}/>
       : active === "people"
-        ? <People sessionId={sessionInfo?.id} participants={participants} canManage={canManageAccess}/>
-        : active === "birthdays"
-          ? <Birthdays birthdays={birthdays} onSetAcknowledgement={handleBirthday}/>
-          : active === "groups"
-            ? <Groups participants={operationalParticipants} assignment={assignment} onPublish={handlePublishGrouping} live={live} canManage={canManageAccess} sessionId={sessionInfo?.id} onNavigatePeople={() => setActive("people")}/>
-            : active === "checkin"
-              ? <Checkin participants={participants} checkedIds={operationalCheckedIds} onRecord={handleCheckin} onAddMissing={() => setActive("registration")} live={live} canRecord={canRecordCheckin} groupsPublished={Boolean(assignment?.published)}/>
-              : active === "headcount"
-                ? <Headcount live={live} companies={companies} headcount={headcount} currentRole={currentRole} onOpen={handleOpenHeadcount} onSubmit={handleHeadcountSubmit}/>
-                : active === "profile"
-                  ? <Profile currentUser={live ? profile : { display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} grantedAccess={grantedAccess} companies={companyOptions} sessionInfo={sessionInfo} live={live} onSave={saveProfile} onChangePassword={changePassword} onSignOut={handleSignOut}/>
-                  : <Access requests={accessRequests} setRequests={setAccessRequests} invites={leaderInvites} currentRole={currentRole} currentCapabilities={currentCapabilities} onDecision={handleAccessDecision} onCreateInvite={handleCreateInvite} onRevokeInvite={handleRevokeInvite} onCreateRecovery={handleRecoveryCode} onSetAdminOverride={handleSetAdminOverride} roster={live ? accessRoster : undefined} companies={companyOptions} live={live}/>;
+        ? <People sessionId={sessionInfo?.id} participants={participants} canManage={canManageAccess} structureSettings={structureSettings}/>
+        : active === "assignments"
+          ? <Assignments sessionId={sessionInfo?.id} canManage={canManageAccess}/>
+          : active === "birthdays"
+            ? <Birthdays birthdays={birthdays} onSetAcknowledgement={handleBirthday}/>
+            : active === "groups"
+              ? <Groups participants={operationalParticipants} assignment={assignment} onPublish={handlePublishGrouping} live={live} canManage={canManageAccess} sessionId={sessionInfo?.id} onNavigatePeople={() => setActive("people")} onSettingsChange={setStructureSettings}/>
+              : active === "checkin"
+                ? <Checkin participants={participants} checkedIds={operationalCheckedIds} onRecord={handleCheckin} onAddMissing={() => setActive("registration")} live={live} canRecord={canRecordCheckin} groupsPublished={Boolean(assignment?.published)} structureSettings={structureSettings}/>
+                : active === "headcount"
+                  ? <Headcount live={live} companies={companies} headcount={headcount} currentRole={currentRole} onOpen={handleOpenHeadcount} onSubmit={handleHeadcountSubmit}/>
+                  : active === "profile"
+                    ? <Profile currentUser={live ? profile : { display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} grantedAccess={grantedAccess} companies={companyOptions} sessionInfo={sessionInfo} live={live} onSave={saveProfile} onChangePassword={changePassword} onSignOut={handleSignOut}/>
+                    : <Access requests={accessRequests} setRequests={setAccessRequests} invites={leaderInvites} currentRole={currentRole} currentCapabilities={currentCapabilities} onDecision={handleAccessDecision} onCreateInvite={handleCreateInvite} onRevokeInvite={handleRevokeInvite} onCreateRecovery={handleRecoveryCode} onSetAdminOverride={handleSetAdminOverride} roster={live ? accessRoster : undefined} companies={companyOptions} live={live}/>;
 
   return <AppShell active={active} setActive={setActive} attentionCount={pendingAccess} currentUser={live ? profile : undefined} currentRole={currentRole} sessionInfo={sessionInfo} sessions={activeSessions} selectedSessionId={sessionInfo?.id || selectedSessionId} onSessionChange={live ? handleSessionChange : undefined} onSignOut={live ? handleSignOut : undefined} syncError={live ? runtimeError : ""} onRefresh={() => hydrateLive(authSession, sessionInfo?.id)}>{content}</AppShell>;
 }

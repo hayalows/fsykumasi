@@ -20,6 +20,7 @@ const nav = [
   ["overview", "Overview", SquaresFour],
   ["registration", "Registration", IdentificationCard],
   ["people", "People", UsersThree],
+  ["assignments", "Assignments", Users],
   ["birthdays", "Birthdays", Cake],
   ["groups", "Groups & companies", Buildings],
   ["checkin", "Check-in", CheckCircle],
@@ -27,7 +28,7 @@ const nav = [
   ["access", "Access", Users],
 ];
 
-const mobileNav = ["overview", "people", "checkin", "headcount", "groups"];
+const mobileNav = ["overview", "people", "checkin", "assignments", "headcount"];
 
 function initials(name = "FSY") {
   return name.split(/\s+/).filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase();

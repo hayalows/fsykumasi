@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   ageOnDate,
   isOperationalParticipant,
+  operationalEligibility,
   validateManualParticipant,
   validateManualParticipantDetailed,
   validateManualStaff,
@@ -43,9 +44,16 @@ test("manual staff capture requires contact and a supported staff assignment typ
   assert.ok(validateManualStaff({ ...base, operationalRole: "logistics_admin" }, true).some((item) => item.includes("staff assignment type")));
 });
 
-test("only current approved verified youth are operational", () => {
-  assert.equal(isOperationalParticipant({ isCurrent: true, registrationStatus: "approved", verificationStatus: "verified" }), true);
-  assert.equal(isOperationalParticipant({ isCurrent: true, registrationStatus: "awaiting", verificationStatus: "verified" }), false);
-  assert.equal(isOperationalParticipant({ isCurrent: true, registrationStatus: "approved", verificationStatus: "pending" }), false);
-  assert.equal(isOperationalParticipant({ isCurrent: false, registrationStatus: "approved", verificationStatus: "verified" }), false);
+test("operational eligibility uses one configurable age boundary", () => {
+  const ready = { age: 16, isCurrent: true, registrationStatus: "approved", verificationStatus: "verified" };
+  assert.equal(isOperationalParticipant(ready), true);
+  assert.equal(isOperationalParticipant({ ...ready, age: 28 }), false);
+  assert.equal(isOperationalParticipant({ ...ready, age: 12 }), false);
+  assert.equal(isOperationalParticipant({ ...ready, age: 20 }), true);
+  assert.equal(isOperationalParticipant({ ...ready, age: 21 }), false);
+  assert.equal(isOperationalParticipant({ ...ready, age: 21 }, { participantMinAge: 13, participantMaxAge: 21 }), true);
+  assert.match(operationalEligibility({ ...ready, age: 28 }).reason, /Age review/);
+  assert.equal(isOperationalParticipant({ ...ready, registrationStatus: "awaiting" }), false);
+  assert.equal(isOperationalParticipant({ ...ready, verificationStatus: "pending" }), false);
+  assert.equal(isOperationalParticipant({ ...ready, isCurrent: false }), false);
 });

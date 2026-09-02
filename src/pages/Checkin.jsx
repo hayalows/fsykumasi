@@ -3,19 +3,17 @@ import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { Metric, PageHead, Status } from "../components/UI.jsx";
+import { operationalEligibility } from "../lib/registration.js";
 import "./operations.css";
 
-function eligibility(person, groupsPublished) {
-  if (person.sourceKind === "on_site" && person.verificationStatus === "pending") return { ok: false, label: "Needs verification" };
-  if (person.registrationStatus === "awaiting") return { ok: false, label: "Awaiting approval" };
-  if (person.registrationStatus === "cancelled") return { ok: false, label: "Cancelled" };
-  if (person.isCurrent === false) return { ok: false, label: "Not current" };
-  if (person.verificationStatus && person.verificationStatus !== "verified") return { ok: false, label: "Not verified" };
+function eligibility(person, groupsPublished, structureSettings) {
+  const base = operationalEligibility(person, structureSettings);
+  if (!base.ok) return { ok: false, label: base.reason };
   if (groupsPublished && !person.groupId) return { ok: false, label: "Needs group assignment" };
   return { ok: true, label: "Ready" };
 }
 
-export function Checkin({ participants, checkedIds = [], onRecord, onAddMissing, live = false, canRecord = true, groupsPublished = false }) {
+export function Checkin({ participants, checkedIds = [], onRecord, onAddMissing, live = false, canRecord = true, groupsPublished = false, structureSettings = {} }) {
   const [query, setQuery] = useState("");
   const [checked, setChecked] = useState(new Set(checkedIds));
   const [busyId, setBusyId] = useState("");
@@ -25,9 +23,10 @@ export function Checkin({ participants, checkedIds = [], onRecord, onAddMissing,
 
   useEffect(() => { setChecked(new Set(checkedIds)); }, [checkedIds]);
 
-  const withEligibility = useMemo(() => participants.map((person) => ({ person, eligibility: eligibility(person, groupsPublished) })), [participants, groupsPublished]);
+  const withEligibility = useMemo(() => participants.map((person) => ({ person, eligibility: eligibility(person, groupsPublished, structureSettings) })), [participants, groupsPublished, structureSettings]);
   const eligibleCount = withEligibility.filter((item) => item.eligibility.ok).length;
   const attentionCount = withEligibility.filter((item) => !item.eligibility.ok && ["Needs verification", "Needs group assignment"].includes(item.eligibility.label)).length;
+  const ageReviewCount = withEligibility.filter((item) => item.eligibility.label?.startsWith("Age review")).length;
   const results = useMemo(() => {
     const text = query.trim().toLowerCase();
     if (text.length < 2) return withEligibility.filter((item) => item.eligibility.ok).slice(0, 8);
@@ -60,14 +59,14 @@ export function Checkin({ participants, checkedIds = [], onRecord, onAddMissing,
   };
 
   return <section className="page">
-    <PageHead title="Check-in" description="Find the person, confirm the right record, and mark them arrived. Problems stay visible without slowing the main line." />
+    <PageHead title="Check-in" description="Find the person by their original registration name, confirm the record, and mark them arrived. Exceptions stay visible without slowing the main line." />
     {!canRecord ? <div className="notice"><WarningCircle/><div><b>View-only check-in</b><p>Your role can see current arrival information, but it cannot change check-in records.</p></div></div> : null}
     {error ? <div className="form-error page-error" role="alert"><WarningCircle/>{error}</div> : null}
-    <div className="metrics-grid compact"><Metric label="Expected" value={eligibleCount.toLocaleString()} note={groupsPublished ? "approved, verified and assigned" : "approved and verified"}/><Metric label="Checked in" value={checked.size.toLocaleString()} note={live ? "saved in Supabase" : "prototype device state"} tone="green"/><Metric label="Need attention" value={attentionCount.toLocaleString()} note={attentionCount ? "verification or group assignment needed" : "no unresolved arrival blockers"} tone="yellow"/></div>
-    <article className="panel"><div className="search"><MagnifyingGlass/><input value={query} onChange={(e) => { setQuery(e.target.value); setConfirmUndoId(""); }} placeholder="Search name, registration ID, ward, branch or stake"/></div><div className="check-list">{results.map(({ person, eligibility: state }) => {
+    <div className="metrics-grid compact"><Metric label="Expected" value={eligibleCount.toLocaleString()} note={groupsPublished ? "eligible and assigned" : "operationally eligible"}/><Metric label="Checked in" value={checked.size.toLocaleString()} note={live ? "saved in Supabase" : "prototype device state"} tone="green"/><Metric label="Need attention" value={(attentionCount + ageReviewCount).toLocaleString()} note={ageReviewCount ? `${ageReviewCount} age review` : attentionCount ? "verification or group assignment" : "no unresolved blockers"} tone="yellow"/></div>
+    <article className="panel"><div className="search"><MagnifyingGlass/><input value={query} onChange={(e) => { setQuery(e.target.value); setConfirmUndoId(""); }} placeholder="Search original full name, registration ID, ward, branch or stake"/></div><div className="check-list">{results.map(({ person, eligibility: state }) => {
       const arrived = checked.has(person.id);
       return <button key={person.id} disabled={!canRecord || busyId === person.id || !state.ok} onClick={() => toggle(person, state.ok)} className={`${arrived ? "checked" : ""}${state.ok ? "" : " ineligible"}`}><span className="person-avatar">{person.firstName?.[0]}{person.lastName?.[0]}</span><span><b>{person.fullName}</b><small>{person.registrationId || "No registration ID"} · {person.unit || "Unit not recorded"}</small></span><span className="check-action">{busyId === person.id ? "Saving…" : !state.ok ? <Status tone="warn">{state.label}</Status> : confirmUndoId === person.id ? "Tap again to undo" : arrived ? <><CheckCircle weight="fill"/>Arrived</> : canRecord ? "Check in" : "View only"}</span></button>;
-    })}{query.trim().length >= 2 && !results.length ? <div className="checkin-no-result"><b>No person found</b><p>Try a shorter spelling or search by ward, branch, stake, or preferred name. If they genuinely are not registered, use the on-site addition flow.</p>{onAddMissing ? <button className="secondary" onClick={onAddMissing}>Add missing participant</button> : null}</div> : null}</div></article>
+    })}{query.trim().length >= 2 && !results.length ? <div className="checkin-no-result"><b>No person found</b><p>Try a shorter spelling or search by ward, branch or stake. Preferred names are searchable, but the original registration full name is always shown.</p>{onAddMissing ? <button className="secondary" onClick={onAddMissing}>Add missing participant</button> : null}</div> : null}</div></article>
     {lastAction ? <div className="undo-toast" role="status"><span><b>{lastAction.name}</b> marked as arrived.</span><button disabled={busyId === lastAction.id} onClick={undoLast}>Undo</button></div> : null}
   </section>;
 }

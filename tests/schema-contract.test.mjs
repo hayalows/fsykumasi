@@ -9,6 +9,8 @@ const planningRepublishMigration = readFileSync(new URL("../supabase/migrations/
 const mixedAgeMigration = readFileSync(new URL("../supabase/migrations/20260902080000_mixed_age_structure_default.sql", import.meta.url), "utf8");
 const staffingMigration = readFileSync(new URL("../supabase/migrations/20260902080500_atomic_staff_assignment_plan.sql", import.meta.url), "utf8");
 const onSitePeopleMigration = readFileSync(new URL("../supabase/migrations/20260902083500_on_site_people_capture_v2.sql", import.meta.url), "utf8");
+const assignmentIntegrityMigration = readFileSync(new URL("../supabase/migrations/20260902094500_assignment_integrity_and_operational_eligibility.sql", import.meta.url), "utf8");
+const publishAlignmentMigration = readFileSync(new URL("../supabase/migrations/20260902094600_operational_eligibility_publish_alignment.sql", import.meta.url), "utf8");
 const app = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 
 test("capability override is explicit, constrained, and cannot be delegated by an overridden coordinator", () => {
@@ -72,4 +74,22 @@ test("day-of staff capture is distinct, auditable, and uses the private-detail t
   assert.match(onSitePeopleMigration, /p_operational_role not in \('counselor','assistant_coordinator','committee_member','other'\)/);
   assert.match(onSitePeopleMigration, /insert into public\.staff_private_details/);
   assert.match(onSitePeopleMigration, /'on_site_staff_added'/);
+});
+
+test("one operational eligibility rule protects grouping, assignment, check-in and head count", () => {
+  assert.match(assignmentIntegrityMigration, /participant_min_age integer not null default 13/);
+  assert.match(assignmentIntegrityMigration, /participant_max_age integer not null default 20/);
+  assert.match(assignmentIntegrityMigration, /operational_participant_is_eligible/);
+  assert.match(assignmentIntegrityMigration, /record_participant_checkin/);
+  assert.match(assignmentIntegrityMigration, /submit_company_headcount/);
+  assert.match(publishAlignmentMigration, /Every operationally eligible youth participant must be assigned exactly once/);
+  assert.match(publishAlignmentMigration, /operational_eligibility_reconciled/);
+});
+
+test("staff roles and responsibilities cannot silently overwrite one another", () => {
+  assert.match(assignmentIntegrityMigration, /staff_company_one_ac_per_company_idx/);
+  assert.match(assignmentIntegrityMigration, /Unassign this Counselor from their counselor group before changing their role/);
+  assert.match(assignmentIntegrityMigration, /Remove this Assistant Coordinator from their companies before changing their role/);
+  assert.match(assignmentIntegrityMigration, /This counselor group already has a Counselor/);
+  assert.match(assignmentIntegrityMigration, /configured maximum/);
 });

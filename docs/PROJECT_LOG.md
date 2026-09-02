@@ -38,7 +38,7 @@ Production status: **released** via PR #17, merged as `fb0d65c0d5cec82b0a75ebaed
 ## 2026-09-02 · Day-of people capture and committee preparation
 
 Branch: `ops/manual-registration-v2`
-Production status: **in development**
+Production status: **released** via PR #18, merged as `b7f35122e2438608d9a003842af955653a7f03b4`
 
 ### Decisions
 
@@ -65,6 +65,40 @@ Production status: **in development**
 - `supabase/migrations/20260902083500_on_site_people_capture_v2.sql`
 - `docs/decisions/2026-09-02-registration-operations-and-future-committees.md`
 
+## 2026-09-02 · Assignment center and operational eligibility
+
+Branch: `ops/assignment-center-and-eligibility`
+Production status: **development / dev database first**
+
+### Decisions
+
+- Staff identity/role and operational responsibility are separate concepts. Changing somebody to Assistant Coordinator does not automatically spread that person across companies.
+- A new Assignments area is the main admin surface for staff role classification, counselor-group staffing, and company supervision.
+- Existing assignments are never silently overwritten. A staff member with an active responsibility must be explicitly unassigned before their role changes.
+- Each company has one primary Assistant Coordinator. One Assistant Coordinator may supervise multiple companies only up to the session-configured load limit; the initial default is four.
+- Automated staffing only fills empty positions, balances existing AC load, stops at the configured limit, and requires review before applying.
+- Participant source data remains intact even when a record is not operationally eligible. Eligibility is a separate rule used consistently by grouping, group assignment, check-in, and head count.
+- Initial Kumasi operational age bounds are 13–20 because the approved source list contains many age-13 records while leadership specifically identified older adult-like records as a grouping risk. Admin settings can narrow or extend the range up to age 21 without deleting source data.
+- Existing assigned records outside the configured range are removed from counselor-group operations but remain searchable in People as age-review exceptions.
+- Original registration full names remain the primary display name everywhere. Preferred names remain search aliases and secondary detail only.
+- People becomes inspection-first; assignment mutations belong in Assignments to avoid two competing places for the same responsibility.
+- Head count remains idempotent at one submission per company per round; expected counts now use the same operational eligibility boundary as grouping/check-in.
+
+### Files introduced or substantially changed
+
+- `src/pages/Assignments.jsx`
+- `src/pages/assignments.css`
+- `src/pages/People.jsx`
+- `src/pages/Checkin.jsx`
+- `src/lib/registration.js`
+- `src/lib/operations.js`
+- `src/App.jsx`
+- `src/components/AppShell.jsx`
+- `tests/registration.test.mjs`
+- `tests/schema-contract.test.mjs`
+- `supabase/migrations/20260902094500_assignment_integrity_and_operational_eligibility.sql`
+- `supabase/migrations/20260902094600_operational_eligibility_publish_alignment.sql`
+
 ### Release rule
 
-Apply the new migration to development first. Production migration, merge, and Vercel deployment happen only after tests and the production build are green.
+Validate role/assignment conflicts and operational eligibility in development, run CI/build, then apply the same reviewed migrations to production before deploying the matching merged commit.
