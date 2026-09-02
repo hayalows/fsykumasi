@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">FSY Kumasi Operations</title>
+  <desc id="desc">A simple FSY Kumasi app icon using the 2026 operations color palette.</desc>
+  <rect width="512" height="512" rx="116" fill="#005175"/>
+  <path d="M104 334c60-16 87-70 120-139 28-58 63-86 104-86 35 0 63 17 80 46-43 8-75 39-97 87-31 66-60 111-113 134-37 16-72 15-94-42Z" fill="#c4e9f5"/>
+  <circle cx="373" cy="133" r="43" fill="#fcb449"/>
+  <path d="M168 319c33-19 56-52 78-101 23-50 51-78 86-88-13 20-24 45-33 75-18 61-48 110-101 138-12 6-22 8-30 8-10 0-17-5-20-14-3-8 4-14 20-18Z" fill="#8dbf67"/>
+  <path d="M201 286c22-10 42-30 59-60 8-14 18-22 29-22 10 0 18 7 18 17 0 7-4 15-12 25-19 25-42 44-70 55-16 6-27 5-32-4-4-6-1-9 8-11Z" fill="#ffffff" opacity=".96"/>
+  <text x="256" y="424" text-anchor="middle" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="72" font-weight="850" letter-spacing="8" fill="#ffffff">FSY</text>
+</svg>
