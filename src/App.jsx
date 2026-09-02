@@ -73,12 +73,16 @@ export function App() {
   const [profile, setProfile] = useState(null);
   const [accessState, setAccessState] = useState([]);
   const [sessionInfo, setSessionInfo] = useState(null);
+  const [selectedSessionId, setSelectedSessionId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("session") || "";
+  });
   const [runtimeStatus, setRuntimeStatus] = useState(isSupabaseConfigured ? "loading" : "demo");
   const [runtimeError, setRuntimeError] = useState("");
   const demoParticipants = useMemo(() => createDemoParticipants(), []);
   const initialInvite = useMemo(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("invite") || "", []);
 
-  const hydrateLive = useCallback(async (sessionOverride) => {
+  const hydrateLive = useCallback(async (sessionOverride, requestedSessionOverride = "") => {
     if (!isSupabaseConfigured) return;
     setRuntimeError("");
     const session = sessionOverride === undefined ? await getCurrentAuthSession() : sessionOverride;
@@ -109,7 +113,12 @@ export function App() {
       setProfile(nextProfile || { user_id: session.user.id, email: session.user.email, display_name: session.user.email });
       setAccessState(nextAccessState);
 
-      const granted = nextAccessState.find((item) => item.active && item.role);
+      const activeGrants = nextAccessState.filter((item) => item.active && item.role);
+      const requestedSession = requestedSessionOverride || selectedSessionId;
+      const granted = activeGrants.find((item) => item.session_id === requestedSession)
+        || activeGrants.find((item) => item.session_status !== "training")
+        || activeGrants[0];
+
       if (!granted) {
         setSessionInfo(null);
         setImported([]);
@@ -119,9 +128,12 @@ export function App() {
         setCompanies([]);
         setHeadcount({ round: null, submissions: [] });
         setCheckedIds([]);
+        setBirthdays([]);
         setRuntimeStatus("awaiting-access");
         return;
       }
+
+      if (granted.session_id !== selectedSessionId) setSelectedSessionId(granted.session_id);
 
       const canManageAccess = canApproveAccess(granted.role, granted.capabilities || []);
       const [nextSession, nextParticipants, nextRequests, nextRoster, nextInvites, nextGrouping, nextChecked, nextHeadcount, nextBirthdays] = await Promise.all([
@@ -151,7 +163,7 @@ export function App() {
       setRuntimeError(error.message || "Unable to load FSY operations data.");
       setRuntimeStatus("error");
     }
-  }, []);
+  }, [selectedSessionId]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return undefined;
@@ -178,7 +190,7 @@ export function App() {
 
   useEffect(() => {
     if (!isSupabaseConfigured || runtimeStatus !== "ready" || !sessionInfo?.id) return undefined;
-    const currentGrant = accessState.find((item) => item.active && item.role);
+    const currentGrant = accessState.find((item) => item.session_id === sessionInfo.id && item.active && item.role);
     const canManageAccess = canApproveAccess(currentGrant?.role, currentGrant?.capabilities || []);
 
     const reloadRequests = async () => {
@@ -234,6 +246,23 @@ export function App() {
     }
   };
 
+  const handleSessionChange = async (sessionId) => {
+    const next = accessState.find((item) => item.session_id === sessionId && item.active && item.role);
+    if (!next || sessionId === sessionInfo?.id) return;
+
+    setSelectedSessionId(sessionId);
+    setActive("overview");
+
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (next.session_status === "training") url.searchParams.set("session", sessionId);
+      else url.searchParams.delete("session");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+
+    await hydrateLive(authSession, sessionId);
+  };
+
   const clearRecoveryUrl = () => {
     if (typeof window !== "undefined") window.history.replaceState({}, "", window.location.pathname);
   };
@@ -265,7 +294,7 @@ export function App() {
   }
 
   const live = isSupabaseConfigured && runtimeStatus === "ready";
-  const grantedAccess = live ? accessState.find((item) => item.active && item.role) : null;
+  const grantedAccess = live ? accessState.find((item) => item.session_id === sessionInfo?.id && item.active && item.role) : null;
   const currentRole = grantedAccess?.role || "logistics_admin";
   const currentCapabilities = grantedAccess?.capabilities || [];
   const participants = live ? imported : imported.length ? imported : demoParticipants;
@@ -276,6 +305,7 @@ export function App() {
   const canManageAccess = !live || canApproveAccess(currentRole, currentCapabilities);
   const canImport = canManageAccess;
   const canRecordCheckin = !live || ["coordinator", "logistics_admin", "session_director"].includes(currentRole);
+  const activeSessions = live ? accessState.filter((item) => item.active && item.role) : [];
   const companyOptions = live
     ? companies
     : (assignment?.companies || []).map((company, index) => ({
@@ -381,5 +411,18 @@ export function App() {
               ? <Profile currentUser={live ? profile : { display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} grantedAccess={grantedAccess} companies={companyOptions} sessionInfo={sessionInfo} live={live} onSave={saveProfile} onChangePassword={changePassword} onSignOut={handleSignOut} />
               : <Access requests={accessRequests} setRequests={setAccessRequests} invites={leaderInvites} currentRole={currentRole} currentCapabilities={currentCapabilities} onDecision={handleAccessDecision} onCreateInvite={handleCreateInvite} onRevokeInvite={handleRevokeInvite} onCreateRecovery={handleRecoveryCode} onSetAdminOverride={handleSetAdminOverride} roster={live ? accessRoster : undefined} companies={companyOptions} live={live} />;
 
-  return <AppShell active={active} setActive={setActive} attentionCount={pendingAccess} currentUser={live ? profile : undefined} currentRole={currentRole} onSignOut={live ? handleSignOut : undefined} syncError={live ? runtimeError : ""} onRefresh={() => hydrateLive(authSession)}>{content}</AppShell>;
+  return <AppShell
+    active={active}
+    setActive={setActive}
+    attentionCount={pendingAccess}
+    currentUser={live ? profile : undefined}
+    currentRole={currentRole}
+    sessionInfo={sessionInfo}
+    sessions={activeSessions}
+    selectedSessionId={sessionInfo?.id || selectedSessionId}
+    onSessionChange={live ? handleSessionChange : undefined}
+    onSignOut={live ? handleSignOut : undefined}
+    syncError={live ? runtimeError : ""}
+    onRefresh={() => hydrateLive(authSession, sessionInfo?.id)}
+  >{content}</AppShell>;
 }
