@@ -1,57 +1,72 @@
-/* Mobile bottom navigation: adaptive item count, compact floating dock, and clear active state. */
+/*
+ * Mobile primary navigation.
+ *
+ * Direction: a calm system-style tab bar, not a floating dock. The bar borrows the
+ * strongest common patterns from iOS tab bars and Material 3 navigation bars:
+ * persistent top-level destinations, 3–5 equal-width items, short labels,
+ * familiar icons, a restrained selected indicator, and correct safe-area handling.
+ */
 
 @media (max-width: 760px) {
   :root {
-    --mobile-nav-height: 62px;
+    --mobile-nav-height: 64px;
   }
 
   .workspace {
-    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 30px);
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 14px);
   }
 
   .mobile-nav {
-    left: max(10px, env(safe-area-inset-left));
-    right: max(10px, env(safe-area-inset-right));
-    bottom: max(10px, env(safe-area-inset-bottom));
-    width: auto;
-    min-height: var(--mobile-nav-height);
-    height: var(--mobile-nav-height);
-    padding: 5px 6px;
-    grid-template-columns: repeat(auto-fit, minmax(54px, 1fr));
-    gap: 2px;
-    border: 1px solid rgba(203, 223, 231, .92);
-    border-radius: 20px;
-    background: rgba(255, 255, 255, .965);
-    box-shadow: 0 12px 36px rgba(0, 63, 91, .16), 0 2px 8px rgba(0, 63, 91, .06);
-    backdrop-filter: blur(20px) saturate(1.18);
-    -webkit-backdrop-filter: blur(20px) saturate(1.18);
-    overflow: hidden;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: auto;
+    min-height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    padding:
+      5px max(8px, env(safe-area-inset-right))
+      calc(4px + env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 0;
+    border: 0;
+    border-top: 1px solid rgba(183, 207, 217, .72);
+    border-radius: 0;
+    background: rgba(250, 253, 254, .94);
+    box-shadow: 0 -1px 0 rgba(255, 255, 255, .76), 0 -8px 24px rgba(0, 63, 91, .045);
+    backdrop-filter: blur(24px) saturate(1.22);
+    -webkit-backdrop-filter: blur(24px) saturate(1.22);
+    overflow: visible;
   }
 
   .mobile-nav button {
     position: relative;
     isolation: isolate;
     min-width: 0;
-    min-height: 52px;
-    height: 52px;
-    padding: 3px 2px 2px;
+    min-height: 55px;
+    height: 55px;
+    padding: 4px 2px 2px;
     gap: 2px;
-    border-radius: 14px;
-    overflow: hidden;
+    border-radius: 0;
+    color: #6b7f88;
+    background: transparent;
+    overflow: visible;
+    font-weight: 650;
   }
 
+  /* Material-style selected indicator, kept deliberately small like an iOS tab item. */
   .mobile-nav button::before {
     content: "";
     position: absolute;
     z-index: 0;
-    top: 2px;
+    top: 4px;
     left: 50%;
-    width: 40px;
-    height: 31px;
-    border-radius: 12px;
+    width: 48px;
+    height: 29px;
+    border-radius: 999px;
     background: transparent;
     transform: translateX(-50%);
-    transition: background-color .16s ease, transform .16s ease;
+    transition: background-color .16s ease, transform .12s ease;
   }
 
   .mobile-nav button svg,
@@ -61,56 +76,74 @@
   }
 
   .mobile-nav button svg {
-    width: 21px;
-    height: 21px;
+    width: 23px;
+    height: 23px;
     flex: none;
+    opacity: .88;
   }
 
   .mobile-nav button span {
     max-width: 100%;
-    font-size: 10px;
+    color: inherit;
+    font-size: 10.5px;
     line-height: 1.05;
-    letter-spacing: -.01em;
+    letter-spacing: -.012em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .mobile-nav button.active {
-    color: var(--blue-35);
+    color: var(--blue-25);
     background: transparent;
     font-weight: 850;
   }
 
   .mobile-nav button.active::before {
-    background: rgba(196, 233, 245, .58);
+    background: rgba(0, 125, 165, .115);
+  }
+
+  .mobile-nav button.active svg {
+    opacity: 1;
   }
 
   .mobile-nav button:active::before {
-    transform: translateX(-50%) scale(.94);
+    transform: translateX(-50%) scale(.92);
+  }
+
+  .mobile-nav button:focus-visible {
+    outline: none;
+  }
+
+  .mobile-nav button:focus-visible::before {
+    box-shadow: 0 0 0 3px rgba(252, 180, 73, .34);
   }
 
   .action-feedback-row {
-    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 22px);
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 10px);
   }
 }
 
 @media (max-width: 380px) {
   .mobile-nav {
-    left: 7px;
-    right: 7px;
-    padding-inline: 4px;
-    grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+    padding-left: max(4px, env(safe-area-inset-left));
+    padding-right: max(4px, env(safe-area-inset-right));
   }
 
   .mobile-nav button span {
-    font-size: 9px;
+    font-size: 9.5px;
+  }
+
+  .mobile-nav button::before {
+    width: 44px;
   }
 }
 
+/* Standalone PWA: let the surface extend naturally through the iPhone home-indicator area. */
 @media (max-width: 760px) and (display-mode: standalone) {
   .mobile-nav {
-    bottom: max(8px, env(safe-area-inset-bottom));
+    bottom: 0;
+    background: rgba(250, 253, 254, .91);
   }
 }
 
