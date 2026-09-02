@@ -12,6 +12,9 @@ export const DEFAULT_STRUCTURE_SETTINGS = {
   useAgeBands: false,
   avoidSameUnit: true,
   balanceSexes: true,
+  participantMinAge: 13,
+  participantMaxAge: 20,
+  companiesPerAssistantCoordinator: 4,
 };
 
 export async function loadLatestImport(sessionId) {
@@ -40,7 +43,7 @@ export async function loadLatestImport(sessionId) {
 export async function loadStructureSettings(sessionId) {
   const { data, error } = await client()
     .from("session_structure_settings")
-    .select("group_min_size, group_max_size, groups_per_company, use_age_bands, avoid_same_unit, balance_sexes, updated_at")
+    .select("group_min_size, group_max_size, groups_per_company, use_age_bands, avoid_same_unit, balance_sexes, participant_min_age, participant_max_age, companies_per_assistant_coordinator, updated_at")
     .eq("session_id", sessionId)
     .maybeSingle();
   if (error) throw error;
@@ -52,6 +55,9 @@ export async function loadStructureSettings(sessionId) {
     useAgeBands: data.use_age_bands,
     avoidSameUnit: data.avoid_same_unit,
     balanceSexes: data.balance_sexes,
+    participantMinAge: data.participant_min_age ?? DEFAULT_STRUCTURE_SETTINGS.participantMinAge,
+    participantMaxAge: data.participant_max_age ?? DEFAULT_STRUCTURE_SETTINGS.participantMaxAge,
+    companiesPerAssistantCoordinator: data.companies_per_assistant_coordinator ?? DEFAULT_STRUCTURE_SETTINGS.companiesPerAssistantCoordinator,
     updatedAt: data.updated_at,
   };
 }
@@ -65,6 +71,9 @@ export async function saveStructureSettings(sessionId, settings) {
     p_use_age_bands: Boolean(settings.useAgeBands),
     p_avoid_same_unit: Boolean(settings.avoidSameUnit),
     p_balance_sexes: Boolean(settings.balanceSexes),
+    p_participant_min_age: Number(settings.participantMinAge),
+    p_participant_max_age: Number(settings.participantMaxAge),
+    p_companies_per_assistant_coordinator: Number(settings.companiesPerAssistantCoordinator),
   });
   if (error) throw error;
 }
@@ -184,14 +193,8 @@ export async function setStaffCompanyAssignment(staffId, companyId, assigned) {
 export async function applyStaffAssignmentPlan(sessionId, suggestions) {
   const { data, error } = await client().rpc("apply_staff_assignment_plan", {
     p_session_id: sessionId,
-    p_counselor_assignments: (suggestions?.counselors || []).map((item) => ({
-      staff_id: item.staffId,
-      group_id: item.groupId,
-    })),
-    p_assistant_assignments: (suggestions?.assistants || []).map((item) => ({
-      staff_id: item.staffId,
-      company_id: item.companyId,
-    })),
+    p_counselor_assignments: (suggestions?.counselors || []).map((item) => ({ staff_id: item.staffId, group_id: item.groupId })),
+    p_assistant_assignments: (suggestions?.assistants || []).map((item) => ({ staff_id: item.staffId, company_id: item.companyId })),
   });
   if (error) throw error;
   return data;
