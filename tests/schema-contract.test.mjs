@@ -6,6 +6,8 @@ const migration = readFileSync(new URL("../supabase/migrations/20260902045523_re
 const checkinMigration = readFileSync(new URL("../supabase/migrations/20260902053638_require_assignment_for_published_checkin.sql", import.meta.url), "utf8");
 const scopedCheckinMigration = readFileSync(new URL("../supabase/migrations/20260902065000_scoped_assistant_coordinator_checkin.sql", import.meta.url), "utf8");
 const planningRepublishMigration = readFileSync(new URL("../supabase/migrations/20260902071000_allow_structure_republish_while_planning.sql", import.meta.url), "utf8");
+const mixedAgeMigration = readFileSync(new URL("../supabase/migrations/20260902080000_mixed_age_structure_default.sql", import.meta.url), "utf8");
+const staffingMigration = readFileSync(new URL("../supabase/migrations/20260902080500_atomic_staff_assignment_plan.sql", import.meta.url), "utf8");
 const app = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 
 test("capability override is explicit, constrained, and cannot be delegated by an overridden coordinator", () => {
@@ -38,4 +40,18 @@ test("planning sessions stay structurally editable while active operations remai
   assert.match(planningRepublishMigration, /session_status <> 'planning'/);
   assert.match(planningRepublishMigration, /Undo active check-ins before replacing the published structure/);
   assert.match(planningRepublishMigration, /A head-count submission exists, so the published structure can no longer be replaced/);
+});
+
+test("planning structure defaults to mixed ages rather than age-band separation", () => {
+  assert.match(mixedAgeMigration, /alter column use_age_bands set default false/);
+  assert.match(mixedAgeMigration, /session\.status = 'planning'/);
+  assert.match(mixedAgeMigration, /set use_age_bands = false/);
+});
+
+test("bulk staffing validates the full plan and never silently overwrites existing assignments", () => {
+  assert.match(staffingMigration, /private\.can_manage_access\(p_session_id\)/);
+  assert.match(staffingMigration, /Bulk staffing will not overwrite an existing counselor assignment/);
+  assert.match(staffingMigration, /Bulk staffing will not overwrite an existing company Assistant Coordinator assignment/);
+  assert.match(staffingMigration, /A Counselor can only appear once in a bulk assignment plan/);
+  assert.match(staffingMigration, /staff_assignment_plan_applied/);
 });
