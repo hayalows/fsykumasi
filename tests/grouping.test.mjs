@@ -28,6 +28,19 @@ test("synthetic full-scale assignment keeps duplicate units out of counselor gro
   assert.equal(result.issues.length, 0);
 });
 
+test("default grouping spreads ages across each same-sex counselor pool", () => {
+  const result = buildBalancedAssignments(createDemoParticipants(1640));
+  assert.equal(result.settings.useAgeBands, false);
+  assert.equal(result.settings.mixAges, true);
+  for (const group of result.groups) {
+    const ages = group.members.map((member) => Number(member.age)).filter(Number.isFinite);
+    const distinctAges = new Set(ages);
+    assert.ok(distinctAges.size >= 4, `${group.name} should contain a broad age mix`);
+    assert.ok(Math.max(...ages) - Math.min(...ages) >= 3, `${group.name} should span multiple ages`);
+  }
+  assert.ok(result.companies.every((company) => company.ageBand === "All ages"));
+});
+
 test("sex-specific groups are paired into companies by default", () => {
   const result = buildBalancedAssignments(createDemoParticipants(80));
   assert.ok(result.companies.length > 0);
@@ -37,7 +50,7 @@ test("sex-specific groups are paired into companies by default", () => {
   }
 });
 
-test("admins can preview four-group companies while keeping age bands separate", () => {
+test("admins can deliberately preview four-group companies with age bands separated", () => {
   const participants = createDemoParticipants(1640);
   const result = buildBalancedAssignments(participants, {
     minSize: 8,
