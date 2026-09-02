@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
+import { CaretDown } from "@phosphor-icons/react/CaretDown";
 import { Copy } from "@phosphor-icons/react/Copy";
 import { Key } from "@phosphor-icons/react/Key";
 import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
@@ -8,7 +9,7 @@ import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { X } from "@phosphor-icons/react/X";
 import { demoAccessRequests, demoUsers } from "../data/demo.js";
 import { canApproveAccess, roleLabel, roleVisibility } from "../lib/access.js";
-import { Empty, PageHead, Status } from "../components/UI.jsx";
+import { DismissibleLayer, Empty, PageHead, Status } from "../components/UI.jsx";
 import "./access-review.css";
 import "./access-invites.css";
 
@@ -26,7 +27,7 @@ function scopeForRole(role, companyIds = [], committeeScope = []) {
   return roleVisibility(role);
 }
 
-function InviteModal({ companies, live, onClose, onCreate }) {
+function InviteModal({ companies, live, onClose, onCreate, restoreFocusRef }) {
   const [form, setForm] = useState({ name: "", email: "", role: "assistant_coordinator", committee: "", confirmElevated: false });
   const [companyIds, setCompanyIds] = useState([]);
   const [search, setSearch] = useState("");
@@ -68,9 +69,9 @@ function InviteModal({ companies, live, onClose, onCreate }) {
   };
 
   return (
-    <div className="modal-backdrop">
-      <form className="modal access-review-modal invite-modal" onSubmit={submit}>
-        <button type="button" className="icon-button modal-close" onClick={() => onClose(null)} aria-label="Close"><X /></button>
+    <DismissibleLayer open onClose={() => onClose(null)} title="Invite a leader" className="access-review-modal" sheet restoreFocusRef={restoreFocusRef}>
+      <form className="invite-modal" onSubmit={submit}>
+        <button type="button" data-layer-close className="icon-button modal-close" onClick={() => onClose(null)} aria-label="Close invite"><X /></button>
         <span className="kicker">New leader</span>
         <h2>Invite someone to FSY Kumasi</h2>
         <p className="review-summary">Choose the role now. The leader will use a one-time code to create their own password.</p>
@@ -106,7 +107,7 @@ function InviteModal({ companies, live, onClose, onCreate }) {
         {error ? <div className="form-error" role="alert">{error}</div> : null}
         <div className="review-actions"><button type="button" className="secondary" onClick={() => onClose(null)}>Cancel</button><button className="primary" disabled={busy || (form.role === "assistant_coordinator" && !companies.length)}>{busy ? "Creating…" : "Create invite"}<UserPlus /></button></div>
       </form>
-    </div>
+    </DismissibleLayer>
   );
 }
 
@@ -121,9 +122,9 @@ function CodeReadyModal({ payload, onClose }) {
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal invite-ready-modal">
-        <button type="button" className="icon-button modal-close" onClick={onClose}><X /></button>
+    <DismissibleLayer open onClose={onClose} title={payload.kind === "recovery" ? "Recovery code ready" : "Invite ready"} className="invite-ready-modal" sheet>
+      <div>
+        <button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X /></button>
         <div className="invite-ready-icon"><CheckCircle weight="fill" /></div>
         <span className="kicker">{payload.kind === "recovery" ? "Recovery ready" : "Invite ready"}</span>
         <h2>{payload.kind === "recovery" ? `Help ${payload.name || "this leader"} reset their password` : `Send this to ${payload.name}`}</h2>
@@ -137,7 +138,7 @@ function CodeReadyModal({ payload, onClose }) {
         <div className="form-hint">Share the code or setup link directly with the intended leader. It works once and should not be posted in a group chat.</div>
         <button className="text-action invite-done" onClick={onClose}>Done</button>
       </div>
-    </div>
+    </DismissibleLayer>
   );
 }
 
@@ -154,16 +155,22 @@ function PendingInvite({ invite, onRevoke, busy }) {
 }
 
 function rosterScope(user, companies) {
-  if (["coordinator", "logistics_admin", "session_director"].includes(user.role)) return "Whole session";
-  if (user.role === "assistant_coordinator") {
+  const role = user.roleKey || user.role;
+  if (["coordinator", "logistics_admin", "session_director"].includes(role)) return "Whole session";
+  if (role === "assistant_coordinator") {
     const names = (user.companyIds || []).map((id) => companies.find((company) => company.id === id)?.name).filter(Boolean);
     return names.length ? names.join(", ") : `${user.companyIds?.length || 0} assigned companies`;
   }
   if (user.committeeScope?.length) return user.committeeScope.join(", ");
-  return roleVisibility(user.role);
+  return user.scope || roleVisibility(role);
 }
 
-export function Access({ requests = [], setRequests, invites = [], currentRole = "logistics_admin", currentCapabilities = [], onDecision, onCreateInvite, onRevokeInvite, onCreateRecovery, onSetAdminOverride, roster = demoUsers, companies = [], live = false }) {
+function rosterRole(user) {
+  return user.roleKey || user.role;
+}
+
+export function Access({ requests = [], setRequests, invites = [], currentRole = "logistics_admin", currentCapabilities = [], onDecision, onCreateInvite, onRevokeInvite, onCreateRecovery, onSetAdminOverride, roster = demoUsers, companies = [], live = false, sessionName }) {
+  const inviteTriggerRef = useRef(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [readyPayload, setReadyPayload] = useState(null);
   const [busyId, setBusyId] = useState("");
@@ -171,6 +178,7 @@ export function Access({ requests = [], setRequests, invites = [], currentRole =
   const canManage = canApproveAccess(currentRole, currentCapabilities);
   const canDelegateAdmin = ["logistics_admin", "session_director"].includes(currentRole);
   const pendingLegacy = requests.filter((request) => request.status === "pending");
+  const activeRoster = roster.filter((user) => user.active !== false && user.status !== "Pending");
 
   const finishInvite = (payload) => {
     setInviteOpen(false);
@@ -197,12 +205,14 @@ export function Access({ requests = [], setRequests, invites = [], currentRole =
     setBusyId(user.userId || user.id); setPageError("");
     try {
       if (!onCreateRecovery) return;
-      const created = await onCreateRecovery(user.userId);
-      setReadyPayload({ ...created, email: user.email, name: user.name, role: user.role, scope: rosterScope(user, companies), kind: "recovery" });
+      const created = await onCreateRecovery(user.userId || user.id);
+      setReadyPayload({ ...created, email: user.email, name: user.name, role: rosterRole(user), scope: rosterScope(user, companies), kind: "recovery" });
     } catch (error) { setPageError(error.message || "Unable to create a recovery code."); }
     finally { setBusyId(""); }
   };
   const toggleAdmin = async (user) => {
+    const role = rosterRole(user);
+    if (role !== "coordinator") return;
     const enabled = !(user.capabilities || []).includes("access_admin");
     const wording = enabled ? "grant" : "revoke";
     if (!window.confirm(`${wording === "grant" ? "Grant" : "Revoke"} full administrative access for ${user.name}? Their displayed role will remain Coordinator, and this change will be recorded in the audit history.`)) return;
@@ -213,10 +223,10 @@ export function Access({ requests = [], setRequests, invites = [], currentRole =
   };
 
   return (
-    <section className="page">
-      <PageHead title="People & access" description="Invite the right people, assign their role once, and let them create their own password. No shared account passwords and no repeated sign-in emails." action={canManage ? <button className="primary" onClick={() => setInviteOpen(true)}><UserPlus />Invite leader</button> : null} />
+    <section className="page access-page">
+      <PageHead title="Access" sessionName={sessionName} description="Invite leaders and keep access scoped to the work they need." action={canManage ? <button ref={inviteTriggerRef} className="primary" onClick={() => setInviteOpen(true)}><UserPlus />Invite leader</button> : null} />
 
-      <div className="notice green"><ShieldCheck weight="fill"/><div><b>Simple rule: identity first, permissions second</b><p>Each leader signs in with their own email and password. A named Coordinator may receive an explicit, revocable administrative capability while their displayed role stays Coordinator.</p></div></div>
+      <div className="notice green compact-notice access-rule-note"><ShieldCheck weight="fill"/><div><b>Everyone signs in with their own password.</b><p>Roles and scope decide what each leader can see or change.</p></div></div>
       {pageError ? <div className="form-error page-error" role="alert">{pageError}</div> : null}
 
       <div className="access-layout invite-access-layout">
@@ -227,27 +237,36 @@ export function Access({ requests = [], setRequests, invites = [], currentRole =
           </div>
         </article>
 
-        <article className="panel role-panel">
-          <div className="panel-head"><div><span className="kicker">Permission model</span><h2>What each role sees</h2></div></div>
-          <div className="role-matrix">
+        <details className="panel progressive-section role-panel access-role-disclosure">
+          <summary><span><span className="kicker">Permission model</span><b>What each role sees</b><small>Open for the full role matrix</small></span><CaretDown size={20} className="disclosure-icon" /></summary>
+          <div className="progressive-section-body"><div className="role-matrix">
             <div><b>Assistant coordinator</b><span>Assigned companies</span><small>No access approval</small></div>
             <div><b>Coordinator</b><span>Whole session</span><small>No access approval</small></div>
             <div><b>Logistical administrator</b><span>Whole session</span><small>Manage access</small></div>
             <div><b>Session directing couple</b><span>Whole session</span><small>Manage access</small></div>
             <div><b>Committee viewer</b><span>Assigned committee scope</span><small>Read-only by design</small></div>
-          </div>
-        </article>
+          </div></div>
+        </details>
       </div>
 
-      <article className="panel">
-        <div className="panel-head"><div><span className="kicker">Current access</span><h2>Authorized leaders</h2></div><Status>{roster.filter((user) => user.active !== false).length} active</Status></div>
-        <div className="table-wrap"><table><thead><tr><th>Leader</th><th>Role</th><th>Visibility</th><th>Administrative access</th><th>Account help</th></tr></thead><tbody>{roster.map((user) => <tr key={user.id || user.userId || user.email}><td><b>{user.name}</b><small className="cell-sub">{user.email}</small></td><td>{roleLabel(user.role)}</td><td>{rosterScope(user, companies)}</td><td>{user.role === "coordinator" ? <>{(user.capabilities || []).includes("access_admin") ? <Status tone="warn">Full admin override</Status> : <Status>Standard coordinator</Status>}{canDelegateAdmin && live ? <button className="table-link admin-toggle" disabled={busyId === user.id} onClick={() => toggleAdmin(user)}>{(user.capabilities || []).includes("access_admin") ? "Revoke admin" : "Grant admin"}</button> : null}</> : <span className="muted-cell">Role-defined</span>}</td><td>{canManage && live && user.userId ? <button className="table-link" disabled={busyId === user.userId} onClick={() => recovery(user)}><Key />Recovery code</button> : <Status tone="good">Active</Status>}</td></tr>)}</tbody></table></div>
+      <article className="panel access-roster-panel">
+        <div className="panel-head"><div><span className="kicker">Current access</span><h2>Authorized leaders</h2></div><Status>{activeRoster.length} active</Status></div>
+        <div className="access-roster-list">{roster.map((user) => {
+          const role = rosterRole(user);
+          const isActive = user.active !== false && user.status !== "Pending";
+          const hasAdminOverride = (user.capabilities || []).includes("access_admin");
+          return <details className="access-roster-row" key={user.id || user.userId || user.email}>
+            <summary><span className="roster-person"><b>{user.name}</b><small>{roleLabel(role)}</small></span><Status tone={isActive ? "good" : "warn"}>{isActive ? "Active" : "Pending"}</Status><CaretDown size={18} className="disclosure-icon" /></summary>
+            <div className="access-roster-detail"><div><span>Email</span><b>{user.email || "Not available"}</b></div><div><span>Visibility</span><b>{rosterScope(user, companies)}</b></div><div><span>Administrative access</span><span>{role === "coordinator" ? <>{hasAdminOverride ? <Status tone="warn">Full admin override</Status> : <Status>Standard coordinator</Status>}{canDelegateAdmin && live ? <button className="table-link admin-toggle" disabled={busyId === user.id} onClick={() => toggleAdmin(user)}>{hasAdminOverride ? "Revoke admin" : "Grant admin"}</button> : null}</> : <span className="muted-cell">Role-defined</span>}</span></div><div><span>Account help</span><span>{canManage && live && user.userId ? <button className="table-link" disabled={busyId === user.userId} onClick={() => recovery(user)}><Key />Recovery code</button> : <Status tone="good">Available</Status>}</span></div></div>
+          </details>;
+        })}</div>
       </article>
 
-      {pendingLegacy.length ? <article className="panel legacy-request-panel"><div className="panel-head"><div><span className="kicker">Older flow</span><h2>Previous access requests</h2></div><Status tone="warn">{pendingLegacy.length} pending</Status></div><p>These were created by the earlier shared session-code flow. The new invite flow is clearer because the role is assigned before account activation.</p><div className="request-list">{pendingLegacy.map((request) => <div className="legacy-request-row" key={request.id}><div><b>{request.name}</b><small>{request.email} · {roleLabel(request.role)}</small></div>{canManage ? <button className="secondary compact-button" disabled={busyId === request.id} onClick={() => rejectLegacy(request)}>Close request</button> : null}</div>)}</div></article> : null}
+      {pendingLegacy.length ? <details className="panel progressive-section legacy-request-panel"><summary><span><span className="kicker">Older flow</span><b>{pendingLegacy.length} previous access request{pendingLegacy.length === 1 ? "" : "s"}</b><small>Created before administrator-issued invites</small></span><CaretDown size={20} className="disclosure-icon" /></summary><div className="progressive-section-body"><p>Close these requests after moving the person to the named invite flow.</p><div className="request-list">{pendingLegacy.map((request) => <div className="legacy-request-row" key={request.id}><div><b>{request.name}</b><small>{request.email} · {roleLabel(request.role)}</small></div>{canManage ? <button className="secondary compact-button" disabled={busyId === request.id} onClick={() => rejectLegacy(request)}>Close request</button> : null}</div>)}</div></div></details> : null}
 
-      {inviteOpen ? <InviteModal companies={companies} live={live} onCreate={onCreateInvite} onClose={finishInvite} /> : null}
+      {inviteOpen ? <InviteModal companies={companies} live={live} onCreate={onCreateInvite} onClose={finishInvite} restoreFocusRef={inviteTriggerRef} /> : null}
       {readyPayload ? <CodeReadyModal payload={readyPayload} onClose={() => setReadyPayload(null)} /> : null}
     </section>
   );
 }
+

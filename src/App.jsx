@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "./components/AppShell.jsx";
 import { InviteClaimScreen, LoadingScreen, PasswordRecoveryScreen, SignInScreen } from "./components/AuthGate.jsx";
 import { createDemoParticipants } from "./data/demo.js";
+import { demoSession } from "./data/session.js";
 import { isSupabaseConfigured } from "./lib/supabase.js";
 import {
   decideAccessRequest,
@@ -59,6 +60,23 @@ import { Checkin } from "./pages/Checkin.jsx";
 import { Headcount } from "./pages/Headcount.jsx";
 import { Access, createInitialAccessRequests } from "./pages/Access.jsx";
 import { Profile } from "./pages/Profile.jsx";
+
+function normalizeDemoGrouping(nextAssignment) {
+  const groups = (nextAssignment.groups || []).map((group) => ({
+    ...group,
+    displayName: group.displayName || group.name,
+    memberCount: Number(group.memberCount || group.members?.length || 0),
+    counselorId: group.counselorId || null,
+  }));
+  const groupMap = new Map(groups.map((group) => [group.id, group]));
+  const companies = (nextAssignment.companies || []).map((company) => ({
+    ...company,
+    displayName: company.displayName || company.name,
+    assistantCoordinatorIds: company.assistantCoordinatorIds || [],
+    groups: (company.groups || []).map((group) => groupMap.get(group.id) || group),
+  }));
+  return { ...nextAssignment, groups, companies, published: true };
+}
 
 export function App() {
   const [active, setActive] = useState("overview");
@@ -218,6 +236,7 @@ export function App() {
   const canImport = canManageAccess;
   const canRecordCheckin = !live || ["assistant_coordinator", "coordinator", "logistics_admin", "session_director"].includes(currentRole);
   const activeSessions = live ? accessState.filter((item) => item.active && item.role) : [];
+  const sessionName = sessionInfo?.name || demoSession.name;
   const companyOptions = live ? companies : (assignment?.companies || []).map((company,index) => ({ id: company.id || `demo-company-${index+1}`, name: company.name || `Company ${String(index+1).padStart(2,"0")}` }));
 
   const applyImport = live ? async ({ records, sourceFilename, sourceSha256 }) => {
@@ -238,29 +257,42 @@ export function App() {
     await publishGroupingPlan(sessionInfo.id, nextAssignment);
     const [nextParticipants,nextGrouping] = await Promise.all([loadParticipants(sessionInfo.id),loadGroupingPlan(sessionInfo.id)]);
     setImported(nextParticipants); setCompanies(nextGrouping.companies); setAssignment(nextGrouping); setBirthdays(await loadSessionBirthdays(sessionInfo.id));
-  } : null;
-  const handleOpenHeadcount = live ? async (label) => { await openHeadcountRound(sessionInfo.id,label); setHeadcount(await loadHeadcount(sessionInfo.id)); } : null;
-  const handleHeadcountSubmit = live ? async (values) => { await submitCompanyHeadcount(values); setHeadcount(await loadHeadcount(sessionInfo.id)); } : null;
+  } : async (nextAssignment) => {
+    const normalized = normalizeDemoGrouping(nextAssignment);
+    const groupByParticipant = new Map(normalized.groups.flatMap((group) => group.members.map((person) => [person.id, group.id])));
+    setImported((current) => current.map((person) => groupByParticipant.has(person.id) ? { ...person, groupId: groupByParticipant.get(person.id) } : person));
+    setCompanies(normalized.companies); setAssignment(normalized);
+  };
+  const handleOpenHeadcount = live ? async (label) => { await openHeadcountRound(sessionInfo.id,label); setHeadcount(await loadHeadcount(sessionInfo.id)); } : async (label) => {
+    setHeadcount({ round: { id: `demo-round-${Date.now()}`, label, opens_at: new Date().toISOString(), closes_at: null }, submissions: [] });
+  };
+  const handleHeadcountSubmit = live ? async (values) => { await submitCompanyHeadcount(values); setHeadcount(await loadHeadcount(sessionInfo.id)); } : async (values) => {
+    const company = companies.find((item) => item.id === values.companyId);
+    const expectedCount = (company?.groups || []).reduce((sum, group) => sum + Number(group.memberCount || group.members?.length || 0), 0);
+    const submission = { company_id: values.companyId, expected_count: expectedCount, accounted_count: Number(values.accountedCount), status: Number(values.accountedCount) === expectedCount ? "reported" : "exception", note: values.note || "" };
+    setHeadcount((current) => ({ ...current, submissions: [...current.submissions.filter((item) => item.company_id !== values.companyId), submission] }));
+  };
 
   const content = active === "overview"
-    ? <Overview setActive={setActive} imported={operationalParticipants} assignment={assignment} pendingAccess={pendingAccess} birthdays={birthdays} live={live} companies={companies} checkedCount={operationalCheckedIds.length}/>
+    ? <Overview setActive={setActive} imported={operationalParticipants} assignment={assignment} pendingAccess={pendingAccess} birthdays={birthdays} live={live} companies={companies} checkedCount={operationalCheckedIds.length} sessionName={sessionName}/>
     : active === "registration"
-      ? <Registration imported={imported} setImported={setImported} groups={assignment?.groups || []} onApply={applyImport} onAdd={handleAddOnSite} onVerify={handleVerifyOnSite} onAssign={handleAssignParticipant} live={live} canManage={canImport} canAdd={!live || ["coordinator","logistics_admin","session_director"].includes(currentRole)} canVerify={canManageAccess} sessionId={sessionInfo?.id}/>
+      ? <Registration imported={imported} setImported={setImported} groups={assignment?.groups || []} onApply={applyImport} onAdd={handleAddOnSite} onVerify={handleVerifyOnSite} onAssign={handleAssignParticipant} live={live} canManage={canImport} canAdd={!live || ["coordinator","logistics_admin","session_director"].includes(currentRole)} canVerify={canManageAccess} sessionId={sessionInfo?.id} sessionName={sessionName}/>
       : active === "people"
-        ? <People sessionId={sessionInfo?.id} participants={participants} canManage={canManageAccess} structureSettings={structureSettings}/>
+        ? <People sessionId={sessionInfo?.id} participants={participants} assignment={assignment} canManage={canManageAccess} structureSettings={structureSettings} sessionName={sessionName}/>
         : active === "assignments"
-          ? <Assignments sessionId={sessionInfo?.id} canManage={canManageAccess}/>
+          ? <Assignments sessionId={sessionInfo?.id} canManage={canManageAccess} sessionName={sessionName}/>
           : active === "birthdays"
-            ? <Birthdays birthdays={birthdays} onSetAcknowledgement={handleBirthday}/>
+            ? <Birthdays birthdays={birthdays} onSetAcknowledgement={handleBirthday} sessionName={sessionName}/>
             : active === "groups"
-              ? <Groups participants={operationalParticipants} assignment={assignment} onPublish={handlePublishGrouping} live={live} canManage={canManageAccess} sessionId={sessionInfo?.id} onNavigatePeople={() => setActive("people")} onSettingsChange={setStructureSettings}/>
+              ? <Groups participants={operationalParticipants} assignment={assignment} onPublish={handlePublishGrouping} live={live} canManage={canManageAccess} sessionId={sessionInfo?.id} onNavigatePeople={() => setActive("people")} onSettingsChange={setStructureSettings} sessionName={sessionName}/>
               : active === "checkin"
-                ? <Checkin participants={participants} checkedIds={operationalCheckedIds} onRecord={handleCheckin} onAddMissing={() => setActive("registration")} live={live} canRecord={canRecordCheckin} groupsPublished={Boolean(assignment?.published)} structureSettings={structureSettings}/>
+                ? <Checkin participants={participants} checkedIds={operationalCheckedIds} onRecord={handleCheckin} onAddMissing={() => setActive("registration")} live={live} canRecord={canRecordCheckin} groupsPublished={Boolean(assignment?.published)} structureSettings={structureSettings} sessionName={sessionName}/>
                 : active === "headcount"
-                  ? <Headcount live={live} companies={companies} headcount={headcount} currentRole={currentRole} onOpen={handleOpenHeadcount} onSubmit={handleHeadcountSubmit}/>
+                  ? <Headcount live={live} companies={companies} headcount={headcount} currentRole={currentRole} onOpen={handleOpenHeadcount} onSubmit={handleHeadcountSubmit} sessionName={sessionName}/>
                   : active === "profile"
-                    ? <Profile currentUser={live ? profile : { display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} grantedAccess={grantedAccess} companies={companyOptions} sessionInfo={sessionInfo} live={live} onSave={saveProfile} onChangePassword={changePassword} onSignOut={handleSignOut}/>
-                    : <Access requests={accessRequests} setRequests={setAccessRequests} invites={leaderInvites} currentRole={currentRole} currentCapabilities={currentCapabilities} onDecision={handleAccessDecision} onCreateInvite={handleCreateInvite} onRevokeInvite={handleRevokeInvite} onCreateRecovery={handleRecoveryCode} onSetAdminOverride={handleSetAdminOverride} roster={live ? accessRoster : undefined} companies={companyOptions} live={live}/>;
+                    ? <Profile currentUser={live ? profile : { user_id: "demo-fsy-kumasi-leader", display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} grantedAccess={grantedAccess} companies={companyOptions} sessionInfo={sessionInfo} sessionName={sessionName} live={live} onSave={saveProfile} onChangePassword={changePassword} onSignOut={handleSignOut}/>
+                    : <Access requests={accessRequests} setRequests={setAccessRequests} invites={leaderInvites} currentRole={currentRole} currentCapabilities={currentCapabilities} onDecision={handleAccessDecision} onCreateInvite={handleCreateInvite} onRevokeInvite={handleRevokeInvite} onCreateRecovery={handleRecoveryCode} onSetAdminOverride={handleSetAdminOverride} roster={live ? accessRoster : undefined} companies={companyOptions} live={live} sessionName={sessionName}/>;
 
-  return <AppShell active={active} setActive={setActive} attentionCount={pendingAccess} currentUser={live ? profile : undefined} currentRole={currentRole} sessionInfo={sessionInfo} sessions={activeSessions} selectedSessionId={sessionInfo?.id || selectedSessionId} onSessionChange={live ? handleSessionChange : undefined} onSignOut={live ? handleSignOut : undefined} syncError={live ? runtimeError : ""} onRefresh={() => hydrateLive(authSession, sessionInfo?.id)}>{content}</AppShell>;
+  return <AppShell active={active} setActive={setActive} attentionCount={pendingAccess} currentUser={live ? profile : { user_id: "demo-fsy-kumasi-leader", display_name: "FSY Leader", email: "demo@example.org" }} currentRole={currentRole} sessionInfo={sessionInfo} sessions={activeSessions} selectedSessionId={sessionInfo?.id || selectedSessionId} onSessionChange={live ? handleSessionChange : undefined} onSignOut={live ? handleSignOut : undefined} syncError={live ? runtimeError : ""} onRefresh={() => hydrateLive(authSession, sessionInfo?.id)}>{content}</AppShell>;
 }
+

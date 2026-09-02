@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+import { CaretDown } from "@phosphor-icons/react/CaretDown";
 import { EnvelopeSimple } from "@phosphor-icons/react/EnvelopeSimple";
 import { IdentificationBadge } from "@phosphor-icons/react/IdentificationBadge";
 import { Key } from "@phosphor-icons/react/Key";
+import { PencilSimple } from "@phosphor-icons/react/PencilSimple";
 import { ShieldCheck } from "@phosphor-icons/react/ShieldCheck";
 import { SignOut } from "@phosphor-icons/react/SignOut";
-import { UserCircle } from "@phosphor-icons/react/UserCircle";
+import { AccountAvatar } from "../components/Avatar.jsx";
+import { PageHead, Status } from "../components/UI.jsx";
+import { demoSession } from "../data/session.js";
 import { roleLabel } from "../lib/access.js";
-import { PageHead } from "../components/UI.jsx";
-
-function initials(name = "FSY") {
-  return name.split(/\s+/).filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase();
-}
 
 function accessScope(grantedAccess, companies) {
   if (!grantedAccess) return "No active session access";
@@ -23,8 +22,11 @@ function accessScope(grantedAccess, companies) {
   return "Assigned scope";
 }
 
-export function Profile({ currentUser, currentRole, grantedAccess, companies = [], sessionInfo, live = false, onSave, onChangePassword, onSignOut }) {
-  const [name, setName] = useState(currentUser?.display_name || "");
+export function Profile({ currentUser, currentRole, grantedAccess, companies = [], sessionInfo, sessionName = demoSession.name, live = false, onSave, onChangePassword, onSignOut }) {
+  const displayName = currentUser?.display_name || "FSY Leader";
+  const email = currentUser?.email || "Not available";
+  const [name, setName] = useState(displayName);
+  const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -33,21 +35,22 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
   const [passwordSaved, setPasswordSaved] = useState(false);
   const [passwordError, setPasswordError] = useState("");
 
-  useEffect(() => { setName(currentUser?.display_name || ""); }, [currentUser?.display_name]);
+  useEffect(() => { setName(displayName); }, [displayName]);
 
   const scope = useMemo(() => accessScope(grantedAccess, companies), [grantedAccess, companies]);
-  const email = currentUser?.email || "Not available";
-  const avatar = initials(name || currentUser?.display_name || email);
+  const activeSessionName = sessionInfo?.name || sessionName;
 
   const submit = async (event) => {
     event.preventDefault();
     const cleaned = name.trim().replace(/\s+/g, " ");
     if (cleaned.length < 2) return setError("Enter the name you want other FSY leaders to see.");
+    if (!onSave) return;
     setBusy(true); setSaved(false); setError("");
     try {
       await onSave(cleaned);
       setName(cleaned);
       setSaved(true);
+      setEditing(false);
       window.setTimeout(() => setSaved(false), 2200);
     } catch (err) {
       setError(err.message || "Unable to save your profile.");
@@ -59,6 +62,7 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
     setPasswordError(""); setPasswordSaved(false);
     if (passwords.next !== passwords.confirm) return setPasswordError("The two new passwords do not match.");
     if (passwords.next.length < 10) return setPasswordError("Use at least 10 characters for your new password.");
+    if (!onChangePassword) return;
     setPasswordBusy(true);
     try {
       await onChangePassword(passwords.current, passwords.next);
@@ -72,37 +76,41 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
 
   return (
     <section className="page profile-page">
-      <PageHead title="Your profile" description="Manage your FSY identity, password and the access attached to this account." />
+      <PageHead title="Account" sessionName={activeSessionName} description="Update your name, review access, or manage security." />
 
-      <div className="profile-grid">
-        <article className="panel profile-identity-card">
-          <div className="profile-avatar-large">{avatar}</div>
-          <div><span className="kicker">Signed-in account</span><h2>{currentUser?.display_name || "FSY Leader"}</h2><p>{email}</p></div>
-          <div className="profile-role-chip"><ShieldCheck weight="fill" />{roleLabel(currentRole)}</div>
-        </article>
+      <article className="panel profile-identity-card">
+        <div className="profile-identity-main">
+          <AccountAvatar seed={currentUser?.user_id || currentUser?.id} label={`${displayName} profile`} size={68} className="profile-avatar-large" />
+          <div className="profile-identity-copy"><span className="kicker">Signed-in account</span><h2>{displayName}</h2><p>{email}</p><span className="profile-role-chip"><ShieldCheck weight="fill" />{roleLabel(currentRole)}</span></div>
+        </div>
+        <button className="secondary profile-edit-trigger" onClick={() => { setError(""); setEditing((value) => !value); }} aria-expanded={editing}><PencilSimple />{editing ? "Close edit" : "Edit"}</button>
+      </article>
 
-        <article className="panel profile-edit-card">
-          <div className="panel-head"><div><span className="kicker">Identity</span><h2>How your name appears</h2></div><UserCircle className="panel-symbol" size={24} /></div>
-          <form className="profile-form" onSubmit={submit}>
-            <label>Display name<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Your full name" autoComplete="name" maxLength={80} /></label>
-            <label>Email address<div className="profile-readonly"><EnvelopeSimple /><span>{email}</span></div><small>Your email is the username for this account.</small></label>
-            {error ? <div className="form-error" role="alert">{error}</div> : null}
-            <button className="primary profile-save" disabled={busy || !live}>{busy ? "Saving…" : saved ? "Saved" : "Save profile"}</button>
-          </form>
-        </article>
+      {editing ? <article className="panel profile-edit-card profile-inline-card">
+        <div className="panel-head"><div><span className="kicker">Identity</span><h2>Edit your name</h2></div></div>
+        <form className="profile-form" onSubmit={submit}>
+          <label>Display name<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Your full name" autoComplete="name" maxLength={80} autoFocus /></label>
+          <label>Email address<div className="profile-readonly"><EnvelopeSimple /><span>{email}</span></div></label>
+          {error ? <div className="form-error" role="alert">{error}</div> : null}
+          <div className="profile-form-actions"><button type="button" className="secondary" onClick={() => { setName(displayName); setEditing(false); }}>Cancel</button><button className="primary profile-save" disabled={busy || !live}>{busy ? "Saving…" : saved ? "Saved" : "Save name"}</button></div>
+        </form>
+      </article> : saved ? <div className="auth-success profile-save-confirmation" role="status"><Status tone="good">Name saved</Status></div> : null}
 
-        <article className="panel profile-access-card">
-          <div className="panel-head"><div><span className="kicker">Session access</span><h2>Your permissions</h2></div><IdentificationBadge className="panel-symbol" size={24} /></div>
+      <details className="panel progressive-section profile-disclosure">
+        <summary><span><span className="kicker">Permissions</span><b>{roleLabel(currentRole)} · {scope}</b><small>{activeSessionName}</small></span><CaretDown className="disclosure-icon" size={20} /></summary>
+        <div className="progressive-section-body profile-disclosure-body">
           <dl className="profile-details">
             <div><dt>Role</dt><dd>{roleLabel(currentRole)}</dd></div>
             <div><dt>Visibility</dt><dd>{scope}</dd></div>
-            <div><dt>Session</dt><dd>{sessionInfo?.name || "FSY Kumasi 2026"}</dd></div>
+            <div><dt>Session</dt><dd>{activeSessionName}</dd></div>
           </dl>
-          <p className="profile-help">Your password proves who you are. Your role and scope decide what you can see or change.</p>
-        </article>
+          {grantedAccess?.capabilities?.length ? <div className="profile-capabilities"><span className="kicker">Additional capabilities</span><div>{grantedAccess.capabilities.map((capability) => <Status key={capability}>{capability.replace(/_/g, " ")}</Status>)}</div></div> : null}
+        </div>
+      </details>
 
-        <article className="panel profile-security-card">
-          <div className="panel-head"><div><span className="kicker">Security</span><h2>Change password</h2></div><Key className="panel-symbol" size={24} /></div>
+      <details className="panel progressive-section profile-disclosure profile-security-disclosure">
+        <summary><span><span className="kicker">Security</span><b>Change password</b><small>Password-first sign-in for daily use</small></span><Key size={20} className="panel-symbol" /></summary>
+        <div className="progressive-section-body profile-disclosure-body">
           <form className="profile-form" onSubmit={submitPassword}>
             <label>Current password<input required type="password" value={passwords.current} onChange={(event) => setPasswords({ ...passwords, current: event.target.value })} autoComplete="current-password" /></label>
             <label>New password<input required type="password" minLength={10} value={passwords.next} onChange={(event) => setPasswords({ ...passwords, next: event.target.value })} autoComplete="new-password" /><small>Use at least 10 characters.</small></label>
@@ -110,13 +118,14 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
             {passwordError ? <div className="form-error" role="alert">{passwordError}</div> : null}
             <button className="secondary profile-save" disabled={passwordBusy || !live}>{passwordBusy ? "Updating…" : passwordSaved ? "Password updated" : "Update password"}</button>
           </form>
-        </article>
+        </div>
+      </details>
 
-        <article className="panel profile-signout-card">
-          <div><span className="kicker">Account</span><h2>Sign out on this device</h2><p>You can sign back in anytime with this email address and your password.</p></div>
-          <button className="secondary signout-full" onClick={onSignOut}><SignOut />Sign out</button>
-        </article>
-      </div>
+      <article className="panel profile-account-card">
+        <div><span className="kicker">Account</span><b>Signed in as {email}</b></div>
+        <button className="secondary compact-button" onClick={onSignOut} disabled={!onSignOut}><SignOut />Sign out</button>
+      </article>
     </section>
   );
 }
+

@@ -64,7 +64,7 @@ function buildSuggestions(staff, groups, companies, maxCompanyLoad) {
   return { counselors, assistants };
 }
 
-export function Assignments({ sessionId, canManage = false }) {
+export function Assignments({ sessionId, canManage = false, sessionName }) {
   const [staff, setStaff] = useState([]);
   const [structure, setStructure] = useState({ groups: [], companies: [], published: false });
   const [settings, setSettings] = useState({ companiesPerAssistantCoordinator: 4 });
@@ -129,7 +129,7 @@ export function Assignments({ sessionId, canManage = false }) {
   };
 
   return <section className="page assignments-page">
-    <PageHead title="Assignments" description="First decide each staff member's FSY role. Then assign Counselors to counselor groups and Assistant Coordinators to companies without hidden or duplicate assignments." />
+    <PageHead title="Assignments" sessionName={sessionName} description="First decide each staff member's FSY role. Then assign Counselors to counselor groups and Assistant Coordinators to companies without hidden or duplicate assignments." />
     {!canManage ? <div className="notice"><WarningCircle/><div><b>View-only assignments</b><p>Administrative access is required to change staff roles or responsibilities.</p></div></div> : null}
     {error ? <div className="form-error page-error" role="alert"><WarningCircle/>{error}</div> : null}
     {notice ? <div className="notice green" role="status"><CheckCircle/><div><b>Saved</b><p>{notice}</p></div></div> : null}
@@ -141,15 +141,18 @@ export function Assignments({ sessionId, canManage = false }) {
       <Metric label="Load conflicts" value={overloadedACs.length} note={overloadedACs.length ? `above ${maxCompanyLoad}-company limit` : "none"} tone={overloadedACs.length ? "yellow" : "green"}/>
     </div>
 
-    {canManage && structure.published ? <article className="panel assignment-assistant-card">
-      <div className="panel-head"><div><span className="kicker">Assignment assistant</span><h2>Fill only the empty places</h2></div><Sparkle size={22}/></div>
-      <p>Suggestions never replace existing Counselors or company supervision. An Assistant Coordinator stops receiving suggestions after {maxCompanyLoad} companies.</p>
-      {!suggestions ? <div className="panel-actions"><span>{groups.length - staffedGroups} groups and {companies.length - staffedCompanies} companies still need staff.</span><button className="secondary" onClick={suggest}><Sparkle/>Suggest assignments</button></div> : <>
-        <div className="assignment-suggestion-summary"><span><b>{suggestions.counselors.length}</b><small>Counselor matches</small></span><span><b>{suggestions.assistants.length}</b><small>AC/company matches</small></span></div>
-        {(suggestions.counselors.length || suggestions.assistants.length) ? <div className="assignment-preview-list">{[...suggestions.counselors.slice(0,4).map((item) => `${item.staffName} → ${item.groupName}`), ...suggestions.assistants.slice(0,4).map((item) => `${item.staffName} → ${item.companyName}`)].map((text) => <span key={text}>{text}</span>)}</div> : <p className="form-hint">No safe automatic matches are available. Classify more staff roles or resolve the existing assignments below.</p>}
-        <div className="panel-actions"><button className="secondary" disabled={busy === "suggestions"} onClick={suggest}>Shuffle</button><button className="primary" disabled={busy === "suggestions" || (!suggestions.counselors.length && !suggestions.assistants.length)} onClick={applySuggestions}>{busy === "suggestions" ? "Applying…" : "Apply reviewed suggestions"}</button></div>
-      </>}
-    </article> : null}
+    {canManage && structure.published ? <details className="panel progressive-section assignment-assistant-disclosure">
+      <summary><span><span className="kicker">Advanced helper</span><b>Suggest assignments for empty places</b><small>Existing roles and responsibilities are never replaced</small></span><span className="summary-action">Open helper</span></summary>
+      <div className="progressive-section-body"><div className="assignment-assistant-card">
+        <div className="panel-head"><div><span className="kicker">Assignment assistant</span><h2>Fill only the empty places</h2></div><Sparkle size={22}/></div>
+        <p>Suggestions never replace existing Counselors or company supervision. An Assistant Coordinator stops receiving suggestions after {maxCompanyLoad} companies.</p>
+        {!suggestions ? <div className="panel-actions"><span>{groups.length - staffedGroups} groups and {companies.length - staffedCompanies} companies still need staff.</span><button className="secondary" onClick={suggest}><Sparkle/>Suggest assignments</button></div> : <>
+          <div className="assignment-suggestion-summary"><span><b>{suggestions.counselors.length}</b><small>Counselor matches</small></span><span><b>{suggestions.assistants.length}</b><small>AC/company matches</small></span></div>
+          {(suggestions.counselors.length || suggestions.assistants.length) ? <div className="assignment-preview-list">{[...suggestions.counselors.slice(0,4).map((item) => `${item.staffName} → ${item.groupName}`), ...suggestions.assistants.slice(0,4).map((item) => `${item.staffName} → ${item.companyName}`)].map((text) => <span key={text}>{text}</span>)}</div> : <p className="form-hint">No safe automatic matches are available. Classify more staff roles or resolve the existing assignments below.</p>}
+          <div className="panel-actions"><button className="secondary" disabled={busy === "suggestions"} onClick={suggest}>Shuffle</button><button className="primary" disabled={busy === "suggestions" || (!suggestions.counselors.length && !suggestions.assistants.length)} onClick={applySuggestions}>{busy === "suggestions" ? "Applying…" : "Apply reviewed suggestions"}</button></div>
+        </>}
+      </div></div>
+    </details> : null}
 
     <article className="panel assignment-role-panel">
       <div className="panel-head"><div><span className="kicker">Step 1</span><h2>Classify staff roles</h2></div><UsersThree size={22}/></div>
@@ -187,3 +190,4 @@ export function Assignments({ sessionId, canManage = false }) {
     </div> : <article className="panel"><div className="empty-inline"><b>Publish Groups & companies first</b><span>Staff responsibilities become available after the youth structure exists.</span></div></article>}
   </section>;
 }
+

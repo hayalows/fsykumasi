@@ -1,0 +1,697 @@
+/* Calm, mobile-first refinement layer. Keep the operational components and data contracts intact. */
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.workspace,
+.page,
+.panel,
+.page-head,
+.people-layout,
+.quality-review-layout {
+  min-width: 0;
+}
+
+/* The sidebar owns its own scroll area, so a short laptop viewport never pushes the account out of view. */
+.sidebar {
+  width: 272px;
+  padding: 17px 14px 14px;
+  overflow: hidden;
+}
+.sidebar-nav {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(196, 233, 245, .28) transparent;
+  padding: 1px 2px 4px;
+}
+.nav-group {
+  display: grid;
+  gap: 4px;
+}
+.nav-group + .nav-group {
+  margin-top: 16px;
+}
+.nav-group-label {
+  padding: 0 12px 4px;
+  color: #9fcbd9;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.sidebar nav button {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+}
+.sidebar-foot {
+  flex: none;
+  margin-top: 14px;
+  padding-top: 12px;
+  grid-template-columns: minmax(0, 1fr) 40px;
+}
+.sidebar-scrim {
+  display: none;
+}
+.navii-avatar {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--blue-5-tint);
+}
+.navii-avatar > * {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+.top-profile-button .navii-avatar {
+  width: 34px;
+  height: 34px;
+}
+.profile-identity-card .navii-avatar.profile-avatar-large {
+  width: 68px;
+  height: 68px;
+  padding: 0;
+  border-radius: 18px;
+  background: var(--blue-5-tint);
+  box-shadow: none;
+}
+.profile-identity-card .navii-avatar.profile-avatar-large > * {
+  width: 100%;
+  height: 100%;
+}
+
+.mobile-nav button,
+.sidebar nav button,
+.sidebar-profile,
+.top-profile-button,
+.profile-edit-trigger,
+.access-roster-row > summary,
+.people-list > button {
+  touch-action: manipulation;
+}
+
+.segmented {
+  min-height: 52px;
+  padding: 4px;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.segmented button {
+  min-height: 44px;
+  flex: 1;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 850;
+}
+.segmented button.active {
+  color: #fff;
+  background: var(--blue-35);
+  box-shadow: 0 5px 14px rgba(0, 81, 117, .14);
+}
+
+/* Account: identity first, details on demand. */
+.profile-page {
+  display: grid;
+  gap: 14px;
+}
+.profile-page .page-head {
+  margin-bottom: 2px;
+}
+.profile-identity-card {
+  min-height: 0;
+  margin-bottom: 0 !important;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: linear-gradient(145deg, #fff 0%, #f0fafc 100%);
+}
+.profile-identity-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.profile-identity-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.profile-identity-copy h2 {
+  margin: 0;
+  font-size: 23px;
+  line-height: 1.15;
+}
+.profile-identity-copy p {
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.profile-role-chip {
+  margin-top: 5px;
+}
+.profile-edit-trigger {
+  flex: none;
+  min-width: 88px;
+}
+.profile-inline-card {
+  margin-bottom: 0 !important;
+}
+.profile-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.profile-save-confirmation {
+  width: fit-content;
+  margin: 0;
+  padding: 8px 11px;
+}
+.profile-disclosure {
+  margin-bottom: 0 !important;
+  padding: 0;
+  overflow: hidden;
+}
+.profile-disclosure > summary,
+.access-role-disclosure > summary,
+.legacy-request-panel > summary,
+.assignment-assistant-disclosure > summary {
+  min-height: 68px;
+  padding: 13px 18px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+}
+.profile-disclosure > summary::-webkit-details-marker,
+.access-role-disclosure > summary::-webkit-details-marker,
+.legacy-request-panel > summary::-webkit-details-marker,
+.assignment-assistant-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.profile-disclosure > summary > span:first-child,
+.access-role-disclosure > summary > span:first-child,
+.legacy-request-panel > summary > span:first-child,
+.assignment-assistant-disclosure > summary > span:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.profile-disclosure > summary b,
+.access-role-disclosure > summary b,
+.legacy-request-panel > summary b,
+.assignment-assistant-disclosure > summary b {
+  color: var(--blue-35);
+  overflow-wrap: anywhere;
+}
+.profile-disclosure > summary small,
+.access-role-disclosure > summary small,
+.legacy-request-panel > summary small,
+.assignment-assistant-disclosure > summary small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+.profile-disclosure[open] > summary,
+.access-role-disclosure[open] > summary,
+.legacy-request-panel[open] > summary,
+.assignment-assistant-disclosure[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.disclosure-icon {
+  flex: none;
+  color: var(--blue-25);
+  transition: transform .16s ease;
+}
+details[open] > summary .disclosure-icon {
+  transform: rotate(180deg);
+}
+.profile-disclosure-body {
+  padding: 0 18px 18px;
+}
+.profile-disclosure-body .profile-details {
+  margin-top: 0;
+}
+.profile-capabilities {
+  display: grid;
+  gap: 7px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.profile-capabilities > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.profile-capabilities .status {
+  text-transform: capitalize;
+}
+.profile-account-card {
+  margin-bottom: 0 !important;
+  padding: 13px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.profile-account-card > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.profile-account-card > div > b {
+  color: var(--blue-35);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.profile-account-card .compact-button {
+  flex: none;
+}
+
+/* Shared modal/sheet behavior. */
+.dismissible-layer {
+  cursor: default;
+}
+.dismissible-layer .layer-panel {
+  outline: none;
+}
+.dismissible-layer .layer-panel > .sr-only + form,
+.dismissible-layer .layer-panel > .sr-only + div {
+  min-width: 0;
+}
+.sheet-layer {
+  z-index: 70;
+}
+
+/* People list → detail. */
+.people-page {
+  min-width: 0;
+}
+.people-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 1fr) minmax(190px, 230px);
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.people-toolbar .people-tabs {
+  min-width: 226px;
+}
+.people-toolbar .search {
+  min-width: 0;
+}
+.people-list > button {
+  min-height: 64px;
+  padding: 9px 10px;
+}
+.person-detail-panel {
+  position: sticky;
+  top: 84px;
+  max-height: calc(100dvh - 104px);
+  overflow: auto;
+}
+.person-facts {
+  gap: 8px;
+}
+.person-facts > div {
+  min-width: 0;
+}
+.person-fact-combined {
+  grid-column: span 2;
+  background: var(--blue-5-tint) !important;
+}
+.person-facts > div:last-child {
+  grid-column: span 2;
+}
+.person-fact-combined b {
+  color: var(--blue-35);
+}
+.person-detail-modal {
+  max-height: min(86dvh, 760px);
+}
+.person-detail-modal .person-detail-head {
+  padding-top: 2px;
+}
+
+/* Access is invite-first; role policy, recovery and overrides are secondary. */
+.access-rule-note {
+  margin: -4px 0 14px;
+}
+.access-role-disclosure {
+  padding: 0;
+  overflow: hidden;
+}
+.access-role-disclosure .progressive-section-body {
+  padding: 0 18px 18px;
+}
+.access-roster-panel {
+  margin-bottom: 14px;
+}
+.access-roster-list {
+  display: grid;
+  gap: 7px;
+}
+.access-roster-row {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.access-roster-row > summary {
+  min-height: 62px;
+  padding: 9px 12px;
+  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 20px;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.access-roster-row > summary::-webkit-details-marker {
+  display: none;
+}
+.access-roster-row > summary:hover {
+  background: var(--surface-soft);
+}
+.roster-person {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.roster-person b,
+.roster-person small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.roster-person small {
+  color: var(--muted);
+}
+.access-roster-detail {
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-soft);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.access-roster-detail > div {
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 9px;
+  background: #fff;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+.access-roster-detail > div > span:first-child {
+  color: var(--muted);
+  font-size: 11px;
+}
+.access-roster-detail > div > b,
+.access-roster-detail > div > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.access-roster-detail .table-link {
+  min-height: 38px;
+  margin-top: 2px;
+}
+.access-roster-detail .status {
+  width: fit-content;
+}
+.legacy-request-panel {
+  padding: 0;
+  overflow: hidden;
+}
+.legacy-request-panel .progressive-section-body {
+  padding: 0 18px 18px;
+}
+
+/* Head count: one obvious save path after a company is opened. */
+.headcount-save-notice {
+  width: fit-content;
+  margin: -3px 0 14px;
+  padding: 9px 12px;
+}
+.headcount-save-notice span {
+  color: #456d2b;
+}
+.headcount-save-notice b {
+  color: #31591c;
+}
+
+/* Keep advanced assignment suggestions out of the way of role classification. */
+.assignment-assistant-disclosure {
+  padding: 0;
+  overflow: hidden;
+}
+.assignment-assistant-disclosure .progressive-section-body {
+  padding: 0 18px 18px;
+}
+.assignment-assistant-card {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 1000px) {
+  .people-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+  .people-toolbar .search {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .people-toolbar .people-tabs {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .people-toolbar .people-role-filter {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    width: min(86vw, 320px);
+    padding-top: 14px;
+    z-index: 80;
+    transform: translateX(-102%);
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .sidebar-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 79;
+    padding: 0;
+    border: 0;
+    background: rgba(0, 49, 70, .58);
+  }
+  .sidebar-nav {
+    padding-bottom: 4px;
+  }
+  .workspace {
+    margin-left: 0;
+    padding-bottom: 78px;
+  }
+  .top-profile-button {
+    width: 44px;
+    height: 44px;
+  }
+  .mobile-nav {
+    min-height: calc(68px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mobile-nav button {
+    min-height: 58px;
+    padding: 5px 2px;
+    font-size: 9px;
+  }
+  .page {
+    padding-inline: 14px;
+  }
+  .profile-identity-card {
+    align-items: flex-start;
+    padding: 15px;
+  }
+  .profile-identity-main {
+    align-items: flex-start;
+  }
+  .profile-edit-trigger {
+    min-width: 44px;
+    width: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+  .profile-edit-trigger svg {
+    margin: 0;
+    width: 20px;
+    height: 20px;
+  }
+  .profile-identity-copy h2 {
+    font-size: 20px;
+  }
+  .profile-disclosure > summary,
+  .access-role-disclosure > summary,
+  .legacy-request-panel > summary,
+  .assignment-assistant-disclosure > summary {
+    min-height: 64px;
+    padding-inline: 15px;
+  }
+  .profile-disclosure-body,
+  .access-role-disclosure .progressive-section-body,
+  .legacy-request-panel .progressive-section-body,
+  .assignment-assistant-disclosure .progressive-section-body {
+    padding-inline: 15px;
+  }
+  .profile-form-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .profile-form-actions button {
+    width: 100%;
+  }
+  .profile-account-card {
+    padding-inline: 15px;
+  }
+  .profile-account-card .compact-button {
+    min-width: 44px;
+    padding-inline: 10px;
+  }
+  .people-toolbar {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+  .people-toolbar .search,
+  .people-toolbar .people-tabs,
+  .people-toolbar .people-role-filter {
+    grid-column: auto;
+    grid-row: auto;
+    width: 100%;
+  }
+  .people-toolbar .people-tabs {
+    min-width: 0;
+  }
+  .people-list-panel {
+    margin-bottom: 0;
+  }
+  .people-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+  .person-detail-modal {
+    width: 100%;
+    max-height: min(88dvh, 780px);
+    padding: 18px 15px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+  }
+  .person-detail-modal::before,
+  .quality-review-mobile-layer::before {
+    content: "";
+    width: 42px;
+    height: 4px;
+    margin: -4px auto 12px;
+    display: block;
+    border-radius: 999px;
+    background: #cbdfe7;
+  }
+  .person-detail-modal .person-fact-combined {
+    grid-column: auto;
+  }
+  .person-detail-modal .person-facts > div:last-child {
+    grid-column: auto;
+  }
+  .access-roster-detail {
+    grid-template-columns: 1fr;
+  }
+  .access-roster-row > summary {
+    min-height: 60px;
+  }
+  .access-rule-note {
+    margin-top: -4px;
+  }
+  .headcount-save-notice {
+    width: 100%;
+  }
+  .quality-review-mobile-layer {
+    width: 100%;
+    max-height: min(88dvh, 780px);
+    padding: 18px 15px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .profile-identity-card {
+    gap: 8px;
+  }
+  .profile-identity-main {
+    gap: 10px;
+  }
+  .profile-identity-card .navii-avatar.profile-avatar-large {
+    width: 56px;
+    height: 56px;
+    border-radius: 15px;
+  }
+  .profile-identity-copy p {
+    font-size: 12px;
+  }
+  .profile-role-chip {
+    max-width: 100%;
+    white-space: normal;
+  }
+  .profile-account-card {
+    align-items: flex-start;
+  }
+  .profile-account-card .compact-button {
+    flex: none;
+  }
+  .access-roster-row > summary {
+    grid-template-columns: minmax(0, 1fr) auto 18px;
+    gap: 6px;
+    padding-inline: 9px;
+  }
+}
+
