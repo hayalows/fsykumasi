@@ -41,8 +41,8 @@ export function roleVisibility(role) {
   return ROLE_META[role]?.visibility || "Assigned scope";
 }
 
-export function canApproveAccess(role) {
-  return Boolean(ROLE_META[role]?.canApproveAccess);
+export function canApproveAccess(role, capabilities = []) {
+  return Boolean(ROLE_META[role]?.canApproveAccess || (role === "coordinator" && capabilities.includes("access_admin")));
 }
 
 export function hasSessionWideVisibility(role) {

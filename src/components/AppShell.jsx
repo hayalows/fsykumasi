@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bell } from "@phosphor-icons/react/Bell";
+import { Cake } from "@phosphor-icons/react/Cake";
 import { Buildings } from "@phosphor-icons/react/Buildings";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { ClipboardText } from "@phosphor-icons/react/ClipboardText";
@@ -16,6 +17,7 @@ import { roleLabel } from "../lib/access.js";
 const nav = [
   ["overview", "Overview", SquaresFour],
   ["registration", "Registration", IdentificationCard],
+  ["birthdays", "Birthdays", Cake],
   ["groups", "Groups & companies", Buildings],
   ["checkin", "Check-in", CheckCircle],
   ["headcount", "Head count", ClipboardText],

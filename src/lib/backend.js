@@ -127,7 +127,7 @@ export async function loadParticipants(sessionId) {
   for (let from = 0; ; from += pageSize) {
     const { data, error } = await client
       .from("participants")
-      .select("id, registration_id, first_name, last_name, sex, age, unit_name, group_id")
+      .select("id, registration_id, first_name, last_name, preferred_name, sex, age, unit_name, stake_name, group_id, source_kind, registration_status, verification_status, is_current, reconciliation_status")
       .eq("session_id", sessionId)
       .order("last_name", { ascending: true })
       .order("id", { ascending: true })
@@ -142,12 +142,87 @@ export async function loadParticipants(sessionId) {
     firstName: row.first_name,
     lastName: row.last_name,
     fullName: `${row.first_name} ${row.last_name}`.trim(),
+    preferredName: row.preferred_name,
     sex: row.sex === "female" ? "Female" : "Male",
     age: row.age,
     unit: row.unit_name,
+    stake: row.stake_name,
     groupId: row.group_id,
-    status: "Expected",
+    sourceKind: row.source_kind,
+    registrationStatus: row.registration_status,
+    verificationStatus: row.verification_status,
+    isCurrent: row.is_current,
+    reconciliationStatus: row.reconciliation_status,
+    status: row.registration_status === "approved" && row.verification_status === "verified" && row.is_current ? "Expected" : "Not eligible",
   }));
+}
+
+function registrationPayload(record) {
+  return {
+    source_record_key: record.sourceKey, person_type: record.personType,
+    first_name: record.firstName, last_name: record.lastName, preferred_name: record.preferredName || null,
+    birthday: record.birthday, sex: record.sex.toLowerCase(), age: record.age,
+    unit_name: record.unit, stake_name: record.stake || null,
+    registration_status: record.registrationStatus, source_registered_at: record.registeredAt,
+    email: record.email || null, phone: record.phone || null,
+    medical_information: record.medicalInformation || null, dietary_information: record.dietaryInformation || null,
+    tshirt_size: record.tshirtSize || null, contact_1_name: record.contact1Name || null,
+    contact_1_email: record.contact1Email || null, contact_1_phone: record.contact1Phone || null,
+    contact_2_name: record.contact2Name || null, contact_2_email: record.contact2Email || null,
+    contact_2_phone: record.contact2Phone || null, bishop_name: record.bishopName || null,
+    bishop_email: record.bishopEmail || null,
+  };
+}
+
+export async function applyRegistrationSnapshot({ sessionId, sourceFilename, sourceSha256, records }) {
+  const client = requireClient();
+  const { data, error } = await client.rpc("apply_registration_snapshot", {
+    p_session_id: sessionId, p_source_filename: sourceFilename,
+    p_source_sha256: sourceSha256, p_records: records.map(registrationPayload),
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function addOnSiteParticipant({ sessionId, firstName, lastName, preferredName, sex, age, unit, stake, birthday }) {
+  const client = requireClient();
+  const { data, error } = await client.rpc("add_on_site_participant", {
+    p_session_id: sessionId, p_first_name: firstName, p_last_name: lastName,
+    p_preferred_name: preferredName || null, p_sex: sex.toLowerCase(), p_age: Number(age),
+    p_unit_name: unit, p_stake_name: stake || null, p_date_of_birth: birthday || null,
+    p_search_confirmed: true,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function verifyOnSiteParticipant(participantId, approved, note = null) {
+  const client = requireClient();
+  const { error } = await client.rpc("verify_on_site_participant", { p_participant_id: participantId, p_approved: approved, p_note: note });
+  if (error) throw error;
+}
+
+export async function assignParticipantToGroup(participantId, groupId) {
+  const client = requireClient();
+  const { error } = await client.rpc("assign_participant_to_group", { p_participant_id: participantId, p_group_id: groupId });
+  if (error) throw error;
+}
+
+export async function loadSessionBirthdays(sessionId) {
+  const client = requireClient();
+  const { data, error } = await client.rpc("get_session_birthdays", { p_session_id: sessionId });
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    participantId: row.participant_id, name: row.display_name, date: row.birthday_date,
+    turningAge: row.turning_age, unit: row.unit_name, group: row.group_name,
+    company: row.company_name, acknowledged: row.acknowledged, acknowledgedAt: row.acknowledged_at,
+  }));
+}
+
+export async function acknowledgeBirthday(sessionId, participantId) {
+  const client = requireClient();
+  const { error } = await client.rpc("acknowledge_session_birthday", { p_session_id: sessionId, p_participant_id: participantId });
+  if (error) throw error;
 }
 
 export async function importParticipants({ sessionId, sourceFilename, participants }) {
@@ -197,7 +272,7 @@ export async function loadAccessRoster(sessionId) {
   const client = requireClient();
   const { data, error } = await client
     .from("access_assignments")
-    .select("id, user_id, role, company_ids, committee_scope, active, profiles!access_assignments_user_id_fkey(display_name,email)")
+    .select("id, user_id, role, company_ids, committee_scope, capabilities, active, profiles!access_assignments_user_id_fkey(display_name,email)")
     .eq("session_id", sessionId)
     .eq("active", true)
     .order("role", { ascending: true });
@@ -210,8 +285,15 @@ export async function loadAccessRoster(sessionId) {
     role: row.role,
     companyIds: row.company_ids || [],
     committeeScope: row.committee_scope || [],
+    capabilities: row.capabilities || [],
     active: row.active,
   }));
+}
+
+export async function setCoordinatorAdminOverride(assignmentId, enabled) {
+  const client = requireClient();
+  const { error } = await client.rpc("set_coordinator_admin_override", { p_assignment_id: assignmentId, p_enabled: enabled });
+  if (error) throw error;
 }
 
 export async function decideAccessRequest(requestId, status, { companyIds = [], committeeScope = [], note = null } = {}) {

@@ -21,6 +21,50 @@
   --shadow: 0 12px 34px rgba(0, 81, 117, .08);
 }
 
+/* Registration intelligence and birthday operations */
+.registration-tabs { display:flex; gap:6px; width:max-content; max-width:100%; margin-bottom:16px; padding:5px; border:1px solid var(--line); border-radius:14px; background:var(--surface); overflow-x:auto; }
+.registration-tabs button { min-height:40px; padding:0 14px; border:0; border-radius:10px; background:transparent; color:var(--muted); font-weight:700; white-space:nowrap; }
+.registration-tabs button.active { background:var(--blue-50); color:#fff; }
+.import-summary { grid-template-columns:repeat(5,1fr); margin:18px 0; }
+.import-summary > div { padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }
+.import-summary span,.quality-grid span { display:block; color:var(--muted); font-size:.78rem; font-weight:700; }
+.import-summary strong { display:block; margin-top:4px; font-size:1.35rem; }
+.onsite-search-results { margin-top:12px; }
+.onsite-match,.birthday-list > div { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
+.onsite-match:last-child,.birthday-list > div:last-child { border-bottom:0; }
+.onsite-match small,.birthday-list small,.empty-inline span { display:block; margin-top:3px; color:var(--muted); }
+.empty-inline { padding:18px 4px; }
+.add-after-search { margin-top:14px; }
+.form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:18px; }
+.form-grid label { display:grid; gap:6px; font-weight:700; font-size:.85rem; }
+.form-grid input,.form-grid select { min-height:44px; width:100%; padding:0 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; }
+.inline-actions { display:flex; gap:8px; }
+.quality-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:18px; }
+.quality-grid > div { padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--surface-soft); }
+.quality-grid strong { display:block; font-size:1.65rem; margin-bottom:8px; }
+.quality-grid small { display:block; margin-top:6px; color:var(--muted); line-height:1.4; }
+.birthday-overview > strong { display:block; font-size:2.8rem; line-height:1; color:var(--blue-50); margin:16px 0 6px; }
+.birthday-overview > p { color:var(--muted); margin-bottom:18px; }
+.birthday-day + .birthday-day { margin-top:14px; }
+.birthday-list .status { white-space:nowrap; }
+.admin-toggle { display:block; margin-top:6px; }
+.muted-cell { color:var(--muted); }
+.assignment-queue > div { display:grid; grid-template-columns:minmax(180px,1fr) minmax(190px,.8fr) auto; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
+.assignment-queue small { display:block; margin-top:4px; color:var(--muted); }
+.assignment-queue select { min-height:42px; padding:0 10px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.checkin-no-result { padding:24px 4px; }
+.checkin-no-result p { max-width:680px; color:var(--muted); line-height:1.5; }
+
+@media (max-width: 760px) {
+  .import-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .form-grid,.quality-grid { grid-template-columns:1fr; }
+  .onsite-match,.birthday-list > div { grid-template-columns:auto minmax(0,1fr); }
+  .onsite-match .status,.birthday-list .status,.birthday-list button { grid-column:2; justify-self:start; }
+  .registration-tabs { width:100%; }
+  .registration-tabs button { flex:1; }
+  .assignment-queue > div { grid-template-columns:1fr; }
+}
+
 * { box-sizing: border-box; }
 html { background: var(--blue-5-tint); }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: linear-gradient(180deg, #ffffff 0, var(--blue-5-tint) 62%, var(--green-20-tint) 100%); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-synthesis: none; }

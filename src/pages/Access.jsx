@@ -115,6 +115,10 @@ function CodeReadyModal({ payload, onClose }) {
   const link = typeof window === "undefined" ? "" : `${window.location.origin}/?invite=${encodeURIComponent(payload.code)}`;
   const expires = payload.expiresAt ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(payload.expiresAt)) : "Soon";
   const copy = async (value, label) => { await navigator.clipboard.writeText(value); setCopied(label); window.setTimeout(() => setCopied(""), 1700); };
+  const share = async () => {
+    if (navigator.share) await navigator.share({ title: "FSY Kumasi account setup", text: `Use this private link to set up your FSY Kumasi account. It works once and expires.`, url: link });
+    else await copy(link, "link");
+  };
 
   return (
     <div className="modal-backdrop">
@@ -128,6 +132,7 @@ function CodeReadyModal({ payload, onClose }) {
         <div className="invite-ready-actions">
           <button className="primary" onClick={() => copy(payload.code, "code")}><Copy />{copied === "code" ? "Copied" : "Copy code"}</button>
           <button className="secondary" onClick={() => copy(link, "link")}><Copy />{copied === "link" ? "Link copied" : "Copy setup link"}</button>
+          <button className="secondary" onClick={share}>Share setup link</button>
         </div>
         <div className="form-hint">Share the code or setup link directly with the intended leader. It works once and should not be posted in a group chat.</div>
         <button className="text-action invite-done" onClick={onClose}>Done</button>
@@ -158,12 +163,13 @@ function rosterScope(user, companies) {
   return roleVisibility(user.role);
 }
 
-export function Access({ requests = [], setRequests, invites = [], currentRole = "logistics_admin", onDecision, onCreateInvite, onRevokeInvite, onCreateRecovery, roster = demoUsers, companies = [], live = false }) {
+export function Access({ requests = [], setRequests, invites = [], currentRole = "logistics_admin", currentCapabilities = [], onDecision, onCreateInvite, onRevokeInvite, onCreateRecovery, onSetAdminOverride, roster = demoUsers, companies = [], live = false }) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [readyPayload, setReadyPayload] = useState(null);
   const [busyId, setBusyId] = useState("");
   const [pageError, setPageError] = useState("");
-  const canManage = canApproveAccess(currentRole);
+  const canManage = canApproveAccess(currentRole, currentCapabilities);
+  const canDelegateAdmin = ["logistics_admin", "session_director"].includes(currentRole);
   const pendingLegacy = requests.filter((request) => request.status === "pending");
 
   const finishInvite = (payload) => {
@@ -196,12 +202,21 @@ export function Access({ requests = [], setRequests, invites = [], currentRole =
     } catch (error) { setPageError(error.message || "Unable to create a recovery code."); }
     finally { setBusyId(""); }
   };
+  const toggleAdmin = async (user) => {
+    const enabled = !(user.capabilities || []).includes("access_admin");
+    const wording = enabled ? "grant" : "revoke";
+    if (!window.confirm(`${wording === "grant" ? "Grant" : "Revoke"} full administrative access for ${user.name}? Their displayed role will remain Coordinator, and this change will be recorded in the audit history.`)) return;
+    setBusyId(user.id); setPageError("");
+    try { await onSetAdminOverride?.(user.id, enabled); }
+    catch (error) { setPageError(error.message || `Unable to ${wording} administrative access.`); }
+    finally { setBusyId(""); }
+  };
 
   return (
     <section className="page">
       <PageHead title="People & access" description="Invite the right people, assign their role once, and let them create their own password. No shared account passwords and no repeated sign-in emails." action={canManage ? <button className="primary" onClick={() => setInviteOpen(true)}><UserPlus />Invite leader</button> : null} />
 
-      <div className="notice green"><ShieldCheck weight="fill"/><div><b>Simple rule: identity first, permissions second</b><p>Each leader signs in with their own email and password. Their role controls what they can see. Only logistical administrators and the session directing couple can issue or revoke access.</p></div></div>
+      <div className="notice green"><ShieldCheck weight="fill"/><div><b>Simple rule: identity first, permissions second</b><p>Each leader signs in with their own email and password. A named Coordinator may receive an explicit, revocable administrative capability while their displayed role stays Coordinator.</p></div></div>
       {pageError ? <div className="form-error page-error" role="alert">{pageError}</div> : null}
 
       <div className="access-layout invite-access-layout">
@@ -226,7 +241,7 @@ export function Access({ requests = [], setRequests, invites = [], currentRole =
 
       <article className="panel">
         <div className="panel-head"><div><span className="kicker">Current access</span><h2>Authorized leaders</h2></div><Status>{roster.filter((user) => user.active !== false).length} active</Status></div>
-        <div className="table-wrap"><table><thead><tr><th>Leader</th><th>Role</th><th>Visibility</th><th>Account help</th></tr></thead><tbody>{roster.map((user) => <tr key={user.id || user.userId || user.email}><td><b>{user.name}</b><small className="cell-sub">{user.email}</small></td><td>{roleLabel(user.role)}</td><td>{rosterScope(user, companies)}</td><td>{canManage && live && user.userId ? <button className="table-link" disabled={busyId === user.userId} onClick={() => recovery(user)}><Key />Recovery code</button> : <Status tone="good">Active</Status>}</td></tr>)}</tbody></table></div>
+        <div className="table-wrap"><table><thead><tr><th>Leader</th><th>Role</th><th>Visibility</th><th>Administrative access</th><th>Account help</th></tr></thead><tbody>{roster.map((user) => <tr key={user.id || user.userId || user.email}><td><b>{user.name}</b><small className="cell-sub">{user.email}</small></td><td>{roleLabel(user.role)}</td><td>{rosterScope(user, companies)}</td><td>{user.role === "coordinator" ? <>{(user.capabilities || []).includes("access_admin") ? <Status tone="warn">Full admin override</Status> : <Status>Standard coordinator</Status>}{canDelegateAdmin && live ? <button className="table-link admin-toggle" disabled={busyId === user.id} onClick={() => toggleAdmin(user)}>{(user.capabilities || []).includes("access_admin") ? "Revoke admin" : "Grant admin"}</button> : null}</> : <span className="muted-cell">Role-defined</span>}</td><td>{canManage && live && user.userId ? <button className="table-link" disabled={busyId === user.userId} onClick={() => recovery(user)}><Key />Recovery code</button> : <Status tone="good">Active</Status>}</td></tr>)}</tbody></table></div>
       </article>
 
       {pendingLegacy.length ? <article className="panel legacy-request-panel"><div className="panel-head"><div><span className="kicker">Older flow</span><h2>Previous access requests</h2></div><Status tone="warn">{pendingLegacy.length} pending</Status></div><p>These were created by the earlier shared session-code flow. The new invite flow is clearer because the role is assigned before account activation.</p><div className="request-list">{pendingLegacy.map((request) => <div className="legacy-request-row" key={request.id}><div><b>{request.name}</b><small>{request.email} · {roleLabel(request.role)}</small></div>{canManage ? <button className="secondary compact-button" disabled={busyId === request.id} onClick={() => rejectLegacy(request)}>Close request</button> : null}</div>)}</div></article> : null}
