@@ -56,7 +56,7 @@ function AssignmentEditor({ sessionId, person, rooms, currentAssignment, onClose
       <label>Room<select value={roomId} onChange={(e) => setRoomId(e.target.value)}><option value="">Not assigned</option>{rooms.map((room) => <option key={room.id} value={room.id} disabled={room.occupancy >= room.capacity && room.id !== currentAssignment?.roomId}>{room.name} · {room.occupancy}/{room.capacity}{room.sex ? ` · ${room.sex}` : ""}</option>)}</select></label>
       <label>Bed / key label<input value={bedLabel} onChange={(e) => setBedLabel(e.target.value)} placeholder="Optional" /></label>
       {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
-      <div className="field-sheet-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={busy || (!roomId && !currentAssignment)}>{busy ? "Saving…" : roomId ? currentAssignment ? "Move / update" : "Assign room" : "Remove assignment"}</button></div>
+      <div className="field-sheet-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button type="button" className="primary" onClick={save} disabled={busy || (!roomId && !currentAssignment)}>{busy ? "Saving…" : roomId ? currentAssignment ? "Move / update" : "Assign room" : "Remove assignment"}</button></div>
     </div>
   </DismissibleLayer>;
 }
@@ -82,7 +82,9 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
 
   const assignedByPerson = useMemo(() => new Map(assignments.map((item) => [`${item.personType}:${item.personId}`, item])), [assignments]);
   const people = useMemo(() => {
-    const youth = participants.map((person) => ({ id: person.id, kind: "participant", name: person.fullName, sex: String(person.sex || "").toLowerCase(), context: `${person.unit || "Unit not recorded"}` }));
+    const youth = participants
+      .filter((person) => person.serverEligibility?.eligible !== false && person.attendanceStatus !== "confirmed_not_attending")
+      .map((person) => ({ id: person.id, kind: "participant", name: person.fullName, sex: String(person.sex || "").toLowerCase(), context: `${person.unit || "Unit not recorded"}` }));
     const leaders = staff.map((person) => ({ id: person.id, kind: "staff", name: person.name, sex: String(person.sex || "").toLowerCase(), context: `${person.operationalRole || "Staff"} · ${person.unit || "Unit not recorded"}` }));
     const text = query.trim().toLowerCase();
     return [...youth, ...leaders].filter((person) => !text || `${person.name} ${person.context}`.toLowerCase().includes(text)).slice(0, 80);
@@ -101,7 +103,7 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
       <article className="panel"><div className="panel-head"><div><span className="kicker">Current rooms</span><h2>Housing map</h2></div><Buildings size={22}/></div>
         <div className="room-grid">{rooms.map((room) => <div className="room-card" key={room.id}><div><b>{room.name}</b><small>{[room.building, room.floor].filter(Boolean).join(" · ") || "Location not labelled"}</small></div><Status tone={room.occupancy >= room.capacity ? "warn" : "good"}>{room.occupancy}/{room.capacity}</Status><div className="room-meter"><i style={{ width: `${Math.min(100, (room.occupancy / Math.max(1, room.capacity)) * 100)}%` }} /></div>{room.sex ? <small>{room.sex === "female" ? "Female" : "Male"} housing</small> : <small>Not sex-restricted</small>}</div>)}{!rooms.length ? <Empty icon={Bed} title="No rooms yet" text="Add the first room before assigning people." /> : null}</div>
       </article>
-      <article className="panel"><div className="panel-head"><div><span className="kicker">Find person</span><h2>Room assignments</h2></div><UserPlus size={22}/></div><SearchField value={query} onChange={setQuery} label="Find person for Housing" placeholder="Search youth or staff" />
+      <article className="panel"><div className="panel-head"><div><span className="kicker">Find person</span><h2>Room assignments</h2></div><UserPlus size={22}/></div><SearchField value={query} onChange={setQuery} label="Find person for Housing" placeholder="Search eligible youth or staff" />
         <div className="field-person-list">{people.map((person) => { const assignment = assignedByPerson.get(`${person.kind}:${person.id}`); return <button type="button" key={`${person.kind}:${person.id}`} disabled={!canManage} onClick={() => canManage && setSelected({ person, assignment })}><span className="person-avatar">{initials(person.name)}</span><span><b>{person.name}</b><small>{person.context}</small></span><span>{assignment ? <><b>{assignment.roomName}</b><small>{assignment.company || assignment.group || "Assigned"}</small></> : <Status tone="warn">Unassigned</Status>}</span></button>; })}</div>
       </article>
     </div>
