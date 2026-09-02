@@ -181,6 +181,22 @@ export async function setStaffCompanyAssignment(staffId, companyId, assigned) {
   if (error) throw error;
 }
 
+export async function applyStaffAssignmentPlan(sessionId, suggestions) {
+  const { data, error } = await client().rpc("apply_staff_assignment_plan", {
+    p_session_id: sessionId,
+    p_counselor_assignments: (suggestions?.counselors || []).map((item) => ({
+      staff_id: item.staffId,
+      group_id: item.groupId,
+    })),
+    p_assistant_assignments: (suggestions?.assistants || []).map((item) => ({
+      staff_id: item.staffId,
+      company_id: item.companyId,
+    })),
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function updateCompanyDetails(companyId, values) {
   const { error } = await client().rpc("update_company_details", {
     p_company_id: companyId,
