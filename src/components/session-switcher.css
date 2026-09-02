@@ -1,0 +1,88 @@
+.session-select {
+  width: min(300px, 34vw);
+  min-height: 36px;
+  padding: 0 34px 0 10px;
+  border: 1px solid #cfe2e9;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--blue-35);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.session-select:focus-visible {
+  outline: 3px solid rgba(0, 125, 165, .16);
+  outline-offset: 1px;
+  border-color: var(--blue-25);
+}
+
+.session-badge.training {
+  background: rgba(252, 180, 73, .14);
+  border-color: rgba(252, 180, 73, .35);
+}
+
+.session-badge.training span {
+  color: #fff4dc;
+}
+
+.session-badge.training small {
+  color: #f7dca9;
+}
+
+.training-banner {
+  margin: 14px clamp(16px, 3vw, 32px) 0;
+  min-height: 52px;
+  padding: 11px 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #efd7a8;
+  border-radius: 13px;
+  background: #fff8e9;
+  color: #6a4c13;
+  box-shadow: 0 8px 24px rgba(103, 77, 20, .06);
+}
+
+.training-banner b {
+  flex: none;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #f7dfad;
+  color: #61450f;
+  font-size: 11px;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+
+.training-banner span {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 780px) {
+  .session-select {
+    width: min(190px, 46vw);
+    font-size: 12px;
+  }
+
+  .training-banner {
+    margin: 10px 12px 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+}
+
+@media (max-width: 520px) {
+  .session-select {
+    width: min(155px, 42vw);
+  }
+
+  .training-banner span {
+    font-size: 11px;
+  }
+}
