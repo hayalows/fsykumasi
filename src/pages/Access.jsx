@@ -1,271 +1,68 @@
 import { useMemo, useRef, useState } from "react";
-import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { CaretDown } from "@phosphor-icons/react/CaretDown";
+import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { Copy } from "@phosphor-icons/react/Copy";
 import { Key } from "@phosphor-icons/react/Key";
 import { ShieldCheck } from "@phosphor-icons/react/ShieldCheck";
+import { SlidersHorizontal } from "@phosphor-icons/react/SlidersHorizontal";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { X } from "@phosphor-icons/react/X";
 import { demoAccessRequests, demoUsers } from "../data/demo.js";
 import { canApproveAccess, roleLabel, roleVisibility } from "../lib/access.js";
-import { DismissibleLayer, Empty, PageHead, SearchField, Status } from "../components/UI.jsx";
+import { DismissibleLayer, Empty, MutationFeedback, PageHead, SearchField, Status } from "../components/UI.jsx";
 import "./access-review.css";
 import "./access-invites.css";
+import "./field-operations.css";
 
-const INVITABLE_ROLES = ["assistant_coordinator", "coordinator", "logistics_admin", "session_director", "committee_viewer"];
-const ELEVATED_ROLES = new Set(["logistics_admin", "session_director"]);
+const ALL_ROLES=["assistant_coordinator","coordinator","logistics_admin","session_director","committee_viewer"];
+const ELEVATED=new Set(["logistics_admin","session_director"]);
+const CAPABILITY_LABELS={people_lookup:"Find people",groups_view:"Groups & companies",checkin_record:"Check-in",headcount_view:"Head count",headcount_record:"Report head count",housing_view:"Housing",housing_manage:"Manage Housing",housing_export:"Housing export",wellness_status:"Wellness status",wellness_private:"Confidential Wellness",wellness_manage:"Manage Wellness",food_view:"Food",food_manage:"Manage Food",food_export:"Food export",registration_view:"Registration",registration_manage:"Manage registration",staff_view:"Staff",staff_manage:"Manage staff",reports_export:"Reports",access_admin:"Manage access"};
+export function createInitialAccessRequests(){return demoAccessRequests;}
+function teamNames(keys=[],teams=[]){return keys.map((key)=>teams.find((team)=>team.key===key)?.name||key);}
+function scopeForRole(role,companyIds=[],teamKeys=[],teams=[]){if(["coordinator","logistics_admin","session_director"].includes(role))return "Whole session";if(role==="assistant_coordinator")return companyIds.length?`${companyIds.length} assigned companies`:"Assigned companies";if(teamKeys.length)return teamNames(teamKeys,teams).join(", ");return roleVisibility(role);}
 
-export function createInitialAccessRequests() {
-  return demoAccessRequests;
+function TeamPicker({teams,selected,onChange}){const toggle=(key)=>onChange(selected.includes(key)?selected.filter((item)=>item!==key):[...selected,key]);return <div className="access-team-picker">{teams.map((team)=><label key={team.key} className={selected.includes(team.key)?"selected":""}><input type="checkbox" checked={selected.includes(team.key)} onChange={()=>toggle(team.key)}/><span><b>{team.name}</b><small>{team.description}</small></span></label>)}</div>;}
+
+function InviteModal({companies,teams,live,onClose,onCreate,restoreFocusRef,canDelegateAdmin}){
+ const allowedRoles=canDelegateAdmin?ALL_ROLES:ALL_ROLES.filter((role)=>!ELEVATED.has(role));
+ const [form,setForm]=useState({name:"",email:"",role:"assistant_coordinator",confirmElevated:false});const [companyIds,setCompanyIds]=useState([]);const [teamKeys,setTeamKeys]=useState([]);const [search,setSearch]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");
+ const filteredCompanies=useMemo(()=>{const q=search.trim().toLowerCase();return q?companies.filter((c)=>c.name.toLowerCase().includes(q)):companies;},[companies,search]);
+ const toggleCompany=(id)=>setCompanyIds((current)=>current.includes(id)?current.filter((item)=>item!==id):[...current,id]);
+ const submit=async(event)=>{event.preventDefault();setError("");if(form.role==="assistant_coordinator"&&!companyIds.length)return setError("Select at least one company for this Assistant Coordinator.");if(form.role==="committee_viewer"&&!teamKeys.length)return setError("Choose at least one FSY team responsibility.");if(ELEVATED.has(form.role)&&!form.confirmElevated)return setError("Confirm the elevated access before creating this invite.");setBusy(true);try{const created=live?await onCreate({email:form.email,displayName:form.name,role:form.role,companyIds,committeeScope:teamKeys}):{id:`invite-${Date.now()}`,code:"FSY-DEMO-1234",expiresAt:new Date(Date.now()+7*86400000).toISOString()};onClose({...created,email:form.email.trim().toLowerCase(),name:form.name.trim(),role:form.role,scope:scopeForRole(form.role,companyIds,teamKeys,teams),kind:"invite"});}catch(err){setError(err.message||"Unable to create this invite.");}finally{setBusy(false);}};
+ return <DismissibleLayer open onClose={()=>onClose(null)} title="Invite a leader" className="access-review-modal" sheet restoreFocusRef={restoreFocusRef}><form className="invite-modal" onSubmit={submit}><button type="button" data-layer-close className="icon-button modal-close" onClick={()=>onClose(null)} aria-label="Close invite"><X/></button><span className="kicker">New leader</span><h2>Invite someone to FSY Kumasi</h2><p className="review-summary">Choose their FSY role and any additional team responsibilities. These can be changed later without creating a new account.</p><div className="invite-two-col"><label>Full name<input required value={form.name} onChange={(e)=>setForm({...form,name:e.target.value})} autoComplete="name"/></label><label>Email address<input required type="email" value={form.email} onChange={(e)=>setForm({...form,email:e.target.value})} autoComplete="email"/></label></div><label>FSY role<select value={form.role} onChange={(e)=>{setForm({...form,role:e.target.value,confirmElevated:false});setCompanyIds([]);}}>{allowedRoles.map((role)=><option key={role} value={role}>{roleLabel(role)}</option>)}</select></label>
+ {form.role==="assistant_coordinator"?<div className="scope-editor"><div className="scope-editor-head"><div><b>Assigned companies</b><small>The AC sees only youth and operations in these companies unless another team responsibility adds a narrow capability.</small></div><Status tone={companyIds.length?"good":"warn"}>{companyIds.length} selected</Status></div><SearchField value={search} onChange={setSearch} label="Search companies" placeholder="Find a company"/><div className="company-picker">{filteredCompanies.map((company)=><label key={company.id} className={companyIds.includes(company.id)?"selected":""}><input type="checkbox" checked={companyIds.includes(company.id)} onChange={()=>toggleCompany(company.id)}/><span>{company.name}</span></label>)}</div></div>:null}
+ <div className="scope-editor"><div className="scope-editor-head"><div><b>Team responsibilities</b><small>Use official FSY presets. A person can hold more than one responsibility.</small></div><Status tone={form.role==="committee_viewer"&&!teamKeys.length?"warn":"good"}>{teamKeys.length} selected</Status></div><TeamPicker teams={teams} selected={teamKeys} onChange={setTeamKeys}/></div>
+ {form.role==="coordinator"?<div className="notice green compact-notice"><ShieldCheck weight="fill"/><div><b>Whole-session operations</b><p>Standard Coordinators do not manage leader access unless that capability is separately granted by top leadership.</p></div></div>:null}
+ {ELEVATED.has(form.role)?<label className="elevated-confirm"><input type="checkbox" checked={form.confirmElevated} onChange={(e)=>setForm({...form,confirmElevated:e.target.checked})}/><span><b>Confirm elevated access</b><small>This role can manage the whole session and leader access.</small></span></label>:null}
+ {error?<MutationFeedback tone="error">{error}</MutationFeedback>:null}<div className="review-actions"><button type="button" className="secondary" onClick={()=>onClose(null)}>Cancel</button><button className="primary" disabled={busy}>{busy?"Creating…":"Create invite"}<UserPlus/></button></div></form></DismissibleLayer>;
 }
 
-function scopeForRole(role, companyIds = [], committeeScope = []) {
-  if (["coordinator", "logistics_admin", "session_director"].includes(role)) return "Whole session";
-  if (role === "assistant_coordinator") return companyIds.length ? `${companyIds.length} assigned companies` : "Assigned companies";
-  if (role === "committee_viewer") return committeeScope.length ? committeeScope.join(", ") : "Assigned committee scope";
-  return roleVisibility(role);
+function ManageAccessModal({user,companies,teams,canDelegateAdmin,onClose,onSave}){
+ const [role,setRole]=useState(user.role);const [companyIds,setCompanyIds]=useState(user.companyIds||[]);const [teamKeys,setTeamKeys]=useState(user.teamKeys||[]);const [accessAdmin,setAccessAdmin]=useState((user.capabilities||[]).includes("access_admin"));const [busy,setBusy]=useState(false);const [error,setError]=useState("");
+ const capabilities=useMemo(()=>{const values=new Set();teams.filter((team)=>teamKeys.includes(team.key)).forEach((team)=>team.capabilities.forEach((cap)=>values.add(cap)));if(accessAdmin)values.add("access_admin");return [...values].map((cap)=>CAPABILITY_LABELS[cap]||cap);},[teamKeys,teams,accessAdmin]);
+ const toggleCompany=(id)=>setCompanyIds((current)=>current.includes(id)?current.filter((item)=>item!==id):[...current,id]);
+ const save=async()=>{setBusy(true);setError("");try{await onSave({assignmentId:user.id,role,companyIds,teamKeys,accessAdmin});onClose();}catch(err){setError(err.message||"Unable to update this leader's access.");}finally{setBusy(false);}};
+ return <DismissibleLayer open onClose={onClose} title="Manage leader access" sheet><div className="field-sheet"><button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X/></button><span className="kicker">Manage access</span><h2>{user.name}</h2><p>{user.email}</p><label>FSY role<select value={role} onChange={(e)=>{setRole(e.target.value);if(e.target.value!=="assistant_coordinator")setCompanyIds([]);if(e.target.value!=="coordinator")setAccessAdmin(false);}}>{ALL_ROLES.filter((value)=>canDelegateAdmin||!ELEVATED.has(value)).map((value)=><option key={value} value={value}>{roleLabel(value)}</option>)}</select></label>
+ {role==="assistant_coordinator"?<div className="scope-editor"><div className="scope-editor-head"><div><b>Assigned companies</b><small>Choose the AC's operational company scope.</small></div><Status tone={companyIds.length?"good":"warn"}>{companyIds.length} selected</Status></div><div className="company-picker">{companies.map((company)=><label key={company.id} className={companyIds.includes(company.id)?"selected":""}><input type="checkbox" checked={companyIds.includes(company.id)} onChange={()=>toggleCompany(company.id)}/><span>{company.name}</span></label>)}</div></div>:null}
+ <div className="scope-editor"><div className="scope-editor-head"><div><b>Team responsibilities</b><small>These add only the tools and data required for that work.</small></div><Status>{teamKeys.length} selected</Status></div><TeamPicker teams={teams} selected={teamKeys} onChange={setTeamKeys}/></div>
+ {role==="coordinator"&&canDelegateAdmin?<label className="elevated-confirm"><input type="checkbox" checked={accessAdmin} onChange={(e)=>setAccessAdmin(e.target.checked)}/><span><b>Can manage leader access</b><small>Delegates access administration while the displayed role remains Coordinator.</small></span></label>:null}
+ <div className="effective-access-preview"><b>Effective access preview</b><span>{capabilities.length?capabilities.join(" · "):role==="committee_viewer"?"No operational team selected yet.":"Role-defined operations only."}</span></div>{error?<MutationFeedback tone="error">{error}</MutationFeedback>:null}<div className="field-sheet-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={busy||role==="assistant_coordinator"&&!companyIds.length||role==="committee_viewer"&&!teamKeys.length}>{busy?"Saving…":"Save access"}</button></div></div></DismissibleLayer>;
 }
 
-function InviteModal({ companies, live, onClose, onCreate, restoreFocusRef }) {
-  const [form, setForm] = useState({ name: "", email: "", role: "assistant_coordinator", committee: "", confirmElevated: false });
-  const [companyIds, setCompanyIds] = useState([]);
-  const [search, setSearch] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+function CodeReadyModal({payload,onClose}){const [copied,setCopied]=useState("");const link=typeof window==="undefined"?"":`${window.location.origin}/?invite=${encodeURIComponent(payload.code)}`;const expires=payload.expiresAt?new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short"}).format(new Date(payload.expiresAt)):"Soon";const copy=async(value,label)=>{await navigator.clipboard.writeText(value);setCopied(label);window.setTimeout(()=>setCopied(""),1700);};return <DismissibleLayer open onClose={onClose} title={payload.kind==="recovery"?"Recovery code ready":"Invite ready"} className="invite-ready-modal" sheet><div><button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X/></button><div className="invite-ready-icon"><CheckCircle weight="fill"/></div><span className="kicker">{payload.kind==="recovery"?"Recovery ready":"Invite ready"}</span><h2>{payload.kind==="recovery"?`Help ${payload.name||"this leader"} reset their password`:`Send this to ${payload.name}`}</h2><p>{payload.kind==="recovery"?"This short-lived code lets the existing account choose a new password.":`${roleLabel(payload.role)} · ${payload.scope}`}</p><div className="invite-code-box"><span>One-time code</span><strong>{payload.code}</strong><small>Expires {expires}</small></div><div className="invite-ready-actions"><button className="primary" onClick={()=>copy(payload.code,"code")}><Copy/>{copied==="code"?"Copied":"Copy code"}</button><button className="secondary" onClick={()=>copy(link,"link")}><Copy/>{copied==="link"?"Link copied":"Copy setup link"}</button></div><button className="text-action invite-done" onClick={onClose}>Done</button></div></DismissibleLayer>;}
+function PendingInvite({invite,onRevoke,busy,teams}){const scope=scopeForRole(invite.role,invite.company_ids||[],invite.committee_scope||[],teams);const expiry=new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short"}).format(new Date(invite.expires_at));return <div className="pending-invite-row"><div className="person-avatar">{(invite.display_name||invite.email).split(/\s|@/).filter(Boolean).map((part)=>part[0]).slice(0,2).join("").toUpperCase()}</div><div><b>{invite.display_name||"Invited leader"}</b><small>{invite.email}</small><div className="request-meta"><span>{roleLabel(invite.role)}</span><span>{scope}</span><span>Expires {expiry}</span></div></div><button className="secondary compact-button" disabled={busy} onClick={()=>onRevoke(invite.id)}>Revoke</button></div>;}
+function rosterScope(user,companies){if(["coordinator","logistics_admin","session_director"].includes(user.role))return "Whole session";if(user.role==="assistant_coordinator"){const names=(user.companyIds||[]).map((id)=>companies.find((company)=>company.id===id)?.name).filter(Boolean);return names.length?names.join(", "):`${user.companyIds?.length||0} assigned companies`;}return user.teamNames?.length?user.teamNames.join(", "):user.committeeScope?.join(", ")||roleVisibility(user.role);}
 
-  const filteredCompanies = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return companies;
-    return companies.filter((company) => company.name.toLowerCase().includes(query));
-  }, [companies, search]);
-
-  const toggleCompany = (id) => setCompanyIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
-
-  const submit = async (event) => {
-    event.preventDefault();
-    setError("");
-    const committeeScope = form.committee.split(",").map((item) => item.trim()).filter(Boolean);
-    if (form.role === "assistant_coordinator" && companyIds.length === 0) return setError("Select at least one company for this Assistant Coordinator.");
-    if (form.role === "committee_viewer" && committeeScope.length === 0) return setError("Add at least one committee area.");
-    if (ELEVATED_ROLES.has(form.role) && !form.confirmElevated) return setError("Confirm the elevated access before creating this invite.");
-
-    setBusy(true);
-    try {
-      const created = live
-        ? await onCreate({ email: form.email, displayName: form.name, role: form.role, companyIds, committeeScope })
-        : { id: `invite-${Date.now()}`, code: "FSY-DEMO-1234-5678-EF90-1234-5678", expiresAt: new Date(Date.now() + 7 * 86400000).toISOString() };
-      onClose({
-        ...created,
-        email: form.email.trim().toLowerCase(),
-        name: form.name.trim(),
-        role: form.role,
-        scope: scopeForRole(form.role, companyIds, committeeScope),
-        kind: "invite",
-      });
-    } catch (err) {
-      setError(err.message || "Unable to create this invite.");
-    } finally { setBusy(false); }
-  };
-
-  return (
-    <DismissibleLayer open onClose={() => onClose(null)} title="Invite a leader" className="access-review-modal" sheet restoreFocusRef={restoreFocusRef}>
-      <form className="invite-modal" onSubmit={submit}>
-        <button type="button" data-layer-close className="icon-button modal-close" onClick={() => onClose(null)} aria-label="Close invite"><X /></button>
-        <span className="kicker">New leader</span>
-        <h2>Invite someone to FSY Kumasi</h2>
-        <p className="review-summary">Choose the role now. The leader will use a one-time code to create their own password.</p>
-
-        <div className="invite-two-col">
-          <label>Full name<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Leader name" autoComplete="name" /></label>
-          <label>Email address<input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="leader@example.org" autoComplete="email" /></label>
-        </div>
-        <label>Role<select value={form.role} onChange={(event) => { setForm({ ...form, role: event.target.value, confirmElevated: false }); setCompanyIds([]); }}>
-          {INVITABLE_ROLES.map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}
-        </select></label>
-
-        {form.role === "assistant_coordinator" ? (
-          <div className="scope-editor">
-            <div className="scope-editor-head"><div><b>Assigned companies</b><small>The AC only sees youth and operations in these companies.</small></div><Status tone={companyIds.length ? "good" : "warn"}>{companyIds.length} selected</Status></div>
-            {companies.length ? <>
-              <SearchField value={search} onChange={setSearch} label="Search assigned companies" placeholder="Find a company" />
-              <div className="company-picker">{filteredCompanies.map((company) => (
-                <label key={company.id} className={companyIds.includes(company.id) ? "selected" : ""}>
-                  <input type="checkbox" checked={companyIds.includes(company.id)} onChange={() => toggleCompany(company.id)} /><span>{company.name}</span>
-                </label>
-              ))}</div>
-            </> : <div className="form-hint warn">Companies need to exist before an Assistant Coordinator can be invited.</div>}
-          </div>
-        ) : null}
-
-        {form.role === "committee_viewer" ? <label>Committee scope<input value={form.committee} onChange={(event) => setForm({ ...form, committee: event.target.value })} placeholder="e.g. Food, Housing" /><small className="field-help">Separate multiple areas with commas.</small></label> : null}
-
-        {form.role === "coordinator" ? <div className="notice green compact-notice"><ShieldCheck weight="fill" /><div><b>Whole-session visibility</b><p>Coordinators can see whole-session operations but cannot grant access to others.</p></div></div> : null}
-
-        {ELEVATED_ROLES.has(form.role) ? <label className="elevated-confirm"><input type="checkbox" checked={form.confirmElevated} onChange={(event) => setForm({ ...form, confirmElevated: event.target.checked })} /><span><b>Confirm elevated access</b><small>This role can see the whole session and approve or issue access for other leaders.</small></span></label> : null}
-
-        {error ? <div className="form-error" role="alert">{error}</div> : null}
-        <div className="review-actions"><button type="button" className="secondary" onClick={() => onClose(null)}>Cancel</button><button className="primary" disabled={busy || (form.role === "assistant_coordinator" && !companies.length)}>{busy ? "Creating…" : "Create invite"}<UserPlus /></button></div>
-      </form>
-    </DismissibleLayer>
-  );
+export function Access({requests=[],setRequests,invites=[],currentRole="logistics_admin",currentCapabilities=[],onDecision,onCreateInvite,onRevokeInvite,onCreateRecovery,onManageLeaderAccess,roster=demoUsers,companies=[],teams=[],live=false,sessionName}){
+ const inviteTriggerRef=useRef(null);const [inviteOpen,setInviteOpen]=useState(false);const [readyPayload,setReadyPayload]=useState(null);const [manageUser,setManageUser]=useState(null);const [busyId,setBusyId]=useState("");const [pageError,setPageError]=useState("");const canManage=canApproveAccess(currentRole,currentCapabilities);const canDelegateAdmin=["logistics_admin","session_director"].includes(currentRole);const canRecover=canDelegateAdmin;const pendingLegacy=requests.filter((request)=>request.status==="pending");const activeRoster=roster.filter((user)=>user.active!==false&&user.status!=="Pending");
+ const finishInvite=(payload)=>{setInviteOpen(false);if(payload)setReadyPayload(payload);};
+ const revoke=async(id)=>{setBusyId(id);setPageError("");try{await onRevokeInvite?.(id);}catch(error){setPageError(error.message||"Unable to revoke this invite.");}finally{setBusyId("");}};
+ const recovery=async(user)=>{setBusyId(user.userId||user.id);setPageError("");try{const created=await onCreateRecovery?.(user.userId||user.id);if(created)setReadyPayload({...created,email:user.email,name:user.name,role:user.role,scope:rosterScope(user,companies),kind:"recovery"});}catch(error){setPageError(error.message||"Unable to create a recovery code.");}finally{setBusyId("");}};
+ const rejectLegacy=async(request)=>{setBusyId(request.id);try{if(onDecision)await onDecision(request.id,"rejected",{note:"Replaced by administrator-issued invite flow."});else setRequests?.((current)=>current.map((item)=>item.id===request.id?{...item,status:"rejected"}:item));}finally{setBusyId("");}};
+ const saveAccess=async(values)=>{await onManageLeaderAccess(values);};
+ return <section className="page access-page"><PageHead title="Access" sessionName={sessionName} description="Give each leader the tools needed for their assignment, and change access later without recreating their account." action={canManage?<button ref={inviteTriggerRef} className="primary" onClick={()=>setInviteOpen(true)}><UserPlus/>Invite leader</button>:null}/><div className="notice green compact-notice access-rule-note"><ShieldCheck weight="fill"/><div><b>Roles, teams and scope work together.</b><p>UI visibility follows effective capabilities, while Supabase permissions remain the security boundary.</p></div></div>{pageError?<MutationFeedback tone="error">{pageError}</MutationFeedback>:null}
+ <div className="access-layout invite-access-layout"><article className="panel approval-panel"><div className="panel-head"><div><span className="kicker">Waiting to activate</span><h2>{invites.length} open invite{invites.length===1?"":"s"}</h2></div><span className="count">{invites.length}</span></div><div className="request-list">{invites.length?invites.map((invite)=><PendingInvite key={invite.id} invite={invite} teams={teams} onRevoke={revoke} busy={busyId===invite.id}/>):<Empty icon={UserPlus} title="No open invites" text="Invite a leader when you are ready to give them access."/>}</div></article><details className="panel progressive-section role-panel access-role-disclosure"><summary><span><span className="kicker">Permission model</span><b>Role + team responsibility</b><small>One person can carry more than one responsibility</small></span><CaretDown size={20} className="disclosure-icon"/></summary><div className="progressive-section-body"><div className="role-matrix"><div><b>Assistant coordinator</b><span>Assigned companies</span><small>May also hold a team responsibility</small></div><div><b>Coordinator</b><span>Whole-session operations</span><small>Access admin can be explicitly delegated</small></div><div><b>Committee member</b><span>Team-defined tools</span><small>Housing, Wellness, Food, and other presets</small></div><div><b>Top leadership</b><span>Whole session</span><small>Protected elevated access</small></div></div></div></details></div>
+ <article className="panel access-roster-panel"><div className="panel-head"><div><span className="kicker">Current access</span><h2>Authorized leaders</h2></div><Status>{activeRoster.length} active</Status></div><div className="access-roster-list">{activeRoster.map((user)=>{const hasAdmin=(user.capabilities||[]).includes("access_admin");return <details className="access-roster-row" key={user.id||user.userId||user.email}><summary><span className="roster-person"><b>{user.name}</b><small>{roleLabel(user.role)}</small></span><Status tone="good">Active</Status><CaretDown size={18} className="disclosure-icon"/></summary><div className="access-roster-detail"><div><span>Email</span><b>{user.email||"Not available"}</b></div><div><span>Visibility</span><b>{rosterScope(user,companies)}</b></div><div><span>Teams</span><span className="access-team-chips">{user.teamNames?.length?user.teamNames.map((name)=><span key={name}>{name}</span>):<span>Role only</span>}</span></div><div><span>Administrative access</span><span>{hasAdmin?<Status tone="warn">Access admin</Status>:<span className="muted-cell">Not delegated</span>}</span></div><div><span>Actions</span><span>{canManage&&live?<button className="table-link access-manage-button" onClick={()=>setManageUser(user)}><SlidersHorizontal/>Manage access</button>:null}{canRecover&&live&&user.userId?<button className="table-link" disabled={busyId===user.userId} onClick={()=>recovery(user)}><Key/>Recovery code</button>:null}</span></div></div></details>;})}</div></article>
+ {pendingLegacy.length?<details className="panel progressive-section legacy-request-panel"><summary><span><span className="kicker">Older flow</span><b>{pendingLegacy.length} previous access request{pendingLegacy.length===1?"":"s"}</b><small>Created before administrator-issued invites</small></span><CaretDown size={20} className="disclosure-icon"/></summary><div className="progressive-section-body"><div className="request-list">{pendingLegacy.map((request)=><div className="legacy-request-row" key={request.id}><div><b>{request.name}</b><small>{request.email} · {roleLabel(request.role)}</small></div>{canManage?<button className="secondary compact-button" disabled={busyId===request.id} onClick={()=>rejectLegacy(request)}>Close request</button>:null}</div>)}</div></div></details>:null}
+ {inviteOpen?<InviteModal companies={companies} teams={teams} live={live} onCreate={onCreateInvite} onClose={finishInvite} restoreFocusRef={inviteTriggerRef} canDelegateAdmin={canDelegateAdmin}/>:null}{readyPayload?<CodeReadyModal payload={readyPayload} onClose={()=>setReadyPayload(null)}/>:null}{manageUser?<ManageAccessModal user={manageUser} companies={companies} teams={teams} canDelegateAdmin={canDelegateAdmin} onClose={()=>setManageUser(null)} onSave={saveAccess}/>:null}</section>;
 }
-
-function CodeReadyModal({ payload, onClose }) {
-  const [copied, setCopied] = useState("");
-  const link = typeof window === "undefined" ? "" : `${window.location.origin}/?invite=${encodeURIComponent(payload.code)}`;
-  const expires = payload.expiresAt ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(payload.expiresAt)) : "Soon";
-  const copy = async (value, label) => { await navigator.clipboard.writeText(value); setCopied(label); window.setTimeout(() => setCopied(""), 1700); };
-  const share = async () => {
-    if (navigator.share) await navigator.share({ title: "FSY Kumasi account setup", text: `Use this private link to set up your FSY Kumasi account. It works once and expires.`, url: link });
-    else await copy(link, "link");
-  };
-
-  return (
-    <DismissibleLayer open onClose={onClose} title={payload.kind === "recovery" ? "Recovery code ready" : "Invite ready"} className="invite-ready-modal" sheet>
-      <div>
-        <button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X /></button>
-        <div className="invite-ready-icon"><CheckCircle weight="fill" /></div>
-        <span className="kicker">{payload.kind === "recovery" ? "Recovery ready" : "Invite ready"}</span>
-        <h2>{payload.kind === "recovery" ? `Help ${payload.name || "this leader"} reset their password` : `Send this to ${payload.name}`}</h2>
-        <p>{payload.kind === "recovery" ? "This short-lived code lets the existing account choose a new password without relying on email delivery." : `${roleLabel(payload.role)} · ${payload.scope}`}</p>
-        <div className="invite-code-box"><span>One-time code</span><strong>{payload.code}</strong><small>Expires {expires}</small></div>
-        <div className="invite-ready-actions">
-          <button className="primary" onClick={() => copy(payload.code, "code")}><Copy />{copied === "code" ? "Copied" : "Copy code"}</button>
-          <button className="secondary" onClick={() => copy(link, "link")}><Copy />{copied === "link" ? "Link copied" : "Copy setup link"}</button>
-          <button className="secondary" onClick={share}>Share setup link</button>
-        </div>
-        <div className="form-hint">Share the code or setup link directly with the intended leader. It works once and should not be posted in a group chat.</div>
-        <button className="text-action invite-done" onClick={onClose}>Done</button>
-      </div>
-    </DismissibleLayer>
-  );
-}
-
-function PendingInvite({ invite, onRevoke, busy }) {
-  const scope = scopeForRole(invite.role, invite.company_ids || [], invite.committee_scope || []);
-  const expiry = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(invite.expires_at));
-  return (
-    <div className="pending-invite-row">
-      <div className="person-avatar">{(invite.display_name || invite.email).split(/\s|@/).filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase()}</div>
-      <div><b>{invite.display_name || "Invited leader"}</b><small>{invite.email}</small><div className="request-meta"><span>{roleLabel(invite.role)}</span><span>{scope}</span><span>Expires {expiry}</span></div></div>
-      <button className="secondary compact-button" disabled={busy} onClick={() => onRevoke(invite.id)}>Revoke</button>
-    </div>
-  );
-}
-
-function rosterScope(user, companies) {
-  const role = user.roleKey || user.role;
-  if (["coordinator", "logistics_admin", "session_director"].includes(role)) return "Whole session";
-  if (role === "assistant_coordinator") {
-    const names = (user.companyIds || []).map((id) => companies.find((company) => company.id === id)?.name).filter(Boolean);
-    return names.length ? names.join(", ") : `${user.companyIds?.length || 0} assigned companies`;
-  }
-  if (user.committeeScope?.length) return user.committeeScope.join(", ");
-  return user.scope || roleVisibility(role);
-}
-
-function rosterRole(user) {
-  return user.roleKey || user.role;
-}
-
-export function Access({ requests = [], setRequests, invites = [], currentRole = "logistics_admin", currentCapabilities = [], onDecision, onCreateInvite, onRevokeInvite, onCreateRecovery, onSetAdminOverride, roster = demoUsers, companies = [], live = false, sessionName }) {
-  const inviteTriggerRef = useRef(null);
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [readyPayload, setReadyPayload] = useState(null);
-  const [busyId, setBusyId] = useState("");
-  const [pageError, setPageError] = useState("");
-  const canManage = canApproveAccess(currentRole, currentCapabilities);
-  const canDelegateAdmin = ["logistics_admin", "session_director"].includes(currentRole);
-  const pendingLegacy = requests.filter((request) => request.status === "pending");
-  const activeRoster = roster.filter((user) => user.active !== false && user.status !== "Pending");
-
-  const finishInvite = (payload) => {
-    setInviteOpen(false);
-    if (payload) setReadyPayload(payload);
-  };
-
-  const revoke = async (id) => {
-    setBusyId(id); setPageError("");
-    try { if (onRevokeInvite) await onRevokeInvite(id); }
-    catch (error) { setPageError(error.message || "Unable to revoke this invite."); }
-    finally { setBusyId(""); }
-  };
-
-  const rejectLegacy = async (request) => {
-    setBusyId(request.id); setPageError("");
-    try {
-      if (onDecision) await onDecision(request.id, "rejected", { note: "Replaced by administrator-issued invite flow." });
-      else setRequests?.((current) => current.map((item) => item.id === request.id ? { ...item, status: "rejected" } : item));
-    } catch (error) { setPageError(error.message || "Unable to close the old request."); }
-    finally { setBusyId(""); }
-  };
-
-  const recovery = async (user) => {
-    setBusyId(user.userId || user.id); setPageError("");
-    try {
-      if (!onCreateRecovery) return;
-      const created = await onCreateRecovery(user.userId || user.id);
-      setReadyPayload({ ...created, email: user.email, name: user.name, role: rosterRole(user), scope: rosterScope(user, companies), kind: "recovery" });
-    } catch (error) { setPageError(error.message || "Unable to create a recovery code."); }
-    finally { setBusyId(""); }
-  };
-  const toggleAdmin = async (user) => {
-    const role = rosterRole(user);
-    if (role !== "coordinator") return;
-    const enabled = !(user.capabilities || []).includes("access_admin");
-    const wording = enabled ? "grant" : "revoke";
-    if (!window.confirm(`${wording === "grant" ? "Grant" : "Revoke"} full administrative access for ${user.name}? Their displayed role will remain Coordinator, and this change will be recorded in the audit history.`)) return;
-    setBusyId(user.id); setPageError("");
-    try { await onSetAdminOverride?.(user.id, enabled); }
-    catch (error) { setPageError(error.message || `Unable to ${wording} administrative access.`); }
-    finally { setBusyId(""); }
-  };
-
-  return (
-    <section className="page access-page">
-      <PageHead title="Access" sessionName={sessionName} description="Invite leaders and keep access scoped to the work they need." action={canManage ? <button ref={inviteTriggerRef} className="primary" onClick={() => setInviteOpen(true)}><UserPlus />Invite leader</button> : null} />
-
-      <div className="notice green compact-notice access-rule-note"><ShieldCheck weight="fill"/><div><b>Everyone signs in with their own password.</b><p>Roles and scope decide what each leader can see or change.</p></div></div>
-      {pageError ? <div className="form-error page-error" role="alert">{pageError}</div> : null}
-
-      <div className="access-layout invite-access-layout">
-        <article className="panel approval-panel">
-          <div className="panel-head"><div><span className="kicker">Waiting to activate</span><h2>{invites.length} open invite{invites.length === 1 ? "" : "s"}</h2></div><span className="count">{invites.length}</span></div>
-          <div className="request-list">
-            {invites.length ? invites.map((invite) => <PendingInvite key={invite.id} invite={invite} onRevoke={revoke} busy={busyId === invite.id} />) : <Empty icon={UserPlus} title="No open invites" text="Invite a leader when you are ready to give them access." />}
-          </div>
-        </article>
-
-        <details className="panel progressive-section role-panel access-role-disclosure">
-          <summary><span><span className="kicker">Permission model</span><b>What each role sees</b><small>Open for the full role matrix</small></span><CaretDown size={20} className="disclosure-icon" /></summary>
-          <div className="progressive-section-body"><div className="role-matrix">
-            <div><b>Assistant coordinator</b><span>Assigned companies</span><small>No access approval</small></div>
-            <div><b>Coordinator</b><span>Whole session</span><small>No access approval</small></div>
-            <div><b>Logistical administrator</b><span>Whole session</span><small>Manage access</small></div>
-            <div><b>Session directing couple</b><span>Whole session</span><small>Manage access</small></div>
-            <div><b>Committee viewer</b><span>Assigned committee scope</span><small>Read-only by design</small></div>
-          </div></div>
-        </details>
-      </div>
-
-      <article className="panel access-roster-panel">
-        <div className="panel-head"><div><span className="kicker">Current access</span><h2>Authorized leaders</h2></div><Status>{activeRoster.length} active</Status></div>
-        <div className="access-roster-list">{roster.map((user) => {
-          const role = rosterRole(user);
-          const isActive = user.active !== false && user.status !== "Pending";
-          const hasAdminOverride = (user.capabilities || []).includes("access_admin");
-          return <details className="access-roster-row" key={user.id || user.userId || user.email}>
-            <summary><span className="roster-person"><b>{user.name}</b><small>{roleLabel(role)}</small></span><Status tone={isActive ? "good" : "warn"}>{isActive ? "Active" : "Pending"}</Status><CaretDown size={18} className="disclosure-icon" /></summary>
-            <div className="access-roster-detail"><div><span>Email</span><b>{user.email || "Not available"}</b></div><div><span>Visibility</span><b>{rosterScope(user, companies)}</b></div><div><span>Administrative access</span><span>{role === "coordinator" ? <>{hasAdminOverride ? <Status tone="warn">Full admin override</Status> : <Status>Standard coordinator</Status>}{canDelegateAdmin && live ? <button className="table-link admin-toggle" disabled={busyId === user.id} onClick={() => toggleAdmin(user)}>{hasAdminOverride ? "Revoke admin" : "Grant admin"}</button> : null}</> : <span className="muted-cell">Role-defined</span>}</span></div><div><span>Account help</span><span>{canManage && live && user.userId ? <button className="table-link" disabled={busyId === user.userId} onClick={() => recovery(user)}><Key />Recovery code</button> : <Status tone="good">Available</Status>}</span></div></div>
-          </details>;
-        })}</div>
-      </article>
-
-      {pendingLegacy.length ? <details className="panel progressive-section legacy-request-panel"><summary><span><span className="kicker">Older flow</span><b>{pendingLegacy.length} previous access request{pendingLegacy.length === 1 ? "" : "s"}</b><small>Created before administrator-issued invites</small></span><CaretDown size={20} className="disclosure-icon" /></summary><div className="progressive-section-body"><p>Close these requests after moving the person to the named invite flow.</p><div className="request-list">{pendingLegacy.map((request) => <div className="legacy-request-row" key={request.id}><div><b>{request.name}</b><small>{request.email} · {roleLabel(request.role)}</small></div>{canManage ? <button className="secondary compact-button" disabled={busyId === request.id} onClick={() => rejectLegacy(request)}>Close request</button> : null}</div>)}</div></div></details> : null}
-
-      {inviteOpen ? <InviteModal companies={companies} live={live} onCreate={onCreateInvite} onClose={finishInvite} restoreFocusRef={inviteTriggerRef} /> : null}
-      {readyPayload ? <CodeReadyModal payload={readyPayload} onClose={() => setReadyPayload(null)} /> : null}
-    </section>
-  );
-}
-
