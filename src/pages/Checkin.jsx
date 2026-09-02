@@ -2,72 +2,72 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
-import { Metric, PageHead } from "../components/UI.jsx";
+import { Metric, PageHead, Status } from "../components/UI.jsx";
+import "./operations.css";
 
-export function Checkin({ participants, checkedIds = [], onRecord, onAddMissing, live = false, canRecord = true }) {
+function eligibility(person, groupsPublished) {
+  if (person.sourceKind === "on_site" && person.verificationStatus === "pending") return { ok: false, label: "Needs verification" };
+  if (person.registrationStatus === "awaiting") return { ok: false, label: "Awaiting approval" };
+  if (person.registrationStatus === "cancelled") return { ok: false, label: "Cancelled" };
+  if (person.isCurrent === false) return { ok: false, label: "Not current" };
+  if (person.verificationStatus && person.verificationStatus !== "verified") return { ok: false, label: "Not verified" };
+  if (groupsPublished && !person.groupId) return { ok: false, label: "Needs group assignment" };
+  return { ok: true, label: "Ready" };
+}
+
+export function Checkin({ participants, checkedIds = [], onRecord, onAddMissing, live = false, canRecord = true, groupsPublished = false }) {
   const [query, setQuery] = useState("");
   const [checked, setChecked] = useState(new Set(checkedIds));
   const [busyId, setBusyId] = useState("");
   const [confirmUndoId, setConfirmUndoId] = useState("");
+  const [lastAction, setLastAction] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => { setChecked(new Set(checkedIds)); }, [checkedIds]);
 
+  const withEligibility = useMemo(() => participants.map((person) => ({ person, eligibility: eligibility(person, groupsPublished) })), [participants, groupsPublished]);
+  const eligibleCount = withEligibility.filter((item) => item.eligibility.ok).length;
+  const attentionCount = withEligibility.filter((item) => !item.eligibility.ok && ["Needs verification", "Needs group assignment"].includes(item.eligibility.label)).length;
   const results = useMemo(() => {
-    const eligible = participants.filter((person) => person.status !== "Not eligible");
     const text = query.trim().toLowerCase();
-    if (text.length < 2) return eligible.slice(0, 8);
-    return eligible.filter((p) => `${p.fullName} ${p.preferredName || ""} ${p.registrationId} ${p.unit} ${p.stake || ""}`.toLowerCase().includes(text)).slice(0, 12);
-  }, [participants, query]);
-  const eligibleCount = participants.filter((person) => person.status !== "Not eligible").length;
+    if (text.length < 2) return withEligibility.filter((item) => item.eligibility.ok).slice(0, 8);
+    return withEligibility.filter(({ person }) => `${person.fullName} ${person.preferredName || ""} ${person.registrationId || ""} ${person.unit || ""} ${person.stake || ""}`.toLowerCase().includes(text)).slice(0, 15);
+  }, [withEligibility, query]);
 
-  const toggle = async (id) => {
-    if (!canRecord) return;
-    const arriving = !checked.has(id);
-    if (!arriving && confirmUndoId !== id) {
-      setConfirmUndoId(id);
-      return;
-    }
-    setBusyId(id);
-    setError("");
+  const saveStatus = async (person, arriving) => {
+    setBusyId(person.id); setError("");
     try {
-      if (onRecord) await onRecord(id, arriving ? "arrived" : "expected");
-      setChecked((current) => {
-        const next = new Set(current);
-        arriving ? next.add(id) : next.delete(id);
-        return next;
-      });
+      if (onRecord) await onRecord(person.id, arriving ? "arrived" : "expected");
+      setChecked((current) => { const next = new Set(current); arriving ? next.add(person.id) : next.delete(person.id); return next; });
       setConfirmUndoId("");
-    } catch (err) {
-      setError(err.message || "Check-in could not be saved. Try again before moving to the next participant.");
-    } finally {
-      setBusyId("");
-    }
+      setLastAction(arriving ? { id: person.id, name: person.fullName } : null);
+    } catch (err) { setError(err.message || "Check-in could not be saved. Try again before moving to the next participant."); }
+    finally { setBusyId(""); }
   };
 
-  return (
-    <section className="page">
-      <PageHead title="Check-in" description="Search, confirm, tap once. Exceptions should move to a separate queue instead of slowing the main line." />
-      {!canRecord ? <div className="notice"><WarningCircle/><div><b>View-only check-in</b><p>Your role can see current arrival information, but it cannot change check-in records.</p></div></div> : null}
-      {error ? <div className="form-error page-error" role="alert"><WarningCircle />{error}</div> : null}
-      <div className="metrics-grid compact">
-        <Metric label="Expected" value={eligibleCount.toLocaleString()} note="current, approved and verified" />
-        <Metric label="Checked in" value={checked.size.toLocaleString()} note={live ? "saved in Supabase" : "prototype device state"} tone="green" />
-        <Metric label="Need attention" value="0" note="no unresolved arrivals" tone="yellow" />
-      </div>
-      <article className="panel">
-        <div className="search"><MagnifyingGlass/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, registration ID or unit"/></div>
-        <div className="check-list">
-          {results.map((person) => (
-            <button key={person.id} disabled={!canRecord || busyId === person.id} onClick={() => toggle(person.id)} className={checked.has(person.id) ? "checked" : ""}>
-              <span className="person-avatar">{person.firstName[0]}{person.lastName[0]}</span>
-              <span><b>{person.fullName}</b><small>{person.registrationId} · {person.unit}</small></span>
-              <span className="check-action">{busyId === person.id ? "Saving…" : confirmUndoId === person.id ? "Tap again to undo" : checked.has(person.id) ? <><CheckCircle weight="fill"/>Arrived</> : canRecord ? "Check in" : "View only"}</span>
-            </button>
-          ))}
-          {query.trim().length >= 2 && !results.length ? <div className="checkin-no-result"><b>No eligible participant found</b><p>Try a shorter spelling or search by ward, branch, stake, or preferred name. If they are not registered, add an on-site record for verification.</p>{onAddMissing ? <button className="secondary" onClick={onAddMissing}>Add missing participant</button> : null}</div> : null}
-        </div>
-      </article>
-    </section>
-  );
+  const toggle = async (person, isEligible) => {
+    if (!canRecord || !isEligible) return;
+    const arriving = !checked.has(person.id);
+    if (!arriving && confirmUndoId !== person.id) { setConfirmUndoId(person.id); return; }
+    await saveStatus(person, arriving);
+  };
+
+  const undoLast = async () => {
+    if (!lastAction) return;
+    const person = participants.find((item) => item.id === lastAction.id);
+    if (person) await saveStatus(person, false);
+    setLastAction(null);
+  };
+
+  return <section className="page">
+    <PageHead title="Check-in" description="Find the person, confirm the right record, and mark them arrived. Problems stay visible without slowing the main line." />
+    {!canRecord ? <div className="notice"><WarningCircle/><div><b>View-only check-in</b><p>Your role can see current arrival information, but it cannot change check-in records.</p></div></div> : null}
+    {error ? <div className="form-error page-error" role="alert"><WarningCircle/>{error}</div> : null}
+    <div className="metrics-grid compact"><Metric label="Expected" value={eligibleCount.toLocaleString()} note={groupsPublished ? "approved, verified and assigned" : "approved and verified"}/><Metric label="Checked in" value={checked.size.toLocaleString()} note={live ? "saved in Supabase" : "prototype device state"} tone="green"/><Metric label="Need attention" value={attentionCount.toLocaleString()} note={attentionCount ? "verification or group assignment needed" : "no unresolved arrival blockers"} tone="yellow"/></div>
+    <article className="panel"><div className="search"><MagnifyingGlass/><input value={query} onChange={(e) => { setQuery(e.target.value); setConfirmUndoId(""); }} placeholder="Search name, registration ID, ward, branch or stake"/></div><div className="check-list">{results.map(({ person, eligibility: state }) => {
+      const arrived = checked.has(person.id);
+      return <button key={person.id} disabled={!canRecord || busyId === person.id || !state.ok} onClick={() => toggle(person, state.ok)} className={`${arrived ? "checked" : ""}${state.ok ? "" : " ineligible"}`}><span className="person-avatar">{person.firstName?.[0]}{person.lastName?.[0]}</span><span><b>{person.fullName}</b><small>{person.registrationId || "No registration ID"} · {person.unit || "Unit not recorded"}</small></span><span className="check-action">{busyId === person.id ? "Saving…" : !state.ok ? <Status tone="warn">{state.label}</Status> : confirmUndoId === person.id ? "Tap again to undo" : arrived ? <><CheckCircle weight="fill"/>Arrived</> : canRecord ? "Check in" : "View only"}</span></button>;
+    })}{query.trim().length >= 2 && !results.length ? <div className="checkin-no-result"><b>No person found</b><p>Try a shorter spelling or search by ward, branch, stake, or preferred name. If they genuinely are not registered, use the on-site addition flow.</p>{onAddMissing ? <button className="secondary" onClick={onAddMissing}>Add missing participant</button> : null}</div> : null}</div></article>
+    {lastAction ? <div className="undo-toast" role="status"><span><b>{lastAction.name}</b> marked as arrived.</span><button disabled={busyId === lastAction.id} onClick={undoLast}>Undo</button></div> : null}
+  </section>;
 }
