@@ -13,6 +13,7 @@ import { X } from "@phosphor-icons/react/X";
 import { BrandMark } from "./BrandMark.jsx";
 import { isSupabaseConfigured, supabaseEnvironment } from "../lib/supabase.js";
 import { roleLabel } from "../lib/access.js";
+import "./session-switcher.css";
 
 const nav = [
   ["overview", "Overview", SquaresFour],
@@ -30,7 +31,21 @@ function initials(name = "FSY") {
   return name.split(/\s+/).filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase();
 }
 
-export function AppShell({ active, setActive, attentionCount = 0, currentUser, currentRole = "logistics_admin", onSignOut, syncError = "", onRefresh, children }) {
+export function AppShell({
+  active,
+  setActive,
+  attentionCount = 0,
+  currentUser,
+  currentRole = "logistics_admin",
+  sessionInfo,
+  sessions = [],
+  selectedSessionId = "",
+  onSessionChange,
+  onSignOut,
+  syncError = "",
+  onRefresh,
+  children,
+}) {
   const [menu, setMenu] = useState(false);
   const [online, setOnline] = useState(() => navigator.onLine);
   useEffect(() => {
@@ -50,6 +65,9 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
   const displayName = currentUser?.display_name || "FSY Leader";
   const displayRole = roleLabel(currentRole);
   const avatar = initials(displayName);
+  const selectedSession = sessions.find((item) => item.session_id === selectedSessionId);
+  const isTraining = sessionInfo?.status === "training" || selectedSession?.session_status === "training";
+  const sessionTitle = sessionInfo?.name || selectedSession?.session_name || "FSY Kumasi 2026";
 
   return (
     <div className="app-shell">
@@ -59,7 +77,10 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
           <div><b>FSY Kumasi</b><small>Operations</small></div>
           <button className="icon-button sidebar-close" onClick={() => setMenu(false)} aria-label="Close menu"><X /></button>
         </div>
-        <div className="session-badge"><span>2026</span><small>Walk With Me · Moses 6:34</small></div>
+        <div className={isTraining ? "session-badge training" : "session-badge"}>
+          <span>{isTraining ? "Training" : sessionInfo?.year || 2026}</span>
+          <small>{isTraining ? "Synthetic rehearsal workspace" : "Walk With Me · Moses 6:34"}</small>
+        </div>
         <nav>
           {nav.map(([id, label, Icon]) => (
             <button key={id} className={active === id ? "active" : ""} onClick={() => navigate(id)}>
@@ -81,18 +102,40 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
       <main className="workspace">
         <header className="topbar">
           <button className="icon-button menu-button" onClick={() => setMenu(true)} aria-label="Open menu"><List /></button>
-          <div className="session"><span>FSY Kumasi 2026</span><small>Planning workspace</small></div>
+          <div className="session">
+            {sessions.length > 1 && onSessionChange ? (
+              <select
+                className="session-select"
+                value={selectedSessionId}
+                onChange={(event) => onSessionChange(event.target.value)}
+                aria-label="Choose FSY workspace"
+              >
+                {sessions.map((item) => (
+                  <option key={item.session_id} value={item.session_id}>
+                    {item.session_status === "training" ? `Training · ${item.session_name}` : item.session_name}
+                  </option>
+                ))}
+              </select>
+            ) : <span>{sessionTitle}</span>}
+            <small>{isTraining ? "Safe sandbox · synthetic people only" : "Planning workspace"}</small>
+          </div>
           <div className="top-actions">
             <span
-              className={`connection ${isSupabaseConfigured && online ? "live" : "demo"}`}
+              className={`connection ${isTraining ? "demo" : isSupabaseConfigured && online ? "live" : "demo"}`}
               data-backend-environment={supabaseEnvironment}
             >
-              {!online ? "Offline" : isSupabaseConfigured ? `${supabaseEnvironment === "production" ? "Production" : "Development"} data` : "Demo data"}
+              {!online ? "Offline" : isTraining ? "Training data" : isSupabaseConfigured ? `${supabaseEnvironment === "production" ? "Production" : "Development"} data` : "Demo data"}
             </span>
             <button className="icon-button notification-button" aria-label="Notifications"><Bell />{attentionCount > 0 ? <i>{attentionCount}</i> : null}</button>
             <button className="top-profile-button" onClick={() => navigate("profile")} aria-label="Open your profile" title="Profile"><span className="avatar small">{avatar}</span></button>
           </div>
         </header>
+        {isTraining ? (
+          <div className="training-banner" role="status">
+            <b>Training sandbox</b>
+            <span>Everything in this workspace is synthetic. Test grouping, birthdays, check-in, head counts, on-site additions and access without touching the real FSY session.</span>
+          </div>
+        ) : null}
         {syncError ? <div className="sync-warning" role="alert"><span>Live updates paused: {syncError}</span><button onClick={onRefresh}>Reconnect</button></div> : null}
         {children}
         <nav className="mobile-nav">
