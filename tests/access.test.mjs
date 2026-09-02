@@ -13,6 +13,12 @@ test("only logistics admins and session directors approve lower-role access", ()
   assert.equal(canApproveAccess("assistant_coordinator"), false);
 });
 
+test("a coordinator needs the explicit access_admin capability", () => {
+  assert.equal(canApproveAccess("coordinator", []), false);
+  assert.equal(canApproveAccess("coordinator", ["access_admin"]), true);
+  assert.equal(canApproveAccess("assistant_coordinator", ["access_admin"]), false);
+});
+
 test("top-level roles cannot be self-requested", () => {
   assert.deepEqual(REQUESTABLE_ROLES, ["assistant_coordinator", "coordinator", "committee_viewer"]);
 });

@@ -4,7 +4,7 @@ import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { Metric, PageHead } from "../components/UI.jsx";
 
-export function Checkin({ participants, checkedIds = [], onRecord, live = false, canRecord = true }) {
+export function Checkin({ participants, checkedIds = [], onRecord, onAddMissing, live = false, canRecord = true }) {
   const [query, setQuery] = useState("");
   const [checked, setChecked] = useState(new Set(checkedIds));
   const [busyId, setBusyId] = useState("");
@@ -14,10 +14,12 @@ export function Checkin({ participants, checkedIds = [], onRecord, live = false,
   useEffect(() => { setChecked(new Set(checkedIds)); }, [checkedIds]);
 
   const results = useMemo(() => {
+    const eligible = participants.filter((person) => person.status !== "Not eligible");
     const text = query.trim().toLowerCase();
-    if (text.length < 2) return participants.slice(0, 8);
-    return participants.filter((p) => `${p.fullName} ${p.registrationId} ${p.unit}`.toLowerCase().includes(text)).slice(0, 12);
+    if (text.length < 2) return eligible.slice(0, 8);
+    return eligible.filter((p) => `${p.fullName} ${p.preferredName || ""} ${p.registrationId} ${p.unit} ${p.stake || ""}`.toLowerCase().includes(text)).slice(0, 12);
   }, [participants, query]);
+  const eligibleCount = participants.filter((person) => person.status !== "Not eligible").length;
 
   const toggle = async (id) => {
     if (!canRecord) return;
@@ -49,7 +51,7 @@ export function Checkin({ participants, checkedIds = [], onRecord, live = false,
       {!canRecord ? <div className="notice"><WarningCircle/><div><b>View-only check-in</b><p>Your role can see current arrival information, but it cannot change check-in records.</p></div></div> : null}
       {error ? <div className="form-error page-error" role="alert"><WarningCircle />{error}</div> : null}
       <div className="metrics-grid compact">
-        <Metric label="Expected" value={participants.length.toLocaleString()} note="approved participant list" />
+        <Metric label="Expected" value={eligibleCount.toLocaleString()} note="current, approved and verified" />
         <Metric label="Checked in" value={checked.size.toLocaleString()} note={live ? "saved in Supabase" : "prototype device state"} tone="green" />
         <Metric label="Need attention" value="0" note="no unresolved arrivals" tone="yellow" />
       </div>
@@ -63,6 +65,7 @@ export function Checkin({ participants, checkedIds = [], onRecord, live = false,
               <span className="check-action">{busyId === person.id ? "Saving…" : confirmUndoId === person.id ? "Tap again to undo" : checked.has(person.id) ? <><CheckCircle weight="fill"/>Arrived</> : canRecord ? "Check in" : "View only"}</span>
             </button>
           ))}
+          {query.trim().length >= 2 && !results.length ? <div className="checkin-no-result"><b>No eligible participant found</b><p>Try a shorter spelling or search by ward, branch, stake, or preferred name. If they are not registered, add an on-site record for verification.</p>{onAddMissing ? <button className="secondary" onClick={onAddMissing}>Add missing participant</button> : null}</div> : null}
         </div>
       </article>
     </section>

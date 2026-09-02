@@ -1,5 +1,6 @@
 import { ArrowRight } from "@phosphor-icons/react/ArrowRight";
 import { Buildings } from "@phosphor-icons/react/Buildings";
+import { Cake } from "@phosphor-icons/react/Cake";
 import { Check } from "@phosphor-icons/react/Check";
 import { CloudArrowUp } from "@phosphor-icons/react/CloudArrowUp";
 import { ShieldCheck } from "@phosphor-icons/react/ShieldCheck";
@@ -8,7 +9,7 @@ import { Users } from "@phosphor-icons/react/Users";
 import { setupSteps } from "../data/demo.js";
 import { Metric, PageHead, Status } from "../components/UI.jsx";
 
-export function Overview({ setActive, imported, assignment, pendingAccess, live = false, companies = [], checkedCount = 0 }) {
+export function Overview({ setActive, imported, assignment, pendingAccess, birthdays = [], live = false, companies = [], checkedCount = 0 }) {
   const hasParticipants = imported.length > 0;
   const hasGroups = Boolean(assignment?.groups?.length);
   const hasCompanies = companies.length > 0 || Boolean(assignment?.companies?.length);
@@ -69,6 +70,11 @@ export function Overview({ setActive, imported, assignment, pendingAccess, live 
             <div><span>Role hierarchy</span><Status>Defined</Status></div>
             <div><span>Access approvals</span><Status tone={pendingAccess ? "warn" : "good"}>{pendingAccess ? `${pendingAccess} pending` : "Clear"}</Status></div>
           </div>
+        </article>
+        <article className="panel birthday-overview">
+          <div className="panel-head"><div><span className="kicker">People care</span><h2>Birthdays this FSY</h2></div><Cake size={22} className="panel-symbol" /></div>
+          <strong>{birthdays.length}</strong><p>{birthdays.length ? `${birthdays.filter((person) => !person.acknowledged).length} still to acknowledge` : "Birthday details appear after the registration snapshot is applied."}</p>
+          <button className="secondary" onClick={() => setActive("birthdays")}>View birthday list<ArrowRight /></button>
         </article>
       </div>
 
