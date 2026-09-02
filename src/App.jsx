@@ -213,7 +213,7 @@ export function App() {
   const pendingAccess = accessRequests.filter((request) => request.status === "pending").length + leaderInvites.filter((invite) => invite.status === "pending").length;
   const canManageAccess = !live || canApproveAccess(currentRole, currentCapabilities);
   const canImport = canManageAccess;
-  const canRecordCheckin = !live || ["coordinator", "logistics_admin", "session_director"].includes(currentRole);
+  const canRecordCheckin = !live || ["assistant_coordinator", "coordinator", "logistics_admin", "session_director"].includes(currentRole);
   const activeSessions = live ? accessState.filter((item) => item.active && item.role) : [];
   const companyOptions = live ? companies : (assignment?.companies || []).map((company,index) => ({ id: company.id || `demo-company-${index+1}`, name: company.name || `Company ${String(index+1).padStart(2,"0")}` }));
 
