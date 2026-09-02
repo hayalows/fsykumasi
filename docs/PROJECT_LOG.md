@@ -4,23 +4,25 @@ This file records product and engineering decisions that materially change how t
 
 ## 2026-09-02 · Mobile-first operations UI refinement
 
+Branch: `codex/operations-clarity-20260902` (based on verified `origin/main`)
 Production status: **release candidate; production deployment follows the reviewed PR**
 
 ### Decisions
 
-- The operations IA is grouped into Daily work (Overview, Check-in, Head count, Groups & companies) and People & setup (Registration, People, Assignments, Birthdays, Access). Account remains in the profile entry rather than becoming another permanent task destination.
+- The operations IA keeps Daily work (Overview, Check-in, Head count), the session directory (People, Groups & companies), and lower-frequency tools behind More tools (Registration, Assignments, Access, Birthdays). Account remains in the profile entry rather than becoming another permanent task destination.
 - Mobile exposes four frequent actions plus More in the bottom navigation. More is a dismissible drawer with backdrop, Escape, navigation, close control, body-scroll lock, and focus restoration behavior. Desktop keeps a grouped sidebar with an internal scroll area so short screens do not push the account out of view.
 - Account starts with a compact Navii-backed identity summary. Name editing is explicit; permissions and security are collapsed until requested; sign-out is a compact account action. Avatar seeds use a stable user ID or fixed demo seed, never a raw email.
 - People is a search-first responsive directory. Mobile participant and review details use bottom-sheet surfaces with grouped age/sex facts, progressive sensitive fields, backdrop/Escape dismissal, and focus return to the originating row.
 - Access is invite-first, with role policy, current-roster details, recovery/admin controls, and older request history disclosed on demand. Assignments leads with role classification and keeps the suggestion helper behind an advanced disclosure.
-- Head count follows round → company → report. A pending company has one quick `All here` action; an open company has one save action and immediate saved feedback.
-- Session-facing identity is configuration-driven (`KCC FSY 2026` in the rehearsal), while Overview retains the supplied `Walk With Me · Moses 6:34` theme treatment.
+- Head count follows round → company → report. A pending company opens into one detail action, where `Report all here` is available beside the single `Save report` action; saved feedback is immediate and visible.
+- Session-facing identity is configuration-driven (`KCC FSY 2026` in the demo rehearsal; production currently reports `FSY Kumasi 2026`), while Overview retains the supplied `Walk With Me · Moses 6:34` theme treatment.
 
 ### Compatibility and verification
 
 - This pass does not change Supabase schema, RLS, permissions, or backend data contracts. Demo grouping and head-count interactions remain in-memory rehearsal state only.
-- The verified online baseline was `main` at `9869e990f08621fd94dc2998f1a824e16d9dca39`; the newer registration review inbox and assignment center were preserved.
-- Verification includes local synthetic browser review at 390px and desktop widths, `npm test`, `npm run build`, and `npm run test:sites`. Authenticated production data was not accessed; the public deployment remains behind its password-first sign-in gate.
+- The verified online baseline was `origin/main` at `fb11f58cb6cfb7094b5e95f61bf1f07b909e339c`; the registration review inbox and assignment center were preserved.
+- Cohort language now distinguishes registration records, eligible youth, data exceptions, and eligible youth ready for placement. This avoids treating a not-yet-published structure as a registration error.
+- Verification includes the authenticated production audit documented in `audit/live-2026-09-02/README.md`, local rehearsal browser review, `npm test`, `npm run build`, and `npm run test:sites`. Production data was read only during the audit; no live mutations were performed.
 
 ## 2026-09-02 · Mobile progressive operations pass
 

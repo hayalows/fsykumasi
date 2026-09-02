@@ -4,6 +4,8 @@ import { Cake } from "@phosphor-icons/react/Cake";
 import { Buildings } from "@phosphor-icons/react/Buildings";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { ClipboardText } from "@phosphor-icons/react/ClipboardText";
+import { CaretDown } from "@phosphor-icons/react/CaretDown";
+import { DotsThree } from "@phosphor-icons/react/DotsThree";
 import { IdentificationCard } from "@phosphor-icons/react/IdentificationCard";
 import { List } from "@phosphor-icons/react/List";
 import { SignOut } from "@phosphor-icons/react/SignOut";
@@ -22,18 +24,20 @@ const primaryNav = [
   ["overview", "Overview", SquaresFour],
   ["checkin", "Check-in", CheckCircle],
   ["headcount", "Head count", ClipboardText],
+];
+
+const workspaceNav = [
+  ["people", "People", UsersThree],
   ["groups", "Groups & companies", Buildings],
 ];
 
 const secondaryNav = [
   ["registration", "Registration", IdentificationCard],
-  ["people", "People", UsersThree],
   ["assignments", "Assignments", Users],
-  ["birthdays", "Birthdays", Cake],
   ["access", "Access", Users],
 ];
 
-const nav = [...primaryNav, ...secondaryNav];
+const utilityNav = [["birthdays", "Birthdays", Cake]];
 const mobileNav = ["overview", "people", "checkin", "headcount"];
 
 function focusableElements(container) {
@@ -44,6 +48,7 @@ function focusableElements(container) {
 
 export function AppShell({ active, setActive, attentionCount = 0, currentUser, currentRole = "logistics_admin", sessionInfo, sessions = [], selectedSessionId = "", onSessionChange, onSignOut, syncError = "", onRefresh, children }) {
   const [menu, setMenu] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [online, setOnline] = useState(() => typeof navigator === "undefined" ? true : navigator.onLine);
   const menuButtonRef = useRef(null);
   const sidebarRef = useRef(null);
@@ -80,10 +85,13 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
         first.focus();
       }
     };
+    const onPopState = () => setMenu(false);
     document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("popstate", onPopState);
     return () => {
       window.cancelAnimationFrame(frame);
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("popstate", onPopState);
       document.body.style.overflow = previousOverflow;
       const restoreTarget = sidebarRef.current?.contains(previousActive) ? menuButtonRef.current : previousActive;
       (restoreTarget || menuButtonRef.current)?.focus?.();
@@ -92,6 +100,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
 
   useEffect(() => {
     setMenu(false);
+    setMoreOpen([...secondaryNav, ...utilityNav].some(([id]) => id === active));
   }, [active]);
 
   const navigate = (id) => {
@@ -99,16 +108,19 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
     setMenu(false);
     window.scrollTo({ top: 0, behavior: "auto" });
   };
+  const openMenu = () => { setMoreOpen(true); setMenu(true); };
   const displayName = currentUser?.display_name || "FSY Leader";
   const displayRole = roleLabel(currentRole);
   const selectedSession = sessions.find((item) => item.session_id === selectedSessionId);
   const isTraining = sessionInfo?.status === "training" || selectedSession?.session_status === "training";
   const sessionTitle = sessionInfo?.name || selectedSession?.session_name || demoSession.name;
-  const hasSecondaryActive = secondaryNav.some(([id]) => id === active);
+  const hasSecondaryActive = [...secondaryNav, ...utilityNav].some(([id]) => id === active);
+  const availableSecondaryNav = secondaryNav;
 
   const navItem = ([id, label, Icon]) => (
     <button
       key={id}
+      type="button"
       className={active === id ? "active" : ""}
       onClick={() => navigate(id)}
       aria-current={active === id ? "page" : undefined}
@@ -126,7 +138,11 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
       <div className={isTraining ? "session-badge training" : "session-badge"}><span>{isTraining ? "Training" : sessionInfo?.year || demoSession.year}</span><small>{isTraining ? "Synthetic rehearsal workspace" : demoSession.theme}</small></div>
       <nav className="sidebar-nav">
         <div className="nav-group"><span className="nav-group-label">Daily work</span>{primaryNav.map(navItem)}</div>
-        <div className="nav-group"><span className="nav-group-label">People & setup</span>{secondaryNav.map(navItem)}</div>
+        <div className="nav-group"><span className="nav-group-label">Session</span>{workspaceNav.map(navItem)}</div>
+        <div className="nav-group nav-group-more">
+          <button type="button" className={hasSecondaryActive ? "sidebar-more-trigger active" : "sidebar-more-trigger"} onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} aria-controls="sidebar-more-tools"><DotsThree size={22} /><span>More tools</span><CaretDown size={17} className={moreOpen ? "more-chevron open" : "more-chevron"} /></button>
+          {moreOpen ? <div id="sidebar-more-tools" className="sidebar-more-items">{availableSecondaryNav.map(navItem)}{utilityNav.map(navItem)}</div> : null}
+        </div>
       </nav>
       <div className="sidebar-foot">
         <button className={active === "profile" ? "sidebar-profile active" : "sidebar-profile"} onClick={() => navigate("profile")} aria-label="Open your profile" aria-current={active === "profile" ? "page" : undefined}>
@@ -139,7 +155,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
 
     <main className="workspace">
       <header className="topbar">
-        <button ref={menuButtonRef} className="icon-button menu-button" onClick={() => setMenu(true)} aria-label="Open menu" aria-expanded={menu}><List /></button>
+        <button ref={menuButtonRef} className="icon-button menu-button" onClick={openMenu} aria-label="Open menu" aria-expanded={menu}><List /></button>
         <div className="session">{sessions.length > 1 && onSessionChange ? <select className="session-select" value={selectedSessionId} onChange={(event) => onSessionChange(event.target.value)} aria-label="Choose FSY workspace">{sessions.map((item) => <option key={item.session_id} value={item.session_id}>{item.session_status === "training" ? `Training · ${item.session_name}` : item.session_name}</option>)}</select> : <span>{sessionTitle}</span>}<small>{isTraining ? "Safe sandbox · synthetic people only" : "Planning workspace"}</small></div>
         <div className="top-actions">
           <span className={`connection ${isTraining ? "demo" : isSupabaseConfigured && online ? "live" : "demo"}`} data-backend-environment={supabaseEnvironment}>{!online ? "Offline" : isTraining ? "Training data" : isSupabaseConfigured ? `${supabaseEnvironment === "production" ? "Production" : "Development"} data` : "Demo data"}</span>
@@ -151,8 +167,8 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
       {syncError ? <div className="sync-warning" role="alert"><span>Live updates paused: {syncError}</span><button onClick={onRefresh}>Reconnect</button></div> : null}
       {children}
       <nav className="mobile-nav" aria-label="Primary mobile navigation">
-        {nav.filter(([id]) => mobileNav.includes(id)).map(([id, label, Icon]) => <button key={id} className={active === id ? "active" : ""} onClick={() => navigate(id)} aria-current={active === id ? "page" : undefined}><Icon size={21} weight={active === id ? "fill" : "regular"} /><span>{label.replace(" & companies", "")}</span></button>)}
-        <button className={hasSecondaryActive ? "active" : ""} onClick={() => setMenu(true)} aria-label="Open more navigation" aria-expanded={menu}><List size={21} weight={hasSecondaryActive ? "fill" : "regular"} /><span>More</span></button>
+        {primaryNav.concat(workspaceNav).filter(([id]) => mobileNav.includes(id)).map(([id, label, Icon]) => <button type="button" key={id} className={active === id ? "active" : ""} onClick={() => navigate(id)} aria-current={active === id ? "page" : undefined}><Icon size={21} weight={active === id ? "fill" : "regular"} /><span>{label.replace(" & companies", "")}</span></button>)}
+        <button type="button" className={hasSecondaryActive ? "active" : ""} onClick={openMenu} aria-label="Open more navigation" aria-expanded={menu}><List size={21} weight={hasSecondaryActive ? "fill" : "regular"} /><span>More</span></button>
       </nav>
     </main>
   </div>;

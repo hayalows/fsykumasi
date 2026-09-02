@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { UserCircle } from "@phosphor-icons/react/UserCircle";
 import { UsersThree } from "@phosphor-icons/react/UsersThree";
 import { X } from "@phosphor-icons/react/X";
-import { PageHead, DismissibleLayer, Status } from "../components/UI.jsx";
+import { PageHead, DismissibleLayer, SearchField, SegmentedControl, Status } from "../components/UI.jsx";
 import { loadOperationalStructure, loadPersonPrivateDetails, loadStaff } from "../lib/operations.js";
 import { operationalEligibility } from "../lib/registration.js";
+import { formatCount } from "../lib/cohort.js";
 import { demoSession } from "../data/session.js";
 import "./operations.css";
 
@@ -49,7 +49,7 @@ function PersonDetail({ selected, groupMap, companyMap, selectedEligibility, sel
   </>;
 }
 
-export function People({ sessionId, participants = [], assignment = null, canManage = false, structureSettings = {}, sessionName = demoSession.name }) {
+export function People({ sessionId, participants = [], cohort, assignment = null, canManage = false, structureSettings = {}, selectedPersonId = "", onSelectPerson, onClearSelectedPerson, sessionName = demoSession.name }) {
   const [staff, setStaff] = useState([]);
   const [structure, setStructure] = useState({ groups: [], companies: [] });
   const [tab, setTab] = useState("participants");
@@ -95,12 +95,20 @@ export function People({ sessionId, participants = [], assignment = null, canMan
 
   const openPerson = async (kind, person, event) => {
     returnFocusRef.current = event?.currentTarget || null;
+    onSelectPerson?.(person.id);
     setSelected({ kind, person }); setPrivateDetails(null); setError("");
     if (!canManage || !sessionId) return;
     try { setPrivateDetails(await loadPersonPrivateDetails(kind, person.id)); }
     catch (err) { setError(err.message || "Private registration details could not be loaded."); }
   };
-  const closePerson = () => { setSelected(null); setPrivateDetails(null); };
+  useEffect(() => {
+    if (!selectedPersonId) return;
+    const source = tab === "staff" ? staff : participants;
+    const person = source.find((item) => item.id === selectedPersonId);
+    if (person && selected?.person?.id !== person.id) openPerson(tab === "staff" ? "staff" : "participant", person);
+  }, [selectedPersonId, tab, staff, participants]);
+
+  const closePerson = () => { setSelected(null); setPrivateDetails(null); onClearSelectedPerson?.(); };
   const selectedStaffGroup = selected?.kind === "staff" ? groupMap.get(selected.person.counselorGroupId) : null;
   const selectedStaffCompanies = selected?.kind === "staff" ? (selected.person.companyIds || []).map((id) => companyMap.get(id)).filter(Boolean) : [];
   const selectedEligibility = selected?.kind === "participant" ? operationalEligibility(selected.person, structureSettings) : null;
@@ -111,12 +119,13 @@ export function People({ sessionId, participants = [], assignment = null, canMan
     {error ? <div className="form-error page-error" role="alert">{error}</div> : null}
 
     <div className="people-toolbar panel">
-      <div className="segmented people-tabs"><button className={tab === "participants" ? "active" : ""} onClick={() => { setTab("participants"); closePerson(); }}>Participants <b>{participants.length.toLocaleString()}</b></button><button className={tab === "staff" ? "active" : ""} onClick={() => { setTab("staff"); closePerson(); }}>Staff <b>{staff.length.toLocaleString()}</b></button></div>
-      <div className="search"><MagnifyingGlass /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === "staff" ? "Search name, role, ward or stake" : "Search name, ward, stake or registration ID"} /></div>
-      {tab === "staff" ? <select className="people-role-filter" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}><option value="all">All staff roles</option>{Object.entries(ROLE_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select> : null}
+      <SegmentedControl className="people-tabs" label="People directory" value={tab} onChange={(nextTab) => { setTab(nextTab); setQuery(""); setRoleFilter("all"); closePerson(); }} options={[{ value: "participants", label: "Participants", count: participants.length }, { value: "staff", label: "Staff", count: staff.length }]} />
+      <SearchField value={query} onChange={setQuery} label={tab === "staff" ? "Search staff" : "Search participants"} placeholder={tab === "staff" ? "Search name, role, ward or stake" : "Search name, ward, stake or registration ID"} />
+      {tab === "staff" ? <select aria-label="Filter staff by role" className="people-role-filter" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}><option value="all">All staff roles</option>{Object.entries(ROLE_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select> : null}
+      {cohort && tab === "participants" ? <p className="cohort-context"><b>{formatCount(cohort.eligible)} eligible youth</b><span>{formatCount(cohort.records)} registration records · open a row for more</span></p> : null}
     </div>
 
-    <div className="people-layout">
+    <div className="people-layout" role="tabpanel" aria-label={tab === "staff" ? "Staff directory" : "Participant directory"}>
       <article className="panel people-list-panel">
         <div className="panel-head"><div><span className="kicker">Directory</span><h2>{rows.length === 100 ? "First 100 matches" : `${rows.length} match${rows.length === 1 ? "" : "es"}`}</h2></div><UsersThree size={22} /></div>
         <div className="people-list">{rows.map((person) => {

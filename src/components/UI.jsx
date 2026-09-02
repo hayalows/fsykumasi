@@ -1,5 +1,69 @@
 import { useEffect, useId, useRef } from "react";
+import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
+import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
+import { X } from "@phosphor-icons/react/X";
 import { demoSession } from "../data/session.js";
+
+export function SearchField({ value = "", onChange, placeholder, label = "Search", className = "", inputRef, autoFocus = false, disabled = false }) {
+  const inputId = useId();
+  const hasValue = String(value).length > 0;
+  return (
+    <div className={`search search-field ${className}`.trim()}>
+      <label className="sr-only" htmlFor={inputId}>{label}</label>
+      <MagnifyingGlass aria-hidden="true" />
+      <input
+        ref={inputRef}
+        id={inputId}
+        type="search"
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+        placeholder={placeholder}
+        aria-label={label}
+        autoComplete="off"
+        autoFocus={autoFocus}
+        disabled={disabled}
+      />
+      {hasValue ? <button type="button" className="search-clear" onClick={() => onChange?.("")} aria-label={`Clear ${label.toLowerCase()}`}><X size={18} /></button> : null}
+    </div>
+  );
+}
+
+export function SegmentedControl({ options = [], value, onChange, label, className = "" }) {
+  const focusOption = (index) => {
+    const next = options[(index + options.length) % options.length];
+    if (next?.id) document.getElementById(next.id)?.focus();
+  };
+  return (
+    <div className={`segmented ${className}`.trim()} role="tablist" aria-label={label}>
+      {options.map((option, index) => {
+        const selected = option.value === value;
+        const id = option.id || `${label || "segment"}-${String(option.value).replace(/\s+/g, "-")}`;
+        return <button
+          key={option.value}
+          id={id}
+          type="button"
+          role="tab"
+          aria-selected={selected}
+          tabIndex={selected ? 0 : -1}
+          className={selected ? "active" : ""}
+          onClick={() => onChange?.(option.value)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowRight" || event.key === "ArrowDown") { event.preventDefault(); focusOption(index + 1); onChange?.(options[(index + 1) % options.length].value); }
+            if (event.key === "ArrowLeft" || event.key === "ArrowUp") { event.preventDefault(); focusOption(index - 1); onChange?.(options[(index - 1 + options.length) % options.length].value); }
+          }}
+        >{option.label}{option.count === undefined ? null : <b>{option.count.toLocaleString()}</b>}</button>;
+      })}
+    </div>
+  );
+}
+
+export function MutationFeedback({ tone = "success", children, className = "" }) {
+  if (!children) return null;
+  return <div className={`mutation-feedback ${tone} ${className}`.trim()} role={tone === "error" ? "alert" : "status"} aria-live="polite">
+    {tone === "success" ? <CheckCircle weight="fill" aria-hidden="true" /> : null}
+    <span>{children}</span>
+  </div>;
+}
 
 export function Metric({ label, value, note, tone = "blue" }) {
   return (
@@ -115,7 +179,7 @@ export function DismissibleLayer({ open, onClose, title, children, className = "
         className={`modal layer-panel ${className}`.trim()}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-label={title ? undefined : "Dialog"}
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}

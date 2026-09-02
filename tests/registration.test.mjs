@@ -8,6 +8,7 @@ import {
   validateManualParticipantDetailed,
   validateManualStaff,
 } from "../src/lib/registration.js";
+import { summarizeCohort } from "../src/lib/cohort.js";
 
 test("legacy manual additions still validate identity, age, and unit", () => {
   const missing = validateManualParticipant({ firstName: "", lastName: "", sex: "", age: "", unit: "" }, false);
@@ -56,4 +57,17 @@ test("operational eligibility uses one configurable age boundary", () => {
   assert.equal(isOperationalParticipant({ ...ready, registrationStatus: "awaiting" }), false);
   assert.equal(isOperationalParticipant({ ...ready, verificationStatus: "pending" }), false);
   assert.equal(isOperationalParticipant({ ...ready, isCurrent: false }), false);
+});
+
+test("cohort summary separates data exceptions from placement work", () => {
+  const people = [
+    { id: "ready", age: 16, unit: "Asokwa Ward", groupId: null },
+    { id: "missing-unit", age: 16, unit: "", groupId: null },
+    { id: "awaiting", age: 16, unit: "Bantama Ward", registrationStatus: "awaiting", groupId: null },
+  ];
+  const summary = summarizeCohort(people);
+  assert.equal(summary.eligible, 2);
+  assert.equal(summary.unassigned, 1);
+  assert.equal(summary.reviewExceptions, 2);
+  assert.equal(summary.review, 3);
 });

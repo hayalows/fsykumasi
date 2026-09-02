@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
-import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { Sparkle } from "@phosphor-icons/react/Sparkle";
 import { UsersThree } from "@phosphor-icons/react/UsersThree";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
-import { Metric, PageHead, Status } from "../components/UI.jsx";
+import { Metric, MutationFeedback, PageHead, SearchField, Status } from "../components/UI.jsx";
 import {
   applyStaffAssignmentPlan,
   assignCounselorToGroup,
@@ -132,7 +130,7 @@ export function Assignments({ sessionId, canManage = false, sessionName }) {
     <PageHead title="Assignments" sessionName={sessionName} description="First decide each staff member's FSY role. Then assign Counselors to counselor groups and Assistant Coordinators to companies without hidden or duplicate assignments." />
     {!canManage ? <div className="notice"><WarningCircle/><div><b>View-only assignments</b><p>Administrative access is required to change staff roles or responsibilities.</p></div></div> : null}
     {error ? <div className="form-error page-error" role="alert"><WarningCircle/>{error}</div> : null}
-    {notice ? <div className="notice green" role="status"><CheckCircle/><div><b>Saved</b><p>{notice}</p></div></div> : null}
+    {notice ? <MutationFeedback className="assignment-save-notice"><b>Saved</b> · {notice}</MutationFeedback> : null}
 
     <div className="metrics-grid compact assignment-metrics">
       <Metric label="Counselor groups" value={`${staffedGroups}/${groups.length}`} note={groups.length - staffedGroups ? `${groups.length - staffedGroups} need a Counselor` : "complete"} tone={groups.length - staffedGroups ? "yellow" : "green"}/>
@@ -157,7 +155,7 @@ export function Assignments({ sessionId, canManage = false, sessionName }) {
     <article className="panel assignment-role-panel">
       <div className="panel-head"><div><span className="kicker">Step 1</span><h2>Classify staff roles</h2></div><UsersThree size={22}/></div>
       <p className="form-hint">Changing a role does not create a responsibility. Existing responsibilities must be removed before a person's role can change.</p>
-      <div className="assignment-toolbar"><div className="search"><MagnifyingGlass/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search original full name, ward or stake"/></div><select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}><option value="all">All staff roles</option>{Object.entries(ROLE_LABELS).map(([value,label]) => <option value={value} key={value}>{label}</option>)}</select></div>
+      <div className="assignment-toolbar"><SearchField value={query} onChange={setQuery} label="Search staff assignments" placeholder="Search name, ward or stake"/><select aria-label="Filter staff roles" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}><option value="all">All staff roles</option>{Object.entries(ROLE_LABELS).map(([value,label]) => <option value={value} key={value}>{label}</option>)}</select></div>
       <div className="assignment-staff-list">{staffRows.map((person) => {
         const assignmentText = person.counselorGroupId ? "Counselor group assigned" : person.companyIds.length ? `${person.companyIds.length} compan${person.companyIds.length === 1 ? "y" : "ies"}` : "No operational assignment";
         return <div className="assignment-staff-row" key={person.id}><span className="assignment-person"><b>{person.name}</b><small>{person.unit || "Unit not recorded"} · {assignmentText}</small></span><select disabled={!canManage || busy === `role-${person.id}`} value={person.operationalRole} onChange={(event) => mutate(`role-${person.id}`, () => setStaffOperationalRole(person.id,event.target.value), `${person.name}'s role was updated.`)}>{Object.entries(ROLE_LABELS).map(([value,label]) => <option value={value} key={value}>{label}</option>)}</select></div>;
@@ -168,7 +166,7 @@ export function Assignments({ sessionId, canManage = false, sessionName }) {
     {structure.published ? <div className="assignment-columns">
       <article className="panel assignment-responsibility-panel">
         <div className="panel-head"><div><span className="kicker">Step 2</span><h2>Counselor groups</h2></div><Status tone={groups.length === staffedGroups ? "good" : "warn"}>{staffedGroups}/{groups.length}</Status></div>
-        <div className="filter-chips"><button className={groupFilter === "needs" ? "active" : ""} onClick={() => setGroupFilter("needs")}>Needs Counselor</button><button className={groupFilter === "filled" ? "active" : ""} onClick={() => setGroupFilter("filled")}>Assigned</button><button className={groupFilter === "all" ? "active" : ""} onClick={() => setGroupFilter("all")}>All</button></div>
+        <div className="filter-chips" role="group" aria-label="Filter counselor groups"><button type="button" className={groupFilter === "needs" ? "active" : ""} onClick={() => setGroupFilter("needs")}>Needs Counselor</button><button type="button" className={groupFilter === "filled" ? "active" : ""} onClick={() => setGroupFilter("filled")}>Assigned</button><button type="button" className={groupFilter === "all" ? "active" : ""} onClick={() => setGroupFilter("all")}>All</button></div>
         <div className="assignment-responsibility-list">{shownGroups.map((group) => {
           const current = staff.find((person) => person.id === group.counselorId);
           const options = counselors.filter((person) => (!person.counselorGroupId || person.counselorGroupId === group.id) && (!person.sex || person.sex === group.sex));
@@ -179,7 +177,7 @@ export function Assignments({ sessionId, canManage = false, sessionName }) {
       <article className="panel assignment-responsibility-panel">
         <div className="panel-head"><div><span className="kicker">Step 3</span><h2>Company supervision</h2></div><Status tone={companies.length === staffedCompanies ? "good" : "warn"}>{staffedCompanies}/{companies.length}</Status></div>
         <p className="form-hint">One primary Assistant Coordinator per company. One AC may supervise up to {maxCompanyLoad} companies.</p>
-        <div className="filter-chips"><button className={companyFilter === "needs" ? "active" : ""} onClick={() => setCompanyFilter("needs")}>Needs AC</button><button className={companyFilter === "filled" ? "active" : ""} onClick={() => setCompanyFilter("filled")}>Assigned</button><button className={companyFilter === "all" ? "active" : ""} onClick={() => setCompanyFilter("all")}>All</button></div>
+        <div className="filter-chips" role="group" aria-label="Filter company supervision"><button type="button" className={companyFilter === "needs" ? "active" : ""} onClick={() => setCompanyFilter("needs")}>Needs AC</button><button type="button" className={companyFilter === "filled" ? "active" : ""} onClick={() => setCompanyFilter("filled")}>Assigned</button><button type="button" className={companyFilter === "all" ? "active" : ""} onClick={() => setCompanyFilter("all")}>All</button></div>
         <div className="assignment-responsibility-list">{shownCompanies.map((company) => {
           const currentId = company.assistantCoordinatorIds[0];
           const current = staff.find((person) => person.id === currentId);
