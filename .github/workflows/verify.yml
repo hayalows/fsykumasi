@@ -29,7 +29,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - name: Package source for implementation handoff
-        run: tar -czf fsy-kumasi-source.tgz --exclude=node_modules --exclude=dist --exclude=.git .
+        run: git archive --format=tar.gz -o fsy-kumasi-source.tgz HEAD
       - name: Upload source snapshot
         uses: actions/upload-artifact@v4
         with:
