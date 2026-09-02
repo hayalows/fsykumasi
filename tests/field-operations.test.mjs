@@ -22,6 +22,12 @@ test("field modules are capability-driven rather than free-text committee labels
   assert.match(fieldLib,/manage_leader_access/); assert.match(fieldLib,/get_session_team_catalog/);
 });
 
+test("field mutation controls are wired to their save actions", async () => {
+  const [housing,access] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/Access.jsx")]);
+  assert.match(housing,/onClick=\{save\}[\s\S]*Move \/ update/);
+  assert.match(access,/onClick=\{save\}[\s\S]*Save access/);
+});
+
 test("sensitive modules call guarded server RPCs", async () => {
   const [housing,wellness,food] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/Wellness.jsx"),read("src/pages/Food.jsx")]);
   assert.match(housing,/housing_manage/); assert.match(wellness,/wellness_private/); assert.match(food,/food_view/);
@@ -34,4 +40,14 @@ test("migration source keeps canonical teams and narrow capability boundaries", 
   assert.match(migration,/effective_capabilities/); assert.match(migration,/manage_leader_access/); assert.match(migration,/team_memberships/);
   const wellness = await read("supabase/migrations/20260902211317_wellness_and_food_operations.sql");
   assert.match(wellness,/wellness_private/); assert.match(wellness,/get_food_needs/); assert.match(wellness,/dietary_information/);
+});
+
+test("team company visibility and Housing eligibility are enforced server-side", async () => {
+  const [companyVisibility,housingEligibility] = await Promise.all([
+    read("supabase/migrations/20260902214156_team_group_company_visibility.sql"),
+    read("supabase/migrations/20260902214207_housing_requires_operational_participant.sql"),
+  ]);
+  assert.match(companyVisibility,/has_team_capability\(session_id, 'groups_view'\)/);
+  assert.match(housingEligibility,/operational_participant_is_eligible\(p_session_id,p_person_id\)/);
+  assert.match(housingEligibility,/revoke all on function public\.assign_housing_person[\s\S]*from public,anon/);
 });
