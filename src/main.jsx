@@ -10,6 +10,7 @@ import "./mobile-pwa.css";
 import "./mobile-nav.css";
 import "./mobile-pwa-scroll.css";
 import "./interface-system.css";
+import "./checkin-snackbar.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

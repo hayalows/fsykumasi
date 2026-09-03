@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
-import { Metric, MutationFeedback, PageHead, SearchField, Status } from "../components/UI.jsx";
+import { Metric, PageHead, SearchField, Status } from "../components/UI.jsx";
 import { operationalEligibility } from "../lib/registration.js";
 import { formatCount } from "../lib/cohort.js";
 import "./operations.css";
+
+const CHECKIN_FEEDBACK_MS = 4500;
+const CHECKIN_FEEDBACK_RESUME_MS = 2200;
 
 function eligibility(person, groupsPublished, structureSettings) {
   const base = operationalEligibility(person, structureSettings);
@@ -20,8 +23,37 @@ export function Checkin({ participants, cohort, checkedIds = [], onRecord, onAdd
   const [confirmUndoId, setConfirmUndoId] = useState("");
   const [lastAction, setLastAction] = useState(null);
   const [error, setError] = useState("");
+  const feedbackTimerRef = useRef(null);
 
   useEffect(() => { setChecked(new Set(checkedIds)); }, [checkedIds]);
+  useEffect(() => () => {
+    if (feedbackTimerRef.current) window.clearTimeout(feedbackTimerRef.current);
+  }, []);
+
+  const clearFeedbackTimer = () => {
+    if (!feedbackTimerRef.current) return;
+    window.clearTimeout(feedbackTimerRef.current);
+    feedbackTimerRef.current = null;
+  };
+
+  const dismissFeedback = () => {
+    clearFeedbackTimer();
+    setLastAction(null);
+  };
+
+  const scheduleFeedbackDismiss = (actionId, delay = CHECKIN_FEEDBACK_MS) => {
+    clearFeedbackTimer();
+    feedbackTimerRef.current = window.setTimeout(() => {
+      setLastAction((current) => current?.id === actionId ? null : current);
+      feedbackTimerRef.current = null;
+    }, delay);
+  };
+
+  const showCheckinFeedback = (person) => {
+    const action = { id: person.id, name: person.fullName };
+    setLastAction(action);
+    scheduleFeedbackDismiss(action.id);
+  };
 
   const withEligibility = useMemo(() => participants.map((person) => ({ person, eligibility: eligibility(person, groupsPublished, structureSettings) })), [participants, groupsPublished, structureSettings]);
   const eligibleCount = withEligibility.filter((item) => item.eligibility.ok).length;
@@ -40,7 +72,8 @@ export function Checkin({ participants, cohort, checkedIds = [], onRecord, onAdd
       if (onRecord) await onRecord(person.id, arriving ? "arrived" : "expected");
       setChecked((current) => { const next = new Set(current); arriving ? next.add(person.id) : next.delete(person.id); return next; });
       setConfirmUndoId("");
-      setLastAction(arriving ? { id: person.id, name: person.fullName } : null);
+      if (arriving) showCheckinFeedback(person);
+      else dismissFeedback();
     } catch (err) { setError(err.message || "Check-in could not be saved. Try again before moving to the next participant."); }
     finally { setBusyId(""); }
   };
@@ -56,7 +89,12 @@ export function Checkin({ participants, cohort, checkedIds = [], onRecord, onAdd
     if (!lastAction) return;
     const person = participants.find((item) => item.id === lastAction.id);
     if (person) await saveStatus(person, false);
-    setLastAction(null);
+  };
+
+  const continueSearch = (value) => {
+    setQuery(value);
+    setConfirmUndoId("");
+    if (lastAction) dismissFeedback();
   };
 
   return <section className="page">
@@ -65,11 +103,10 @@ export function Checkin({ participants, cohort, checkedIds = [], onRecord, onAdd
     {error ? <div className="form-error page-error" role="alert"><WarningCircle/>{error}</div> : null}
     <div className="cohort-context checkin-cohort-context"><b>{formatCount(expectedCount)} expected today</b><span>{cohort ? `${formatCount(cohort.records)} registration records · ${formatCount(attentionCount)} need attention` : "Search by the original registration details"}</span></div>
     <div className="metrics-grid compact"><Metric label="Expected" value={expectedCount.toLocaleString()} note={groupsPublished ? "eligible and assigned" : "operationally eligible"}/><Metric label="Checked in" value={checked.size.toLocaleString()} note={live ? "saved in Supabase" : "prototype device state"} tone="green"/><Metric label="Need attention" value={attentionCount.toLocaleString()} note={ageReviewCount ? `${ageReviewCount} age review` : attentionCount ? "approval, verification or group assignment" : "no unresolved blockers"} tone="yellow"/></div>
-    <article className="panel"><SearchField value={query} onChange={(value) => { setQuery(value); setConfirmUndoId(""); }} label="Search check-in" placeholder="Search name, registration ID, ward, branch or stake"/><div className="check-list">{results.map(({ person, eligibility: state }) => {
+    <article className="panel"><SearchField value={query} onChange={continueSearch} label="Search check-in" placeholder="Search name, registration ID, ward, branch or stake"/><div className="check-list">{results.map(({ person, eligibility: state }) => {
       const arrived = checked.has(person.id);
       return <button key={person.id} disabled={!canRecord || busyId === person.id || !state.ok} onClick={() => toggle(person, state.ok)} className={`${arrived ? "checked" : ""}${state.ok ? "" : " ineligible"}`}><span className="person-avatar">{person.firstName?.[0]}{person.lastName?.[0]}</span><span><b>{person.fullName}</b><small>{person.registrationId || "No registration ID"} · {person.unit || "Unit not recorded"}</small></span><span className="check-action">{busyId === person.id ? "Saving…" : !state.ok ? <Status tone="warn">{state.label}</Status> : confirmUndoId === person.id ? "Tap again to undo" : arrived ? <><CheckCircle weight="fill"/>Arrived</> : canRecord ? "Check in" : "View only"}</span></button>;
     })}{query.trim().length >= 2 && !results.length ? <div className="checkin-no-result"><b>No person found</b><p>Try a shorter spelling or search by ward, branch or stake. Preferred names are searchable, but the original registration full name is always shown.</p>{onAddMissing ? <button className="secondary" onClick={onAddMissing}>Add missing participant</button> : null}</div> : null}</div></article>
-    {lastAction ? <div className="action-feedback-row"><MutationFeedback><b>{lastAction.name}</b> marked arrived and saved.</MutationFeedback><button className="secondary compact-button" disabled={busyId === lastAction.id} onClick={undoLast}>Undo</button></div> : null}
+    {lastAction ? <div className="checkin-snackbar" role="status" aria-live="polite" onMouseEnter={clearFeedbackTimer} onMouseLeave={() => scheduleFeedbackDismiss(lastAction.id, CHECKIN_FEEDBACK_RESUME_MS)} onFocusCapture={clearFeedbackTimer} onBlurCapture={() => scheduleFeedbackDismiss(lastAction.id, CHECKIN_FEEDBACK_RESUME_MS)}><CheckCircle weight="fill" aria-hidden="true"/><span><b>{lastAction.name}</b> checked in</span><button type="button" disabled={busyId === lastAction.id} onClick={undoLast}>Undo</button></div> : null}
   </section>;
 }
-
