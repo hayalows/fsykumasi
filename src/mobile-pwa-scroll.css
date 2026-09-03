@@ -1,0 +1,156 @@
+/* Cross-platform PWA scrolling and touch reliability. Loaded last. */
+
+html {
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: auto;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100%;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
+  touch-action: auto;
+}
+
+#root,
+.app-shell,
+.workspace {
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+/* A drawer or modal may intentionally lock document scrolling. Everything else
+   should retain the browser's native vertical page scroll. */
+body:not([data-scroll-locked="true"]) {
+  overscroll-behavior-y: auto;
+}
+
+.sidebar-nav,
+.modal,
+.report-table-wrap,
+.filter-chips,
+.registration-tabs {
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-backdrop {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal {
+  max-height: calc(var(--visual-viewport-height, 100dvh) - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 760px) {
+  html {
+    scroll-padding-top: calc(68px + env(safe-area-inset-top));
+    scroll-padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 18px);
+  }
+
+  body,
+  #root,
+  .app-shell,
+  .workspace {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .workspace {
+    overflow: visible;
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 18px);
+  }
+
+  .page {
+    min-height: 0;
+    overflow: visible;
+    padding-bottom: 38px;
+  }
+
+  .topbar {
+    will-change: auto;
+  }
+
+  .mobile-nav {
+    transform: translate3d(0, 0, 0);
+    transition: transform .18s ease, opacity .18s ease;
+  }
+
+  /* Keep focused controls clear of the sticky header and fixed tab bar. */
+  :where(input, select, textarea, button, summary, [tabindex]):not(.mobile-nav *) {
+    scroll-margin-top: calc(76px + env(safe-area-inset-top));
+    scroll-margin-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 22px);
+  }
+
+  /* Android resizes the visual viewport when the software keyboard opens. Hiding
+     the tab bar during that state avoids covering form controls and lets the
+     browser perform its normal focus scrolling. */
+  .visual-keyboard-open .mobile-nav {
+    transform: translate3d(0, 115%, 0);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .visual-keyboard-open .workspace {
+    padding-bottom: 18px;
+  }
+
+  .visual-keyboard-open .action-feedback-row {
+    bottom: 12px;
+  }
+
+  .modal-backdrop {
+    align-items: end;
+    padding:
+      max(10px, env(safe-area-inset-top))
+      max(10px, env(safe-area-inset-right))
+      max(10px, env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-left));
+  }
+
+  .modal {
+    width: 100%;
+    max-height: calc(var(--visual-viewport-height, 100dvh) - max(20px, env(safe-area-inset-top)) - max(10px, env(safe-area-inset-bottom)));
+    border-radius: 20px 20px 14px 14px;
+  }
+
+  .sidebar-nav {
+    overscroll-behavior-y: contain;
+  }
+
+  .filter-chips,
+  .registration-tabs {
+    overscroll-behavior-x: contain;
+  }
+}
+
+@media (max-width: 760px) and (display-mode: standalone) {
+  html {
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav {
+    transition: none;
+  }
+}
