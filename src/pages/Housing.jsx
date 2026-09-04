@@ -1,23 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bed } from "@phosphor-icons/react/Bed";
 import { Buildings } from "@phosphor-icons/react/Buildings";
+import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { PencilSimple } from "@phosphor-icons/react/PencilSimple";
 import { Plus } from "@phosphor-icons/react/Plus";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { X } from "@phosphor-icons/react/X";
-import { DismissibleLayer, Empty, MutationFeedback, PageHead, SearchField, SegmentedControl, Status } from "../components/UI.jsx";
+import { DismissibleLayer, Empty, MutationFeedback, PageHead, SearchField, SegmentedControl } from "../components/UI.jsx";
 import { loadStaff } from "../lib/operations.js";
-import {
-  assignHousingPerson,
-  clearHousingAssignment,
-  createHousingRoomAndAssign,
-  hasCapability,
-  loadHousingRooms,
-  saveHousingRoom,
-} from "../lib/field-operations.js";
+import { clearHousingAssignment, hasCapability, loadHousingRooms, saveHousingRoom } from "../lib/field-operations.js";
+import { createHousingRoomAndAssignV2, saveHousingAssignment } from "../lib/housing-actions.js";
 import { loadHousingAssignmentsV2 } from "../lib/housing-context.js";
 import "./field-operations.css";
 import "./housing-ux.css";
+import "./housing-polish.css";
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 const PERSON_BATCH = 60;
@@ -37,13 +33,14 @@ function sexLabel(value) {
   return "Unrestricted";
 }
 
-function checkedInLabel(assignment) {
-  if (assignment.personType === "staff") return { tone: "muted", text: "Staff" };
-  return assignment.checkinStatus === "arrived" ? { tone: "good", text: "Checked in" } : { tone: "warn", text: "Not checked in" };
-}
-
 function roomLocation(room) {
   return [room.building, room.floor].filter(Boolean).join(" · ") || "Location not labelled";
+}
+
+function arrivalState(assignment) {
+  if (assignment.personType === "staff") return { kind: "staff", text: "Staff" };
+  if (assignment.checkinStatus === "arrived") return { kind: "checked", text: "Checked in" };
+  return { kind: "waiting", text: "Awaiting check-in" };
 }
 
 function RoomEditor({ sessionId, room = null, onClose, onSaved }) {
@@ -77,7 +74,7 @@ function RoomEditor({ sessionId, room = null, onClose, onSaved }) {
   return <DismissibleLayer open onClose={onClose} title={editing ? `Edit ${room.name}` : "Add housing room"} sheet className="housing-room-editor-modal">
     <form className="housing-room-editor" onSubmit={save}>
       <header className="housing-modal-header">
-        <div><span className="kicker">Housing setup</span><h2>{editing ? "Edit room" : "Add a room"}</h2><p>{editing ? "Update the room without changing who is assigned to it." : "Start with the room name and number of spaces. Add location details only when you need them."}</p></div>
+        <div><span className="kicker">Housing setup</span><h2>{editing ? "Edit room" : "Add a room"}</h2><p>{editing ? "Update this room without changing its occupants." : "Start with the room name and number of spaces. Add the rest only when it is useful."}</p></div>
         <button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X /></button>
       </header>
 
@@ -86,10 +83,10 @@ function RoomEditor({ sessionId, room = null, onClose, onSaved }) {
           <label>Room name<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="e.g. Block A · 203" autoFocus /></label>
           <label>Spaces<input required min="1" max="50" type="number" inputMode="numeric" value={form.capacity} onChange={(event) => setForm({ ...form, capacity: event.target.value })} /></label>
         </div>
-        <label>Room use<select value={form.sex} onChange={(event) => setForm({ ...form, sex: event.target.value })}><option value="">Unrestricted</option><option value="female">Female</option><option value="male">Male</option></select><small>Use a sex restriction when this room should only house one sex.</small></label>
+        <label>Room use<select value={form.sex} onChange={(event) => setForm({ ...form, sex: event.target.value })}><option value="">Unrestricted</option><option value="female">Female</option><option value="male">Male</option></select><small>Only set this when the room should be restricted to one sex.</small></label>
 
         <details className="housing-optional-details" open={Boolean(form.building || form.floor || form.notes)}>
-          <summary><span><b>Location & notes</b><small>Optional details for finding the room and managing keys.</small></span><span aria-hidden="true">+</span></summary>
+          <summary><span><b>Location & notes</b><small>Building, floor and room notes</small></span><span aria-hidden="true">+</span></summary>
           <div>
             <div className="housing-primary-fields"><label>Building<input value={form.building} onChange={(event) => setForm({ ...form, building: event.target.value })} placeholder="Optional" /></label><label>Floor<input value={form.floor} onChange={(event) => setForm({ ...form, floor: event.target.value })} placeholder="Optional" /></label></div>
             <label>Operational note<textarea rows="3" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder="Optional room, key or location note" /></label>
@@ -103,9 +100,14 @@ function RoomEditor({ sessionId, room = null, onClose, onSaved }) {
   </DismissibleLayer>;
 }
 
+function MoveReasonField({ value, onChange }) {
+  return <label className="housing-move-reason">Reason for room change <span>Optional · recommended</span><textarea rows="2" maxLength="240" value={value} onChange={(event) => onChange(event.target.value)} placeholder="e.g. Moving closer to their company, accessibility need, room issue" /><small>This is kept with the Housing audit history so another committee member can understand the move later.</small></label>;
+}
+
 function AssignmentEditor({ sessionId, person, rooms, currentAssignment, onClose, onSaved }) {
   const [roomId, setRoomId] = useState(currentAssignment?.roomId || "");
   const [bedLabel, setBedLabel] = useState(currentAssignment?.bedLabel || "");
+  const [moveReason, setMoveReason] = useState("");
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState("choose");
   const [newRoom, setNewRoom] = useState({ name: "", capacity: 4, building: "", floor: "", notes: "" });
@@ -123,17 +125,34 @@ function AssignmentEditor({ sessionId, person, rooms, currentAssignment, onClose
 
   const selectedRoom = rooms.find((room) => room.id === roomId);
   const inferredSex = person.sex || "";
+  const roomChanged = Boolean(currentAssignment && roomId && roomId !== currentAssignment.roomId);
+  const bedChanged = (bedLabel || "").trim() !== (currentAssignment?.bedLabel || "").trim();
+  const hasChanges = currentAssignment ? roomChanged || bedChanged : Boolean(roomId);
 
   const save = async () => {
+    if (!roomId) return;
     setBusy(true);
     setError("");
     try {
-      if (roomId) await assignHousingPerson({ sessionId, personType: person.kind, personId: person.id, roomId, bedLabel });
-      else if (currentAssignment) await clearHousingAssignment({ sessionId, personType: person.kind, personId: person.id });
+      await saveHousingAssignment({ sessionId, personType: person.kind, personId: person.id, roomId, bedLabel, moveReason: roomChanged ? moveReason : "" });
       await onSaved();
       onClose();
     } catch (err) {
       setError(err.message || "Unable to save this housing assignment.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeAssignment = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await clearHousingAssignment({ sessionId, personType: person.kind, personId: person.id });
+      await onSaved();
+      onClose();
+    } catch (err) {
+      setError(err.message || "Unable to remove this housing assignment.");
     } finally {
       setBusy(false);
     }
@@ -147,7 +166,7 @@ function AssignmentEditor({ sessionId, person, rooms, currentAssignment, onClose
     setBusy(true);
     setError("");
     try {
-      await createHousingRoomAndAssign({
+      await createHousingRoomAndAssignV2({
         sessionId,
         personType: person.kind,
         personId: person.id,
@@ -157,6 +176,7 @@ function AssignmentEditor({ sessionId, person, rooms, currentAssignment, onClose
         capacity: newRoom.capacity,
         notes: newRoom.notes,
         bedLabel,
+        moveReason: currentAssignment ? moveReason : "",
       });
       await onSaved();
       onClose();
@@ -167,43 +187,50 @@ function AssignmentEditor({ sessionId, person, rooms, currentAssignment, onClose
     }
   };
 
+  const primaryLabel = roomChanged && selectedRoom ? `Move to ${selectedRoom.name}` : currentAssignment ? "Save assignment" : "Assign room";
+
   return <DismissibleLayer open onClose={onClose} title={`Housing for ${person.name}`} sheet className="housing-assignment-modal">
-    <div className="housing-assignment-shell">
+    <div className="housing-assignment-shell housing-assignment-shell-v3">
       <header className="housing-modal-header housing-person-header">
         <div className="housing-person-identity"><span className="person-avatar">{initials(person.name)}</span><span><span className="kicker">Housing assignment</span><h2>{person.name}</h2><p>{person.context}</p></span></div>
         <button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X /></button>
       </header>
 
-      <div className="housing-modal-content housing-assignment-content">
-        <aside className="housing-assignment-summary">
-          <div className="housing-context-card"><span>Person</span><b>{person.kind === "staff" ? "Staff" : "Participant"}</b><small>{inferredSex ? `${sexLabel(inferredSex)} housing` : "Sex not recorded"}</small></div>
-          <div className="housing-context-card"><span>Current room</span><b>{currentAssignment?.roomName || "Not assigned"}</b><small>{currentAssignment?.bedLabel ? `Bed / key ${currentAssignment.bedLabel}` : currentAssignment ? "No bed / key label" : "Needs a room"}</small></div>
-          {mode === "choose" && selectedRoom ? <div className="housing-context-card selected-room"><span>Selected</span><b>{selectedRoom.name}</b><small>{roomLocation(selectedRoom)} · {Math.max(0, selectedRoom.capacity - selectedRoom.occupancy)} space{Math.max(0, selectedRoom.capacity - selectedRoom.occupancy) === 1 ? "" : "s"} open</small></div> : null}
-          <details className="housing-optional-details compact" open={Boolean(bedLabel)}><summary><span><b>Bed / key label</b><small>Optional</small></span><span aria-hidden="true">+</span></summary><div><label>Bed / key label<input value={bedLabel} onChange={(event) => setBedLabel(event.target.value)} placeholder="e.g. Bed B or Key 203-2" /></label></div></details>
-        </aside>
+      <div className="housing-modal-content housing-assignment-content-v3">
+        <div className="housing-assignment-contextbar">
+          <div><span>Current room</span><b>{currentAssignment?.roomName || "Not assigned"}</b><small>{currentAssignment?.bedLabel ? `Bed / key ${currentAssignment.bedLabel}` : currentAssignment ? "No bed / key label" : "Needs a room"}</small></div>
+          <div className={roomChanged ? "changing" : ""}><span>{roomChanged ? "Moving to" : "Housing"}</span><b>{roomChanged ? selectedRoom?.name : inferredSex ? `${sexLabel(inferredSex)} housing` : "Sex not recorded"}</b><small>{roomChanged && selectedRoom ? `${roomLocation(selectedRoom)} · ${Math.max(0, selectedRoom.capacity - selectedRoom.occupancy)} open` : person.kind === "staff" ? "Staff" : "Participant"}</small></div>
+        </div>
 
-        <section className="housing-room-picker">
+        <section className="housing-room-picker-v3">
           {mode === "choose" ? <>
-            <div className="housing-room-picker-head"><div><h3>Choose a room</h3><p>Only rooms that match this person and still have space are shown.</p></div><button type="button" className="secondary housing-create-inline" onClick={() => { setMode("create"); setError(""); }}><Plus />Create new room</button></div>
+            <div className="housing-room-picker-head"><div><h3>{currentAssignment ? "Choose another room" : "Choose a room"}</h3><p>Only compatible rooms with available space are shown. The current room stays available while you are editing.</p></div><button type="button" className="secondary housing-create-inline" onClick={() => { setMode("create"); setMoveReason(""); setError(""); }}><Plus />Create new room</button></div>
             <SearchField value={query} onChange={setQuery} label="Search available rooms" placeholder="Search room, building or floor" autoFocus />
-            <div className="housing-room-choice-list">
+            <div className="housing-room-choice-list housing-room-choice-list-v3">
               {visibleRooms.map((room) => {
                 const selected = room.id === roomId;
                 const open = Math.max(0, room.capacity - room.occupancy);
-                return <button type="button" key={room.id} className={selected ? "housing-room-choice selected" : "housing-room-choice"} onClick={() => setRoomId(selected ? "" : room.id)} aria-pressed={selected}>
-                  <span><b>{room.name}</b><small>{roomLocation(room)}</small></span>
-                  <span><strong>{room.occupancy}/{room.capacity}</strong><small>{open} open</small></span>
-                  <span className="housing-room-use">{room.sex ? sexLabel(room.sex) : "Unrestricted"}</span>
+                return <button type="button" key={room.id} className={selected ? "housing-room-choice housing-room-choice-v3 selected" : "housing-room-choice housing-room-choice-v3"} onClick={() => setRoomId(room.id)} aria-pressed={selected}>
+                  <span className="housing-room-choice-copy"><b>{room.name}</b><small>{roomLocation(room)}</small></span>
+                  <span className="housing-room-choice-capacity"><strong>{room.occupancy}/{room.capacity}</strong><small>{open ? `${open} open` : "Full"} · {room.sex ? `${sexLabel(room.sex)} housing` : "Unrestricted"}</small></span>
+                  <CheckCircle className="housing-room-choice-check" size={22} weight={selected ? "fill" : "regular"} aria-hidden="true" />
                 </button>;
               })}
-              {!visibleRooms.length ? <div className="housing-no-room-result"><Bed size={28}/><b>{compatibleRooms.length ? "No rooms match that search" : "No available compatible rooms"}</b><p>{compatibleRooms.length ? "Try another room name or clear the search." : `Create a new ${inferredSex ? sexLabel(inferredSex).toLowerCase() : ""} room and assign ${person.name} in one step.`}</p><button type="button" className="primary" onClick={() => setMode("create")}><Plus />Create room for {person.name.split(" ")[0]}</button></div> : null}
+              {!visibleRooms.length ? <div className="housing-no-room-result"><Bed size={28}/><b>{compatibleRooms.length ? "No rooms match that search" : "No compatible rooms have space"}</b><p>{compatibleRooms.length ? "Try another room name or clear the search." : `Create a new ${inferredSex ? sexLabel(inferredSex).toLowerCase() : ""} room and assign ${person.name} without leaving this screen.`}</p><button type="button" className="primary" onClick={() => setMode("create")}><Plus />Create room for {person.name.split(" ")[0]}</button></div> : null}
             </div>
+
+            {roomChanged ? <MoveReasonField value={moveReason} onChange={setMoveReason} /> : null}
+            <details className="housing-optional-details housing-assignment-details" open={Boolean(bedLabel)}>
+              <summary><span><b>Assignment details</b><small>{bedLabel ? `Bed / key ${bedLabel}` : "Bed or key label, if needed"}</small></span><span aria-hidden="true">+</span></summary>
+              <div><label>Bed / key label<input value={bedLabel} onChange={(event) => setBedLabel(event.target.value)} placeholder="e.g. Bed B or Key 203-2" /></label>{currentAssignment ? <button type="button" className="housing-remove-assignment" disabled={busy} onClick={removeAssignment}>Remove room assignment</button> : null}</div>
+            </details>
           </> : <>
-            <div className="housing-room-picker-head"><div><span className="kicker">Create & assign</span><h3>New room for {person.name.split(" ")[0]}</h3><p>{inferredSex ? `This room will automatically be ${sexLabel(inferredSex).toLowerCase()} housing because ${person.name.split(" ")[0]} is ${sexLabel(inferredSex).toLowerCase()}.` : "This person's sex is not recorded, so the room will remain unrestricted."}</p></div><button type="button" className="secondary" onClick={() => { setMode("choose"); setError(""); }}>Back to rooms</button></div>
-            <div className="housing-create-room-form">
+            <div className="housing-room-picker-head"><div><span className="kicker">Create & assign</span><h3>New room for {person.name.split(" ")[0]}</h3><p>{inferredSex ? `The room will automatically use ${sexLabel(inferredSex).toLowerCase()} housing because that is ${person.name.split(" ")[0]}'s recorded sex.` : "This person's sex is not recorded, so the room will remain unrestricted."}</p></div><button type="button" className="secondary" onClick={() => { setMode("choose"); setMoveReason(""); setError(""); }}>Back to rooms</button></div>
+            <div className="housing-create-room-form housing-create-room-form-v3">
               <div className="housing-primary-fields"><label>Room name<input required value={newRoom.name} onChange={(event) => setNewRoom({ ...newRoom, name: event.target.value })} placeholder="e.g. Block B · 105" autoFocus /></label><label>Spaces<input required min="1" max="50" type="number" inputMode="numeric" value={newRoom.capacity} onChange={(event) => setNewRoom({ ...newRoom, capacity: event.target.value })} /></label></div>
               <div className="housing-inferred-room"><Bed /><span><b>{inferredSex ? `${sexLabel(inferredSex)} room` : "Unrestricted room"}</b><small>Set automatically from the person you are assigning.</small></span></div>
-              <details className="housing-optional-details"><summary><span><b>Location & room note</b><small>Optional</small></span><span aria-hidden="true">+</span></summary><div><div className="housing-primary-fields"><label>Building<input value={newRoom.building} onChange={(event) => setNewRoom({ ...newRoom, building: event.target.value })} placeholder="Optional" /></label><label>Floor<input value={newRoom.floor} onChange={(event) => setNewRoom({ ...newRoom, floor: event.target.value })} placeholder="Optional" /></label></div><label>Room note<textarea rows="3" value={newRoom.notes} onChange={(event) => setNewRoom({ ...newRoom, notes: event.target.value })} placeholder="Optional room or key note" /></label></div></details>
+              {currentAssignment ? <MoveReasonField value={moveReason} onChange={setMoveReason} /> : null}
+              <details className="housing-optional-details"><summary><span><b>Location & room note</b><small>Building, floor and operational note</small></span><span aria-hidden="true">+</span></summary><div><div className="housing-primary-fields"><label>Building<input value={newRoom.building} onChange={(event) => setNewRoom({ ...newRoom, building: event.target.value })} placeholder="Optional" /></label><label>Floor<input value={newRoom.floor} onChange={(event) => setNewRoom({ ...newRoom, floor: event.target.value })} placeholder="Optional" /></label></div><label>Room note<textarea rows="3" value={newRoom.notes} onChange={(event) => setNewRoom({ ...newRoom, notes: event.target.value })} placeholder="Optional room or key note" /></label></div></details>
             </div>
           </>}
           {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
@@ -212,7 +239,7 @@ function AssignmentEditor({ sessionId, person, rooms, currentAssignment, onClose
 
       <footer className="housing-modal-actions">
         <button type="button" className="secondary" disabled={busy} onClick={onClose}>Cancel</button>
-        {mode === "choose" ? <button type="button" className="primary" onClick={save} disabled={busy || (!roomId && !currentAssignment)}>{busy ? "Saving…" : roomId ? currentAssignment ? "Save room change" : "Assign room" : "Remove assignment"}</button> : <button type="button" className="primary" onClick={createAndAssign} disabled={busy || !newRoom.name.trim()}>{busy ? "Creating…" : "Create room & assign"}</button>}
+        {mode === "choose" ? <button type="button" className="primary" onClick={save} disabled={busy || !roomId || !hasChanges}>{busy ? "Saving…" : primaryLabel}</button> : <button type="button" className="primary" onClick={createAndAssign} disabled={busy || !newRoom.name.trim()}>{busy ? "Creating…" : currentAssignment ? "Create room & move" : "Create room & assign"}</button>}
       </footer>
     </div>
   </DismissibleLayer>;
@@ -224,27 +251,30 @@ function RoomDetail({ room, assignments, canManage, onClose, onEdit }) {
   const percent = Math.min(100, (occupants.length / Math.max(1, room.capacity)) * 100);
 
   return <DismissibleLayer open onClose={onClose} title={`${room.name} occupants`} sheet className="housing-room-detail-modal">
-    <div className="housing-room-detail-shell">
+    <div className="housing-room-detail-shell housing-room-detail-shell-v3">
       <header className="housing-modal-header housing-room-detail-header">
         <div><span className="kicker">Current room</span><h2>{room.name}</h2><p>{roomLocation(room)}</p></div>
         <button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X /></button>
       </header>
 
-      <div className="housing-modal-content housing-room-detail-content">
-        <div className="housing-room-glance">
+      <div className="housing-modal-content housing-room-detail-content housing-room-detail-content-v3">
+        <div className="housing-room-overview">
           <div><span>Occupancy</span><strong>{occupants.length}/{room.capacity}</strong><small>{openSpaces ? `${openSpaces} space${openSpaces === 1 ? "" : "s"} open` : "Room is full"}</small></div>
-          <div><span>Room use</span><strong>{room.sex ? sexLabel(room.sex) : "Any"}</strong><small>{room.sex ? `${sexLabel(room.sex)} housing` : "No sex restriction"}</small></div>
-          <div className="housing-room-glance-meter"><span style={{ width: `${percent}%` }} /></div>
+          <div><span>Room use</span><strong>{room.sex ? sexLabel(room.sex) : "Any"}</strong><small>{room.sex ? `${sexLabel(room.sex)} housing` : "No restriction"}</small></div>
+          <div className="housing-room-overview-meter"><span style={{ width: `${percent}%` }} /></div>
         </div>
-        {room.notes ? <div className="notice compact-notice"><div><b>Room note</b><p>{room.notes}</p></div></div> : null}
 
-        <section className="housing-occupants-section"><div className="housing-section-heading"><div><h3>People in this room</h3><p>{occupants.length ? `${occupants.length} of ${room.capacity} spaces are currently assigned.` : "No one has been assigned to this room yet."}</p></div>{canManage ? <button type="button" className="secondary" onClick={onEdit}><PencilSimple />Edit room</button> : null}</div>
-          <div className="room-occupant-list">{occupants.map((assignment) => {
-            const state = checkedInLabel(assignment);
-            return <div className="room-occupant-row" key={assignment.id}>
+        {room.notes ? <div className="housing-room-note"><b>Room note</b><p>{room.notes}</p></div> : null}
+
+        <section className="housing-occupants-section housing-occupants-section-v3">
+          <div className="housing-section-heading"><div><h3>People in this room</h3><p>{occupants.length ? `${occupants.length} assigned · ${openSpaces} space${openSpaces === 1 ? "" : "s"} remaining` : `No one assigned · ${room.capacity} spaces available`}</p></div>{canManage ? <button type="button" className="secondary housing-edit-room" onClick={onEdit}><PencilSimple />Edit room</button> : null}</div>
+          <div className="room-occupant-list room-occupant-list-v3">{occupants.map((assignment) => {
+            const state = arrivalState(assignment);
+            const identity = assignment.personType === "staff" ? `Staff${assignment.company ? ` · ${assignment.company}` : ""}` : [assignment.fsyId, assignment.company, assignment.group].filter(Boolean).join(" · ") || "Participant";
+            return <div className="room-occupant-row room-occupant-row-v3" key={assignment.id}>
               <span className="person-avatar">{initials(assignment.name)}</span>
-              <span className="room-occupant-copy"><b>{assignment.name}</b><small>{assignment.personType === "staff" ? `Staff${assignment.company ? ` · ${assignment.company}` : ""}` : [assignment.fsyId, assignment.company, assignment.group].filter(Boolean).join(" · ") || "Participant"}</small>{assignment.bedLabel ? <small>Bed / key: {assignment.bedLabel}</small> : null}</span>
-              <span className="room-occupant-state"><Status tone={state.tone}>{state.text}</Status>{assignment.personType !== "staff" && assignment.checkinStatus === "arrived" && assignment.checkedInAt ? <small>Arrival recorded</small> : null}</span>
+              <span className="room-occupant-copy"><b>{assignment.name}</b><small>{identity}</small><span className={`housing-arrival-state ${state.kind}`}><i aria-hidden="true" />{state.text}</span></span>
+              {assignment.bedLabel ? <span className="room-bed-key"><small>Bed / key</small><b>{assignment.bedLabel}</b></span> : null}
             </div>;
           })}{!occupants.length ? <div className="room-occupant-empty"><Bed size={28}/><b>No one assigned yet</b><p>This room has {room.capacity} available space{room.capacity === 1 ? "" : "s"}.</p></div> : null}</div>
         </section>
@@ -341,8 +371,8 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
 
   if (!canView) return <section className="page"><PageHead title="Housing" sessionName={sessionName} description="Housing access is assigned by an FSY administrator." /><article className="panel"><Empty icon={Bed} title="Housing is not in your access" text="Ask an administrator to add the Housing team to your account if this is part of your assignment." /></article></section>;
 
-  return <section className="page field-page housing-page">
-    <PageHead title="Housing" sessionName={sessionName} description="See every person who needs housing, current room capacity and assignments in one operational view." action={canManage ? <button className="primary" onClick={() => setRoomOpen(true)}><Plus />Add room</button> : null} />
+  return <section className="page field-page housing-page housing-page-v3">
+    <PageHead title="Housing" sessionName={sessionName} description="See every person who needs housing, current room capacity and assignments in one operational view." action={canManage ? <button className="primary housing-page-add" onClick={() => setRoomOpen(true)}><Plus />Add room</button> : null} />
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}{saved ? <MutationFeedback>{saved}</MutationFeedback> : null}
 
     <div className="housing-metrics" aria-label="Housing coverage">
@@ -356,17 +386,21 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
       <article className="panel housing-panel housing-rooms-panel">
         <div className="housing-panel-head"><div><span className="kicker">Rooms</span><h2>Room map</h2><p>{rooms.length ? `${rooms.length} rooms · ${openRooms} with space · ${fullRooms} full` : "Add rooms before you start assigning people."}</p></div><Buildings size={22}/></div>
         {canManage ? <button className="secondary housing-mobile-add" onClick={() => setRoomOpen(true)}><Plus />Add room</button> : null}
-        <div className="housing-toolbar housing-room-toolbar"><SearchField value={roomQuery} onChange={setRoomSearch} label="Search housing rooms" placeholder="Search rooms" /><SegmentedControl label="Room status" value={roomFilter} onChange={setRoomState} options={[{ value: "all", label: "All", count: rooms.length }, { value: "open", label: "Open", count: openRooms }, { value: "full", label: "Full", count: fullRooms }]} /></div>
+        <div className="housing-toolbar housing-room-toolbar housing-room-toolbar-v3">
+          <SearchField value={roomQuery} onChange={setRoomSearch} label="Search housing rooms" placeholder="Search rooms" />
+          <label className="housing-room-filter"><span>Availability</span><select value={roomFilter} onChange={(event) => setRoomState(event.target.value)} aria-label="Filter rooms by availability"><option value="all">All rooms · {rooms.length}</option><option value="open">Spaces available · {openRooms}</option><option value="full">Full rooms · {fullRooms}</option></select></label>
+        </div>
+        <p className="housing-filter-summary" aria-live="polite">Showing {filteredRooms.length} {roomFilter === "open" ? "room(s) with space" : roomFilter === "full" ? "full room(s)" : "room(s)"}{roomQuery ? ` matching “${roomQuery}”` : ""}.</p>
 
         <div className="room-grid housing-room-grid">{visibleRooms.map((room) => {
           const open = Math.max(0, room.capacity - room.occupancy);
-          return <button type="button" className={`room-card room-card-button housing-room-card ${open ? "open" : "full"}`} key={room.id} onClick={() => setSelectedRoom(room)} aria-label={`Open ${room.name} occupants`}>
+          return <button type="button" className={`room-card room-card-button housing-room-card housing-room-card-v3 ${open ? "open" : "full"}`} key={room.id} onClick={() => setSelectedRoom(room)} aria-label={`Open ${room.name} occupants`}>
             <div className="housing-room-card-title"><b>{room.name}</b><small>{roomLocation(room)}</small></div>
-            <Status tone={open ? "good" : "warn"}>{room.occupancy}/{room.capacity}</Status>
+            <span className="housing-room-capacity"><strong>{room.occupancy}/{room.capacity}</strong><small>{open ? `${open} open` : "Full"}</small></span>
             <div className="room-meter"><i style={{ width: `${Math.min(100, (room.occupancy / Math.max(1, room.capacity)) * 100)}%` }} /></div>
-            <div className="housing-room-card-foot"><span>{room.sex ? `${sexLabel(room.sex)} housing` : "Unrestricted"}</span><b>{open ? `${open} open` : "Full"}</b></div>
+            <div className="housing-room-card-foot"><span>{room.sex ? `${sexLabel(room.sex)} housing` : "Unrestricted"}</span><span>{open ? "Space available" : "At capacity"}</span></div>
           </button>;
-        })}{!filteredRooms.length ? <Empty icon={Bed} title={rooms.length ? "No rooms match" : "No rooms yet"} text={rooms.length ? "Try another search or room status." : "Add the first room before assigning people."} /> : null}</div>
+        })}{!filteredRooms.length ? <Empty icon={Bed} title={rooms.length ? "No rooms match" : "No rooms yet"} text={rooms.length ? "Try another search or availability filter." : "Add the first room before assigning people."} /> : null}</div>
         {filteredRooms.length > visibleRooms.length ? <button type="button" className="secondary housing-show-more" onClick={() => setRoomLimit((value) => value + ROOM_BATCH)}>Show {Math.min(ROOM_BATCH, filteredRooms.length - visibleRooms.length)} more rooms</button> : null}
       </article>
 
@@ -379,7 +413,7 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
           return <button type="button" key={`${person.kind}:${person.id}`} disabled={!canManage} onClick={() => canManage && setSelected({ person, assignment })}>
             <span className="person-avatar">{initials(person.name)}</span>
             <span className="housing-person-copy"><b>{person.name}</b><small>{person.context}</small></span>
-            <span className="housing-person-assignment">{assignment ? <><b>{assignment.roomName}</b><small>{assignment.bedLabel ? `Bed / key ${assignment.bedLabel}` : "Assigned"}</small></> : <Status tone="warn">Needs room</Status>}</span>
+            <span className="housing-person-assignment">{assignment ? <><b>{assignment.roomName}</b><small>{assignment.bedLabel ? `Bed / key ${assignment.bedLabel}` : "Assigned"}</small></> : <span className="housing-passive-state needs"><i aria-hidden="true" />Needs room</span>}</span>
           </button>;
         })}{!filteredPeople.length ? <div className="housing-person-empty"><UserPlus size={28}/><b>No people match this view</b><p>Try another search or filter.</p></div> : null}</div>
         {filteredPeople.length > visiblePeople.length ? <button type="button" className="secondary housing-show-more" onClick={() => setPersonLimit((value) => value + PERSON_BATCH)}>Show {Math.min(PERSON_BATCH, filteredPeople.length - visiblePeople.length)} more people</button> : null}
