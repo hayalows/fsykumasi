@@ -80,18 +80,24 @@ test("company transfers are explicit, capacity-limited and protect active Assist
   assert.match(companySheet, /Nothing moves until you save/i);
 });
 
-test("Access shows admin-only sign-in recency and private live presence", () => {
+test("Access shows admin-only sign-in recency and authenticated private live presence", () => {
   assert.match(accessUxMigration, /get_session_account_activity/);
   assert.match(accessUxMigration, /auth\.users au/);
   assert.match(accessUxMigration, /au\.last_sign_in_at/);
   assert.match(accessPage, /Online now/);
   assert.match(accessPage, /Last signed in/);
+  assert.match(presenceClient, /realtime\.setAuth\(\)/);
   assert.match(presenceClient, /private:\s*true/);
   assert.match(presenceClient, /presence:\s*\{ key: userId \}/);
   assert.match(appShell, /trackSessionPresence\(sessionInfo\.id, userId\)/);
   assert.match(accessUxMigration, /on realtime\.messages/);
   assert.match(accessUxMigration, /extension = 'presence'/);
   assert.match(accessUxMigration, /private\.has_session_access/);
+});
+
+test("optional account activity cannot block the Access directory", () => {
+  assert.match(staffClient, /Account activity is secondary metadata/);
+  assert.match(staffClient, /return new Map\(\);/);
 });
 
 test("secondary Access actions use progressive disclosure", () => {

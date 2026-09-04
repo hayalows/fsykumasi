@@ -71,9 +71,14 @@ export async function loadStaffAccessDirectory(sessionId) {
 }
 
 export async function loadSessionAccountActivity(sessionId) {
-  const { data, error } = await client().rpc("get_session_account_activity", { p_session_id: sessionId });
-  if (error) throw error;
-  return new Map((data || []).map((row) => [row.user_id, { lastSignInAt: row.last_sign_in_at || null }]));
+  try {
+    const { data, error } = await client().rpc("get_session_account_activity", { p_session_id: sessionId });
+    if (error) throw error;
+    return new Map((data || []).map((row) => [row.user_id, { lastSignInAt: row.last_sign_in_at || null }]));
+  } catch {
+    // Account activity is secondary metadata. Never block the Access directory if it is unavailable.
+    return new Map();
+  }
 }
 
 export async function loadAssistantCoordinatorCompanySuggestions(staffId) {
