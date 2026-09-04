@@ -7,6 +7,7 @@ const triggerFix = readFileSync(new URL("../supabase/migrations/20260904194600_s
 const accessPage = readFileSync(new URL("../src/pages/Access.jsx", import.meta.url), "utf8");
 const assignmentsPage = readFileSync(new URL("../src/pages/Assignments.jsx", import.meta.url), "utf8");
 const staffClient = readFileSync(new URL("../src/lib/staff-access.js", import.meta.url), "utf8");
+const uiComponents = readFileSync(new URL("../src/components/UI.jsx", import.meta.url), "utf8");
 
 test("staff and login identity are linked explicitly", () => {
   assert.match(migration, /create table if not exists public\.staff_account_links/i);
@@ -45,6 +46,12 @@ test("Access is a login lifecycle rather than a second Assignments screen", () =
   assert.match(staffClient, /disabled:\s*"Access disabled"/);
   assert.match(staffClient, /not_enabled:\s*"No website access"/);
   assert.match(staffClient, /get_staff_access_directory/);
+});
+
+test("Access can render its initial empty live directory before data arrives", () => {
+  assert.match(accessPage, /live \? \[\] : demoDirectory\(\)/);
+  assert.match(accessPage, /<Empty title=/);
+  assert.match(uiComponents, /\{Icon \? <span className="empty-icon"><Icon size=\{25\} \/><\/span> : null\}/);
 });
 
 test("Assignments offers optional website access without forcing it", () => {
