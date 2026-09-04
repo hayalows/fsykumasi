@@ -12,7 +12,8 @@ Production: [fsy-kumasi-operations.vercel.app](https://fsy-kumasi-operations.ver
 3. Ran the local demo server and inspected the UI in Codex In-app Browser at the default desktop size and at 390x844. Screens were captured and visually reviewed for Overview, Registration, People, Assignments, Groups & companies, Check-in, Head count, Access, Account, the More drawer, the People detail sheet, and the no-show confirmation sheet.
 4. Exercised mobile drawer and sheet dismissal using backdrop taps and Escape. Exercised navigation from More using the visible Registration control. Verified focus returned to the originating controls after dismissal.
 5. The browser screenshot captures are inline in the task transcript. The browser control surface does not provide a filesystem screenshot export, so this audit records the exact capture steps and viewport instead of pretending image files were saved.
-6. The production tab was inspected in its current signed-out state. No credentials were entered, copied, transmitted, or inferred; therefore authenticated production-only screens are not claimed as verified here.
+6. After the user authenticated directly in the in-app browser, production was smoke-tested on the deployed target across Overview, Check-in, Head count (including round-to-company detail), Groups & companies, People/detail, Registration/FSY IDs, Assignments, Access, Birthdays, and Account. Account Edit was opened and cancelled without saving; no check-in, no-show, head-count report, birthday acknowledgement, invitation, role change, or ID finalization action was invoked.
+7. The production deployment `dpl_HX37gkNp3Tu2GbouX6B9nXHDoBSR` was Ready and aliased to the public domain. `/`, `/sw.js`, and `/manifest.webmanifest` each returned HTTP 200, and the browser diagnostic pass reported zero warning/error entries.
 
 ## Findings and disposition
 
@@ -34,7 +35,7 @@ Production: [fsy-kumasi-operations.vercel.app](https://fsy-kumasi-operations.ver
 
 | Width | Observed result |
 | --- | --- |
-| Default desktop | Sidebar stayed within a fixed 260px column with its own scroll area. People detail remained beside the search/results list. Segmented controls retained readable Participants and Staff labels. |
+| Default desktop | Sidebar stayed within a fixed 260px column with its own scroll area. People detail remained beside the search/results list. Segmented controls retained readable Participants and Staff labels. The same primary surfaces loaded in the authenticated production smoke pass. |
 | 390px x 844px | Header, page title, primary action, search, list rows, and bottom bar stayed within the viewport. More opened as a scrollable drawer. People details and no-show confirmation opened as bottom sheets. Registration workspace tabs remained readable and horizontally scrollable when needed. |
 
 ## Safety review
@@ -47,5 +48,4 @@ Production: [fsy-kumasi-operations.vercel.app](https://fsy-kumasi-operations.ver
 ## Open follow-up
 
 - The live 1,665 participant rows versus 1,614 active badge assignments, and the two source rows without stake data, need an authorized data-quality decision; this pass leaves them intact.
-- A public 2026 International Staff Handbook was not found during research. The audit relies on the available official FSY planning/staff materials and existing operational rules rather than inventing 2026 policy.
-- An authenticated production UI pass still requires the user to enter credentials directly in the browser. The signed-out production shell and public deployment boundary were inspected; authenticated production behavior is not claimed until that handoff occurs.
+- The public 2026 International Staff Handbook was not found during research; future policy-sensitive changes should continue to use confirmed session rules and available official FSY materials rather than inventing 2026 policy.
