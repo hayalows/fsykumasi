@@ -27,7 +27,8 @@ test("field modules are capability-driven and website access follows Assignments
 
 test("field mutation controls are wired to their save actions", async () => {
   const [housing,access,invite] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/Access.jsx"),read("src/components/StaffAccessInvite.jsx")]);
-  assert.match(housing,/onClick=\{save\}[\s\S]*Save assignment/);
+  assert.match(housing,/onClick=\{save\}/);
+  assert.match(housing,/const primaryLabel[\s\S]*Save assignment/);
   assert.match(housing,/onClick=\{createAndAssign\}[\s\S]*Create room & assign/);
   assert.match(access,/onClick=\{save\}[\s\S]*Save exception account/);
   assert.match(invite,/onSubmit=\{submit\}[\s\S]*Create setup link/);
