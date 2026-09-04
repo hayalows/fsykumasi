@@ -13,9 +13,9 @@ test("full session administrators can manage website access", () => {
   assert.equal(canApproveAccess("assistant_coordinator"), false);
 });
 
-test("explicit access_admin still works for compatible legacy assignments", () => {
-  assert.equal(canApproveAccess("committee_viewer", ["access_admin"]), true);
-  assert.equal(canApproveAccess("assistant_coordinator", []), false);
+test("access_admin does not elevate non-admin roles in the UI", () => {
+  assert.equal(canApproveAccess("committee_viewer", ["access_admin"]), false);
+  assert.equal(canApproveAccess("assistant_coordinator", ["access_admin"]), false);
 });
 
 test("top-level roles cannot be self-requested", () => {
