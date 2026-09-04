@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
+import { recordDiagnostic } from "./diagnostics.js";
 
 function client() {
   if (!isSupabaseConfigured || !supabase) throw new Error("Supabase is not configured for this deployment.");
@@ -25,7 +26,10 @@ async function invokeAccountSetup(body) {
 
 export function subscribeToAuth(callback) {
   if (!isSupabaseConfigured || !supabase) return () => {};
-  const { data } = supabase.auth.onAuthStateChange((event, session) => callback(event, session));
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    recordDiagnostic("AUTH_EVENT", { event });
+    callback(event, session);
+  });
   return () => data.subscription.unsubscribe();
 }
 
@@ -81,6 +85,13 @@ export async function activateLeaderAccount({ code, password }) {
 }
 
 export async function signOutAccount() {
-  const { error } = await client().auth.signOut();
+  recordDiagnostic("SIGN_OUT", { reason: "local-device" });
+  const { error } = await client().auth.signOut({ scope: "local" });
+  if (error) throw error;
+}
+
+export async function signOutEverywhere() {
+  recordDiagnostic("SIGN_OUT", { reason: "all-devices" });
+  const { error } = await client().auth.signOut({ scope: "global" });
   if (error) throw error;
 }
