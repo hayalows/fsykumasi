@@ -48,10 +48,10 @@ function staffRoleLabel(role) {
 }
 
 function primaryContext(person) {
-  if (person.kind === "staff") {
-    return staffRoleLabel(person.staffRole);
-  }
-  return Number.isFinite(Number(person.turningAge)) ? `Turning ${person.turningAge}` : "Youth participant";
+  if (person.kind === "staff") return staffRoleLabel(person.staffRole);
+  const hasAge = person.turningAge !== null && person.turningAge !== undefined && person.turningAge !== ""
+    && Number.isFinite(Number(person.turningAge));
+  return hasAge ? `Turning ${person.turningAge}` : "Youth participant";
 }
 
 function secondaryContext(person) {
@@ -77,7 +77,6 @@ function searchText(person) {
 function BirthdayPerson({ person, busy, onUpdate }) {
   const staff = person.kind === "staff";
   const details = secondaryContext(person);
-  const id = keyFor(person);
 
   return <article className={`birthday-person ${person.acknowledged ? "acknowledged" : "needs-action"}`}>
     <div className="birthday-person-main">
@@ -179,7 +178,8 @@ export function Birthdays({ birthdays = [], staffBirthdays = [], onSetAcknowledg
   }, [people, query, statusFilter, typeFilter]);
 
   const grouped = useMemo(() => filteredPeople.reduce((days, birthday) => {
-    (days[birthday.date] ||= []).push(birthday);
+    const date = birthday.date || "";
+    (days[date] ||= []).push(birthday);
     return days;
   }, {}), [filteredPeople]);
 
@@ -188,7 +188,7 @@ export function Birthdays({ birthdays = [], staffBirthdays = [], onSetAcknowledg
     .map(([date, items]) => [date, [...items].sort((left, right) => {
       if (left.acknowledged !== right.acknowledged) return Number(left.acknowledged) - Number(right.acknowledged);
       if (left.kind !== right.kind) return left.kind === "participant" ? -1 : 1;
-      return left.name.localeCompare(right.name);
+      return (left.name || "").localeCompare(right.name || "");
     })]), [grouped]);
 
   const update = async (person, acknowledged) => {
@@ -273,7 +273,7 @@ export function Birthdays({ birthdays = [], staffBirthdays = [], onSetAcknowledg
 
       {days.length ? <div className="birthday-days">
         {days.map(([date, items], index) => <BirthdayDay
-          key={date}
+          key={date || `birthday-day-${index}`}
           date={date}
           items={items}
           index={index}
