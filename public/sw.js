@@ -1,4 +1,4 @@
-const CACHE_NAME = "fsy-kumasi-shell-v4";
+const CACHE_NAME = "fsy-kumasi-shell-v5";
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
@@ -23,9 +23,8 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  const { request } = event;
+  const request = event.request;
   if (request.method !== "GET") return;
-
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
@@ -33,34 +32,25 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put("/", copy));
-          }
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put("/", copy)).catch(() => {});
           return response;
         })
-        .catch(() => caches.match("/")),
+        .catch(() => caches.match("/").then((cached) => cached || Response.error())),
     );
     return;
   }
 
-  if (!["style", "script", "image", "font", "manifest"].includes(request.destination)) return;
-
   event.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request).then((response) => {
-        if (response.ok && response.type === "basic") {
+        if (response.ok) {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
         }
         return response;
-      }).catch(() => null);
-
-      if (cached) {
-        event.waitUntil(network);
-        return cached;
-      }
-      return network.then((response) => response || caches.match(request));
+      }).catch(() => cached || Response.error());
+      return cached || network;
     }),
   );
 });
