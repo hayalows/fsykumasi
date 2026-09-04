@@ -14,8 +14,8 @@ export const ROLE_META = {
   coordinator: {
     label: "Coordinator",
     visibility: "Whole session",
-    canApproveAccess: false,
-    rank: 2,
+    canApproveAccess: true,
+    rank: 3,
   },
   logistics_admin: {
     label: "Logistical administrator",
@@ -42,7 +42,7 @@ export function roleVisibility(role) {
 }
 
 export function canApproveAccess(role, capabilities = []) {
-  return Boolean(ROLE_META[role]?.canApproveAccess || (role === "coordinator" && capabilities.includes("access_admin")));
+  return Boolean(ROLE_META[role]?.canApproveAccess || capabilities.includes("access_admin"));
 }
 
 export function hasSessionWideVisibility(role) {
