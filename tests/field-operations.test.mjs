@@ -15,17 +15,21 @@ test("confirmed non-attendance stays out of operations", () => {
   assert.equal(operationalEligibility(person).ok,false);
 });
 
-test("field modules are capability-driven rather than free-text committee labels", async () => {
+test("field modules are capability-driven and website access follows Assignments", async () => {
   const [shell,access,fieldLib] = await Promise.all([read("src/components/AppShell.jsx"),read("src/pages/Access.jsx"),read("src/lib/field-operations.js")]);
   assert.match(shell,/housing_view/); assert.match(shell,/wellness_private/); assert.match(shell,/food_view/);
-  assert.match(access,/Team responsibilities/); assert.match(access,/Manage access/); assert.match(access,/onManageLeaderAccess/);
+  assert.match(access,/Assignments decides each person's FSY role and company scope/);
+  assert.match(access,/Full Session Administrators/);
+  assert.match(access,/Older \/ exception access/);
+  assert.match(access,/onManageLeaderAccess/);
   assert.match(fieldLib,/manage_leader_access/); assert.match(fieldLib,/get_session_team_catalog/);
 });
 
 test("field mutation controls are wired to their save actions", async () => {
-  const [housing,access] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/Access.jsx")]);
+  const [housing,access,invite] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/Access.jsx"),read("src/components/StaffAccessInvite.jsx")]);
   assert.match(housing,/onClick=\{save\}[\s\S]*Move \/ update/);
-  assert.match(access,/onClick=\{save\}[\s\S]*Save access/);
+  assert.match(access,/onClick=\{save\}[\s\S]*Save exception account/);
+  assert.match(invite,/onSubmit=\{submit\}[\s\S]*Create setup link/);
 });
 
 test("sensitive modules call guarded server RPCs", async () => {
