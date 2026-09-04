@@ -60,3 +60,14 @@ test("Assignments offers optional website access without forcing it", () => {
   assert.match(assignmentsPage, /Add without access/);
   assert.match(assignmentsPage, /Add & give access/);
 });
+
+test("Assignments presents a clear three-step staffing workflow", () => {
+  assert.match(assignmentsPage, /Assignment setup/);
+  assert.match(assignmentsPage, /assignment-flow-step/);
+  assert.match(assignmentsPage, /id="assignment-staff-roles"/);
+  assert.match(assignmentsPage, /id="assignment-counselor-groups"/);
+  assert.match(assignmentsPage, /id="assignment-company-supervision"/);
+  assert.match(assignmentsPage, /Role changes save automatically/);
+  assert.match(assignmentsPage, /All counselor groups are assigned/);
+  assert.match(assignmentsPage, /All companies have supervision/);
+});
