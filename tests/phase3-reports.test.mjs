@@ -75,7 +75,8 @@ test("Housing exposes room occupants with server-derived check-in context", asyn
   assert.match(migration, /get_housing_assignments_v2/);
   assert.match(migration, /checkin_status text/);
   assert.match(migration, /participant_badge_assignments/);
-  assert.match(page, /View occupants/);
+  assert.match(page, /Open \$\{room\.name\} occupants/);
+  assert.match(page, /People in this room/);
   assert.match(page, /Checked in/);
   assert.match(page, /Not checked in/);
   assert.match(loader, /get_housing_assignments_v2/);
