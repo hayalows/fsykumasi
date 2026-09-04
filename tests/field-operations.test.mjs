@@ -18,7 +18,7 @@ test("confirmed non-attendance stays out of operations", () => {
 test("field modules are capability-driven and website access follows Assignments", async () => {
   const [shell,access,fieldLib] = await Promise.all([read("src/components/AppShell.jsx"),read("src/pages/Access.jsx"),read("src/lib/field-operations.js")]);
   assert.match(shell,/housing_view/); assert.match(shell,/wellness_private/); assert.match(shell,/food_view/);
-  assert.match(access,/Assignments decides each person's FSY role and company scope/);
+  assert.match(access,/Their FSY role and company responsibility stay connected to Assignments automatically/);
   assert.match(access,/Full Session Administrators/);
   assert.match(access,/Older \/ exception access/);
   assert.match(access,/onManageLeaderAccess/);
