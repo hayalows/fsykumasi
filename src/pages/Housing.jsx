@@ -6,10 +6,15 @@ import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { X } from "@phosphor-icons/react/X";
 import { DismissibleLayer, Empty, MutationFeedback, PageHead, SearchField, Status } from "../components/UI.jsx";
 import { loadStaff } from "../lib/operations.js";
-import { assignHousingPerson, clearHousingAssignment, hasCapability, loadHousingAssignments, loadHousingRooms, saveHousingRoom } from "../lib/field-operations.js";
+import { assignHousingPerson, clearHousingAssignment, hasCapability, loadHousingRooms, saveHousingRoom } from "../lib/field-operations.js";
+import { loadHousingAssignmentsV2 } from "../lib/housing-context.js";
 import "./field-operations.css";
 
 function initials(name = "FSY") { return name.split(/\s+/).filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase(); }
+function checkedInLabel(assignment) {
+  if (assignment.personType === "staff") return { tone: "muted", text: "Staff" };
+  return assignment.checkinStatus === "arrived" ? { tone: "good", text: "Checked in" } : { tone: "warn", text: "Not checked in" };
+}
 
 function RoomEditor({ sessionId, onClose, onSaved }) {
   const [form, setForm] = useState({ name: "", building: "", floor: "", sex: "", capacity: 4, notes: "" });
@@ -61,6 +66,18 @@ function AssignmentEditor({ sessionId, person, rooms, currentAssignment, onClose
   </DismissibleLayer>;
 }
 
+function RoomDetail({ room, assignments, onClose }) {
+  const occupants = assignments.filter((assignment) => assignment.roomId === room.id);
+  return <DismissibleLayer open onClose={onClose} title={`${room.name} occupants`} sheet>
+    <div className="field-sheet room-detail-sheet">
+      <button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X /></button>
+      <div className="room-detail-heading"><div><span className="kicker">Current room</span><h2>{room.name}</h2><p>{[room.building, room.floor].filter(Boolean).join(" · ") || "Location not labelled"}</p></div><Status tone={room.occupancy >= room.capacity ? "warn" : "good"}>{room.occupancy}/{room.capacity}</Status></div>
+      {room.notes ? <div className="notice compact-notice"><div><b>Room note</b><p>{room.notes}</p></div></div> : null}
+      <div className="room-occupant-list">{occupants.map((assignment) => { const state = checkedInLabel(assignment); return <div className="room-occupant-row" key={assignment.id}><span><b>{assignment.name}</b><small>{[assignment.fsyId, assignment.company, assignment.group].filter(Boolean).join(" · ") || (assignment.personType === "staff" ? "Staff" : "Participant")}</small>{assignment.bedLabel ? <small>Bed / key: {assignment.bedLabel}</small> : null}</span><span><Status tone={state.tone}>{state.text}</Status>{assignment.checkedInAt ? <small>Arrival recorded</small> : null}</span></div>; })}{!occupants.length ? <div className="room-occupant-empty"><b>No one assigned yet</b><p>This room is available for Housing assignments.</p></div> : null}</div>
+    </div>
+  </DismissibleLayer>;
+}
+
 export function Housing({ sessionId, participants = [], capabilities = [], sessionName }) {
   const canView = hasCapability(capabilities, "housing_view");
   const canManage = hasCapability(capabilities, "housing_manage");
@@ -69,13 +86,14 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
   const [staff, setStaff] = useState([]);
   const [query, setQuery] = useState("");
   const [roomOpen, setRoomOpen] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState(null);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
 
   const reload = async () => {
     if (!sessionId || !canView) return;
-    const [nextRooms, nextAssignments, nextStaff] = await Promise.all([loadHousingRooms(sessionId), loadHousingAssignments(sessionId), loadStaff(sessionId)]);
+    const [nextRooms, nextAssignments, nextStaff] = await Promise.all([loadHousingRooms(sessionId), loadHousingAssignmentsV2(sessionId), loadStaff(sessionId)]);
     setRooms(nextRooms); setAssignments(nextAssignments); setStaff(nextStaff);
   };
   useEffect(() => { reload().catch((err) => setError(err.message || "Unable to load Housing.")); }, [sessionId, canView]);
@@ -101,13 +119,14 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
     <div className="field-metrics"><div><span>Rooms</span><strong>{rooms.length}</strong><small>{totalBeds} total spaces</small></div><div><span>Assigned</span><strong>{occupied}</strong><small>{Math.max(0, totalBeds - occupied)} spaces open</small></div><div><span>People in view</span><strong>{people.length}</strong><small>{unassigned} currently unassigned</small></div></div>
     <div className="field-layout">
       <article className="panel"><div className="panel-head"><div><span className="kicker">Current rooms</span><h2>Housing map</h2></div><Buildings size={22}/></div>
-        <div className="room-grid">{rooms.map((room) => <div className="room-card" key={room.id}><div><b>{room.name}</b><small>{[room.building, room.floor].filter(Boolean).join(" · ") || "Location not labelled"}</small></div><Status tone={room.occupancy >= room.capacity ? "warn" : "good"}>{room.occupancy}/{room.capacity}</Status><div className="room-meter"><i style={{ width: `${Math.min(100, (room.occupancy / Math.max(1, room.capacity)) * 100)}%` }} /></div>{room.sex ? <small>{room.sex === "female" ? "Female" : "Male"} housing</small> : <small>Not sex-restricted</small>}</div>)}{!rooms.length ? <Empty icon={Bed} title="No rooms yet" text="Add the first room before assigning people." /> : null}</div>
+        <div className="room-grid">{rooms.map((room) => <button type="button" className="room-card room-card-button" key={room.id} onClick={() => setSelectedRoom(room)} aria-label={`Open ${room.name} occupants`}><div><b>{room.name}</b><small>{[room.building, room.floor].filter(Boolean).join(" · ") || "Location not labelled"}</small></div><Status tone={room.occupancy >= room.capacity ? "warn" : "good"}>{room.occupancy}/{room.capacity}</Status><div className="room-meter"><i style={{ width: `${Math.min(100, (room.occupancy / Math.max(1, room.capacity)) * 100)}%` }} /></div>{room.sex ? <small>{room.sex === "female" ? "Female" : "Male"} housing</small> : <small>Not sex-restricted</small>}<span className="room-card-open">View occupants</span></button>)}{!rooms.length ? <Empty icon={Bed} title="No rooms yet" text="Add the first room before assigning people." /> : null}</div>
       </article>
       <article className="panel"><div className="panel-head"><div><span className="kicker">Find person</span><h2>Room assignments</h2></div><UserPlus size={22}/></div><SearchField value={query} onChange={setQuery} label="Find person for Housing" placeholder="Search eligible youth or staff" />
         <div className="field-person-list">{people.map((person) => { const assignment = assignedByPerson.get(`${person.kind}:${person.id}`); return <button type="button" key={`${person.kind}:${person.id}`} disabled={!canManage} onClick={() => canManage && setSelected({ person, assignment })}><span className="person-avatar">{initials(person.name)}</span><span><b>{person.name}</b><small>{person.context}</small></span><span>{assignment ? <><b>{assignment.roomName}</b><small>{assignment.company || assignment.group || "Assigned"}</small></> : <Status tone="warn">Unassigned</Status>}</span></button>; })}</div>
       </article>
     </div>
     {roomOpen ? <RoomEditor sessionId={sessionId} onClose={() => setRoomOpen(false)} onSaved={async () => { await reload(); setSaved("Room saved."); }} /> : null}
+    {selectedRoom ? <RoomDetail room={selectedRoom} assignments={assignments} onClose={() => setSelectedRoom(null)} /> : null}
     {selected ? <AssignmentEditor sessionId={sessionId} person={selected.person} rooms={rooms.filter((room) => !room.sex || room.sex === selected.person.sex)} currentAssignment={selected.assignment} onClose={() => setSelected(null)} onSaved={async () => { await reload(); setSaved("Housing assignment saved."); }} /> : null}
   </section>;
 }
