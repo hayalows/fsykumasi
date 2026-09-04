@@ -23,6 +23,7 @@ import { BrandMark } from "./BrandMark.jsx";
 import { demoSession } from "../data/session.js";
 import { isSupabaseConfigured, supabaseEnvironment } from "../lib/supabase.js";
 import { roleLabel } from "../lib/access.js";
+import { trackSessionPresence } from "../lib/presence.js";
 import "./session-switcher.css";
 
 const BASE_OPERATIONAL = new Set(["assistant_coordinator","coordinator","logistics_admin","session_director"]);
@@ -80,6 +81,11 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
   }, [currentRole,currentCapabilities]);
 
   useEffect(() => { const update=()=>setOnline(navigator.onLine); window.addEventListener("online",update); window.addEventListener("offline",update); return()=>{window.removeEventListener("online",update);window.removeEventListener("offline",update);}; }, []);
+  useEffect(() => {
+    const userId = currentUser?.user_id || currentUser?.id;
+    if (!isSupabaseConfigured || !sessionInfo?.id || !userId) return undefined;
+    return trackSessionPresence(sessionInfo.id, userId);
+  }, [sessionInfo?.id, currentUser?.user_id, currentUser?.id]);
   useEffect(() => {
     const onBeforeInstallPrompt = (event) => { event.preventDefault(); setInstallPrompt(event); };
     const onInstalled = () => { setInstalled(true); setInstallPrompt(null); };

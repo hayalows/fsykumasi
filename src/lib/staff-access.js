@@ -70,6 +70,34 @@ export async function loadStaffAccessDirectory(sessionId) {
   }));
 }
 
+export async function loadSessionAccountActivity(sessionId) {
+  const { data, error } = await client().rpc("get_session_account_activity", { p_session_id: sessionId });
+  if (error) throw error;
+  return new Map((data || []).map((row) => [row.user_id, { lastSignInAt: row.last_sign_in_at || null }]));
+}
+
+export async function loadAssistantCoordinatorCompanySuggestions(staffId) {
+  const { data, error } = await client().rpc("suggest_assistant_coordinator_companies", { p_staff_id: staffId });
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    companyId: row.company_id,
+    companyName: row.company_name,
+    currentStaffId: row.current_staff_id || null,
+    currentStaffName: row.current_staff_name || "",
+    currentLoad: Number(row.current_load || 0),
+    targetCount: Number(row.target_count || 0),
+  }));
+}
+
+export async function setAssistantCoordinatorCompanies(staffId, companyIds = []) {
+  const { data, error } = await client().rpc("set_assistant_coordinator_companies", {
+    p_staff_id: staffId,
+    p_company_ids: companyIds,
+  });
+  if (error) throw error;
+  return first(data) || data;
+}
+
 export async function createStaffLeaderInvite(staffId, email = "") {
   const { data, error } = await client().rpc("create_staff_leader_invite", {
     p_staff_id: staffId,

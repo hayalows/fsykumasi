@@ -4,9 +4,13 @@ import { readFileSync } from "node:fs";
 
 const migration = readFileSync(new URL("../supabase/migrations/20260904194500_staff_linked_access_and_coordinator_admin.sql", import.meta.url), "utf8");
 const triggerFix = readFileSync(new URL("../supabase/migrations/20260904194600_staff_access_trigger_fix.sql", import.meta.url), "utf8");
+const accessUxMigration = readFileSync(new URL("../supabase/migrations/20260904214500_access_experience_presence_and_ac_company_management.sql", import.meta.url), "utf8");
 const accessPage = readFileSync(new URL("../src/pages/Access.jsx", import.meta.url), "utf8");
 const assignmentsPage = readFileSync(new URL("../src/pages/Assignments.jsx", import.meta.url), "utf8");
 const staffClient = readFileSync(new URL("../src/lib/staff-access.js", import.meta.url), "utf8");
+const presenceClient = readFileSync(new URL("../src/lib/presence.js", import.meta.url), "utf8");
+const companySheet = readFileSync(new URL("../src/components/AssistantCompanySheet.jsx", import.meta.url), "utf8");
+const appShell = readFileSync(new URL("../src/components/AppShell.jsx", import.meta.url), "utf8");
 const uiComponents = readFileSync(new URL("../src/components/UI.jsx", import.meta.url), "utf8");
 
 test("staff and login identity are linked explicitly", () => {
@@ -38,9 +42,11 @@ test("the last full session administrator is protected", () => {
   assert.match(migration, /You cannot remove the only Full Session Administrator\. Give another leader full access first\./i);
 });
 
-test("Access is a login lifecycle rather than a second Assignments screen", () => {
-  assert.match(accessPage, /Assignments decides each person's FSY role and company scope/i);
+test("Access is a guided login lifecycle rather than a second Assignments screen", () => {
+  assert.match(accessPage, /Give leaders the login they need/i);
   assert.match(accessPage, /Needs access/);
+  assert.match(accessPage, /Set companies/);
+  assert.match(accessPage, /People & accounts/);
   assert.match(staffClient, /invited:\s*"Invite sent"/);
   assert.match(staffClient, /active:\s*"Access active"/);
   assert.match(staffClient, /disabled:\s*"Access disabled"/);
@@ -52,6 +58,47 @@ test("Access can render its initial empty live directory before data arrives", (
   assert.match(accessPage, /live \? \[\] : demoDirectory\(\)/);
   assert.match(accessPage, /<Empty title=/);
   assert.match(uiComponents, /\{Icon \? <span className="empty-icon"><Icon size=\{25\} \/><\/span> : null\}/);
+});
+
+test("Assistant Coordinators can resolve missing company scope without a disabled dead end", () => {
+  assert.match(accessPage, /openCompanies\(person, person\.accessState === "not_enabled"\)/);
+  assert.match(companySheet, /Save & continue to access/);
+  assert.match(companySheet, /Suggest companies/);
+  assert.match(companySheet, /Choose manually/);
+  assert.match(staffClient, /suggest_assistant_coordinator_companies/);
+  assert.match(staffClient, /set_assistant_coordinator_companies/);
+  assert.match(accessUxMigration, /create or replace function public\.suggest_assistant_coordinator_companies/);
+  assert.match(accessUxMigration, /create or replace function public\.set_assistant_coordinator_companies/);
+});
+
+test("company transfers are explicit, capacity-limited and protect active Assistant Coordinator scope", () => {
+  assert.match(accessUxMigration, /cardinality\(desired\) > max_load/i);
+  assert.match(accessUxMigration, /donor_without_scope/i);
+  assert.match(accessUxMigration, /would leave % with active website access but no company/i);
+  assert.match(accessUxMigration, /assistant_coordinator_companies_set/i);
+  assert.match(companySheet, /currently assigned to another Assistant Coordinator/i);
+  assert.match(companySheet, /Nothing moves until you save/i);
+});
+
+test("Access shows admin-only sign-in recency and private live presence", () => {
+  assert.match(accessUxMigration, /get_session_account_activity/);
+  assert.match(accessUxMigration, /auth\.users au/);
+  assert.match(accessUxMigration, /au\.last_sign_in_at/);
+  assert.match(accessPage, /Online now/);
+  assert.match(accessPage, /Last signed in/);
+  assert.match(presenceClient, /private:\s*true/);
+  assert.match(presenceClient, /presence:\s*\{ key: userId \}/);
+  assert.match(appShell, /trackSessionPresence\(sessionInfo\.id, userId\)/);
+  assert.match(accessUxMigration, /on realtime\.messages/);
+  assert.match(accessUxMigration, /extension = 'presence'/);
+  assert.match(accessUxMigration, /private\.has_session_access/);
+});
+
+test("secondary Access actions use progressive disclosure", () => {
+  assert.match(accessPage, /className="staff-access-more"/);
+  assert.match(accessPage, /className="panel staff-access-help"/);
+  assert.match(accessPage, /Older \/ exception access/);
+  assert.match(companySheet, /<details className="assistant-company-manual"/);
 });
 
 test("Assignments offers optional website access without forcing it", () => {
