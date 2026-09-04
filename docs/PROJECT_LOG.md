@@ -5,7 +5,7 @@ This file records product and engineering decisions that materially change how t
 ## 2026-09-04 · Phase 2 Wellness and daily operations
 
 Branch: `codex/phase2-wellness-daily-ops-20260904` (based on verified `main` / production commit `048bef1430b8aa9757a7c9079e52f1eb47039200`)
-Production status: **release candidate; migration, PR, merge, and deployment gates pending**
+Production status: **released** via PR #36 (`e3d9e7ccb0cadabb7bf4593c880acf19f80bbd86`) and the Food RPC follow-up PR #37 (`3f209209e7a370bd85738c7e9976f8f701f48764`); production deployment `dpl_88Bwg1B9nGHbAnXkjfXby9pGhkHE` is Ready.
 
 ### Audit baseline
 
@@ -25,7 +25,15 @@ Production status: **release candidate; migration, PR, merge, and deployment gat
 - `npm test`: 60 passing.
 - `npm run build`: passed; Vite transformed 289 modules and Sites artifacts were prepared.
 - `npm run test:sites`: 4 passing.
-- Migration source, field RPC adapters, shell navigation, and public-source exclusions are under review before the production migration and release gates.
+- Migration source, field RPC adapters, shell navigation, and public-source exclusions were reviewed in the PR diff before release.
+
+### Release closeout
+
+- PR #36 passed GitHub `verify`, Vercel Preview, and Vercel Preview Comments. Migration `20260904115511` (`phase2_wellness_daily_operations`) applied successfully; the new operational tables remain RLS-enabled with no direct authenticated table grants.
+- The first authenticated production smoke exposed a PostgreSQL UNION ordering error in the Food roster read. PR #37 passed the same CI/preview gates; migration `20260904120448` (`phase2_food_roster_order_fix`) corrected the two read RPCs without changing data, permissions, or RLS.
+- The final Vercel deployment `dpl_88Bwg1B9nGHbAnXkjfXby9pGhkHE` is Ready and aliased to `fsy-kumasi-operations.vercel.app`. Public `/`, `/sw.js`, `/manifest.webmanifest`, and the Wellness, Food, and Head Count route fallbacks returned HTTP 200.
+- Final authenticated production smoke was read-only across Overview, Wellness, Food, Head Count, Account, More navigation, and drawer navigation dismissal. No production mutation was invoked; runtime diagnostics returned no entries after the final smoke.
+- Final source checks: `npm test` 61 passing; the production build passed in CI/Vercel; `npm run test:sites` 4 passing on the Phase 2 release gate.
 
 ### Intentionally unchanged
 

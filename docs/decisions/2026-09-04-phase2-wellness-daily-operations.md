@@ -1,7 +1,7 @@
 # Phase 2 Wellness and Daily Operations decisions
 
 Date: 2026-09-04
-Status: implemented on `codex/phase2-wellness-daily-ops-20260904`
+Status: released through PR #36, with the read-only Food RPC ordering correction in PR #37
 
 ## Experience model
 
