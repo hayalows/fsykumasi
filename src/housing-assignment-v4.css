@@ -1,0 +1,195 @@
+/* Housing assignment modal v4: preserve room-browsing space and avoid nested scrolling. */
+
+@media (min-width: 761px) {
+  .housing-assignment-modal {
+    width: min(1040px, calc(100vw - 40px)) !important;
+    max-width: 1040px !important;
+    height: min(820px, calc(100dvh - 32px)) !important;
+    max-height: calc(100dvh - 32px) !important;
+  }
+
+  .housing-assignment-content-v3 {
+    min-height: 0;
+    padding: 16px 20px 18px;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-content: stretch;
+    gap: 14px;
+    overflow: hidden;
+  }
+
+  .housing-assignment-contextbar > div {
+    padding: 10px 13px;
+  }
+
+  .housing-room-picker-v3 {
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    column-gap: 18px;
+    row-gap: 11px;
+    align-content: stretch;
+    overflow: hidden;
+  }
+
+  .housing-room-picker-v3 > .housing-room-picker-head {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .housing-room-picker-v3 > .search {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+  }
+
+  .housing-room-choice-list-v3 {
+    grid-column: 1;
+    grid-row: 3 / span 2;
+    min-height: 0;
+    max-height: none !important;
+    height: 100%;
+    padding: 1px 7px 4px 1px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .housing-move-reason {
+    grid-column: 2;
+    grid-row: 2 / span 2;
+    align-self: start;
+    margin: 0;
+    padding: 12px 13px;
+    background: #f8fbfc;
+  }
+
+  .housing-move-reason textarea {
+    min-height: 72px !important;
+    max-height: 118px;
+  }
+
+  .housing-assignment-details {
+    grid-column: 2;
+    grid-row: 4;
+    align-self: end;
+    margin: 0;
+  }
+
+  .housing-room-picker-v3:not(:has(.housing-move-reason)) .housing-assignment-details {
+    grid-row: 2 / span 2;
+    align-self: start;
+  }
+
+  .housing-room-picker-v3 > .mutation-feedback {
+    grid-column: 2;
+    align-self: end;
+  }
+
+  .housing-room-choice-v3 {
+    min-height: 66px;
+    padding-block: 9px;
+  }
+}
+
+/* Short laptop screens still keep a usable room browser instead of collapsing it. */
+@media (min-width: 761px) and (max-height: 690px) {
+  .housing-assignment-modal {
+    height: calc(100dvh - 20px) !important;
+    max-height: calc(100dvh - 20px) !important;
+  }
+
+  .housing-modal-header.housing-person-header {
+    padding-top: 15px;
+    padding-bottom: 13px;
+  }
+
+  .housing-assignment-content-v3 {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    gap: 10px;
+  }
+
+  .housing-assignment-contextbar > div {
+    padding-block: 8px;
+  }
+
+  .housing-room-picker-v3 {
+    row-gap: 8px;
+  }
+
+  .housing-move-reason > small {
+    display: none;
+  }
+
+  .housing-move-reason textarea {
+    min-height: 58px !important;
+  }
+}
+
+/* Phones use one scroll surface. Selecting a room must never create a tiny scroll-within-scroll list. */
+@media (max-width: 760px) {
+  .housing-assignment-content-v3 {
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .housing-room-picker-v3 {
+    min-height: 0;
+    display: flex !important;
+    flex-direction: column;
+    gap: 11px;
+    overflow: visible !important;
+  }
+
+  .housing-room-picker-v3 > .housing-room-picker-head {
+    order: 1;
+  }
+
+  .housing-room-picker-v3 > .search {
+    order: 2;
+    flex: none;
+  }
+
+  .housing-move-reason {
+    order: 3;
+    flex: none;
+    margin: 0;
+  }
+
+  .housing-room-choice-list-v3 {
+    order: 4;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    scrollbar-gutter: auto;
+  }
+
+  .housing-assignment-details {
+    order: 5;
+    flex: none;
+  }
+
+  .housing-room-picker-v3 > .mutation-feedback {
+    order: 6;
+  }
+
+  .housing-room-choice-v3 {
+    min-height: 72px;
+  }
+
+  .housing-move-reason textarea {
+    min-height: 66px !important;
+    resize: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .housing-room-choice-list-v3 {
+    scroll-behavior: auto;
+  }
+}
