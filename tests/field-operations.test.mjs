@@ -27,7 +27,8 @@ test("field modules are capability-driven and website access follows Assignments
 
 test("field mutation controls are wired to their save actions", async () => {
   const [housing,access,invite] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/Access.jsx"),read("src/components/StaffAccessInvite.jsx")]);
-  assert.match(housing,/onClick=\{save\}[\s\S]*Move \/ update/);
+  assert.match(housing,/onClick=\{save\}[\s\S]*Save room change/);
+  assert.match(housing,/onClick=\{createAndAssign\}[\s\S]*Create room & assign/);
   assert.match(access,/onClick=\{save\}[\s\S]*Save exception account/);
   assert.match(invite,/onSubmit=\{submit\}[\s\S]*Create setup link/);
 });
@@ -42,6 +43,7 @@ test("migration source keeps canonical teams and narrow capability boundaries", 
   const migration = await read("supabase/migrations/20260902211229_team_access_foundation.sql");
   for (const team of ["housing","wellness","food","registration","staff","inclusion","facilities","materials","financial","publicity","logistics"]) assert.match(migration,new RegExp(`'${team}'`));
   assert.match(migration,/effective_capabilities/); assert.match(migration,/manage_leader_access/); assert.match(migration,/team_memberships/);
+  assert.match(migration,/\('housing','Housing',[\s\S]*'housing_view','housing_manage','housing_export'/);
   const wellness = await read("supabase/migrations/20260902211317_wellness_and_food_operations.sql");
   assert.match(wellness,/wellness_private/); assert.match(wellness,/get_food_needs/); assert.match(wellness,/dietary_information/);
 });
@@ -54,4 +56,59 @@ test("team company visibility and Housing eligibility are enforced server-side",
   assert.match(companyVisibility,/has_team_capability\(session_id, 'groups_view'\)/);
   assert.match(housingEligibility,/operational_participant_is_eligible\(p_session_id,p_person_id\)/);
   assert.match(housingEligibility,/revoke all on function public\.assign_housing_person[\s\S]*from public,anon/);
+});
+
+test("Housing shows the complete people universe instead of silently truncating the roster", async () => {
+  const housing = await read("src/pages/Housing.jsx");
+  assert.match(housing,/People to house/);
+  assert.match(housing,/participants ·/);
+  assert.match(housing,/staff/);
+  assert.match(housing,/personStatus, setPersonStatus.*needs/);
+  assert.match(housing,/Everyone/);
+  assert.match(housing,/Participants/);
+  assert.match(housing,/Staff/);
+  assert.doesNotMatch(housing,/slice\(0,\s*80\)/);
+  assert.match(housing,/PERSON_BATCH = 60/);
+  assert.match(housing,/Show \{Math\.min\(PERSON_BATCH/);
+});
+
+test("Housing room browsing scales and exposes capacity at a glance", async () => {
+  const [housing,styles] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/housing-ux.css")]);
+  assert.match(housing,/ROOM_BATCH = 24/);
+  assert.match(housing,/Search housing rooms/);
+  assert.match(housing,/Room status/);
+  assert.match(housing,/Open spaces/);
+  assert.match(housing,/room\.occupancy/);
+  assert.match(housing,/Show \{Math\.min\(ROOM_BATCH/);
+  assert.match(styles,/\.housing-room-grid/);
+  assert.match(styles,/@media \(max-width: 760px\)/);
+});
+
+test("Housing person-first assignment can create a compatible room in one transaction", async () => {
+  const [housing,client,migration] = await Promise.all([
+    read("src/pages/Housing.jsx"),
+    read("src/lib/field-operations.js"),
+    read("supabase/migrations/20260904224000_housing_create_and_assign_room.sql"),
+  ]);
+  assert.match(housing,/Create new room/);
+  assert.match(housing,/Create room & assign/);
+  assert.match(housing,/automatically be/);
+  assert.match(client,/create_housing_room_and_assign/);
+  assert.match(migration,/create or replace function public\.create_housing_room_and_assign/);
+  assert.match(migration,/person_sex/);
+  assert.match(migration,/public\.save_housing_room/);
+  assert.match(migration,/public\.assign_housing_person/);
+  assert.match(migration,/grant execute[\s\S]*to authenticated/);
+});
+
+test("Housing modals use responsive task-focused surfaces", async () => {
+  const [housing,styles] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/housing-ux.css")]);
+  assert.match(housing,/housing-room-detail-modal/);
+  assert.match(housing,/housing-assignment-modal/);
+  assert.match(housing,/housing-room-editor-modal/);
+  assert.match(housing,/Location & notes/);
+  assert.match(housing,/Bed \/ key label/);
+  assert.match(styles,/width: min\(920px/);
+  assert.match(styles,/border-radius: 22px 22px 0 0/);
+  assert.match(styles,/env\(safe-area-inset-bottom\)/);
 });
