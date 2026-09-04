@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Registration as RegistrationLegacy } from "./RegistrationLegacy.jsx";
 import { RegistrationReviewInbox } from "./RegistrationReviewInbox.jsx";
+import { ArrivalOperations, IdentityFoundation } from "./RegistrationOperations.jsx";
 import { loadStructureSettings, DEFAULT_STRUCTURE_SETTINGS } from "../lib/operations.js";
 import { operationalEligibility } from "../lib/registration.js";
 import { formatCount } from "../lib/cohort.js";
@@ -8,7 +9,7 @@ import { PageHead, SegmentedControl } from "../components/UI.jsx";
 import "./registration-review.css";
 
 export function Registration(props) {
-  const { imported = [], live = false, sessionId, sessionName } = props;
+  const { imported = [], live = false, sessionId, sessionName, capabilities = [], onOperationalDataChanged } = props;
   const [mode, setMode] = useState("registration");
   const [structureSettings, setStructureSettings] = useState(DEFAULT_STRUCTURE_SETTINGS);
 
@@ -36,7 +37,7 @@ export function Registration(props) {
       <PageHead
         title="Registration"
         sessionName={sessionName}
-        description="Keep one current registration list, resolve exceptions safely, and handle day-of additions without creating duplicate records."
+        description="Keep one current registration list, reconcile arrivals, issue operational FSY IDs, and resolve exceptions without creating duplicate records."
       />
       <div className="registration-workspace-navigation">
         <SegmentedControl
@@ -46,6 +47,8 @@ export function Registration(props) {
           onChange={setMode}
           options={[
             { value: "registration", label: "Registration", id: "registration-mode-registration" },
+            { value: "arrival", label: "Arrival", id: "registration-mode-arrival" },
+            { value: "identity", label: "FSY IDs", id: "registration-mode-identity" },
             { value: "review", label: "Review inbox", count: cohortSummary?.reviewExceptions || 0, id: "registration-mode-review" },
           ]}
         />
@@ -57,10 +60,10 @@ export function Registration(props) {
     </section>
 
     <div className="registration-workspace-pane">
-      {mode === "registration"
-        ? <div role="tabpanel" aria-labelledby="registration-mode-registration"><RegistrationLegacy {...props} imported={operationallyMapped} sessionName={sessionName}/></div>
-        : <div role="tabpanel" aria-labelledby="registration-mode-review"><RegistrationReviewInbox {...props} structureSettings={structureSettings} sessionName={sessionName}/></div>
-      }
+      {mode === "registration" ? <div role="tabpanel" aria-labelledby="registration-mode-registration"><RegistrationLegacy {...props} imported={operationallyMapped} sessionName={sessionName}/></div> : null}
+      {mode === "arrival" ? <div role="tabpanel" aria-labelledby="registration-mode-arrival"><ArrivalOperations sessionId={sessionId} capabilities={capabilities} onChanged={onOperationalDataChanged}/></div> : null}
+      {mode === "identity" ? <div role="tabpanel" aria-labelledby="registration-mode-identity"><IdentityFoundation sessionId={sessionId} capabilities={capabilities} onChanged={onOperationalDataChanged}/></div> : null}
+      {mode === "review" ? <div role="tabpanel" aria-labelledby="registration-mode-review"><RegistrationReviewInbox {...props} structureSettings={structureSettings} sessionName={sessionName}/></div> : null}
     </div>
   </div>;
 }
