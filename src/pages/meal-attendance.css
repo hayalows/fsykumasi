@@ -1,0 +1,412 @@
+.meal-workspace {
+  --meal-accent: var(--blue-50, #005175);
+  --meal-good: #13795b;
+  --meal-border: rgba(18, 54, 73, 0.13);
+}
+
+.meal-save-note,
+.meal-waiting {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: 12px;
+  padding: 10px 13px;
+  font-size: 0.9rem;
+}
+
+.meal-save-note {
+  width: fit-content;
+  margin: 0 0 12px;
+  color: #0b6b50;
+  background: #eaf8f2;
+}
+
+.meal-waiting {
+  margin: 12px 0;
+  background: #f5f7f8;
+  border: 1px solid var(--meal-border);
+}
+
+.meal-waiting span {
+  display: grid;
+  gap: 2px;
+}
+
+.meal-waiting small {
+  color: var(--text-muted, #5c6b73);
+}
+
+.meal-workspace-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.meal-workspace-toolbar p {
+  margin: 4px 0 0;
+  color: var(--text-muted, #5c6b73);
+}
+
+.meal-setup-form {
+  margin-bottom: 14px;
+}
+
+.meal-service-list {
+  margin: 12px 0 16px;
+}
+
+.meal-service-list .meal-service-card {
+  min-width: 220px;
+}
+
+.meal-service-card > span:first-child {
+  min-width: 0;
+}
+
+.meal-service-card small {
+  display: block;
+  margin-top: 3px;
+}
+
+.meal-participant-panel {
+  overflow: visible;
+}
+
+.meal-active-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.meal-active-head h2 {
+  margin: 4px 0 5px;
+}
+
+.meal-active-head p {
+  margin: 0;
+  max-width: 720px;
+  color: var(--text-muted, #5c6b73);
+}
+
+.meal-progress-block {
+  padding: 14px 0 16px;
+  border-top: 1px solid var(--meal-border);
+  border-bottom: 1px solid var(--meal-border);
+}
+
+.meal-progress-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.meal-progress-numbers span {
+  display: grid;
+  gap: 2px;
+}
+
+.meal-progress-numbers strong {
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.meal-progress-numbers small {
+  color: var(--text-muted, #5c6b73);
+}
+
+.meal-progress-track,
+.meal-company-card > div {
+  height: 7px;
+  border-radius: 999px;
+  background: #e7ecef;
+  overflow: hidden;
+}
+
+.meal-progress-track > span,
+.meal-company-card > div > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--meal-good);
+  transition: width 180ms ease;
+}
+
+.meal-status-action {
+  margin-top: 14px;
+}
+
+.meal-company-progress {
+  margin: 16px 0;
+  border: 1px solid var(--meal-border);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.62);
+}
+
+.meal-company-progress summary {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.meal-company-progress summary::-webkit-details-marker {
+  display: none;
+}
+
+.meal-company-progress summary > span:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.meal-company-progress summary small {
+  color: var(--text-muted, #5c6b73);
+}
+
+.meal-company-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 9px;
+  padding: 0 12px 12px;
+}
+
+.meal-company-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px 12px;
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: #f7f9fa;
+}
+
+.meal-company-card > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.meal-company-card b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meal-company-card small {
+  color: var(--text-muted, #5c6b73);
+}
+
+.meal-company-card strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.meal-company-card > div {
+  grid-column: 1 / -1;
+  height: 5px;
+}
+
+.meal-roster-controls {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.5fr) minmax(250px, auto) minmax(180px, 0.7fr);
+  gap: 12px;
+  align-items: end;
+  margin: 18px 0 10px;
+}
+
+.meal-filter-tabs {
+  margin: 0;
+}
+
+.meal-company-filter {
+  display: grid;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.meal-company-filter select {
+  min-height: 44px;
+}
+
+.meal-roster-summary {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 2px 10px;
+  color: var(--text-muted, #5c6b73);
+  font-size: 0.88rem;
+}
+
+.meal-checklist {
+  border-top: 1px solid var(--meal-border);
+}
+
+.meal-check-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: center;
+  gap: 11px;
+  min-height: 58px;
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--meal-border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 120ms ease;
+}
+
+.meal-check-row:hover {
+  background: rgba(0, 81, 117, 0.035);
+}
+
+.meal-check-row.served {
+  background: rgba(19, 121, 91, 0.055);
+}
+
+.meal-check-row.saving {
+  opacity: 0.72;
+}
+
+.meal-check-row:focus-within {
+  outline: 2px solid color-mix(in srgb, var(--meal-accent) 55%, transparent);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+.meal-check-row > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.meal-checkbox-visual {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #8b989f;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: white;
+}
+
+.meal-check-row.served .meal-checkbox-visual {
+  border-color: var(--meal-good);
+  background: var(--meal-good);
+}
+
+.meal-check-row:has(input:disabled) {
+  cursor: default;
+}
+
+.meal-person-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.meal-person-copy b,
+.meal-person-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meal-person-copy small {
+  color: var(--text-muted, #5c6b73);
+}
+
+.meal-row-state {
+  min-width: 86px;
+  text-align: right;
+  color: var(--text-muted, #5c6b73);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.meal-check-row.served .meal-row-state {
+  color: #0b6b50;
+  font-weight: 650;
+}
+
+.meal-show-more {
+  width: 100%;
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .meal-roster-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+  .meal-roster-controls > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .meal-workspace-toolbar,
+  .meal-active-head,
+  .meal-roster-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .meal-workspace-toolbar > button {
+    width: 100%;
+  }
+
+  .meal-service-list {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .meal-service-list .meal-service-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .meal-progress-numbers {
+    gap: 8px;
+  }
+
+  .meal-roster-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .meal-roster-controls > :first-child {
+    grid-column: auto;
+  }
+
+  .meal-check-row {
+    grid-template-columns: 30px minmax(0, 1fr);
+    min-height: 64px;
+    padding: 10px 4px;
+  }
+
+  .meal-row-state {
+    grid-column: 2;
+    min-width: 0;
+    text-align: left;
+    margin-top: -2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meal-progress-track > span,
+  .meal-company-card > div > span,
+  .meal-check-row {
+    transition: none;
+  }
+}

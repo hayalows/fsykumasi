@@ -63,7 +63,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
     const teamTools = [];
     if (has(currentCapabilities,"housing_view")) teamTools.push(["housing","Housing",Bed]);
     if (has(currentCapabilities,"wellness_private") || has(currentCapabilities,"wellness_status")) teamTools.push(["wellness","Wellness",FirstAidKit]);
-    if (has(currentCapabilities,"food_view")) teamTools.push(["food","Food",ForkKnife]);
+    if (has(currentCapabilities,"food_view") || has(currentCapabilities,"meal_attendance_view")) teamTools.push(["food","Food",ForkKnife]);
     if (canReports) teamTools.push(["reports","Reports",ChartBar]);
 
     const adminAndUtilities = [];
