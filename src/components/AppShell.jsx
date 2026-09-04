@@ -27,6 +27,7 @@ import "./session-switcher.css";
 
 const BASE_OPERATIONAL = new Set(["assistant_coordinator","coordinator","logistics_admin","session_director"]);
 const WHOLE_SESSION = new Set(["coordinator","logistics_admin","session_director"]);
+const REPORT_CAPABILITIES = ["reports_export","housing_export","food_export","wellness_export","access_admin"];
 function has(caps, value) { return Array.isArray(caps) && caps.includes(value); }
 function focusableElements(container) { return [...container.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])')]; }
 function isStandaloneDisplay() {
@@ -48,6 +49,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
     const canGroups = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"groups_view");
     const canCheckin = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"checkin_record");
     const canHeadcount = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"headcount_view") || has(currentCapabilities,"headcount_record");
+    const canReports = REPORT_CAPABILITIES.some((capability) => has(currentCapabilities, capability));
     const today = [["overview","Overview",SquaresFour]];
     if (canCheckin) today.push(["checkin","Check-in",CheckCircle]);
     if (canHeadcount) today.push(["headcount","Head count",ClipboardText]);
@@ -62,7 +64,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
     if (has(currentCapabilities,"housing_view")) teamTools.push(["housing","Housing",Bed]);
     if (has(currentCapabilities,"wellness_private") || has(currentCapabilities,"wellness_status")) teamTools.push(["wellness","Wellness",FirstAidKit]);
     if (has(currentCapabilities,"food_view")) teamTools.push(["food","Food",ForkKnife]);
-    if (has(currentCapabilities,"reports_export")) teamTools.push(["reports","Reports",ChartBar]);
+    if (canReports) teamTools.push(["reports","Reports",ChartBar]);
 
     const adminAndUtilities = [];
     if (currentRole === "coordinator" || ["logistics_admin","session_director"].includes(currentRole) || has(currentCapabilities,"access_admin")) adminAndUtilities.push(["access","Access",Users]);
