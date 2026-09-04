@@ -40,8 +40,10 @@ test("the last full session administrator is protected", () => {
 test("Access is a login lifecycle rather than a second Assignments screen", () => {
   assert.match(accessPage, /Assignments decides each person's FSY role and company scope/i);
   assert.match(accessPage, /Needs access/);
-  assert.match(accessPage, /Invite sent/);
-  assert.match(accessPage, /Access disabled/);
+  assert.match(staffClient, /invited:\s*"Invite sent"/);
+  assert.match(staffClient, /active:\s*"Access active"/);
+  assert.match(staffClient, /disabled:\s*"Access disabled"/);
+  assert.match(staffClient, /not_enabled:\s*"No website access"/);
   assert.match(staffClient, /get_staff_access_directory/);
 });
 
