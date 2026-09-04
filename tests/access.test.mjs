@@ -6,16 +6,15 @@ test("coordinators have session-wide visibility", () => {
   assert.equal(hasSessionWideVisibility("coordinator"), true);
 });
 
-test("only logistics admins and session directors approve lower-role access", () => {
+test("full session administrators can manage website access", () => {
+  assert.equal(canApproveAccess("coordinator"), true);
   assert.equal(canApproveAccess("logistics_admin"), true);
   assert.equal(canApproveAccess("session_director"), true);
-  assert.equal(canApproveAccess("coordinator"), false);
   assert.equal(canApproveAccess("assistant_coordinator"), false);
 });
 
-test("a coordinator needs the explicit access_admin capability", () => {
-  assert.equal(canApproveAccess("coordinator", []), false);
-  assert.equal(canApproveAccess("coordinator", ["access_admin"]), true);
+test("access_admin does not elevate non-admin roles in the UI", () => {
+  assert.equal(canApproveAccess("committee_viewer", ["access_admin"]), false);
   assert.equal(canApproveAccess("assistant_coordinator", ["access_admin"]), false);
 });
 

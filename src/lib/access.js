@@ -14,8 +14,8 @@ export const ROLE_META = {
   coordinator: {
     label: "Coordinator",
     visibility: "Whole session",
-    canApproveAccess: false,
-    rank: 2,
+    canApproveAccess: true,
+    rank: 3,
   },
   logistics_admin: {
     label: "Logistical administrator",

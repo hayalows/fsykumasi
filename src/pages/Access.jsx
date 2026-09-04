@@ -1,68 +1,248 @@
-import { useMemo, useRef, useState } from "react";
-import { CaretDown } from "@phosphor-icons/react/CaretDown";
-import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
-import { Copy } from "@phosphor-icons/react/Copy";
+import { useEffect, useMemo, useState } from "react";
 import { Key } from "@phosphor-icons/react/Key";
 import { ShieldCheck } from "@phosphor-icons/react/ShieldCheck";
-import { SlidersHorizontal } from "@phosphor-icons/react/SlidersHorizontal";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
+import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { X } from "@phosphor-icons/react/X";
 import { demoAccessRequests, demoUsers } from "../data/demo.js";
 import { canApproveAccess, roleLabel, roleVisibility } from "../lib/access.js";
+import {
+  accessStateLabel,
+  loadStaffAccessDirectory,
+  resolveCurrentAccessSessionId,
+  setStaffWebsiteAccess,
+  staffRoleLabel,
+  staffScopeLabel,
+} from "../lib/staff-access.js";
 import { DismissibleLayer, Empty, MutationFeedback, PageHead, SearchField, Status } from "../components/UI.jsx";
+import { StaffAccessInvite } from "../components/StaffAccessInvite.jsx";
 import "./access-review.css";
 import "./access-invites.css";
 import "./field-operations.css";
+import "./staff-access.css";
 
-const ALL_ROLES=["assistant_coordinator","coordinator","logistics_admin","session_director","committee_viewer"];
-const ELEVATED=new Set(["logistics_admin","session_director"]);
-const CAPABILITY_LABELS={people_lookup:"Find people",groups_view:"Groups & companies",checkin_record:"Check-in",headcount_view:"Head count",headcount_record:"Report head count",housing_view:"Housing",housing_manage:"Manage Housing",housing_export:"Housing export",wellness_status:"Wellness status",wellness_private:"Confidential Wellness",wellness_manage:"Manage Wellness",food_view:"Food",food_manage:"Manage Food",food_export:"Food export",registration_view:"Registration",registration_manage:"Manage registration",staff_view:"Staff",staff_manage:"Manage staff",reports_export:"Reports",access_admin:"Manage access"};
-export function createInitialAccessRequests(){return demoAccessRequests;}
-function teamNames(keys=[],teams=[]){return keys.map((key)=>teams.find((team)=>team.key===key)?.name||key);}
-function scopeForRole(role,companyIds=[],teamKeys=[],teams=[]){if(["coordinator","logistics_admin","session_director"].includes(role))return "Whole session";if(role==="assistant_coordinator")return companyIds.length?`${companyIds.length} assigned companies`:"Assigned companies";if(teamKeys.length)return teamNames(teamKeys,teams).join(", ");return roleVisibility(role);}
+const FILTERS = [
+  ["not_enabled", "Needs access"],
+  ["invited", "Invited"],
+  ["active", "Active"],
+  ["disabled", "Disabled"],
+];
 
-function TeamPicker({teams,selected,onChange}){const toggle=(key)=>onChange(selected.includes(key)?selected.filter((item)=>item!==key):[...selected,key]);return <div className="access-team-picker">{teams.map((team)=><label key={team.key} className={selected.includes(team.key)?"selected":""}><input type="checkbox" checked={selected.includes(team.key)} onChange={()=>toggle(team.key)}/><span><b>{team.name}</b><small>{team.description}</small></span></label>)}</div>;}
-
-function InviteModal({companies,teams,live,onClose,onCreate,restoreFocusRef,canDelegateAdmin}){
- const allowedRoles=canDelegateAdmin?ALL_ROLES:ALL_ROLES.filter((role)=>!ELEVATED.has(role));
- const [form,setForm]=useState({name:"",email:"",role:"assistant_coordinator",confirmElevated:false});const [companyIds,setCompanyIds]=useState([]);const [teamKeys,setTeamKeys]=useState([]);const [search,setSearch]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");
- const filteredCompanies=useMemo(()=>{const q=search.trim().toLowerCase();return q?companies.filter((c)=>c.name.toLowerCase().includes(q)):companies;},[companies,search]);
- const toggleCompany=(id)=>setCompanyIds((current)=>current.includes(id)?current.filter((item)=>item!==id):[...current,id]);
- const submit=async(event)=>{event.preventDefault();setError("");if(form.role==="assistant_coordinator"&&!companyIds.length)return setError("Select at least one company for this Assistant Coordinator.");if(form.role==="committee_viewer"&&!teamKeys.length)return setError("Choose at least one FSY team responsibility.");if(ELEVATED.has(form.role)&&!form.confirmElevated)return setError("Confirm the elevated access before creating this invite.");setBusy(true);try{const created=live?await onCreate({email:form.email,displayName:form.name,role:form.role,companyIds,committeeScope:teamKeys}):{id:`invite-${Date.now()}`,code:"FSY-DEMO-1234",expiresAt:new Date(Date.now()+7*86400000).toISOString()};onClose({...created,email:form.email.trim().toLowerCase(),name:form.name.trim(),role:form.role,scope:scopeForRole(form.role,companyIds,teamKeys,teams),kind:"invite"});}catch(err){setError(err.message||"Unable to create this invite.");}finally{setBusy(false);}};
- return <DismissibleLayer open onClose={()=>onClose(null)} title="Invite a leader" className="access-review-modal" sheet restoreFocusRef={restoreFocusRef}><form className="invite-modal" onSubmit={submit}><button type="button" data-layer-close className="icon-button modal-close" onClick={()=>onClose(null)} aria-label="Close invite"><X/></button><span className="kicker">New leader</span><h2>Invite someone to FSY Kumasi</h2><p className="review-summary">Choose their FSY role and any additional team responsibilities. These can be changed later without creating a new account.</p><div className="invite-two-col"><label>Full name<input required value={form.name} onChange={(e)=>setForm({...form,name:e.target.value})} autoComplete="name"/></label><label>Email address<input required type="email" value={form.email} onChange={(e)=>setForm({...form,email:e.target.value})} autoComplete="email"/></label></div><label>FSY role<select value={form.role} onChange={(e)=>{setForm({...form,role:e.target.value,confirmElevated:false});setCompanyIds([]);}}>{allowedRoles.map((role)=><option key={role} value={role}>{roleLabel(role)}</option>)}</select></label>
- {form.role==="assistant_coordinator"?<div className="scope-editor"><div className="scope-editor-head"><div><b>Assigned companies</b><small>The AC sees only youth and operations in these companies unless another team responsibility adds a narrow capability.</small></div><Status tone={companyIds.length?"good":"warn"}>{companyIds.length} selected</Status></div><SearchField value={search} onChange={setSearch} label="Search companies" placeholder="Find a company"/><div className="company-picker">{filteredCompanies.map((company)=><label key={company.id} className={companyIds.includes(company.id)?"selected":""}><input type="checkbox" checked={companyIds.includes(company.id)} onChange={()=>toggleCompany(company.id)}/><span>{company.name}</span></label>)}</div></div>:null}
- <div className="scope-editor"><div className="scope-editor-head"><div><b>Team responsibilities</b><small>Use official FSY presets. A person can hold more than one responsibility.</small></div><Status tone={form.role==="committee_viewer"&&!teamKeys.length?"warn":"good"}>{teamKeys.length} selected</Status></div><TeamPicker teams={teams} selected={teamKeys} onChange={setTeamKeys}/></div>
- {form.role==="coordinator"?<div className="notice green compact-notice"><ShieldCheck weight="fill"/><div><b>Whole-session operations</b><p>Standard Coordinators do not manage leader access unless that capability is separately granted by top leadership.</p></div></div>:null}
- {ELEVATED.has(form.role)?<label className="elevated-confirm"><input type="checkbox" checked={form.confirmElevated} onChange={(e)=>setForm({...form,confirmElevated:e.target.checked})}/><span><b>Confirm elevated access</b><small>This role can manage the whole session and leader access.</small></span></label>:null}
- {error?<MutationFeedback tone="error">{error}</MutationFeedback>:null}<div className="review-actions"><button type="button" className="secondary" onClick={()=>onClose(null)}>Cancel</button><button className="primary" disabled={busy}>{busy?"Creating…":"Create invite"}<UserPlus/></button></div></form></DismissibleLayer>;
+function demoDirectory() {
+  return demoUsers.filter((user) => user.roleKey !== "committee_viewer").map((user, index) => ({
+    staffId: `demo-staff-${index + 1}`,
+    name: user.name,
+    operationalRole: user.roleKey,
+    email: user.email,
+    companyIds: user.roleKey === "assistant_coordinator" ? ["demo-1", "demo-2"] : [],
+    companyNames: user.roleKey === "assistant_coordinator" ? ["Company 01", "Company 02"] : [],
+    userId: `demo-user-${index + 1}`,
+    accountEmail: user.email,
+    accessEnabled: user.status === "Active",
+    accessState: user.status === "Active" ? "active" : "not_enabled",
+  }));
 }
 
-function ManageAccessModal({user,companies,teams,canDelegateAdmin,onClose,onSave}){
- const [role,setRole]=useState(user.role);const [companyIds,setCompanyIds]=useState(user.companyIds||[]);const [teamKeys,setTeamKeys]=useState(user.teamKeys||[]);const [accessAdmin,setAccessAdmin]=useState((user.capabilities||[]).includes("access_admin"));const [busy,setBusy]=useState(false);const [error,setError]=useState("");
- const capabilities=useMemo(()=>{const values=new Set();teams.filter((team)=>teamKeys.includes(team.key)).forEach((team)=>team.capabilities.forEach((cap)=>values.add(cap)));if(accessAdmin)values.add("access_admin");return [...values].map((cap)=>CAPABILITY_LABELS[cap]||cap);},[teamKeys,teams,accessAdmin]);
- const toggleCompany=(id)=>setCompanyIds((current)=>current.includes(id)?current.filter((item)=>item!==id):[...current,id]);
- const save=async()=>{setBusy(true);setError("");try{await onSave({assignmentId:user.id,role,companyIds,teamKeys,accessAdmin});onClose();}catch(err){setError(err.message||"Unable to update this leader's access.");}finally{setBusy(false);}};
- return <DismissibleLayer open onClose={onClose} title="Manage leader access" sheet><div className="field-sheet"><button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X/></button><span className="kicker">Manage access</span><h2>{user.name}</h2><p>{user.email}</p><label>FSY role<select value={role} onChange={(e)=>{setRole(e.target.value);if(e.target.value!=="assistant_coordinator")setCompanyIds([]);if(e.target.value!=="coordinator")setAccessAdmin(false);}}>{ALL_ROLES.filter((value)=>canDelegateAdmin||!ELEVATED.has(value)).map((value)=><option key={value} value={value}>{roleLabel(value)}</option>)}</select></label>
- {role==="assistant_coordinator"?<div className="scope-editor"><div className="scope-editor-head"><div><b>Assigned companies</b><small>Choose the AC's operational company scope.</small></div><Status tone={companyIds.length?"good":"warn"}>{companyIds.length} selected</Status></div><div className="company-picker">{companies.map((company)=><label key={company.id} className={companyIds.includes(company.id)?"selected":""}><input type="checkbox" checked={companyIds.includes(company.id)} onChange={()=>toggleCompany(company.id)}/><span>{company.name}</span></label>)}</div></div>:null}
- <div className="scope-editor"><div className="scope-editor-head"><div><b>Team responsibilities</b><small>These add only the tools and data required for that work.</small></div><Status>{teamKeys.length} selected</Status></div><TeamPicker teams={teams} selected={teamKeys} onChange={setTeamKeys}/></div>
- {role==="coordinator"&&canDelegateAdmin?<label className="elevated-confirm"><input type="checkbox" checked={accessAdmin} onChange={(e)=>setAccessAdmin(e.target.checked)}/><span><b>Can manage leader access</b><small>Delegates access administration while the displayed role remains Coordinator.</small></span></label>:null}
- <div className="effective-access-preview"><b>Effective access preview</b><span>{capabilities.length?capabilities.join(" · "):role==="committee_viewer"?"No operational team selected yet.":"Role-defined operations only."}</span></div>{error?<MutationFeedback tone="error">{error}</MutationFeedback>:null}<div className="field-sheet-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button type="button" className="primary" onClick={save} disabled={busy||role==="assistant_coordinator"&&!companyIds.length||role==="committee_viewer"&&!teamKeys.length}>{busy?"Saving…":"Save access"}</button></div></div></DismissibleLayer>;
+function stateTone(state) {
+  if (state === "active") return "good";
+  if (state === "invited") return "warn";
+  return "neutral";
 }
 
-function CodeReadyModal({payload,onClose}){const [copied,setCopied]=useState("");const link=typeof window==="undefined"?"":`${window.location.origin}/?invite=${encodeURIComponent(payload.code)}`;const expires=payload.expiresAt?new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short"}).format(new Date(payload.expiresAt)):"Soon";const copy=async(value,label)=>{await navigator.clipboard.writeText(value);setCopied(label);window.setTimeout(()=>setCopied(""),1700);};return <DismissibleLayer open onClose={onClose} title={payload.kind==="recovery"?"Recovery code ready":"Invite ready"} className="invite-ready-modal" sheet><div><button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X/></button><div className="invite-ready-icon"><CheckCircle weight="fill"/></div><span className="kicker">{payload.kind==="recovery"?"Recovery ready":"Invite ready"}</span><h2>{payload.kind==="recovery"?`Help ${payload.name||"this leader"} reset their password`:`Send this to ${payload.name}`}</h2><p>{payload.kind==="recovery"?"This short-lived code lets the existing account choose a new password.":`${roleLabel(payload.role)} · ${payload.scope}`}</p><div className="invite-code-box"><span>One-time code</span><strong>{payload.code}</strong><small>Expires {expires}</small></div><div className="invite-ready-actions"><button className="primary" onClick={()=>copy(payload.code,"code")}><Copy/>{copied==="code"?"Copied":"Copy code"}</button><button className="secondary" onClick={()=>copy(link,"link")}><Copy/>{copied==="link"?"Link copied":"Copy setup link"}</button></div><button className="text-action invite-done" onClick={onClose}>Done</button></div></DismissibleLayer>;}
-function PendingInvite({invite,onRevoke,busy,teams}){const scope=scopeForRole(invite.role,invite.company_ids||[],invite.committee_scope||[],teams);const expiry=new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short"}).format(new Date(invite.expires_at));return <div className="pending-invite-row"><div className="person-avatar">{(invite.display_name||invite.email).split(/\s|@/).filter(Boolean).map((part)=>part[0]).slice(0,2).join("").toUpperCase()}</div><div><b>{invite.display_name||"Invited leader"}</b><small>{invite.email}</small><div className="request-meta"><span>{roleLabel(invite.role)}</span><span>{scope}</span><span>Expires {expiry}</span></div></div><button className="secondary compact-button" disabled={busy} onClick={()=>onRevoke(invite.id)}>Revoke</button></div>;}
-function rosterScope(user,companies){if(["coordinator","logistics_admin","session_director"].includes(user.role))return "Whole session";if(user.role==="assistant_coordinator"){const names=(user.companyIds||[]).map((id)=>companies.find((company)=>company.id===id)?.name).filter(Boolean);return names.length?names.join(", "):`${user.companyIds?.length||0} assigned companies`;}return user.teamNames?.length?user.teamNames.join(", "):user.committeeScope?.join(", ")||roleVisibility(user.role);}
+function RequestReview({ request, companies, teams, onClose, onDecision }) {
+  const [companyIds, setCompanyIds] = useState(request.companyIds || []);
+  const [teamKeys, setTeamKeys] = useState([]);
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const toggleCompany = (id) => setCompanyIds((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
+  const toggleTeam = (key) => setTeamKeys((current) => current.includes(key) ? current.filter((value) => value !== key) : [...current, key]);
+  const decide = async (status) => {
+    setBusy(status); setError("");
+    try {
+      await onDecision?.(request.id, status, {
+        companyIds: request.role === "assistant_coordinator" ? companyIds : [],
+        committeeScope: request.role === "committee_viewer" ? teamKeys : [],
+      });
+      onClose();
+    } catch (err) {
+      setError(err.message || "This request could not be reviewed.");
+    } finally { setBusy(""); }
+  };
+  return <DismissibleLayer open onClose={onClose} title="Review access request" sheet>
+    <div className="field-sheet">
+      <button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X/></button>
+      <span className="kicker">Legacy request</span><h2>{request.name}</h2>
+      <p>{request.email} · {roleLabel(request.role)}</p>
+      {request.role === "assistant_coordinator" ? <div className="scope-editor"><b>Companies</b><small>Choose the companies this Assistant Coordinator is responsible for.</small><div className="company-picker">{companies.map((company) => <label key={company.id} className={companyIds.includes(company.id) ? "selected" : ""}><input type="checkbox" checked={companyIds.includes(company.id)} onChange={() => toggleCompany(company.id)}/><span>{company.name}</span></label>)}</div></div> : null}
+      {request.role === "committee_viewer" ? <div className="scope-editor"><b>Team responsibility</b><div className="access-team-picker">{teams.map((team) => <label key={team.key} className={teamKeys.includes(team.key) ? "selected" : ""}><input type="checkbox" checked={teamKeys.includes(team.key)} onChange={() => toggleTeam(team.key)}/><span><b>{team.name}</b><small>{team.description}</small></span></label>)}</div></div> : null}
+      {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
+      <div className="field-sheet-actions"><button className="secondary" disabled={Boolean(busy)} onClick={() => decide("rejected")}>{busy === "rejected" ? "Rejecting…" : "Reject"}</button><button className="primary" disabled={Boolean(busy) || (request.role === "assistant_coordinator" && !companyIds.length) || (request.role === "committee_viewer" && !teamKeys.length)} onClick={() => decide("approved")}>{busy === "approved" ? "Approving…" : "Approve"}</button></div>
+    </div>
+  </DismissibleLayer>;
+}
 
-export function Access({requests=[],setRequests,invites=[],currentRole="logistics_admin",currentCapabilities=[],onDecision,onCreateInvite,onRevokeInvite,onCreateRecovery,onManageLeaderAccess,roster=demoUsers,companies=[],teams=[],live=false,sessionName}){
- const inviteTriggerRef=useRef(null);const [inviteOpen,setInviteOpen]=useState(false);const [readyPayload,setReadyPayload]=useState(null);const [manageUser,setManageUser]=useState(null);const [busyId,setBusyId]=useState("");const [pageError,setPageError]=useState("");const canManage=canApproveAccess(currentRole,currentCapabilities);const canDelegateAdmin=["logistics_admin","session_director"].includes(currentRole);const canRecover=canDelegateAdmin;const pendingLegacy=requests.filter((request)=>request.status==="pending");const activeRoster=roster.filter((user)=>user.active!==false&&user.status!=="Pending");
- const finishInvite=(payload)=>{setInviteOpen(false);if(payload)setReadyPayload(payload);};
- const revoke=async(id)=>{setBusyId(id);setPageError("");try{await onRevokeInvite?.(id);}catch(error){setPageError(error.message||"Unable to revoke this invite.");}finally{setBusyId("");}};
- const recovery=async(user)=>{setBusyId(user.userId||user.id);setPageError("");try{const created=await onCreateRecovery?.(user.userId||user.id);if(created)setReadyPayload({...created,email:user.email,name:user.name,role:user.role,scope:rosterScope(user,companies),kind:"recovery"});}catch(error){setPageError(error.message||"Unable to create a recovery code.");}finally{setBusyId("");}};
- const rejectLegacy=async(request)=>{setBusyId(request.id);try{if(onDecision)await onDecision(request.id,"rejected",{note:"Replaced by administrator-issued invite flow."});else setRequests?.((current)=>current.map((item)=>item.id===request.id?{...item,status:"rejected"}:item));}finally{setBusyId("");}};
- const saveAccess=async(values)=>{await onManageLeaderAccess(values);};
- return <section className="page access-page"><PageHead title="Access" sessionName={sessionName} description="Give each leader the tools needed for their assignment, and change access later without recreating their account." action={canManage?<button ref={inviteTriggerRef} className="primary" onClick={()=>setInviteOpen(true)}><UserPlus/>Invite leader</button>:null}/><div className="notice green compact-notice access-rule-note"><ShieldCheck weight="fill"/><div><b>Roles, teams and scope work together.</b><p>UI visibility follows effective capabilities, while Supabase permissions remain the security boundary.</p></div></div>{pageError?<MutationFeedback tone="error">{pageError}</MutationFeedback>:null}
- <div className="access-layout invite-access-layout"><article className="panel approval-panel"><div className="panel-head"><div><span className="kicker">Waiting to activate</span><h2>{invites.length} open invite{invites.length===1?"":"s"}</h2></div><span className="count">{invites.length}</span></div><div className="request-list">{invites.length?invites.map((invite)=><PendingInvite key={invite.id} invite={invite} teams={teams} onRevoke={revoke} busy={busyId===invite.id}/>):<Empty icon={UserPlus} title="No open invites" text="Invite a leader when you are ready to give them access."/>}</div></article><details className="panel progressive-section role-panel access-role-disclosure"><summary><span><span className="kicker">Permission model</span><b>Role + team responsibility</b><small>One person can carry more than one responsibility</small></span><CaretDown size={20} className="disclosure-icon"/></summary><div className="progressive-section-body"><div className="role-matrix"><div><b>Assistant coordinator</b><span>Assigned companies</span><small>May also hold a team responsibility</small></div><div><b>Coordinator</b><span>Whole-session operations</span><small>Access admin can be explicitly delegated</small></div><div><b>Committee member</b><span>Team-defined tools</span><small>Housing, Wellness, Food, and other presets</small></div><div><b>Top leadership</b><span>Whole session</span><small>Protected elevated access</small></div></div></div></details></div>
- <article className="panel access-roster-panel"><div className="panel-head"><div><span className="kicker">Current access</span><h2>Authorized leaders</h2></div><Status>{activeRoster.length} active</Status></div><div className="access-roster-list">{activeRoster.map((user)=>{const hasAdmin=(user.capabilities||[]).includes("access_admin");return <details className="access-roster-row" key={user.id||user.userId||user.email}><summary><span className="roster-person"><b>{user.name}</b><small>{roleLabel(user.role)}</small></span><Status tone="good">Active</Status><CaretDown size={18} className="disclosure-icon"/></summary><div className="access-roster-detail"><div><span>Email</span><b>{user.email||"Not available"}</b></div><div><span>Visibility</span><b>{rosterScope(user,companies)}</b></div><div><span>Teams</span><span className="access-team-chips">{user.teamNames?.length?user.teamNames.map((name)=><span key={name}>{name}</span>):<span>Role only</span>}</span></div><div><span>Administrative access</span><span>{hasAdmin?<Status tone="warn">Access admin</Status>:<span className="muted-cell">Not delegated</span>}</span></div><div><span>Actions</span><span>{canManage&&live?<button className="table-link access-manage-button" onClick={()=>setManageUser(user)}><SlidersHorizontal/>Manage access</button>:null}{canRecover&&live&&user.userId?<button className="table-link" disabled={busyId===user.userId} onClick={()=>recovery(user)}><Key/>Recovery code</button>:null}</span></div></div></details>;})}</div></article>
- {pendingLegacy.length?<details className="panel progressive-section legacy-request-panel"><summary><span><span className="kicker">Older flow</span><b>{pendingLegacy.length} previous access request{pendingLegacy.length===1?"":"s"}</b><small>Created before administrator-issued invites</small></span><CaretDown size={20} className="disclosure-icon"/></summary><div className="progressive-section-body"><div className="request-list">{pendingLegacy.map((request)=><div className="legacy-request-row" key={request.id}><div><b>{request.name}</b><small>{request.email} · {roleLabel(request.role)}</small></div>{canManage?<button className="secondary compact-button" disabled={busyId===request.id} onClick={()=>rejectLegacy(request)}>Close request</button>:null}</div>)}</div></div></details>:null}
- {inviteOpen?<InviteModal companies={companies} teams={teams} live={live} onCreate={onCreateInvite} onClose={finishInvite} restoreFocusRef={inviteTriggerRef} canDelegateAdmin={canDelegateAdmin}/>:null}{readyPayload?<CodeReadyModal payload={readyPayload} onClose={()=>setReadyPayload(null)}/>:null}{manageUser?<ManageAccessModal user={manageUser} companies={companies} teams={teams} canDelegateAdmin={canDelegateAdmin} onClose={()=>setManageUser(null)} onSave={saveAccess}/>:null}</section>;
+function LegacyAccountEditor({ user, companies, teams, onClose, onSave }) {
+  const [role, setRole] = useState(user.role);
+  const [companyIds, setCompanyIds] = useState(user.companyIds || []);
+  const [teamKeys, setTeamKeys] = useState(user.teamKeys || []);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const toggleCompany = (id) => setCompanyIds((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
+  const toggleTeam = (key) => setTeamKeys((current) => current.includes(key) ? current.filter((value) => value !== key) : [...current, key]);
+  const save = async () => {
+    setBusy(true); setError("");
+    try { await onSave?.({ assignmentId: user.id, role, companyIds, teamKeys, accessAdmin: false }); onClose(); }
+    catch (err) { setError(err.message || "This exception account could not be updated."); }
+    finally { setBusy(false); }
+  };
+  return <DismissibleLayer open onClose={onClose} title="Legacy account settings" sheet><div className="field-sheet">
+    <button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X/></button>
+    <span className="kicker">Exception account</span><h2>{user.name}</h2><p>{user.email}</p>
+    <div className="notice compact-notice"><WarningCircle/><div><b>Not linked to a Staff identity yet</b><p>Use this editor only for older or committee accounts. New staff access should be created from Assignments.</p></div></div>
+    <label>Access role<select value={role} onChange={(event) => { setRole(event.target.value); if (event.target.value !== "assistant_coordinator") setCompanyIds([]); }}><option value="assistant_coordinator">Assistant coordinator</option><option value="coordinator">Coordinator</option><option value="logistics_admin">Logistical administrator</option><option value="session_director">Session directing couple</option><option value="committee_viewer">Committee viewer</option></select></label>
+    {role === "assistant_coordinator" ? <div className="company-picker">{companies.map((company) => <label key={company.id} className={companyIds.includes(company.id) ? "selected" : ""}><input type="checkbox" checked={companyIds.includes(company.id)} onChange={() => toggleCompany(company.id)}/><span>{company.name}</span></label>)}</div> : null}
+    {role === "committee_viewer" ? <div className="access-team-picker">{teams.map((team) => <label key={team.key} className={teamKeys.includes(team.key) ? "selected" : ""}><input type="checkbox" checked={teamKeys.includes(team.key)} onChange={() => toggleTeam(team.key)}/><span><b>{team.name}</b><small>{team.description}</small></span></label>)}</div> : null}
+    {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
+    <div className="field-sheet-actions"><button className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={busy || (role === "assistant_coordinator" && !companyIds.length) || (role === "committee_viewer" && !teamKeys.length)} onClick={save}>{busy ? "Saving…" : "Save exception account"}</button></div>
+  </div></DismissibleLayer>;
+}
+
+export function createInitialAccessRequests() { return demoAccessRequests; }
+
+export function Access({
+  requests = [],
+  invites = [],
+  currentRole = "logistics_admin",
+  currentCapabilities = [],
+  onDecision,
+  onRevokeInvite,
+  onCreateRecovery,
+  onManageLeaderAccess,
+  roster = demoUsers,
+  companies = [],
+  teams = [],
+  live = false,
+  sessionName,
+}) {
+  const [sessionId, setSessionId] = useState("");
+  const [directory, setDirectory] = useState(live ? [] : demoDirectory());
+  const [filter, setFilter] = useState("not_enabled");
+  const [query, setQuery] = useState("");
+  const [inviteTarget, setInviteTarget] = useState(null);
+  const [reviewRequest, setReviewRequest] = useState(null);
+  const [legacyTarget, setLegacyTarget] = useState(null);
+  const [busyId, setBusyId] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const canManage = canApproveAccess(currentRole, currentCapabilities);
+
+  const refresh = async (knownSessionId = sessionId) => {
+    if (!live) return;
+    const resolved = knownSessionId || await resolveCurrentAccessSessionId();
+    if (!sessionId) setSessionId(resolved);
+    setDirectory(await loadStaffAccessDirectory(resolved));
+  };
+
+  useEffect(() => {
+    if (!live) return;
+    resolveCurrentAccessSessionId().then((id) => { setSessionId(id); return loadStaffAccessDirectory(id); }).then(setDirectory).catch((err) => setError(err.message || "Website access could not be loaded."));
+  }, [live]);
+
+  const counts = useMemo(() => Object.fromEntries(FILTERS.map(([key]) => [key, directory.filter((item) => item.accessState === key).length])), [directory]);
+  const shown = useMemo(() => {
+    const text = query.trim().toLowerCase();
+    return directory.filter((item) => item.accessState === filter).filter((item) => {
+      if (!text) return true;
+      return `${item.name} ${item.email} ${item.accountEmail} ${staffRoleLabel(item.operationalRole)} ${staffScopeLabel(item)}`.toLowerCase().includes(text);
+    });
+  }, [directory, filter, query]);
+
+  const linkedUsers = new Set(directory.map((item) => item.userId).filter(Boolean));
+  const legacyRoster = (roster || []).filter((user) => user.active !== false && user.status !== "Pending" && !linkedUsers.has(user.userId || user.id));
+  const legacyInvites = (invites || []).filter((invite) => !invite.staff_id && invite.status === "pending");
+  const pendingLegacy = (requests || []).filter((request) => request.status === "pending");
+
+  const toggleAccess = async (person, enabled) => {
+    if (!live) {
+      setDirectory((current) => current.map((item) => item.staffId === person.staffId ? { ...item, accessState: enabled ? "active" : "disabled", accessEnabled: enabled } : item));
+      return;
+    }
+    setBusyId(person.staffId); setError(""); setNotice("");
+    try {
+      await setStaffWebsiteAccess(person.staffId, enabled);
+      await refresh();
+      setNotice(`${person.name}'s website access was ${enabled ? "enabled" : "disabled"}.`);
+    } catch (err) { setError(err.message || "Website access could not be changed."); }
+    finally { setBusyId(""); }
+  };
+
+  const recovery = async (person) => {
+    if (!person.userId || !onCreateRecovery) return;
+    setBusyId(person.staffId); setError(""); setNotice("");
+    try {
+      const created = await onCreateRecovery(person.userId);
+      if (created?.code) {
+        await navigator.clipboard.writeText(created.code).catch(() => {});
+        setNotice(`Recovery code created for ${person.name}${navigator.clipboard ? " and copied." : "."}`);
+      } else setNotice(`Recovery access was prepared for ${person.name}.`);
+    } catch (err) { setError(err.message || "Recovery access could not be prepared."); }
+    finally { setBusyId(""); }
+  };
+
+  const revokeStaffInvite = async (person) => {
+    if (!person.inviteId || !onRevokeInvite) return;
+    setBusyId(person.staffId); setError("");
+    try { await onRevokeInvite(person.inviteId); await refresh(); setNotice(`${person.name}'s pending invite was revoked.`); }
+    catch (err) { setError(err.message || "Invite could not be revoked."); }
+    finally { setBusyId(""); }
+  };
+
+  return <section className="page staff-access-page">
+    <PageHead title="Website access" sessionName={sessionName} description="Assignments decides each person's FSY role and company scope. This screen only controls who can sign in." />
+
+    {!canManage ? <div className="notice"><WarningCircle/><div><b>View only</b><p>A Full Session Administrator is required to invite, enable or disable website access.</p></div></div> : null}
+    {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
+    {notice ? <MutationFeedback><b>Done</b> · {notice}</MutationFeedback> : null}
+
+    <div className="staff-access-guide" aria-label="How website access works">
+      <div><span>1 · Assign</span><b>Set the FSY responsibility</b><p>Role and companies live in Assignments, even if the person never receives a login.</p></div>
+      <div><span>2 · Give access</span><b>Invite only who needs the app</b><p>The setup link attaches an account to the existing staff identity. Nothing is re-entered.</p></div>
+      <div><span>3 · Stay in sync</span><b>Permissions follow Assignments</b><p>Moving an AC to different companies automatically changes what their linked account can access.</p></div>
+    </div>
+
+    <div className="staff-access-summary" role="group" aria-label="Website access status">
+      {FILTERS.map(([key, label]) => <button key={key} type="button" className={filter === key ? "active" : ""} onClick={() => setFilter(key)}><strong>{counts[key] || 0}</strong><span>{label}</span></button>)}
+    </div>
+
+    <article className="panel">
+      <div className="staff-access-intro"><div><span className="kicker">Account lifecycle</span><h2>{FILTERS.find(([key]) => key === filter)?.[1]}</h2><p>No access is a valid state. An Assistant Coordinator can be fully assigned to FSY without ever receiving a website account.</p></div><Status tone={stateTone(filter)}>{shown.length} shown</Status></div>
+      <div className="staff-access-toolbar"><SearchField value={query} onChange={setQuery} label="Search website access" placeholder="Search name, email, role or company"/></div>
+
+      {shown.length ? <div className="staff-access-list">{shown.map((person) => <div className="staff-access-row" key={person.staffId}>
+        <div className="staff-access-person"><b>{person.name}</b><span className={`staff-access-state ${person.accessState}`}>{accessStateLabel(person.accessState)}</span><small>{person.accountEmail || person.email || "Email will be confirmed when access is given"}</small></div>
+        <div className="staff-access-scope"><small>{staffRoleLabel(person.operationalRole)}</small><b>{staffScopeLabel(person)}</b></div>
+        <div className="staff-access-actions">
+          {person.accessState === "not_enabled" ? <button className="primary" disabled={!canManage || (person.operationalRole === "assistant_coordinator" && !person.companyIds.length)} onClick={() => setInviteTarget(person)}><UserPlus/>Give access</button> : null}
+          {person.accessState === "invited" ? <><button className="secondary" disabled={!canManage || busyId === person.staffId} onClick={() => setInviteTarget(person)}>New setup link</button><button className="text-action" disabled={!canManage || busyId === person.staffId} onClick={() => revokeStaffInvite(person)}>Revoke</button></> : null}
+          {person.accessState === "active" ? <><button className="secondary" disabled={!canManage || busyId === person.staffId} onClick={() => recovery(person)}><Key/>Recovery</button><button className="text-action" disabled={!canManage || busyId === person.staffId} onClick={() => toggleAccess(person, false)}>Disable</button></> : null}
+          {person.accessState === "disabled" ? <button className="primary" disabled={!canManage || busyId === person.staffId} onClick={() => toggleAccess(person, true)}>Enable access</button> : null}
+        </div>
+      </div>)}</div> : <div className="staff-access-empty"><Empty title={`No ${FILTERS.find(([key]) => key === filter)?.[1]?.toLowerCase() || "matching"} accounts`} text={query ? "Try another search." : "There is nothing in this access state right now."}/></div>}
+    </article>
+
+    {(pendingLegacy.length || legacyInvites.length || legacyRoster.length) ? <details className="panel legacy-access-details">
+      <summary>Older / exception access ({pendingLegacy.length + legacyInvites.length + legacyRoster.length})</summary>
+      <div className="legacy-access-list">
+        {pendingLegacy.map((request) => <div className="legacy-access-row" key={request.id}><span><b>{request.name}</b><small>Pending request · {roleLabel(request.role)} · {request.scope}</small></span><button className="secondary" disabled={!canManage} onClick={() => setReviewRequest(request)}>Review</button></div>)}
+        {legacyInvites.map((invite) => <div className="legacy-access-row" key={invite.id}><span><b>{invite.display_name || invite.email}</b><small>Older invite · {roleLabel(invite.role)}</small></span><button className="secondary" disabled={!canManage} onClick={() => onRevokeInvite?.(invite.id)}>Revoke</button></div>)}
+        {legacyRoster.map((user) => <div className="legacy-access-row" key={user.id || user.userId || user.email}><span><b>{user.name}</b><small>{roleLabel(user.role || user.roleKey)} · {user.email} · {user.role === "assistant_coordinator" ? `${user.companyIds?.length || 0} companies` : roleVisibility(user.role || user.roleKey)}</small></span><div className="staff-access-actions">{onCreateRecovery && (user.userId || user.id) ? <button className="secondary" onClick={() => onCreateRecovery(user.userId || user.id)}><Key/>Recovery</button> : null}{onManageLeaderAccess && user.id ? <button className="text-action" onClick={() => setLegacyTarget(user)}>Legacy settings</button> : null}</div></div>)}
+      </div>
+    </details> : null}
+
+    <div className="staff-access-lifecycle-note"><ShieldCheck weight="fill"/><div><b>Full Session Administrators</b><p>Coordinators, Logistical Administrators and the Session Directing Couple can manage website access for the whole session. FSY organizational responsibility and software administration are shown separately, while all access changes remain auditable.</p></div></div>
+
+    {inviteTarget ? <StaffAccessInvite staff={inviteTarget} onClose={() => setInviteTarget(null)} onInvited={() => refresh()} /> : null}
+    {reviewRequest ? <RequestReview request={reviewRequest} companies={companies} teams={teams} onClose={() => setReviewRequest(null)} onDecision={onDecision}/> : null}
+    {legacyTarget ? <LegacyAccountEditor user={legacyTarget} companies={companies} teams={teams} onClose={() => setLegacyTarget(null)} onSave={onManageLeaderAccess}/> : null}
+  </section>;
 }

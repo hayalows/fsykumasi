@@ -8,7 +8,7 @@ function client() {
 export async function loadLeaderInvites(sessionId) {
   const { data, error } = await client()
     .from("leader_invites")
-    .select("id, session_id, email, display_name, role, company_ids, committee_scope, purpose, status, created_at, expires_at")
+    .select("id, session_id, staff_id, email, display_name, role, company_ids, committee_scope, purpose, status, created_at, expires_at")
     .eq("session_id", sessionId)
     .in("status", ["pending", "activating"])
     .order("created_at", { ascending: false });
