@@ -131,6 +131,22 @@ export async function saveHousingRoom({ sessionId, roomId = null, name, building
   return first(data);
 }
 
+export async function createHousingRoomAndAssign({ sessionId, personType, personId, roomName, building = "", floor = "", capacity = 4, notes = "", bedLabel = "" }) {
+  const { data, error } = await client().rpc("create_housing_room_and_assign", {
+    p_session_id: sessionId,
+    p_person_type: personType,
+    p_person_id: personId,
+    p_room_name: roomName,
+    p_building: building || null,
+    p_floor: floor || null,
+    p_capacity: Number(capacity),
+    p_notes: notes || null,
+    p_bed_label: bedLabel || null,
+  });
+  if (error) throw error;
+  return first(data);
+}
+
 export async function assignHousingPerson({ sessionId, personType, personId, roomId, bedLabel = "" }) {
   const { data, error } = await client().rpc("assign_housing_person", {
     p_session_id: sessionId,

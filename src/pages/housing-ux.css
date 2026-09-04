@@ -1,0 +1,1228 @@
+/* Housing-specific operational UX. Loaded after field-operations.css. */
+.housing-page {
+  gap: 16px;
+}
+
+.housing-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.housing-metrics > article {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 7px 22px rgba(0, 81, 117, .045);
+  display: grid;
+  gap: 4px;
+}
+
+.housing-metrics > article > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 860;
+  letter-spacing: .065em;
+  text-transform: uppercase;
+}
+
+.housing-metrics strong {
+  color: var(--blue-35);
+  font-size: clamp(25px, 2.6vw, 31px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.housing-metrics small {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.housing-metrics > article.attention {
+  border-color: #efd9a5;
+  background: #fffdf8;
+}
+
+.housing-metrics > article.complete {
+  border-color: #cee3c2;
+  background: #fbfdf9;
+}
+
+.housing-layout {
+  display: grid;
+  grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.housing-panel {
+  min-width: 0;
+  margin: 0;
+  padding: 19px;
+}
+
+.housing-panel-head {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.housing-panel-head > div {
+  min-width: 0;
+}
+
+.housing-panel-head .kicker {
+  margin-bottom: 5px;
+}
+
+.housing-panel-head h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.housing-panel-head p {
+  max-width: 58ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.42;
+}
+
+.housing-panel-head > svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--blue-25);
+}
+
+.housing-toolbar {
+  min-width: 0;
+  margin-bottom: 13px;
+  display: grid;
+  gap: 9px;
+}
+
+.housing-room-toolbar {
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+}
+
+.housing-person-toolbar {
+  grid-template-columns: minmax(220px, 1fr);
+}
+
+.housing-person-toolbar > .segmented {
+  width: 100%;
+}
+
+.housing-type-filter {
+  max-width: 410px;
+}
+
+.housing-toolbar .search {
+  min-width: 0;
+  width: 100%;
+}
+
+.housing-toolbar .segmented {
+  min-width: 0;
+}
+
+.housing-room-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.housing-room-card {
+  min-width: 0;
+  min-height: 118px;
+  padding: 13px;
+  text-align: left;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .14s ease, background-color .14s ease, box-shadow .14s ease, transform .12s ease;
+}
+
+.housing-room-card:hover {
+  border-color: #a9cbd7;
+  background: #fbfdfe;
+  box-shadow: 0 6px 18px rgba(0, 81, 117, .055);
+}
+
+.housing-room-card:active {
+  transform: scale(.994);
+}
+
+.housing-room-card.full {
+  background: #fffdf9;
+}
+
+.housing-room-card-title {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.housing-room-card-title b,
+.housing-room-card-title small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.housing-room-card-title b {
+  color: var(--blue-35);
+  font-size: 14px;
+}
+
+.housing-room-card-title small {
+  font-size: 11px;
+}
+
+.housing-room-card .room-meter {
+  height: 6px;
+  background: #edf5f7;
+}
+
+.housing-room-card.full .room-meter i {
+  background: #c2832a;
+}
+
+.housing-room-card-foot {
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.housing-room-card-foot > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.housing-room-card-foot > b {
+  flex: none;
+  color: var(--blue-35);
+  font-size: 10.5px;
+}
+
+.housing-person-list {
+  max-height: 640px;
+  margin-top: 0;
+  padding-right: 3px;
+  scrollbar-gutter: stable;
+}
+
+.housing-person-list > button {
+  min-height: 66px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.housing-person-list > button:not(:disabled):hover {
+  border-color: var(--line);
+  background: #f8fcfd;
+}
+
+.housing-person-copy {
+  min-width: 0;
+}
+
+.housing-person-copy b,
+.housing-person-copy small,
+.housing-person-assignment b,
+.housing-person-assignment small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.housing-person-assignment {
+  max-width: 180px;
+}
+
+.housing-person-empty,
+.housing-no-room-result {
+  min-height: 190px;
+  padding: 24px 14px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.housing-person-empty b,
+.housing-no-room-result b {
+  color: var(--blue-35);
+}
+
+.housing-person-empty p,
+.housing-no-room-result p {
+  max-width: 42ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.housing-no-room-result > .primary {
+  margin-top: 5px;
+}
+
+.housing-show-more {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.housing-mobile-add {
+  display: none;
+}
+
+/* Shared Housing modal structure. */
+.housing-room-editor-modal,
+.housing-assignment-modal,
+.housing-room-detail-modal {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.housing-room-editor-modal {
+  width: min(680px, calc(100vw - 48px)) !important;
+  max-width: 680px !important;
+}
+
+.housing-room-detail-modal {
+  width: min(760px, calc(100vw - 48px)) !important;
+  max-width: 760px !important;
+}
+
+.housing-assignment-modal {
+  width: min(920px, calc(100vw - 48px)) !important;
+  max-width: 920px !important;
+  height: min(760px, calc(100dvh - 64px));
+}
+
+.housing-room-editor,
+.housing-assignment-shell,
+.housing-room-detail-shell {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: #fff;
+}
+
+.housing-room-detail-shell {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.housing-modal-header {
+  position: relative;
+  min-width: 0;
+  padding: 24px 72px 19px 26px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.housing-modal-header > div {
+  min-width: 0;
+}
+
+.housing-modal-header .kicker {
+  margin-bottom: 6px;
+}
+
+.housing-modal-header h2 {
+  margin: 0 0 5px;
+  color: var(--blue-35);
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+}
+
+.housing-modal-header p {
+  max-width: 64ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.housing-modal-header .modal-close {
+  top: 17px !important;
+  right: 18px !important;
+}
+
+.housing-modal-content {
+  min-width: 0;
+  min-height: 0;
+  padding: 21px 24px 24px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.housing-modal-actions {
+  min-width: 0;
+  padding: 13px 20px 15px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  background: rgba(255, 255, 255, .96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.housing-modal-actions .primary,
+.housing-modal-actions .secondary {
+  min-width: 116px;
+}
+
+.housing-room-editor-content {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.housing-primary-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(120px, .65fr);
+  gap: 12px;
+}
+
+.housing-room-editor-content label,
+.housing-assignment-content label,
+.housing-create-room-form label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  color: var(--blue-35);
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.housing-room-editor-content input,
+.housing-room-editor-content select,
+.housing-room-editor-content textarea,
+.housing-assignment-content input,
+.housing-assignment-content select,
+.housing-assignment-content textarea,
+.housing-create-room-form input,
+.housing-create-room-form select,
+.housing-create-room-form textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #cddfe6;
+  border-radius: 12px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+}
+
+.housing-room-editor-content textarea,
+.housing-assignment-content textarea,
+.housing-create-room-form textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
+.housing-room-editor-content label > small,
+.housing-assignment-content label > small,
+.housing-create-room-form label > small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.housing-optional-details {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbfdfe;
+  overflow: hidden;
+}
+
+.housing-optional-details > summary {
+  min-height: 58px;
+  padding: 11px 13px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.housing-optional-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.housing-optional-details > summary > span:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.housing-optional-details > summary b {
+  color: var(--blue-35);
+  font-size: 12.5px;
+}
+
+.housing-optional-details > summary small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.housing-optional-details > summary > span:last-child {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--blue-35);
+  background: #eef7fa;
+  font-size: 18px;
+  transition: transform .16s ease;
+}
+
+.housing-optional-details[open] > summary > span:last-child {
+  transform: rotate(45deg);
+}
+
+.housing-optional-details > div {
+  padding: 0 13px 13px;
+  display: grid;
+  gap: 12px;
+}
+
+.housing-optional-details.compact {
+  background: #fff;
+}
+
+/* Person → room assignment modal. */
+.housing-person-header {
+  padding-top: 20px;
+  padding-bottom: 17px;
+}
+
+.housing-person-identity {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.housing-person-identity .person-avatar {
+  width: 46px;
+  height: 46px;
+}
+
+.housing-person-identity h2 {
+  font-size: 23px;
+}
+
+.housing-assignment-content {
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.housing-assignment-summary {
+  min-width: 0;
+  padding: 18px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: #f8fbfc;
+}
+
+.housing-context-card {
+  min-width: 0;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  display: grid;
+  gap: 3px;
+  background: #fff;
+}
+
+.housing-context-card > span {
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 860;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.housing-context-card b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--blue-35);
+  font-size: 13px;
+}
+
+.housing-context-card small {
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+.housing-context-card.selected-room {
+  border-color: #a8d4e2;
+  background: #f2fafc;
+}
+
+.housing-room-picker {
+  min-width: 0;
+  min-height: 0;
+  padding: 20px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.housing-room-picker-head {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.housing-room-picker-head > div {
+  min-width: 0;
+}
+
+.housing-room-picker-head h3 {
+  margin: 0 0 4px;
+  color: var(--blue-35);
+  font-size: 18px;
+}
+
+.housing-room-picker-head p {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.42;
+}
+
+.housing-create-inline {
+  flex: none;
+}
+
+.housing-room-choice-list {
+  min-width: 0;
+  min-height: 0;
+  padding: 1px 4px 10px 1px;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.housing-room-choice {
+  width: 100%;
+  min-width: 0;
+  min-height: 66px;
+  padding: 10px 11px;
+  border: 1px solid #d6e5ea;
+  border-radius: 13px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  color: var(--ink);
+  background: #fff;
+  text-align: left;
+  transition: border-color .14s ease, background-color .14s ease, box-shadow .14s ease;
+}
+
+.housing-room-choice:hover {
+  border-color: #a9cbd7;
+  background: #fbfdfe;
+}
+
+.housing-room-choice.selected {
+  border-color: var(--blue-25);
+  background: #f1fafd;
+  box-shadow: inset 0 0 0 1px rgba(0, 125, 165, .24);
+}
+
+.housing-room-choice > span:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.housing-room-choice > span:first-child b,
+.housing-room-choice > span:first-child small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.housing-room-choice > span:first-child b {
+  color: var(--blue-35);
+  font-size: 13px;
+}
+
+.housing-room-choice > span:first-child small {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.housing-room-choice > span:nth-child(2) {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+}
+
+.housing-room-choice > span:nth-child(2) strong {
+  color: var(--blue-35);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.housing-room-choice > span:nth-child(2) small {
+  color: var(--muted);
+  font-size: 9.5px;
+}
+
+.housing-room-use {
+  min-height: 24px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: var(--blue-35);
+  background: #eef7fa;
+  font-size: 9.5px;
+  font-weight: 780;
+  white-space: nowrap;
+}
+
+.housing-create-room-form {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  overflow: auto;
+  padding-right: 3px;
+}
+
+.housing-inferred-room {
+  padding: 11px 12px;
+  border: 1px solid #cfe4ec;
+  border-radius: 13px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  color: var(--blue-25);
+  background: #f3fafc;
+}
+
+.housing-inferred-room > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.housing-inferred-room b {
+  color: var(--blue-35);
+  font-size: 12px;
+}
+
+.housing-inferred-room small {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+/* Room detail: one clear header, glance card, then occupants. */
+.housing-room-detail-content {
+  display: grid;
+  align-content: start;
+  gap: 15px;
+}
+
+.housing-room-glance {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 18px;
+  background: #f8fbfc;
+}
+
+.housing-room-glance > div:not(.housing-room-glance-meter) {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.housing-room-glance span {
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 840;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.housing-room-glance strong {
+  color: var(--blue-35);
+  font-size: 18px;
+}
+
+.housing-room-glance small {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.housing-room-glance-meter {
+  grid-column: 1 / -1;
+  height: 7px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #e8f2f5;
+}
+
+.housing-room-glance-meter > span {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  border-radius: inherit;
+  background: var(--blue-25);
+}
+
+.housing-occupants-section {
+  min-width: 0;
+}
+
+.housing-section-heading {
+  min-width: 0;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.housing-section-heading > div {
+  min-width: 0;
+}
+
+.housing-section-heading h3 {
+  margin: 0 0 3px;
+  font-size: 15px;
+}
+
+.housing-section-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.room-occupant-list {
+  display: grid;
+  gap: 7px;
+}
+
+.room-occupant-row {
+  min-width: 0;
+  min-height: 66px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  background: #fff;
+}
+
+.room-occupant-row .person-avatar {
+  width: 38px;
+  height: 38px;
+}
+
+.room-occupant-copy,
+.room-occupant-state {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.room-occupant-copy b,
+.room-occupant-copy small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-occupant-copy b {
+  color: var(--blue-35);
+  font-size: 12.5px;
+}
+
+.room-occupant-copy small,
+.room-occupant-state small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.room-occupant-state {
+  justify-items: end;
+  text-align: right;
+}
+
+.room-occupant-empty {
+  min-height: 180px;
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.room-occupant-empty b {
+  color: var(--blue-35);
+}
+
+.room-occupant-empty p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .housing-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .housing-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .housing-room-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) and (min-width: 761px) {
+  .housing-room-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .housing-assignment-modal {
+    width: min(820px, calc(100vw - 32px)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .housing-page {
+    gap: 13px;
+  }
+
+  .housing-page .page-head > .primary {
+    width: 100%;
+    min-height: 50px;
+  }
+
+  .housing-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .housing-metrics > article {
+    padding: 13px 12px;
+    border-radius: 13px;
+  }
+
+  .housing-metrics strong {
+    font-size: 24px;
+  }
+
+  .housing-metrics small {
+    font-size: 10px;
+  }
+
+  .housing-layout {
+    gap: 13px;
+  }
+
+  .housing-panel {
+    padding: 15px;
+  }
+
+  .housing-panel-head {
+    margin-bottom: 11px;
+  }
+
+  .housing-panel-head h2 {
+    font-size: 18px;
+  }
+
+  .housing-mobile-add {
+    width: 100%;
+    min-height: 48px;
+    margin: -1px 0 10px;
+    display: inline-flex;
+  }
+
+  .housing-room-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .housing-toolbar .segmented {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .housing-toolbar .segmented button {
+    min-width: max-content;
+  }
+
+  .housing-room-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .housing-room-card {
+    min-height: 108px;
+  }
+
+  .housing-person-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .housing-person-list > button {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+  }
+
+  .housing-person-assignment {
+    max-width: 118px;
+  }
+
+  .housing-room-editor-modal,
+  .housing-assignment-modal,
+  .housing-room-detail-modal {
+    width: 100% !important;
+    max-width: none !important;
+    height: min(92dvh, 860px) !important;
+    max-height: 92dvh !important;
+    margin-top: auto;
+    border-radius: 22px 22px 0 0 !important;
+  }
+
+  .housing-room-editor-modal::before,
+  .housing-assignment-modal::before,
+  .housing-room-detail-modal::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 38px;
+    height: 4px;
+    border-radius: 999px;
+    background: #c9dce3;
+    transform: translateX(-50%);
+    z-index: 10;
+  }
+
+  .housing-modal-header {
+    padding: 25px 58px 15px 16px;
+  }
+
+  .housing-modal-header h2 {
+    font-size: 21px;
+  }
+
+  .housing-modal-header p {
+    font-size: 12.5px;
+  }
+
+  .housing-modal-header .modal-close {
+    top: 17px !important;
+    right: 12px !important;
+  }
+
+  .housing-modal-content {
+    padding: 15px 14px 18px;
+    scrollbar-gutter: auto;
+  }
+
+  .housing-modal-actions {
+    padding: 11px 12px calc(12px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: minmax(0, .72fr) minmax(0, 1.28fr);
+  }
+
+  .housing-modal-actions .primary,
+  .housing-modal-actions .secondary {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+  }
+
+  .housing-primary-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .housing-assignment-content {
+    display: block;
+    overflow: auto;
+  }
+
+  .housing-assignment-summary {
+    padding: 13px 14px;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .housing-assignment-summary .housing-optional-details,
+  .housing-assignment-summary .selected-room {
+    grid-column: 1 / -1;
+  }
+
+  .housing-room-picker {
+    padding: 15px 14px 18px;
+    overflow: visible;
+  }
+
+  .housing-room-picker-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .housing-create-inline,
+  .housing-room-picker-head > .secondary {
+    width: 100%;
+  }
+
+  .housing-room-choice-list,
+  .housing-create-room-form {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .housing-room-choice {
+    min-height: 70px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+  }
+
+  .housing-room-use {
+    grid-column: 1 / -1;
+    width: fit-content;
+  }
+
+  .housing-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .housing-section-heading > .secondary {
+    width: 100%;
+  }
+
+  .room-occupant-row {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .room-occupant-state {
+    grid-column: 2;
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 430px) {
+  .housing-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .housing-metrics > article {
+    min-height: 104px;
+  }
+
+  .housing-type-filter button {
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+
+  .housing-person-list > button {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .housing-person-assignment {
+    grid-column: 2;
+    max-width: 100%;
+    justify-items: start !important;
+    text-align: left !important;
+  }
+
+  .housing-assignment-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .housing-assignment-summary .housing-optional-details,
+  .housing-assignment-summary .selected-room {
+    grid-column: auto;
+  }
+
+  .housing-room-glance {
+    grid-template-columns: 1fr;
+  }
+
+  .housing-room-glance-meter {
+    grid-column: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .housing-room-card,
+  .housing-room-choice,
+  .housing-optional-details > summary > span:last-child {
+    transition: none;
+  }
+}
