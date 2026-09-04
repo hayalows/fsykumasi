@@ -5,12 +5,12 @@ This file records product and engineering decisions that materially change how t
 ## 2026-09-04 · Phase 1 reliability, arrival scope, and mobile operations refinement
 
 Branch: `codex/phase1-ops-20260904` (based on verified `origin/main` at `479e17649093f2e84003bb810eb7d63b7a747990`)
-Production status: **release candidate; PR, migration, merge, deployment, and smoke gates pending**
+Production status: **released** via PR #34, merged as `9a47759e92742e1e9f1951c939d26c28206b7360`; production deployment `dpl_HX37gkNp3Tu2GbouX6B9nXHDoBSR` is Ready.
 
 ### Audit baseline
 
 - The current production session is `FSY Kumasi 2026`, in planning for 2026-09-14 through 2026-09-19. The aggregate live shape is 1,665 participants (870 female, 795 male), 41 companies, 162 counselor groups, 1,614 active badge assignments, zero arrival events, and 322 audit events.
-- The local demo was reviewed at the default desktop viewport and an explicit 390x844 viewport. Overview, Registration, People, Assignments, Groups & companies, Check-in, Head count, Access, Account, More, detail sheets, and the no-show confirmation surface were inspected. Production was inspected only in its current signed-out state; no credentials were entered or requested from the browser.
+- The local demo was reviewed at the default desktop viewport and an explicit 390x844 viewport. Overview, Registration, People, Assignments, Groups & companies, Check-in, Head count, Access, Account, More, detail sheets, and the no-show confirmation surface were inspected. After the user authenticated directly in the in-app browser, production was smoke-tested across the primary routes plus Registration/FSY IDs, People detail, Account edit/cancel, and the Head Count round-to-company detail without invoking a data-changing action.
 - The full audit and capture steps are recorded in `docs/audits/2026-09-04-phase1-operations-ui-ux.md`. No production participant, arrival, replacement, badge, or ID data was changed.
 
 ### Decisions and changes
@@ -28,7 +28,8 @@ Production status: **release candidate; PR, migration, merge, deployment, and sm
 - `npm run build`: passing; Vite compiled 282 modules and the Sites artifacts were prepared.
 - `npm run test:sites`: 4 passing; required client/server/hosting outputs are present.
 - Live Supabase review confirmed the PR #33 migrations are already applied, all public operational tables remain RLS-enabled, and the new migration is additive function hardening only. The controlled RPC security-definer warnings remain intentional and are not evidence of a frontend service-role exposure.
-- Remaining gates are the reviewed PR and green CI, migration application, merge, Vercel production deployment, and post-deploy HTTP/assets/service-worker smoke verification.
+- PR #34 was reviewed for unexpected backend/schema/RLS changes, passed GitHub `verify`, Vercel Preview, and Vercel Comments checks, and merged into `main`.
+- Migration `20260904095229_phase1_arrival_scope_hardening` was applied and verified in the live Supabase project. The target Vercel deployment is Ready, aliased to `fsy-kumasi-operations.vercel.app`, and returned HTTP 200 for `/`, `/sw.js`, and `/manifest.webmanifest`; the browser smoke pass reported zero warning/error entries.
 
 ### Intentionally unchanged
 
