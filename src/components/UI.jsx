@@ -84,7 +84,7 @@ export function Status({ children, tone = "good" }) {
 export function Empty({ icon: Icon, title, text, action }) {
   return (
     <div className="empty">
-      <span className="empty-icon"><Icon size={25} /></span>
+      {Icon ? <span className="empty-icon"><Icon size={25} /></span> : null}
       <h3>{title}</h3>
       <p>{text}</p>
       {action}
@@ -193,4 +193,3 @@ export function DismissibleLayer({ open, onClose, title, children, className = "
     </div>
   );
 }
-
