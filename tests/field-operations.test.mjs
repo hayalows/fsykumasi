@@ -43,7 +43,7 @@ test("migration source keeps canonical teams and narrow capability boundaries", 
   const migration = await read("supabase/migrations/20260902211229_team_access_foundation.sql");
   for (const team of ["housing","wellness","food","registration","staff","inclusion","facilities","materials","financial","publicity","logistics"]) assert.match(migration,new RegExp(`'${team}'`));
   assert.match(migration,/effective_capabilities/); assert.match(migration,/manage_leader_access/); assert.match(migration,/team_memberships/);
-  assert.match(migration,/\('housing','Housing',[\s\S]*'housing_view','housing_manage','housing_export'/);
+  assert.match(migration,/target_session,'housing','Housing',[\s\S]*'people_lookup','groups_view','housing_view','housing_manage','housing_export','reports_export'/);
   const wellness = await read("supabase/migrations/20260902211317_wellness_and_food_operations.sql");
   assert.match(wellness,/wellness_private/); assert.match(wellness,/get_food_needs/); assert.match(wellness,/dietary_information/);
 });
