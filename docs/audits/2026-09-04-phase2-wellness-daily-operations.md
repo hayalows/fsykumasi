@@ -35,3 +35,10 @@ The production browser was also inspected in a connected narrow viewport (653px 
 - `npm run test:sites`: 4 passing.
 - The live schema and source were compared before migration work. The Phase 2 migration reconciles the checked-in eligibility function with the date-of-birth and attendance-aware function already running in production.
 - Supabase Realtime publication/schema was not modified. The current application uses guarded RPC reads and focused refreshes after field mutations; no whole-app hydration is required for these actions.
+
+## Release verification
+
+- PR #36 passed GitHub `verify`, Vercel Preview, and Vercel Preview Comments, then merged into `main` as `e3d9e7ccb0cadabb7bf4593c880acf19f80bbd86`. Production migration `20260904115511` applied successfully.
+- The first authenticated smoke found a PostgreSQL UNION ordering error in the new Food roster read. PR #37 passed the same checks; migration `20260904120448` corrected the roster and attendance read ordering without changing data or permissions. The final merged `main` is `3f209209e7a370bd85738c7e9976f8f701f48764`.
+- Deployment `dpl_88Bwg1B9nGHbAnXkjfXby9pGhkHE` is Ready. Final authenticated smoke was read-only across Overview, Wellness, Food, Head Count, Account, More navigation, and drawer navigation dismissal; the final runtime diagnostics surface returned no entries.
+- Exact 390px resizing and filesystem screenshot export remain unavailable in the connected CUA surface. Phase 1 contains the explicit 390x844 review; this record does not claim a complete device matrix or WCAG certification.
