@@ -2,6 +2,35 @@
 
 This file records product and engineering decisions that materially change how the operations system behaves. Pull requests and migration files remain the source of truth for implementation details.
 
+## 2026-09-04 · Phase 2 Wellness and daily operations
+
+Branch: `codex/phase2-wellness-daily-ops-20260904` (based on verified `main` / production commit `048bef1430b8aa9757a7c9079e52f1eb47039200`)
+Production status: **release candidate; migration, PR, merge, and deployment gates pending**
+
+### Audit baseline
+
+- Read-only production review found three Wellness visits (one active), 5,005 dietary rows in scope, two head-count rounds, and the prior 1,620 assigned/group versus 1,615 eligible denominator mismatch. Full findings and the browser evidence boundary are in `docs/audits/2026-09-04-phase2-wellness-daily-operations.md`.
+- The Phase 2 worktree was created from the verified Phase 1 `main` commit. No existing production participant, visit, meal, head-count, assignment, access, badge, or identifier data was used as test mutation data.
+
+### Decisions and changes
+
+- Wellness now follows search → active visit → queue → explicit checkout → follow-up/history. Status-only access and private-record access use separate guarded reads.
+- Food now has independent meal services and idempotent meal attendance while preserving the dietary-needs acknowledgement workflow.
+- Head Count now loads multiple rounds, uses server-computed expected counts, and saves an optional person-reconciliation payload atomically with the company report.
+- Desktop navigation is contained at a fixed width with an internal scroll region. Field workflows use progressive disclosure, large controls, compact status feedback, mobile-safe sheets, and no new permanent top-level destination.
+- The additive migration preserves RLS and direct-grant lockdowns, adds partial unique indexes for active Wellness visits and meal attendance, and uses row locks/server timestamps for concurrent mutations. Realtime publication/schema was left unchanged.
+
+### Verification before release
+
+- `npm test`: 60 passing.
+- `npm run build`: passed; Vite transformed 289 modules and Sites artifacts were prepared.
+- `npm run test:sites`: 4 passing.
+- Migration source, field RPC adapters, shell navigation, and public-source exclusions are under review before the production migration and release gates.
+
+### Intentionally unchanged
+
+- Reporting 2.0 is not started. Existing permissions, RLS, registration, assignment, housing, and check-in rules remain in place except for the additive shared eligibility reconciliation required by Phase 2 operations.
+
 ## 2026-09-04 · Phase 1 reliability, arrival scope, and mobile operations refinement
 
 Branch: `codex/phase1-ops-20260904` (based on verified `origin/main` at `479e17649093f2e84003bb810eb7d63b7a747990`)

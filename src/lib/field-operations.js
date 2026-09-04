@@ -9,6 +9,17 @@ function first(value) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+export function elapsedSince(value, now = Date.now()) {
+  if (!value) return "";
+  const started = new Date(value).getTime();
+  if (!Number.isFinite(started)) return "";
+  const minutes = Math.max(0, Math.floor((new Date(now).getTime() - started) / 60000));
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return remainder ? `${hours}h ${remainder}m` : `${hours}h`;
+}
+
 export function hasCapability(capabilities = [], capability) {
   return Array.isArray(capabilities) && capabilities.includes(capability);
 }
@@ -142,20 +153,44 @@ export async function clearHousingAssignment({ sessionId, personType, personId }
 }
 
 export async function loadWellnessEncounters(sessionId) {
-  const { data, error } = await client().rpc("get_wellness_encounters", { p_session_id: sessionId });
+  const { data, error } = await client().rpc("get_wellness_encounters_v2", { p_session_id: sessionId });
   if (error) throw error;
   return (data || []).map((row) => ({
     id: row.encounter_id,
     personType: row.person_type,
     personId: row.person_id,
     name: row.display_name,
+    fsyId: row.fsy_id || "",
+    company: row.company_name || "",
+    group: row.group_name || "",
     concern: row.concern || "",
     careProvided: row.care_provided || "",
     medicineProvided: row.medicine_provided || "",
     outcome: row.outcome,
     startedAt: row.started_at,
     closedAt: row.closed_at,
+    followUpStatus: row.follow_up_status || "not_required",
+    followUpResolvedAt: row.follow_up_resolved_at,
     recordedBy: row.recorded_by_name || "FSY Wellness",
+    updatedAt: row.updated_at,
+  }));
+}
+
+export async function loadWellnessStatus(sessionId) {
+  const { data, error } = await client().rpc("get_wellness_status", { p_session_id: sessionId });
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    id: row.encounter_id,
+    personType: row.person_type,
+    personId: row.person_id,
+    name: row.display_name,
+    fsyId: row.fsy_id || "",
+    company: row.company_name || "",
+    group: row.group_name || "",
+    outcome: row.outcome,
+    startedAt: row.started_at,
+    closedAt: row.closed_at,
+    followUpStatus: row.follow_up_status || "not_required",
   }));
 }
 
@@ -187,6 +222,20 @@ export async function createWellnessEncounter({ sessionId, personType, personId,
   return first(data);
 }
 
+export async function startWellnessVisit({ sessionId, personType, personId, concern = "", careProvided = "", medicineProvided = "" }) {
+  const { data, error } = await client().rpc("start_wellness_visit", {
+    p_session_id: sessionId,
+    p_person_type: personType,
+    p_person_id: personId,
+    p_concern: concern || null,
+    p_care_provided: careProvided || null,
+    p_medicine_provided: medicineProvided || null,
+  });
+  if (error) throw error;
+  const row = first(data) || {};
+  return { id: row.encounter_id || row.id, created: row.created !== false };
+}
+
 export async function updateWellnessEncounter({ encounterId, concern = "", careProvided = "", medicineProvided = "", outcome, close = false }) {
   const { error } = await client().rpc("update_wellness_encounter", {
     p_encounter_id: encounterId,
@@ -197,6 +246,21 @@ export async function updateWellnessEncounter({ encounterId, concern = "", careP
     p_close: Boolean(close),
   });
   if (error) throw error;
+}
+
+export async function checkoutWellnessEncounter({ encounterId, outcome }) {
+  const { data, error } = await client().rpc("checkout_wellness_encounter", {
+    p_encounter_id: encounterId,
+    p_outcome: outcome,
+  });
+  if (error) throw error;
+  return first(data);
+}
+
+export async function resolveWellnessFollowUp(encounterId) {
+  const { data, error } = await client().rpc("resolve_wellness_follow_up", { p_encounter_id: encounterId });
+  if (error) throw error;
+  return first(data);
 }
 
 export async function loadFoodNeeds(sessionId) {
@@ -223,6 +287,84 @@ export async function setFoodAcknowledgement({ sessionId, personType, personId, 
     p_note: note || null,
   });
   if (error) throw error;
+}
+
+export async function loadMealServices(sessionId, serviceDate) {
+  const { data, error } = await client().rpc("get_meal_services", {
+    p_session_id: sessionId,
+    p_service_date: serviceDate || null,
+  });
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    id: row.service_id,
+    date: row.service_date,
+    mealType: row.meal_type,
+    label: row.label || row.meal_type,
+    status: row.status,
+    openedAt: row.opened_at,
+    closedAt: row.closed_at,
+    servedCount: Number(row.served_count || 0),
+    expectedCount: Number(row.expected_count || 0),
+  }));
+}
+
+export async function loadMealAttendance(serviceId) {
+  const { data, error } = await client().rpc("get_meal_attendance", { p_meal_service_id: serviceId });
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    id: row.attendance_id,
+    personType: row.person_type,
+    personId: row.person_id,
+    name: row.display_name,
+    fsyId: row.fsy_id || "",
+    company: row.company_name || "",
+    group: row.group_name || "",
+    servedAt: row.served_at,
+  }));
+}
+
+export async function loadMealRoster(sessionId) {
+  const { data, error } = await client().rpc("get_meal_roster", { p_session_id: sessionId });
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    personType: row.person_type,
+    personId: row.person_id,
+    name: row.display_name,
+    fsyId: row.fsy_id || "",
+    company: row.company_name || "",
+    group: row.group_name || "",
+  }));
+}
+
+export async function createMealService({ sessionId, serviceDate, mealType, label = "" }) {
+  const { data, error } = await client().rpc("create_meal_service", {
+    p_session_id: sessionId,
+    p_service_date: serviceDate,
+    p_meal_type: mealType,
+    p_label: label || null,
+  });
+  if (error) throw error;
+  return first(data);
+}
+
+export async function setMealServiceStatus(serviceId, status) {
+  const { data, error } = await client().rpc("set_meal_service_status", {
+    p_service_id: serviceId,
+    p_status: status,
+  });
+  if (error) throw error;
+  return first(data);
+}
+
+export async function markMealServed({ serviceId, personType, personId }) {
+  const { data, error } = await client().rpc("mark_meal_served", {
+    p_meal_service_id: serviceId,
+    p_person_type: personType,
+    p_person_id: personId,
+  });
+  if (error) throw error;
+  const row = first(data) || {};
+  return { id: row.attendance_id, servedAt: row.served_at, alreadyServed: Boolean(row.already_served) };
 }
 
 export async function loadStaffBirthdays(sessionId) {

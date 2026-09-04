@@ -1,0 +1,999 @@
+/* Phase 2 release layer: calm, task-first field workflows. */
+
+/* Keep the desktop shell inside the viewport even when the drawer has long
+   grouped navigation. The nav scrolls; the shell and account entry do not. */
+.sidebar {
+  width: 252px;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.workspace {
+  width: calc(100% - 252px);
+  margin-left: 252px;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.brand,
+.session-badge,
+.sidebar-foot,
+.sidebar-profile,
+.sidebar-account-copy {
+  min-width: 0;
+}
+
+.brand > div,
+.session-badge,
+.sidebar-account-copy {
+  overflow: hidden;
+}
+
+.brand b,
+.brand small,
+.session-badge small,
+.sidebar-account-copy b,
+.sidebar-account-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-nav {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.sidebar-scrim {
+  touch-action: none;
+}
+
+.headcount-page,
+.wellness-page,
+.food-page {
+  min-width: 0;
+}
+
+.headcount-round-card,
+.headcount-company-card,
+.meal-dashboard,
+.wellness-queue-panel,
+.wellness-followup-panel {
+  min-width: 0;
+}
+
+.headcount-round-summary,
+.headcount-company-summary {
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+}
+
+.headcount-round-summary > span:nth-child(2),
+.headcount-company-summary > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.headcount-round-summary b,
+.headcount-company-summary b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headcount-round-summary small,
+.headcount-company-summary small {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.disclosure-chevron {
+  color: var(--blue-25);
+  font-size: 24px;
+  line-height: 1;
+  text-align: center;
+}
+
+.headcount-round-card.open > .headcount-round-summary,
+.headcount-company-card.open > .headcount-company-summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.headcount-glance,
+.meal-dashboard-glance {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.headcount-glance > span,
+.meal-dashboard-glance > span {
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: var(--surface-soft);
+  display: grid;
+  gap: 3px;
+}
+
+.headcount-glance b,
+.meal-dashboard-glance b {
+  color: var(--blue-35);
+  font-size: 20px;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.headcount-glance small,
+.meal-dashboard-glance small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.round-enter {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.headcount-round-detail,
+.headcount-company-detail {
+  display: grid;
+  gap: 13px;
+  padding-top: 14px;
+}
+
+.headcount-metrics {
+  margin: 0;
+}
+
+.headcount-toolbar {
+  display: grid;
+  gap: 10px;
+}
+
+.headcount-filters {
+  max-width: 100%;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.headcount-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.headcount-filters button {
+  min-height: 42px;
+}
+
+.headcount-progressive-list {
+  display: grid;
+  gap: 7px;
+}
+
+.headcount-company-card {
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+}
+
+.headcount-company-card.open {
+  border-color: var(--blue-5);
+  box-shadow: 0 5px 16px rgba(0, 81, 117, .06);
+}
+
+.headcount-company-summary {
+  min-height: 62px;
+}
+
+.headcount-company-summary .status {
+  max-width: 122px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saved-headcount-context {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.saved-headcount-context > span {
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  display: grid;
+  gap: 3px;
+}
+
+.saved-headcount-context small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.saved-headcount-context b {
+  color: var(--blue-35);
+  overflow-wrap: anywhere;
+}
+
+.saved-headcount-context p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.headcount-all-here,
+.meal-status-action {
+  width: 100%;
+  justify-content: center;
+}
+
+.headcount-adjust-details,
+.headcount-reconcile-details,
+.meal-attendance-history {
+  border-top: 1px solid var(--line);
+}
+
+.headcount-adjust-details summary,
+.headcount-reconcile-details summary,
+.meal-attendance-history summary {
+  min-height: 48px;
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--blue-35);
+  font-weight: 850;
+  cursor: pointer;
+  list-style: none;
+}
+
+.headcount-adjust-details summary::-webkit-details-marker,
+.headcount-reconcile-details summary::-webkit-details-marker,
+.meal-attendance-history summary::-webkit-details-marker {
+  display: none;
+}
+
+.headcount-adjust-details summary::after,
+.headcount-reconcile-details summary::after,
+.meal-attendance-history summary > svg {
+  margin-left: auto;
+}
+
+.headcount-adjust {
+  display: flex;
+  align-items: end;
+  gap: 9px;
+  padding-bottom: 12px;
+}
+
+.headcount-adjust label {
+  display: grid;
+  flex: 1 1 150px;
+  gap: 6px;
+  color: var(--blue-35);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.headcount-adjust input {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0 11px;
+  font: inherit;
+}
+
+.headcount-reconcile-details > summary span {
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--yellow-15);
+  color: #62420e;
+  font-size: 11px;
+  text-align: center;
+}
+
+.headcount-reconcile {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+
+.headcount-reconcile .form-hint {
+  margin: 0 0 2px;
+}
+
+.headcount-person-row {
+  min-height: 56px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(145px, 42%);
+  gap: 10px;
+  align-items: center;
+}
+
+.headcount-person-row > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.headcount-person-row b,
+.headcount-person-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headcount-person-row small {
+  color: var(--muted);
+}
+
+.headcount-person-row select {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0 9px;
+  font: inherit;
+}
+
+.headcount-location {
+  margin: 0;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.headcount-history summary {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.headcount-history summary::-webkit-details-marker {
+  display: none;
+}
+
+.headcount-history summary > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.headcount-history summary > svg {
+  margin-left: auto;
+  flex: none;
+}
+
+.headcount-history summary small,
+.headcount-history-row small {
+  color: var(--muted);
+}
+
+.headcount-history-list {
+  display: grid;
+  gap: 8px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line);
+}
+
+.headcount-history-row {
+  min-width: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, auto) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.headcount-history-row > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.headcount-history-row b,
+.headcount-history-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wellness-start-card,
+.wellness-queue-panel,
+.wellness-followup-panel,
+.wellness-history {
+  display: grid;
+  gap: 12px;
+}
+
+.wellness-start-card .panel-head,
+.wellness-queue-panel .panel-head,
+.wellness-followup-panel .panel-head,
+.meal-dashboard .panel-head {
+  align-items: flex-start;
+}
+
+.wellness-queue-list {
+  display: grid;
+  gap: 5px;
+}
+
+.wellness-visit-row {
+  width: 100%;
+  min-height: 68px;
+  padding: 9px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, .72fr);
+  gap: 14px;
+  align-items: center;
+  text-align: left;
+}
+
+.wellness-visit-row:last-child {
+  border-bottom: 0;
+}
+
+.wellness-visit-row:not(.static):hover {
+  background: var(--surface-soft);
+}
+
+.wellness-visit-primary,
+.wellness-visit-secondary,
+.wellness-visit-secondary > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.wellness-visit-primary b,
+.wellness-visit-primary small,
+.wellness-visit-secondary small,
+.wellness-private-preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wellness-visit-primary small,
+.wellness-visit-secondary small {
+  color: var(--muted);
+}
+
+.wellness-visit-secondary {
+  justify-items: end;
+  text-align: right;
+}
+
+.wellness-visit-secondary > span {
+  justify-items: end;
+}
+
+.wellness-visit-secondary .status {
+  max-width: 100%;
+}
+
+.wellness-private-preview {
+  max-width: 100%;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.wellness-history {
+  gap: 0;
+}
+
+.wellness-history > summary {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.wellness-history > summary::-webkit-details-marker {
+  display: none;
+}
+
+.wellness-history > summary > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.wellness-history > summary > svg {
+  margin-left: auto;
+}
+
+.wellness-history .wellness-queue-list {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.wellness-editor-heading {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+}
+
+.wellness-editor-heading > span:first-child {
+  align-self: start;
+  margin-top: 4px;
+}
+
+.wellness-editor-heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.wellness-editor-heading h2,
+.wellness-editor-heading p {
+  margin: 0;
+}
+
+.wellness-editor-heading p {
+  color: var(--muted);
+}
+
+.wellness-editor-heading b,
+.wellness-editor-heading small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wellness-editor-heading .status {
+  justify-self: start;
+  margin-top: 4px;
+}
+
+.wellness-start-note {
+  margin-top: 5px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wellness-checkout-block,
+.wellness-followup-resolve {
+  display: grid;
+  gap: 9px;
+  margin-top: 2px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.wellness-checkout-block h3,
+.wellness-followup-resolve h3 {
+  margin: 0;
+  color: var(--blue-35);
+  font-size: 14px;
+}
+
+.wellness-checkout-block p,
+.wellness-followup-resolve p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.wellness-checkout-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: end;
+}
+
+.wellness-checkout-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--blue-35);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.wellness-checkout-form select {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0 10px;
+  font: inherit;
+}
+
+.food-tabs {
+  width: min(100%, 420px);
+}
+
+.food-date-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.food-date-row label,
+.food-setup-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--blue-35);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.food-date-row input,
+.food-setup-form input,
+.food-setup-form select {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0 10px;
+  font: inherit;
+}
+
+.meal-service-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+.meal-service-card {
+  min-width: 0;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+}
+
+.meal-service-card.selected {
+  border-color: var(--blue-25);
+  box-shadow: 0 0 0 2px rgba(0, 125, 165, .1);
+}
+
+.meal-service-card > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.meal-service-card b,
+.meal-service-card small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meal-service-card small {
+  color: var(--muted);
+}
+
+.meal-dashboard {
+  gap: 14px;
+}
+
+.meal-mark-area {
+  display: grid;
+  gap: 10px;
+  padding-top: 3px;
+}
+
+.meal-mark-area .search {
+  margin: 0;
+}
+
+.meal-mark-label {
+  max-width: 150px;
+  color: var(--blue-25);
+  font-size: 11px;
+  font-weight: 850;
+  text-align: right;
+}
+
+.compact-results {
+  max-height: 330px;
+}
+
+.meal-attendance-history {
+  margin-top: 3px;
+}
+
+.meal-attendance-history summary > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.meal-attendance-history summary small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.meal-attendance-list {
+  display: grid;
+  gap: 0;
+  padding-top: 3px;
+}
+
+.meal-attendance-row {
+  min-height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.meal-attendance-row > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.meal-attendance-row b,
+.meal-attendance-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meal-attendance-row small,
+.meal-attendance-row time {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.food-setup-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.food-setup-form > div:first-child {
+  grid-column: 1 / -1;
+}
+
+.food-setup-form .field-sheet-actions {
+  grid-column: 1 / -1;
+}
+
+.food-setup-form h2,
+.food-setup-form p {
+  margin: 0;
+}
+
+.food-setup-form p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 900px) and (min-width: 761px) {
+  .workspace {
+    width: calc(100% - 252px);
+  }
+
+  .sidebar {
+    width: 252px;
+  }
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    width: min(86vw, 320px);
+    height: 100dvh;
+    min-height: 0;
+    z-index: 80;
+  }
+
+  .workspace {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .sidebar-scrim {
+    z-index: 79;
+  }
+
+  .sidebar-nav {
+    scrollbar-gutter: auto;
+  }
+
+  .headcount-glance,
+  .meal-dashboard-glance {
+    gap: 6px;
+  }
+
+  .headcount-glance > span,
+  .meal-dashboard-glance > span {
+    padding: 10px 9px;
+  }
+
+  .headcount-glance b,
+  .meal-dashboard-glance b {
+    font-size: 18px;
+  }
+
+  .headcount-company-summary .status {
+    max-width: 92px;
+  }
+
+  .headcount-history-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .headcount-history-row .status {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .wellness-visit-row {
+    grid-template-columns: minmax(0, 1fr) minmax(130px, .78fr);
+    gap: 10px;
+  }
+
+  .wellness-checkout-form {
+    grid-template-columns: 1fr;
+  }
+
+  .wellness-checkout-form button {
+    width: 100%;
+  }
+
+  .food-date-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .food-date-row > button,
+  .food-date-row > label,
+  .food-date-row input {
+    width: 100%;
+  }
+
+  .meal-service-strip {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 3px;
+    scrollbar-width: none;
+  }
+
+  .meal-service-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .meal-service-card {
+    min-width: 210px;
+  }
+
+  .food-setup-form {
+    grid-template-columns: 1fr;
+  }
+
+  .food-setup-form > div:first-child,
+  .food-setup-form .field-sheet-actions {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .saved-headcount-context {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .saved-headcount-context > span:last-of-type {
+    grid-column: 1 / -1;
+  }
+
+  .headcount-adjust {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .headcount-adjust button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .headcount-person-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .headcount-person-row select {
+    max-width: none;
+  }
+
+  .wellness-visit-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding-block: 11px;
+  }
+
+  .wellness-visit-secondary,
+  .wellness-visit-secondary > span {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .wellness-visit-secondary {
+    padding-left: 0;
+  }
+
+  .meal-mark-label {
+    max-width: 126px;
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .mobile-nav,
+  .meal-service-card,
+  .wellness-visit-row {
+    transition: none !important;
+  }
+}

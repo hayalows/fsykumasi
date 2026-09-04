@@ -376,6 +376,64 @@ export async function loadGroupingPlan(sessionId) {
 
 export async function loadHeadcount(sessionId) {
   const client = requireClient();
+  const { data: workspace, error: workspaceError } = await client.rpc("get_headcount_workspace", { p_session_id: sessionId });
+  if (!workspaceError) {
+    const payload = workspace || {};
+    const rounds = Array.isArray(payload.rounds) ? payload.rounds : [];
+    const submissions = Array.isArray(payload.submissions) ? payload.submissions : [];
+    const companies = (Array.isArray(payload.companies) ? payload.companies : []).map((company) => ({
+      id: company.id,
+      name: company.name,
+      displayName: company.display_name || company.name,
+      meetingSpot: company.meeting_spot || "",
+      operationalNumber: company.operational_number,
+      expectedCount: Number(company.expected_count || 0),
+      groupCount: Number(company.group_count || 0),
+      groups: [],
+      people: [],
+    }));
+    const companyMap = new Map(companies.map((company) => [company.id, company]));
+    (Array.isArray(payload.people) ? payload.people : []).forEach((person) => {
+      const mapped = {
+        id: person.participant_id,
+        registrationId: person.registration_id || "",
+        name: person.display_name || "",
+        fsyId: person.fsy_id || "",
+        companyId: person.company_id,
+        company: person.company_name || "",
+        groupId: person.group_id,
+        group: person.group_name || "",
+      };
+      companyMap.get(mapped.companyId)?.people.push(mapped);
+    });
+    const mappedSubmissions = submissions.map((row) => ({
+      round_id: row.round_id,
+      company_id: row.company_id,
+      expected_count: Number(row.expected_count || 0),
+      accounted_count: Number(row.accounted_count || 0),
+      status: row.status,
+      note: row.note || "",
+      submitted_at: row.submitted_at,
+    }));
+    return {
+      round: rounds[0] || null,
+      rounds,
+      submissions: mappedSubmissions.filter((row) => row.round_id === rounds[0]?.id),
+      allSubmissions: mappedSubmissions,
+      companies,
+      personStatuses: (Array.isArray(payload.person_statuses) ? payload.person_statuses : []).map((row) => ({
+        round_id: row.round_id,
+        company_id: row.company_id,
+        participant_id: row.participant_id,
+        status: row.status,
+        note: row.note || "",
+        recorded_at: row.recorded_at,
+      })),
+    };
+  }
+  if (!/function .*get_headcount_workspace|does not exist|not found/i.test(workspaceError.message || "")) throw workspaceError;
+
+  // Compatibility path for a development database before the Phase 2 migration.
   const { data: rounds, error: roundsError } = await client
     .from("headcount_rounds")
     .select("id, label, opens_at, closes_at")
@@ -384,13 +442,13 @@ export async function loadHeadcount(sessionId) {
     .limit(1);
   if (roundsError) throw roundsError;
   const round = rounds?.[0] || null;
-  if (!round) return { round: null, submissions: [] };
+  if (!round) return { round: null, rounds: [], submissions: [], allSubmissions: [], companies: [], personStatuses: [] };
   const { data, error } = await client
     .from("headcount_submissions")
     .select("company_id, expected_count, accounted_count, status, note, submitted_at")
     .eq("round_id", round.id);
   if (error) throw error;
-  return { round, submissions: data || [] };
+  return { round, rounds: rounds || [], submissions: data || [], allSubmissions: data || [], companies: [], personStatuses: [] };
 }
 
 export async function openHeadcountRound(sessionId, label) {
@@ -403,15 +461,24 @@ export async function openHeadcountRound(sessionId, label) {
   return data;
 }
 
-export async function submitCompanyHeadcount({ roundId, companyId, accountedCount, note }) {
+export async function submitCompanyHeadcount({ roundId, companyId, accountedCount, note, personStatuses = [] }) {
   const client = requireClient();
-  const { error } = await client.rpc("submit_company_headcount", {
+  const { error } = await client.rpc("submit_company_headcount_v2", {
+    p_round_id: roundId,
+    p_company_id: companyId,
+    p_accounted_count: accountedCount,
+    p_note: note || null,
+    p_person_statuses: personStatuses,
+  });
+  if (!error) return;
+  if (!/function .*submit_company_headcount_v2|does not exist|not found/i.test(error.message || "")) throw error;
+  const { error: legacyError } = await client.rpc("submit_company_headcount", {
     p_round_id: roundId,
     p_company_id: companyId,
     p_accounted_count: accountedCount,
     p_note: note || null,
   });
-  if (error) throw error;
+  if (legacyError) throw legacyError;
 }
 
 export function subscribeToHeadcount(sessionId, callback) {

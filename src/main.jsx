@@ -12,6 +12,7 @@ import "./mobile-pwa-scroll.css";
 import "./interface-system.css";
 import "./checkin-snackbar.css";
 import "./phase1-refinement.css";
+import "./phase2-operations.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
