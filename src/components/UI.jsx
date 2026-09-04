@@ -130,8 +130,10 @@ export function DismissibleLayer({ open, onClose, title, children, className = "
     const focusInitial = () => {
       const panel = panelRef.current;
       if (!panel) return;
-      const target = panel.querySelector("[data-layer-close], input, select, textarea, button, summary") || panel;
-      target.focus?.();
+      const compactViewport = window.matchMedia?.("(max-width: 760px)")?.matches;
+      const explicit = panel.querySelector("[data-layer-autofocus]");
+      const firstField = compactViewport ? null : panel.querySelector('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])');
+      (explicit || firstField || panel).focus?.();
     };
     const frame = window.requestAnimationFrame(focusInitial);
     const onKeyDown = (event) => {

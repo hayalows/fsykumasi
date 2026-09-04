@@ -12,6 +12,8 @@ const presenceClient = readFileSync(new URL("../src/lib/presence.js", import.met
 const companySheet = readFileSync(new URL("../src/components/AssistantCompanySheet.jsx", import.meta.url), "utf8");
 const appShell = readFileSync(new URL("../src/components/AppShell.jsx", import.meta.url), "utf8");
 const uiComponents = readFileSync(new URL("../src/components/UI.jsx", import.meta.url), "utf8");
+const modalSystem = readFileSync(new URL("../src/modal-system.css", import.meta.url), "utf8");
+const mainEntry = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
 
 test("staff and login identity are linked explicitly", () => {
   assert.match(migration, /create table if not exists public\.staff_account_links/i);
@@ -62,13 +64,20 @@ test("Access can render its initial empty live directory before data arrives", (
 
 test("Assistant Coordinators can resolve missing company scope without a disabled dead end", () => {
   assert.match(accessPage, /openCompanies\(person, person\.accessState === "not_enabled"\)/);
-  assert.match(companySheet, /Save & continue to access/);
+  assert.match(companySheet, /Save & continue/);
   assert.match(companySheet, /Suggest companies/);
-  assert.match(companySheet, /Choose manually/);
+  assert.match(companySheet, /All companies/);
+  assert.match(companySheet, /assistant-company-picker/);
   assert.match(staffClient, /suggest_assistant_coordinator_companies/);
   assert.match(staffClient, /set_assistant_coordinator_companies/);
   assert.match(accessUxMigration, /create or replace function public\.suggest_assistant_coordinator_companies/);
   assert.match(accessUxMigration, /create or replace function public\.set_assistant_coordinator_companies/);
+});
+
+test("company picker uses natural ordering and keeps manual selection directly visible", () => {
+  assert.match(companySheet, /localeCompare\(companyLabel\(b\).*numeric: true/);
+  assert.match(companySheet, /className="assistant-company-list"/);
+  assert.doesNotMatch(companySheet, /assistant-company-manual/);
 });
 
 test("company transfers are explicit, capacity-limited and protect active Assistant Coordinator scope", () => {
@@ -77,7 +86,7 @@ test("company transfers are explicit, capacity-limited and protect active Assist
   assert.match(accessUxMigration, /would leave % with active website access but no company/i);
   assert.match(accessUxMigration, /assistant_coordinator_companies_set/i);
   assert.match(companySheet, /currently assigned to another Assistant Coordinator/i);
-  assert.match(companySheet, /Nothing moves until you save/i);
+  assert.match(companySheet, /Nothing changes until you save/i);
 });
 
 test("Access shows admin-only sign-in recency and authenticated private live presence", () => {
@@ -100,11 +109,22 @@ test("optional account activity cannot block the Access directory", () => {
   assert.match(staffClient, /return new Map\(\);/);
 });
 
-test("secondary Access actions use progressive disclosure", () => {
+test("secondary Access actions use progressive disclosure without hiding the primary company picker", () => {
   assert.match(accessPage, /className="staff-access-more"/);
   assert.match(accessPage, /className="panel staff-access-help"/);
   assert.match(accessPage, /Older \/ exception access/);
-  assert.match(companySheet, /<details className="assistant-company-manual"/);
+  assert.match(companySheet, /className="assistant-company-picker"/);
+});
+
+test("shared dialogs use responsive desktop proportions and mobile bottom sheets", () => {
+  assert.match(mainEntry, /\.\/modal-system\.css/);
+  assert.match(modalSystem, /\.dismissible-layer \.layer-panel/);
+  assert.match(modalSystem, /\.assistant-company-sheet\.app-modal-wide/);
+  assert.match(modalSystem, /grid-template-columns: minmax\(250px, 290px\) minmax\(0, 1fr\)/);
+  assert.match(modalSystem, /@media \(max-width: 760px\)/);
+  assert.match(modalSystem, /place-items: end center/);
+  assert.match(modalSystem, /env\(safe-area-inset-bottom\)/);
+  assert.match(modalSystem, /\.dismissible-layer \.field-sheet-actions/);
 });
 
 test("Assignments offers optional website access without forcing it", () => {
