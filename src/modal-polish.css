@@ -1,0 +1,32 @@
+/* Final compatibility layer for older component-level modal rules. */
+.assistant-company-auto {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.assistant-company-auto > .assistant-company-auto-copy {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.assistant-company-selected-chip span {
+  color: inherit;
+  font-size: inherit;
+}
+
+.assistant-company-list {
+  max-height: none;
+}
+
+.assistant-company-actions {
+  position: relative;
+  bottom: auto;
+  z-index: 6;
+}
+
+@media (max-width: 760px) {
+  .assistant-company-list {
+    max-height: none;
+  }
+}
