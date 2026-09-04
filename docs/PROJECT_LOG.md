@@ -2,6 +2,39 @@
 
 This file records product and engineering decisions that materially change how the operations system behaves. Pull requests and migration files remain the source of truth for implementation details.
 
+## 2026-09-04 · Phase 1 reliability, arrival scope, and mobile operations refinement
+
+Branch: `codex/phase1-ops-20260904` (based on verified `origin/main` at `479e17649093f2e84003bb810eb7d63b7a747990`)
+Production status: **release candidate; PR, migration, merge, deployment, and smoke gates pending**
+
+### Audit baseline
+
+- The current production session is `FSY Kumasi 2026`, in planning for 2026-09-14 through 2026-09-19. The aggregate live shape is 1,665 participants (870 female, 795 male), 41 companies, 162 counselor groups, 1,614 active badge assignments, zero arrival events, and 322 audit events.
+- The local demo was reviewed at the default desktop viewport and an explicit 390x844 viewport. Overview, Registration, People, Assignments, Groups & companies, Check-in, Head count, Access, Account, More, detail sheets, and the no-show confirmation surface were inspected. Production was inspected only in its current signed-out state; no credentials were entered or requested from the browser.
+- The full audit and capture steps are recorded in `docs/audits/2026-09-04-phase1-operations-ui-ux.md`. No production participant, arrival, replacement, badge, or ID data was changed.
+
+### Decisions and changes
+
+- Reorganized navigation into Today (Overview, Check-in, Head count, Groups & companies) and More (People & setup, Team tools, Admin & utilities). Birthdays is grouped with lower-frequency utilities and Account remains in the profile entry. Desktop sidebar content now scrolls inside the sidebar; mobile uses four primary actions plus More.
+- Hardened drawer, modal, and sheet backdrop dismissal with pointer events while preserving Escape, navigation, focus restoration, and body-scroll locking. Fixed segmented controls so generated IDs support keyboard arrow navigation and high-density labels remain readable at mobile widths.
+- Kept People search-first and list-to-detail. Mobile details and no-show confirmation are bottom sheets; age and sex remain one grouped fact; private detail stays disclosed only on request. A no-show requires an explicit confirmation source and optional supporting note instead of a browser prompt.
+- Kept FSY ID preparation separate from finalization. Admin finalization is now disclosed behind an explicit admin section and confirmation sheet; production IDs are never auto-finalized.
+- Changed the People attendance path to the guarded arrival-status RPC in live mode and to isolated in-memory rehearsal state in demo mode. Added a migration that delegates the legacy attendance RPC to the guarded status function and applies company scope to Assistant Coordinator vacancy visibility. It does not change tables, RLS policies, or production rows.
+- Removed `AGENTS.md` and `.env.example` from this release branch as requested for public publishing; `.gitignore` now ignores all `.env*` files. No service-role credential or secret was added to the release.
+
+### Verification gates
+
+- `npm test`: 54 passing.
+- `npm run build`: passing; Vite compiled 282 modules and the Sites artifacts were prepared.
+- `npm run test:sites`: 4 passing; required client/server/hosting outputs are present.
+- Live Supabase review confirmed the PR #33 migrations are already applied, all public operational tables remain RLS-enabled, and the new migration is additive function hardening only. The controlled RPC security-definer warnings remain intentional and are not evidence of a frontend service-role exposure.
+- Remaining gates are the reviewed PR and green CI, migration application, merge, Vercel production deployment, and post-deploy HTTP/assets/service-worker smoke verification.
+
+### Intentionally unchanged
+
+- No new Wellness 2.0 or Daily Ops 2.0 work was started. Housing, Wellness, Food, existing grouping/assignment rules, permissions, RLS, and operational eligibility remain on their existing contracts.
+- The 51-participant difference between the current participant count and active badge assignments, and the two source rows missing stake data, remain visible data-quality follow-up rather than being silently repaired.
+
 ## 2026-09-02 · Mobile-first operations UI refinement
 
 Branch: `codex/operations-clarity-20260902` (based on verified `origin/main`)

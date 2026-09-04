@@ -1,5 +1,12 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 
+export const NO_SHOW_CONFIRMATION_SOURCES = [
+  "Parent or guardian confirmed",
+  "Participant confirmed",
+  "Unit or stake leader confirmed",
+  "Other authorized confirmation",
+];
+
 function client() {
   if (!isSupabaseConfigured || !supabase) throw new Error("Supabase is not configured for this deployment.");
   return supabase;
