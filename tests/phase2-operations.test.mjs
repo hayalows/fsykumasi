@@ -35,10 +35,11 @@ test("Wellness status-only reads exclude private concern and medicine fields", a
 });
 
 test("Food meal attendance is independent, idempotent, and guarded by RPCs", async () => {
-  const [migration, page, fieldLib] = await Promise.all([
+  const [migration, page, fieldLib, mealLib] = await Promise.all([
     read("supabase/migrations/20260904110000_phase2_wellness_daily_operations.sql"),
     read("src/pages/Food.jsx"),
     read("src/lib/field-operations.js"),
+    read("src/lib/meal-attendance.js"),
   ]);
   assert.match(migration, /create table if not exists public\.meal_services/);
   assert.match(migration, /unique\(session_id, service_date, meal_type\)/);
@@ -46,10 +47,13 @@ test("Food meal attendance is independent, idempotent, and guarded by RPCs", asy
   assert.match(migration, /meal_attendance_participant_uq/);
   assert.match(migration, /on conflict do nothing returning id, served_at/);
   assert.match(migration, /revoke all on public\.meal_services, public\.meal_attendance from anon, authenticated/);
-  assert.match(page, /Mark \$\{selectedService\.label\.toLowerCase\(\)\} served/);
+  assert.match(page, /type="checkbox"/);
+  assert.match(page, /Each tick saves immediately/);
   assert.match(page, /Dietary needs/);
   assert.match(fieldLib, /get_meal_roster/);
   assert.match(fieldLib, /mark_meal_served/);
+  assert.match(mealLib, /set_participant_meal_served/);
+  assert.match(mealLib, /get_meal_progress/);
 });
 
 test("Food union reads use legal PostgreSQL output ordinals", async () => {
