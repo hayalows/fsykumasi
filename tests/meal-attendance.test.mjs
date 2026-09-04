@@ -31,11 +31,12 @@ test("meal progress is participant-first and session leaders can see overall pro
   assert.match(migration, /private\.has_capability\(target_session, 'food_view'\)/);
 });
 
-test("Food UI uses a large-row checkbox checklist with immediate save and polling", async () => {
-  const [page, css, shell] = await Promise.all([
+test("Food UI uses a large-row checkbox checklist with immediate save and route access", async () => {
+  const [page, css, shell, app] = await Promise.all([
     read("src/pages/Food.jsx"),
     read("src/pages/meal-attendance.css"),
     read("src/components/AppShell.jsx"),
+    read("src/App.jsx"),
   ]);
   assert.match(page, /type="checkbox"/);
   assert.match(page, /Each tick saves immediately/);
@@ -45,4 +46,5 @@ test("Food UI uses a large-row checkbox checklist with immediate save and pollin
   assert.match(css, /\.meal-check-row[\s\S]*min-height: 58px/);
   assert.match(css, /@media \(max-width: 620px\)/);
   assert.match(shell, /meal_attendance_view/);
+  assert.match(app, /if\(view==="food"\)return hasCapability\(currentCapabilities,"food_view"\)\|\|hasCapability\(currentCapabilities,"meal_attendance_view"\)/);
 });
