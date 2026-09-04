@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Sparkle } from "@phosphor-icons/react/Sparkle";
+import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { UsersThree } from "@phosphor-icons/react/UsersThree";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
-import { Metric, MutationFeedback, PageHead, SearchField, Status } from "../components/UI.jsx";
+import { X } from "@phosphor-icons/react/X";
+import { DismissibleLayer, Metric, MutationFeedback, PageHead, SearchField, Status } from "../components/UI.jsx";
+import { StaffAccessInvite } from "../components/StaffAccessInvite.jsx";
 import {
   applyStaffAssignmentPlan,
   assignCounselorToGroup,
@@ -13,7 +16,16 @@ import {
   setStaffOperationalRole,
   unassignCounselorFromGroup,
 } from "../lib/operations.js";
+import {
+  ACCOUNT_ROLES,
+  accessStateLabel,
+  createManualStaffLeader,
+  loadStaffAccessDirectory,
+  staffRoleLabel,
+  staffScopeLabel,
+} from "../lib/staff-access.js";
 import "./assignments.css";
+import "./staff-access.css";
 
 const ROLE_LABELS = {
   counselor: "Counselor",
@@ -24,6 +36,13 @@ const ROLE_LABELS = {
   session_director: "Session directing couple",
   other: "Other staff",
 };
+
+const ACCOUNT_ROLE_OPTIONS = [
+  ["assistant_coordinator", "Assistant coordinator"],
+  ["coordinator", "Coordinator"],
+  ["logistics_admin", "Logistical administrator"],
+  ["session_director", "Session directing couple"],
+];
 
 function shuffled(items) {
   const copy = [...items];
@@ -62,16 +81,48 @@ function buildSuggestions(staff, groups, companies, maxCompanyLoad) {
   return { counselors, assistants };
 }
 
+function NewLeaderSheet({ sessionId, onClose, onCreated, onGiveAccess }) {
+  const [form, setForm] = useState({ name: "", email: "", role: "coordinator" });
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const create = async (giveAccess) => {
+    setBusy(giveAccess ? "access" : "save"); setError("");
+    try {
+      const staffId = await createManualStaffLeader({ sessionId, ...form });
+      await onCreated?.();
+      if (giveAccess) {
+        onGiveAccess({ staffId, name: form.name.trim(), email: form.email.trim(), accountEmail: "", operationalRole: form.role, companyIds: [], companyNames: [], accessState: "not_enabled" });
+      } else onClose();
+    } catch (err) { setError(err.message || "The leader could not be added."); }
+    finally { setBusy(""); }
+  };
+  return <DismissibleLayer open onClose={onClose} title="Add session leader" sheet><div className="field-sheet manual-leader-form">
+    <button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X/></button>
+    <span className="kicker">Staff identity first</span><h2>Add a leader to Assignments</h2>
+    <p className="manual-leader-help">This creates the FSY assignment only. Website access stays off until you choose to give it.</p>
+    <label>Full name<input autoFocus required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} autoComplete="name"/></label>
+    <label>Email <input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Optional until website access is needed" autoComplete="email"/></label>
+    <label>FSY role<select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>{ACCOUNT_ROLE_OPTIONS.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+    {form.role === "assistant_coordinator" ? <div className="notice compact-notice"><WarningCircle/><div><b>Company assignment comes next</b><p>Add the AC first, assign at least one company, then give website access. This prevents an account with no useful scope.</p></div></div> : null}
+    {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
+    <div className="field-sheet-actions"><button className="secondary" disabled={Boolean(busy)} onClick={() => create(false)}>{busy === "save" ? "Adding…" : "Add without access"}</button><button className="primary" disabled={Boolean(busy) || !form.name.trim() || !form.email.trim() || form.role === "assistant_coordinator"} onClick={() => create(true)}><UserPlus/>{busy === "access" ? "Adding…" : "Add & give access"}</button></div>
+  </div></DismissibleLayer>;
+}
+
 export function Assignments({ sessionId, canManage = false, sessionName }) {
   const [staff, setStaff] = useState([]);
   const [structure, setStructure] = useState({ groups: [], companies: [], published: false });
   const [settings, setSettings] = useState({ companiesPerAssistantCoordinator: 4 });
+  const [accessDirectory, setAccessDirectory] = useState([]);
+  const [canManageWebsiteAccess, setCanManageWebsiteAccess] = useState(false);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [visibleStaff, setVisibleStaff] = useState(30);
   const [groupFilter, setGroupFilter] = useState("needs");
   const [companyFilter, setCompanyFilter] = useState("needs");
   const [suggestions, setSuggestions] = useState(null);
+  const [inviteTarget, setInviteTarget] = useState(null);
+  const [newLeaderOpen, setNewLeaderOpen] = useState(false);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -82,11 +133,18 @@ export function Assignments({ sessionId, canManage = false, sessionName }) {
       loadStaff(sessionId), loadOperationalStructure(sessionId), loadStructureSettings(sessionId),
     ]);
     setStaff(nextStaff); setStructure(nextStructure); setSettings(nextSettings);
+    try {
+      const directory = await loadStaffAccessDirectory(sessionId);
+      setAccessDirectory(directory); setCanManageWebsiteAccess(true);
+    } catch {
+      setAccessDirectory([]); setCanManageWebsiteAccess(false);
+    }
   };
 
   useEffect(() => { refresh().catch((err) => setError(err.message || "Assignments could not be loaded.")); }, [sessionId]);
   useEffect(() => { setVisibleStaff(30); }, [query, roleFilter]);
 
+  const accessByStaff = useMemo(() => new Map(accessDirectory.map((item) => [item.staffId, item])), [accessDirectory]);
   const groups = structure.groups || [];
   const companies = structure.companies || [];
   const counselors = staff.filter((person) => person.operationalRole === "counselor" && person.registrationStatus === "approved" && person.isCurrent !== false);
@@ -116,18 +174,14 @@ export function Assignments({ sessionId, canManage = false, sessionName }) {
     finally { setBusy(""); }
   };
 
-  const suggest = () => {
-    setError(""); setNotice("");
-    setSuggestions(buildSuggestions(staff, groups, companies, maxCompanyLoad));
-  };
-
+  const suggest = () => { setError(""); setNotice(""); setSuggestions(buildSuggestions(staff, groups, companies, maxCompanyLoad)); };
   const applySuggestions = async () => {
     if (!suggestions) return;
     await mutate("suggestions", () => applyStaffAssignmentPlan(sessionId, suggestions), "Reviewed staff suggestions were applied.");
   };
 
   return <section className="page assignments-page">
-    <PageHead title="Assignments" sessionName={sessionName} description="First decide each staff member's FSY role. Then assign Counselors to counselor groups and Assistant Coordinators to companies without hidden or duplicate assignments." />
+    <PageHead title="Assignments" sessionName={sessionName} description="Set what each person is responsible for at FSY. Website access is optional and follows these assignments automatically when enabled." />
     {!canManage ? <div className="notice"><WarningCircle/><div><b>View-only assignments</b><p>Administrative access is required to change staff roles or responsibilities.</p></div></div> : null}
     {error ? <div className="form-error page-error" role="alert"><WarningCircle/>{error}</div> : null}
     {notice ? <MutationFeedback className="assignment-save-notice"><b>Saved</b> · {notice}</MutationFeedback> : null}
@@ -138,6 +192,8 @@ export function Assignments({ sessionId, canManage = false, sessionName }) {
       <Metric label="Company supervision" value={`${staffedCompanies}/${companies.length}`} note={companies.length - staffedCompanies ? `${companies.length - staffedCompanies} still unassigned` : "complete"} tone={companies.length - staffedCompanies ? "yellow" : "green"}/>
       <Metric label="Load conflicts" value={overloadedACs.length} note={overloadedACs.length ? `above ${maxCompanyLoad}-company limit` : "none"} tone={overloadedACs.length ? "yellow" : "green"}/>
     </div>
+
+    {canManageWebsiteAccess ? <div className="assignment-add-leader"><button className="secondary" onClick={() => setNewLeaderOpen(true)}><UserPlus/>Add session leader</button></div> : null}
 
     {canManage && structure.published ? <details className="panel progressive-section assignment-assistant-disclosure">
       <summary><span><span className="kicker">Advanced helper</span><b>Suggest assignments for empty places</b><small>Existing roles and responsibilities are never replaced</small></span><span className="summary-action">Open helper</span></summary>
@@ -154,11 +210,20 @@ export function Assignments({ sessionId, canManage = false, sessionName }) {
 
     <article className="panel assignment-role-panel">
       <div className="panel-head"><div><span className="kicker">Step 1</span><h2>Classify staff roles</h2></div><UsersThree size={22}/></div>
-      <p className="form-hint">Changing a role does not create a responsibility. Existing responsibilities must be removed before a person's role can change.</p>
+      <p className="form-hint">Assignment and website access are separate. You can designate an Assistant Coordinator now and decide later whether that person needs to sign in.</p>
       <div className="assignment-toolbar"><SearchField value={query} onChange={setQuery} label="Search staff assignments" placeholder="Search name, ward or stake"/><select aria-label="Filter staff roles" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}><option value="all">All staff roles</option>{Object.entries(ROLE_LABELS).map(([value,label]) => <option value={value} key={value}>{label}</option>)}</select></div>
       <div className="assignment-staff-list">{staffRows.map((person) => {
         const assignmentText = person.counselorGroupId ? "Counselor group assigned" : person.companyIds.length ? `${person.companyIds.length} compan${person.companyIds.length === 1 ? "y" : "ies"}` : "No operational assignment";
-        return <div className="assignment-staff-row" key={person.id}><span className="assignment-person"><b>{person.name}</b><small>{person.unit || "Unit not recorded"} · {assignmentText}</small></span><select disabled={!canManage || busy === `role-${person.id}`} value={person.operationalRole} onChange={(event) => mutate(`role-${person.id}`, () => setStaffOperationalRole(person.id,event.target.value), `${person.name}'s role was updated.`)}>{Object.entries(ROLE_LABELS).map(([value,label]) => <option value={value} key={value}>{label}</option>)}</select></div>;
+        const access = accessByStaff.get(person.id);
+        const accountEligible = ACCOUNT_ROLES.has(person.operationalRole);
+        const invitePerson = access || { staffId: person.id, name: person.name, operationalRole: person.operationalRole, email: "", accountEmail: "", companyIds: person.companyIds || [], companyNames: [], accessState: "not_enabled" };
+        return <div className="assignment-staff-row" key={person.id}>
+          <span className="assignment-person"><b>{person.name}</b><small>{person.unit || "Unit not recorded"} · {assignmentText}</small></span>
+          <div className="assignment-row-controls">
+            <select disabled={!canManage || busy === `role-${person.id}`} value={person.operationalRole} onChange={(event) => mutate(`role-${person.id}`, () => setStaffOperationalRole(person.id,event.target.value), `${person.name}'s role was updated${access?.accessState === "active" ? " and website permissions were synchronized" : ""}.`)}>{Object.entries(ROLE_LABELS).map(([value,label]) => <option value={value} key={value}>{label}</option>)}</select>
+            {accountEligible && canManageWebsiteAccess ? <div className="assignment-access-block"><span className="assignment-access-meta"><span className={`staff-access-state ${access?.accessState || "not_enabled"}`}>{accessStateLabel(access?.accessState || "not_enabled")}</span><small>{access ? staffScopeLabel(access) : person.operationalRole === "assistant_coordinator" ? `${person.companyIds.length} assigned companies` : "Whole session"}</small></span>{(!access || access.accessState === "not_enabled") ? <button className="secondary assignment-access-button" disabled={person.operationalRole === "assistant_coordinator" && !person.companyIds.length} onClick={() => setInviteTarget(invitePerson)}>Give access</button> : access.accessState === "invited" ? <button className="secondary assignment-access-button" onClick={() => setInviteTarget(access)}>Setup link</button> : null}</div> : null}
+          </div>
+        </div>;
       })}</div>
       {staffRows.length < staff.filter((person) => roleFilter === "all" || person.operationalRole === roleFilter).length ? <button className="secondary show-more" onClick={() => setVisibleStaff((value) => value + 30)}>Show 30 more</button> : null}
     </article>
@@ -176,16 +241,18 @@ export function Assignments({ sessionId, canManage = false, sessionName }) {
 
       <article className="panel assignment-responsibility-panel">
         <div className="panel-head"><div><span className="kicker">Step 3</span><h2>Company supervision</h2></div><Status tone={companies.length === staffedCompanies ? "good" : "warn"}>{staffedCompanies}/{companies.length}</Status></div>
-        <p className="form-hint">One primary Assistant Coordinator per company. One AC may supervise up to {maxCompanyLoad} companies.</p>
+        <p className="form-hint">One primary Assistant Coordinator per company. One AC may supervise up to {maxCompanyLoad} companies. If that AC has website access, their company scope updates automatically when this changes.</p>
         <div className="filter-chips" role="group" aria-label="Filter company supervision"><button type="button" className={companyFilter === "needs" ? "active" : ""} onClick={() => setCompanyFilter("needs")}>Needs AC</button><button type="button" className={companyFilter === "filled" ? "active" : ""} onClick={() => setCompanyFilter("filled")}>Assigned</button><button type="button" className={companyFilter === "all" ? "active" : ""} onClick={() => setCompanyFilter("all")}>All</button></div>
         <div className="assignment-responsibility-list">{shownCompanies.map((company) => {
           const currentId = company.assistantCoordinatorIds[0];
           const current = staff.find((person) => person.id === currentId);
           const options = assistants.filter((person) => person.companyIds.includes(company.id) || person.companyIds.length < maxCompanyLoad);
-          return <div key={company.id}><span><b>{company.displayName}</b><small>{company.groups.length} counselor groups</small></span>{current ? <div className="assigned-person"><b>{current.name}</b><small>{current.companyIds.length}/{maxCompanyLoad} companies</small>{canManage ? <button disabled={busy === `company-${company.id}`} onClick={() => mutate(`company-${company.id}`,() => setStaffCompanyAssignment(current.id,company.id,false),`${current.name} was removed from ${company.displayName}.`)}>Remove</button> : null}</div> : <select disabled={!canManage || busy === `company-${company.id}`} defaultValue="" onChange={(event) => event.target.value && mutate(`company-${company.id}`,() => setStaffCompanyAssignment(event.target.value,company.id,true),`Assistant Coordinator assigned to ${company.displayName}.`)}><option value="">Assign Assistant Coordinator…</option>{options.map((person) => <option value={person.id} key={person.id}>{person.name} · {person.companyIds.length}/{maxCompanyLoad}</option>)}</select>}</div>;
+          return <div key={company.id}><span><b>{company.displayName}</b><small>{company.groups.length} counselor groups</small></span>{current ? <div className="assigned-person"><b>{current.name}</b><small>{current.companyIds.length}/{maxCompanyLoad} companies</small>{canManage ? <button disabled={busy === `company-${company.id}`} onClick={() => mutate(`company-${company.id}`,() => setStaffCompanyAssignment(current.id,company.id,false),`${current.name} was removed from ${company.displayName}${accessByStaff.get(current.id)?.accessState === "active" ? " and their website scope was updated" : ""}.`)}>Remove</button> : null}</div> : <select disabled={!canManage || busy === `company-${company.id}`} defaultValue="" onChange={(event) => event.target.value && mutate(`company-${company.id}`,() => setStaffCompanyAssignment(event.target.value,company.id,true),`Assistant Coordinator assigned to ${company.displayName}.`)}><option value="">Assign Assistant Coordinator…</option>{options.map((person) => <option value={person.id} key={person.id}>{person.name} · {person.companyIds.length}/{maxCompanyLoad}</option>)}</select>}</div>;
         })}</div>
       </article>
     </div> : <article className="panel"><div className="empty-inline"><b>Publish Groups & companies first</b><span>Staff responsibilities become available after the youth structure exists.</span></div></article>}
+
+    {inviteTarget ? <StaffAccessInvite staff={inviteTarget} onClose={() => setInviteTarget(null)} onInvited={refresh}/> : null}
+    {newLeaderOpen ? <NewLeaderSheet sessionId={sessionId} onClose={() => setNewLeaderOpen(false)} onCreated={async () => { await refresh(); setNotice("The leader was added to Assignments. Website access is still separate until you enable it."); }} onGiveAccess={(person) => { setNewLeaderOpen(false); setInviteTarget(person); }}/> : null}
   </section>;
 }
-
