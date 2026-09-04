@@ -4,9 +4,11 @@ import test from "node:test";
 
 const migrationPath = new URL("../supabase/migrations/20260904072000_identity_arrival_permissions_v2.sql", import.meta.url);
 const hardeningPath = new URL("../supabase/migrations/20260904073500_identity_arrival_security_hardening.sql", import.meta.url);
+const scopeHardeningPath = new URL("../supabase/migrations/20260904092550_phase1_arrival_scope_hardening.sql", import.meta.url);
 const appPath = new URL("../src/App.jsx", import.meta.url);
 const authPath = new URL("../src/lib/auth.js", import.meta.url);
 const arrivalUiPath = new URL("../src/pages/RegistrationOperations.jsx", import.meta.url);
+const identityClientPath = new URL("../src/lib/identity-arrival.js", import.meta.url);
 
 const read = (url) => readFile(url, "utf8");
 
@@ -46,6 +48,9 @@ test("auth refreshes are silent and local sign-out stays on one device", async (
   const app = await read(appPath);
   const auth = await read(authPath);
   assert.match(app, /event==="TOKEN_REFRESHED"\|\|event==="USER_UPDATED"/);
+  const maintenanceBranch = app.match(/if\(event==="TOKEN_REFRESHED"\|\|event==="USER_UPDATED"\)\{([\s\S]*?)\}\s*if\(event==="INITIAL_SESSION"/)?.[1] || "";
+  assert.doesNotMatch(maintenanceBranch, /hydrateLive|setRuntimeStatus\("loading"\)/);
+  assert.match(app, /if\(event==="SIGNED_OUT"\)hydrateLive\(null,"",\{reason:"signed-out"\}\)/);
   assert.match(app, /hydrateGeneration/);
   assert.match(app, /generation!==hydrateGeneration\.current/);
   assert.match(auth, /signOut\(\{ scope: "local" \}\)/);
@@ -85,9 +90,23 @@ test("vacancy replacement revalidates counselor-group unit integrity", async () 
 
 test("no-show confirmation is an accessible cancellable sheet instead of a browser prompt", async () => {
   const ui = await read(arrivalUiPath);
+  const identityClient = await read(identityClientPath);
   assert.doesNotMatch(ui, /window\.prompt/);
+  assert.doesNotMatch(ui, /window\.confirm/);
   assert.match(ui, /DismissibleLayer/);
-  assert.match(ui, /Parent or guardian confirmed/);
+  assert.match(identityClient, /Parent or guardian confirmed/);
   assert.match(ui, /Confirm not attending/);
   assert.match(ui, /closeNoShowConfirmation/);
+});
+
+test("legacy attendance RPC delegates to the guarded arrival rules", async () => {
+  const sql = await read(scopeHardeningPath);
+  assert.match(sql, /perform public\.set_participant_arrival_status\(p_participant_id,p_status,p_note\)/);
+  assert.match(sql, /grant execute on function public\.set_participant_attendance_status\(uuid,text,text\) to authenticated/);
+});
+
+test("vacancy visibility remains company scoped for assistant coordinators", async () => {
+  const sql = await read(scopeHardeningPath);
+  assert.match(sql, /caller_role is distinct from 'assistant_coordinator'::public\.app_role/);
+  assert.match(sql, /private\.can_access_company\(p_session_id,b\.company_id\)/);
 });

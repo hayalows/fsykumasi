@@ -1,0 +1,345 @@
+/* Phase 1 release layer: fewer destinations, stronger disclosure, and safe mobile surfaces. */
+
+.sidebar {
+  width: 260px;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.workspace {
+  margin-left: 260px;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.sidebar-nav {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.nav-group + .nav-group {
+  margin-top: 18px;
+}
+
+.nav-group-more {
+  padding-top: 12px;
+  border-top: 1px solid rgba(196, 233, 245, .14);
+}
+
+.sidebar-more-items {
+  display: grid;
+  gap: 12px;
+  margin: 6px 0 0 8px;
+  padding: 4px 0 2px 8px;
+  border-left: 1px solid rgba(196, 233, 245, .2);
+}
+
+.sidebar-more-group {
+  display: grid;
+  gap: 3px;
+}
+
+.sidebar-more-label {
+  padding: 0 10px 3px;
+  color: #9fcbd9;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.sidebar-more-group + .sidebar-more-group {
+  padding-top: 10px;
+  border-top: 1px solid rgba(196, 233, 245, .1);
+}
+
+.identity-admin-actions {
+  min-width: 0;
+}
+
+.identity-admin-actions > summary {
+  min-height: 44px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--blue-35);
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  list-style: none;
+  white-space: nowrap;
+}
+
+.identity-admin-actions > summary::-webkit-details-marker {
+  display: none;
+}
+
+.identity-admin-actions[open] > summary {
+  border-color: var(--blue-25);
+  border-radius: 12px 12px 0 0;
+}
+
+.identity-admin-actions > summary svg {
+  transition: transform .16s ease;
+}
+
+.identity-admin-actions[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.identity-admin-actions > div {
+  padding-top: 6px;
+}
+
+.identity-admin-actions button {
+  width: 100%;
+}
+
+.sidebar-more-group button {
+  min-height: 42px !important;
+  padding-inline: 9px !important;
+  font-size: 13px;
+}
+
+.segmented button {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.segmented-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.segmented button b {
+  flex: none;
+  white-space: nowrap;
+}
+
+.people-toolbar .people-tabs {
+  min-width: 226px;
+}
+
+.people-tabs button {
+  gap: 4px;
+  padding-inline: 8px;
+  font-size: 13px;
+}
+
+.people-tabs b {
+  margin-left: 0;
+}
+
+.people-tabs button:first-child {
+  min-width: 148px;
+}
+
+.people-list > button {
+  min-width: 0;
+}
+
+.people-list > button > span:nth-child(2) {
+  min-width: 0;
+}
+
+.people-list > button > .status {
+  min-width: 0;
+  max-width: 128px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.people-confirm-modal {
+  width: min(100% - 28px, 520px);
+}
+
+.people-confirm-sheet {
+  display: grid;
+  gap: 14px;
+}
+
+.people-confirm-sheet h2,
+.people-confirm-sheet p {
+  margin: 0;
+}
+
+.people-confirm-sheet > p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.people-confirm-person {
+  display: grid;
+  gap: 3px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.people-confirm-person small {
+  color: var(--muted);
+}
+
+.people-confirm-field {
+  display: grid;
+  gap: 6px;
+  color: var(--blue-35);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.people-confirm-field small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.people-confirm-field select,
+.people-confirm-field textarea {
+  width: 100%;
+}
+
+.people-confirm-field textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
+.people-confirm-error {
+  color: var(--danger) !important;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.people-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.people-confirm-actions button {
+  min-width: 0;
+}
+
+@media (max-width: 1080px) and (min-width: 761px) {
+  .sidebar {
+    width: 252px;
+  }
+
+  .workspace {
+    margin-left: 252px;
+  }
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    width: min(86vw, 320px);
+    min-height: 100dvh;
+  }
+
+  .workspace {
+    margin-left: 0;
+  }
+
+  .sidebar-nav {
+    scrollbar-gutter: auto;
+  }
+
+  .people-list > button > .status {
+    max-width: 112px;
+  }
+
+  .people-confirm-modal {
+    width: 100%;
+    max-height: min(88dvh, 780px);
+    padding: 18px 15px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+  }
+
+  .people-confirm-modal::before {
+    content: "";
+    width: 42px;
+    height: 4px;
+    margin: -4px auto 12px;
+    display: block;
+    border-radius: 999px;
+    background: #cbdfe7;
+  }
+
+  .people-confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .people-confirm-actions button {
+    width: 100%;
+  }
+
+  .identity-admin-actions {
+    width: 100%;
+  }
+
+  .identity-admin-actions > summary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .people-tabs button:first-child {
+    min-width: 0;
+  }
+
+  .registration-workspace-tabs {
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .registration-workspace-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .registration-workspace-tabs button {
+    flex: 0 0 auto;
+    min-width: max-content;
+    padding-inline: 11px;
+  }
+
+  .registration-workspace-tabs .segmented-label {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 390px) {
+  .people-tabs button {
+    gap: 4px;
+    padding-inline: 7px;
+    font-size: 12.5px;
+  }
+
+  .people-list > button > .status {
+    max-width: 94px;
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .disclosure-icon,
+  .more-chevron {
+    transition: none !important;
+  }
+}

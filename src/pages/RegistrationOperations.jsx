@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowClockwise } from "@phosphor-icons/react/ArrowClockwise";
 import { Check } from "@phosphor-icons/react/Check";
+import { CaretDown } from "@phosphor-icons/react/CaretDown";
 import { IdentificationCard } from "@phosphor-icons/react/IdentificationCard";
 import { UserSwitch } from "@phosphor-icons/react/UserSwitch";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
@@ -17,15 +18,9 @@ import {
   replaceArrivalVacancy,
   setArrivalStatus,
   updateBadgeName,
+  NO_SHOW_CONFIRMATION_SOURCES,
 } from "../lib/identity-arrival.js";
 import "./registration-operations.css";
-
-const NO_SHOW_CONFIRMATION_SOURCES = [
-  "Parent or guardian confirmed",
-  "Participant confirmed",
-  "Unit or stake leader confirmed",
-  "Other authorized confirmation",
-];
 
 function meaningfullyDifferentPreferred(row) {
   if (!row.preferredName) return false;
@@ -45,6 +40,7 @@ export function IdentityFoundation({ sessionId, capabilities = [], onChanged }) 
   const [message, setMessage] = useState(null);
   const [editing, setEditing] = useState(null);
   const [badgeName, setBadgeName] = useState("");
+  const [confirmingFinalize, setConfirmingFinalize] = useState(false);
 
   const reload = async () => {
     if (!sessionId) return;
@@ -76,9 +72,14 @@ export function IdentityFoundation({ sessionId, capabilities = [], onChanged }) 
     try {
       const count = await finalizeFsyIds(sessionId);
       await reload(); await onChanged?.();
+      setConfirmingFinalize(false);
       setMessage({ tone: "success", text: `${Number(count || 0).toLocaleString()} IDs finalized. Day-of changes will now use the vacancy/replacement workflow instead of renumbering everyone.` });
     } catch (error) { setMessage({ tone: "error", text: error.message || "Unable to finalize FSY IDs." }); }
     finally { setBusy(false); }
+  };
+
+  const closeFinalizeConfirmation = () => {
+    if (!busy) setConfirmingFinalize(false);
   };
 
   const saveBadgeName = async () => {
@@ -102,7 +103,10 @@ export function IdentityFoundation({ sessionId, capabilities = [], onChanged }) 
       </div>
       {canManage ? <div className="ops-actions">
         <button className="secondary" onClick={prepare} disabled={busy || readiness?.finalizedIds > 0}><ArrowClockwise />{readiness?.draftIds ? "Rebuild draft IDs" : "Prepare IDs"}</button>
-        <button className="primary" onClick={finalize} disabled={busy || !readiness?.draftIds || readiness?.unresolvedOrigin > 0}><Check />Finalize IDs</button>
+        <details className="identity-admin-actions">
+          <summary>Admin finalization <CaretDown size={16} /></summary>
+          <div><button className="primary" onClick={() => setConfirmingFinalize(true)} disabled={busy || !readiness?.draftIds || readiness?.unresolvedOrigin > 0}><Check />Finalize IDs</button></div>
+        </details>
       </div> : null}
     </article>
 
@@ -136,6 +140,13 @@ export function IdentityFoundation({ sessionId, capabilities = [], onChanged }) 
     </article>
 
     {editing ? <div className="ops-inline-editor" role="dialog" aria-label="Edit badge name"><div><span className="kicker">Badge name</span><h3>{editing.fullName}</h3><p>The original registration name stays unchanged.</p></div><input value={badgeName} onChange={(event) => setBadgeName(event.target.value)} aria-label="Badge name"/><div className="ops-actions"><button className="secondary" onClick={() => setEditing(null)}>Cancel</button><button className="primary" disabled={busy || !badgeName.trim()} onClick={saveBadgeName}>Save badge name</button></div></div> : null}
+    <DismissibleLayer open={confirmingFinalize} onClose={closeFinalizeConfirmation} title="Finalize FSY IDs" sheet>
+      <div className="ops-confirm-sheet">
+        <header><span className="kicker">Admin finalization</span><h2>Finalize these IDs?</h2><p>Finalization locks the current origin, company and slot numbers for this session. Day-one changes must then use the audited vacancy and replacement workflow.</p></header>
+        <div className="ops-confirm-warning"><b>{readiness?.draftIds?.toLocaleString() || 0} draft IDs</b><span>will become final and the original registration names will remain unchanged.</span></div>
+        <div className="ops-confirm-actions"><button className="secondary" type="button" disabled={busy} onClick={closeFinalizeConfirmation}>Cancel</button><button className="primary" type="button" disabled={busy} onClick={finalize}>{busy ? "Finalizing…" : "Confirm finalization"}</button></div>
+      </div>
+    </DismissibleLayer>
   </section>;
 }
 

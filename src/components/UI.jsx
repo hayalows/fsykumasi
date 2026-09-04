@@ -29,15 +29,17 @@ export function SearchField({ value = "", onChange, placeholder, label = "Search
 }
 
 export function SegmentedControl({ options = [], value, onChange, label, className = "" }) {
+  const baseId = useId();
+  const optionId = (option, index) => option.id || `${baseId}-${String(option.value).replace(/\s+/g, "-")}-${index}`;
   const focusOption = (index) => {
     const next = options[(index + options.length) % options.length];
-    if (next?.id) document.getElementById(next.id)?.focus();
+    if (next) document.getElementById(optionId(next, (index + options.length) % options.length))?.focus();
   };
   return (
     <div className={`segmented ${className}`.trim()} role="tablist" aria-label={label}>
       {options.map((option, index) => {
         const selected = option.value === value;
-        const id = option.id || `${label || "segment"}-${String(option.value).replace(/\s+/g, "-")}`;
+        const id = optionId(option, index);
         return <button
           key={option.value}
           id={id}
@@ -51,7 +53,7 @@ export function SegmentedControl({ options = [], value, onChange, label, classNa
             if (event.key === "ArrowRight" || event.key === "ArrowDown") { event.preventDefault(); focusOption(index + 1); onChange?.(options[(index + 1) % options.length].value); }
             if (event.key === "ArrowLeft" || event.key === "ArrowUp") { event.preventDefault(); focusOption(index - 1); onChange?.(options[(index - 1 + options.length) % options.length].value); }
           }}
-        >{option.label}{option.count === undefined ? null : <b>{option.count.toLocaleString()}</b>}</button>;
+        ><span className="segmented-label">{option.label}</span>{option.count === undefined ? null : <b aria-label={`${option.count.toLocaleString()} items`}>{option.count.toLocaleString()}</b>}</button>;
       })}
     </div>
   );
@@ -170,8 +172,7 @@ export function DismissibleLayer({ open, onClose, title, children, className = "
   return (
     <div
       className={`modal-backdrop dismissible-layer ${sheet ? "sheet-layer" : ""}`.trim()}
-      onMouseDown={(event) => { if (event.target === event.currentTarget) onCloseRef.current?.(); }}
-      onClick={(event) => { if (event.target === event.currentTarget) onCloseRef.current?.(); }}
+      onPointerDown={(event) => { if (event.target === event.currentTarget) onCloseRef.current?.(); }}
       role="presentation"
     >
       <div
@@ -182,6 +183,7 @@ export function DismissibleLayer({ open, onClose, title, children, className = "
         aria-label={title ? undefined : "Dialog"}
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
+        onPointerDown={(event) => event.stopPropagation()}
         onMouseDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >

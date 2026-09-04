@@ -11,6 +11,7 @@ import "./mobile-nav.css";
 import "./mobile-pwa-scroll.css";
 import "./interface-system.css";
 import "./checkin-snackbar.css";
+import "./phase1-refinement.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

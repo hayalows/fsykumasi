@@ -19,9 +19,9 @@ import { DEFAULT_STRUCTURE_SETTINGS, loadStructureSettings, setBirthdayAcknowled
 import {
   hasCapability, loadAccessRosterV2, loadFoodNeeds, loadHousingAssignments, loadParticipantEligibility,
   loadStaffBirthdays, loadTeamCatalog, loadWellnessEncounters, manageLeaderAccess,
-  setParticipantAttendanceStatus, setStaffBirthdayAcknowledgement,
+  setStaffBirthdayAcknowledgement,
 } from "./lib/field-operations.js";
-import { loadOperationalIdentityMap } from "./lib/identity-arrival.js";
+import { loadOperationalIdentityMap, setArrivalStatus } from "./lib/identity-arrival.js";
 import { installLifecycleDiagnostics, recordDiagnostic } from "./lib/diagnostics.js";
 import { activateLeaderAccount, changePassword, requestPasswordReset, signInWithPassword, signOutAccount, subscribeToAuth, updateRecoveredPassword } from "./lib/auth.js";
 import { claimInviteWhileSignedIn, createLeaderInvite, createLeaderRecoveryCode, loadLeaderInvites, revokeLeaderInvite, subscribeToLeaderInvites } from "./lib/invites.js";
@@ -137,7 +137,13 @@ export function App() {
   const handleAssignParticipant=live?async(participantId,groupId)=>{await assignParticipantToGroup(participantId,groupId);setImported(await loadParticipants(sessionInfo.id));await refreshOperationalIdentity();setBirthdays(await loadSessionBirthdays(sessionInfo.id));}:null;
   const handleBirthday=live?async(participantId,acknowledged)=>{await setBirthdayAcknowledgement(sessionInfo.id,participantId,acknowledged);setBirthdays(await loadSessionBirthdays(sessionInfo.id));}:null;
   const handleStaffBirthday=live?async(staffId,acknowledged)=>{await setStaffBirthdayAcknowledgement(sessionInfo.id,staffId,acknowledged);setStaffBirthdays(await loadStaffBirthdays(sessionInfo.id));}:null;
-  const handleAttendance=live?async(participantId,status)=>{await setParticipantAttendanceStatus(participantId,status);await reloadEligibility();await refreshOperationalIdentity();}:null;
+  const handleAttendance=async(participantId,status,note="")=>{
+    if(live){await setArrivalStatus(participantId,status,note);await reloadEligibility();await refreshOperationalIdentity();return;}
+    setImported((current)=>{
+      const source=current.length?current:demoParticipants;
+      return source.map((person)=>person.id===participantId?{...person,attendanceStatus:status,attendanceNote:note}:person);
+    });
+  };
   const handleAccessDecision=live?async(id,status,options)=>{await decideAccessRequest(id,status,options);const[nextRequests,nextRoster]=await Promise.all([loadAccessRequests(sessionInfo.id),loadAccessRosterV2(sessionInfo.id)]);setAccessRequests(nextRequests);setAccessRoster(nextRoster);}:null;
   const handleCreateInvite=live?async(values)=>{const created=await createLeaderInvite({sessionId:sessionInfo.id,...values});setLeaderInvites(await loadLeaderInvites(sessionInfo.id));return created;}:null;
   const handleRevokeInvite=live?async(inviteId)=>{await revokeLeaderInvite(inviteId);setLeaderInvites(await loadLeaderInvites(sessionInfo.id));}:null;
