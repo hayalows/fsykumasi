@@ -1,3 +1,889 @@
-.assignments-page{display:grid;gap:18px}.assignment-metrics{margin:0}.assignment-assistant-card p{margin:0 0 12px;color:var(--muted)}.assignment-suggestion-summary{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}.assignment-suggestion-summary span{min-width:150px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface-soft);display:grid;gap:2px}.assignment-suggestion-summary b{font-size:1.25rem}.assignment-suggestion-summary small{color:var(--muted)}.assignment-preview-list{display:grid;gap:7px;margin:12px 0}.assignment-preview-list span{padding:9px 11px;border-radius:11px;background:var(--surface-soft);font-size:.92rem}.assignment-toolbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,240px);gap:10px;margin:14px 0}.assignment-toolbar select,.assignment-staff-row select,.assignment-responsibility-list select{min-height:44px}.assignment-staff-list,.assignment-responsibility-list{display:grid;gap:8px}.assignment-staff-row,.assignment-responsibility-list>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,310px);gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.assignment-staff-row:first-child,.assignment-responsibility-list>div:first-child{border-top:0}.assignment-person,.assignment-responsibility-list>div>span{display:grid;gap:3px;min-width:0}.assignment-person b,.assignment-responsibility-list b{overflow-wrap:anywhere}.assignment-person small,.assignment-responsibility-list small{color:var(--muted)}.assignment-columns{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}.assignment-responsibility-panel .filter-chips{margin:10px 0 14px}.assigned-person{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;text-align:right}.assigned-person button{min-height:38px;border:1px solid var(--line);border-radius:10px;background:transparent;padding:7px 10px}.assignment-role-panel .show-more{margin-top:14px}.assignment-responsibility-panel{min-width:0}.assignment-responsibility-list select{width:100%}
-@media(max-width:980px){.assignment-columns{grid-template-columns:1fr}.assignment-toolbar{grid-template-columns:1fr}.assignment-staff-row,.assignment-responsibility-list>div{grid-template-columns:1fr}.assigned-person{justify-content:flex-start;text-align:left}}
-@media(max-width:640px){.assignments-page{gap:14px}.assignment-role-panel,.assignment-responsibility-panel,.assignment-assistant-card{padding:15px}.assignment-staff-row,.assignment-responsibility-list>div{padding:13px 0}.assignment-toolbar{position:sticky;top:56px;z-index:2;background:var(--surface);padding:7px 0}.assignment-responsibility-panel .filter-chips{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}.assignment-responsibility-panel .filter-chips button{white-space:nowrap;min-height:42px}.assignment-staff-row select,.assignment-responsibility-list select{width:100%;font-size:16px}.assigned-person button{min-height:44px}.assignment-suggestion-summary span{flex:1 1 130px}.assignment-preview-list span{font-size:.88rem}}
+.assignments-page {
+  display: grid;
+  gap: 20px;
+}
+
+.assignment-page-action {
+  align-self: flex-end;
+}
+
+.assignment-page-feedback {
+  margin: -4px 0 0;
+}
+
+.assignment-overview {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  overflow: hidden;
+  border-color: #cfe4eb;
+  background:
+    radial-gradient(circle at top right, rgba(196, 233, 245, .42), transparent 34%),
+    var(--surface);
+}
+
+.assignment-overview.is-complete {
+  border-color: var(--green-20-soft);
+  background:
+    radial-gradient(circle at top right, rgba(190, 215, 167, .32), transparent 34%),
+    var(--surface);
+}
+
+.assignment-overview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.assignment-overview-head h2 {
+  margin-bottom: 6px;
+  font-size: clamp(21px, 2vw, 26px);
+}
+
+.assignment-overview-head p {
+  max-width: 760px;
+}
+
+.assignment-complete-badge,
+.assignment-load-ok,
+.assignment-load-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.assignment-complete-badge {
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid var(--green-20-soft);
+  border-radius: 999px;
+  background: var(--green-20-tint);
+  color: #31591c;
+}
+
+.assignment-flow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.assignment-flow-step {
+  min-width: 0;
+  min-height: 82px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .86);
+  color: var(--ink);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  text-align: left;
+  transition:
+    border-color .16s var(--fsy-ease),
+    background-color .16s var(--fsy-ease),
+    box-shadow .16s var(--fsy-ease),
+    transform .12s var(--fsy-ease);
+}
+
+.assignment-flow-step:hover:not(:disabled) {
+  border-color: var(--blue-5);
+  background: var(--surface-soft);
+  box-shadow: 0 7px 20px rgba(0, 81, 117, .07);
+}
+
+.assignment-flow-step:active:not(:disabled) {
+  transform: scale(.992);
+}
+
+.assignment-flow-step:disabled {
+  cursor: default;
+  opacity: .58;
+}
+
+.assignment-flow-step.needs {
+  border-color: rgba(252, 180, 73, .52);
+  background: #fffaf2;
+}
+
+.assignment-flow-step > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.assignment-flow-step b {
+  color: var(--blue-35);
+  font-size: 14px;
+}
+
+.assignment-flow-step small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.assignment-flow-step > strong {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(252, 180, 73, .2);
+  color: #7a4e0f;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+}
+
+.assignment-flow-step > svg {
+  color: #4f7f32;
+}
+
+.assignment-step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--blue-5-tint);
+  color: var(--blue-35);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.assignment-step-lock {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.assignment-overview-foot {
+  min-height: 38px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  background: var(--surface-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.assignment-load-ok {
+  color: #456d2c;
+}
+
+.assignment-load-warning {
+  color: #8a5914;
+}
+
+.assignment-assistant-disclosure {
+  margin: 0;
+  border-style: dashed;
+}
+
+.assignment-assistant-disclosure summary {
+  border-radius: inherit;
+}
+
+.assignment-assistant-card p {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.assignment-suggestion-summary {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+
+.assignment-suggestion-summary span {
+  min-width: 150px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  display: grid;
+  gap: 2px;
+}
+
+.assignment-suggestion-summary b {
+  font-size: 1.2rem;
+}
+
+.assignment-suggestion-summary small {
+  color: var(--muted);
+}
+
+.assignment-preview-list {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.assignment-preview-list span {
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  font-size: .92rem;
+}
+
+.assignment-workflow-section {
+  min-width: 0;
+  scroll-margin-top: 90px;
+}
+
+.assignment-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.assignment-section-title {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.assignment-section-title > div {
+  min-width: 0;
+}
+
+.assignment-section-title .kicker {
+  margin-bottom: 5px;
+}
+
+.assignment-section-title h2 {
+  margin-bottom: 5px;
+  font-size: 22px;
+}
+
+.assignment-section-title p {
+  max-width: 650px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.assignment-section-step {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 11px;
+  background: var(--blue-35);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 5px 14px rgba(0, 81, 117, .14);
+}
+
+.assignment-toolbar {
+  position: sticky;
+  top: 78px;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(205px, 250px);
+  gap: 10px;
+  margin: 8px -4px 0;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, .94);
+  backdrop-filter: blur(12px);
+}
+
+.assignment-toolbar select,
+.assignment-control select,
+.assignment-responsibility-list select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.assignment-toolbar select:hover,
+.assignment-control select:hover,
+.assignment-responsibility-list select:hover:not(:disabled) {
+  border-color: #b8d7e2;
+}
+
+.assignment-list-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 2px 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.assignment-list-meta small {
+  font-size: inherit;
+}
+
+.assignment-staff-list {
+  display: grid;
+  gap: 9px;
+}
+
+.assignment-staff-row {
+  display: grid;
+  grid-template-columns: minmax(210px, .82fr) minmax(390px, 1.18fr);
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+  transition:
+    border-color .16s var(--fsy-ease),
+    box-shadow .16s var(--fsy-ease),
+    background-color .16s var(--fsy-ease);
+}
+
+.assignment-staff-row:hover {
+  border-color: #c7dee7;
+  box-shadow: 0 6px 18px rgba(0, 81, 117, .055);
+}
+
+.assignment-staff-row.is-saving {
+  border-color: var(--blue-5);
+  background: var(--surface-soft);
+}
+
+.assignment-person {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.assignment-person b {
+  color: var(--blue-35);
+  overflow-wrap: anywhere;
+}
+
+.assignment-person small {
+  color: var(--muted);
+}
+
+.assignment-context {
+  width: max-content;
+  max-width: 100%;
+  margin-top: 4px;
+  padding: 4px 7px;
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.assignment-row-controls {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, .72fr) minmax(220px, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.assignment-control {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+}
+
+.assignment-control > span,
+.assignment-access-heading > span:first-child {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.assignment-saving {
+  color: var(--blue-25);
+  font-size: 10px;
+}
+
+.assignment-access-block {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-soft);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 9px;
+  align-items: center;
+}
+
+.assignment-access-heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.assignment-access-block > small {
+  min-width: 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.assignment-access-button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  min-height: 38px;
+  padding: 0 11px;
+}
+
+.assignment-role-panel .show-more {
+  margin-top: 14px;
+}
+
+.assignment-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.assignment-responsibility-panel {
+  min-width: 0;
+}
+
+.assignment-progress {
+  width: 100%;
+  height: 6px;
+  margin: 3px 0 15px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--blue-5-tint);
+}
+
+.assignment-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue-25);
+  transition: width .28s var(--fsy-ease);
+}
+
+.assignment-capacity-note {
+  margin: -2px 0 13px;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: baseline;
+}
+
+.assignment-capacity-note > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.assignment-capacity-note > b {
+  font-size: 12px;
+}
+
+.assignment-capacity-note > small {
+  grid-column: 2;
+  color: var(--muted);
+}
+
+.assignment-filter-chips {
+  margin: 0 0 13px;
+}
+
+.assignment-filter-chips button {
+  gap: 6px;
+}
+
+.assignment-filter-chips button b {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(0, 81, 117, .07);
+  display: inline-grid;
+  place-items: center;
+  font-size: 10px;
+}
+
+.assignment-filter-chips button.active b {
+  background: rgba(255, 255, 255, .2);
+}
+
+.assignment-responsibility-list {
+  display: grid;
+  gap: 8px;
+}
+
+.assignment-responsibility-list > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, .75fr) minmax(210px, 1.25fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  transition:
+    border-color .16s var(--fsy-ease),
+    background-color .16s var(--fsy-ease);
+}
+
+.assignment-responsibility-list > div.needs-assignment {
+  border-color: rgba(252, 180, 73, .34);
+  background: #fffdf8;
+}
+
+.assignment-responsibility-list > div.is-assigned {
+  background: var(--surface-soft);
+}
+
+.assignment-responsibility-list > div > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.assignment-responsibility-list b {
+  overflow-wrap: anywhere;
+}
+
+.assignment-responsibility-list small {
+  color: var(--muted);
+}
+
+.assignment-select-wrap {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.assignment-select-wrap > small {
+  color: var(--blue-25);
+  font-size: 10px;
+}
+
+.assigned-person {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  text-align: right;
+}
+
+.assigned-person > span {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.assigned-person > span small {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.assigned-person > span b {
+  font-size: 12px;
+}
+
+.assigned-person > span em {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.assignment-remove {
+  min-height: 36px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.assignment-remove:hover:not(:disabled) {
+  border-color: #efccc5;
+  background: var(--danger-soft);
+}
+
+.assignment-filter-empty {
+  min-height: 150px;
+  padding: 26px 18px;
+  border: 1px dashed var(--line);
+  border-radius: 13px;
+  background: var(--surface-soft);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.assignment-filter-empty > svg {
+  margin-bottom: 3px;
+  color: var(--blue-25);
+}
+
+.assignment-filter-empty > b {
+  color: var(--blue-35);
+}
+
+.assignment-filter-empty > span {
+  max-width: 430px;
+  font-size: 12px;
+}
+
+.assignment-filter-empty.success > svg {
+  color: #5f8b41;
+}
+
+.assignment-publish-gate {
+  margin-top: 0;
+}
+
+.manual-leader-form {
+  max-width: 580px;
+}
+
+.manual-leader-help {
+  margin-bottom: 18px;
+}
+
+.manual-leader-form label {
+  display: grid;
+  gap: 6px;
+}
+
+@media (max-width: 1080px) {
+  .assignment-staff-row {
+    grid-template-columns: minmax(180px, .7fr) minmax(360px, 1.3fr);
+  }
+
+  .assignment-row-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .assignment-access-button {
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 980px) {
+  .assignment-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .assignment-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .assignment-staff-row,
+  .assignment-responsibility-list > div {
+    grid-template-columns: 1fr;
+  }
+
+  .assigned-person {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .assignment-flow {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .assignments-page {
+    gap: 14px;
+  }
+
+  .assignment-page-action {
+    width: 100%;
+  }
+
+  .assignment-overview {
+    padding: 15px;
+    gap: 14px;
+  }
+
+  .assignment-overview-head {
+    display: grid;
+  }
+
+  .assignment-complete-badge {
+    justify-self: start;
+  }
+
+  .assignment-flow {
+    display: flex;
+    gap: 8px;
+    margin-inline: -15px;
+    padding: 0 15px 4px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .assignment-flow-step {
+    flex: 0 0 min(82vw, 270px);
+    min-height: 78px;
+    scroll-snap-align: start;
+  }
+
+  .assignment-overview-foot {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .assignment-workflow-section {
+    scroll-margin-top: 72px;
+  }
+
+  .assignment-role-panel,
+  .assignment-responsibility-panel,
+  .assignment-assistant-card {
+    padding: 15px;
+  }
+
+  .assignment-section-head {
+    display: grid;
+    gap: 10px;
+  }
+
+  .assignment-section-head > .status {
+    justify-self: start;
+  }
+
+  .assignment-section-title {
+    gap: 10px;
+  }
+
+  .assignment-section-step {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+
+  .assignment-toolbar {
+    top: 58px;
+    margin: 5px -5px 0;
+    padding: 8px 5px;
+  }
+
+  .assignment-list-meta {
+    align-items: flex-start;
+  }
+
+  .assignment-staff-row {
+    padding: 12px;
+    gap: 11px;
+  }
+
+  .assignment-row-controls {
+    gap: 8px;
+  }
+
+  .assignment-access-block {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  .assignment-access-button {
+    grid-column: 1;
+    grid-row: auto;
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  .assignment-filter-chips {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 3px;
+  }
+
+  .assignment-filter-chips button {
+    min-height: 42px;
+    white-space: nowrap;
+  }
+
+  .assignment-responsibility-list > div {
+    padding: 11px;
+  }
+
+  .assignment-responsibility-list select,
+  .assignment-control select,
+  .assignment-toolbar select {
+    font-size: 16px;
+  }
+
+  .assigned-person {
+    align-items: flex-end;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .assignment-remove {
+    min-height: 42px;
+  }
+
+  .assignment-suggestion-summary span {
+    flex: 1 1 130px;
+  }
+
+  .assignment-preview-list span {
+    font-size: .88rem;
+  }
+
+  .field-sheet-actions {
+    flex-wrap: wrap;
+  }
+
+  .field-sheet-actions > button {
+    flex: 1 1 180px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assignment-flow-step,
+  .assignment-staff-row,
+  .assignment-responsibility-list > div,
+  .assignment-progress > span {
+    transition: none;
+  }
+}
