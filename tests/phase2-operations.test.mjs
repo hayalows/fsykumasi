@@ -52,6 +52,12 @@ test("Food meal attendance is independent, idempotent, and guarded by RPCs", asy
   assert.match(fieldLib, /mark_meal_served/);
 });
 
+test("Food union reads use legal PostgreSQL output ordinals", async () => {
+  const hotfix = await read("supabase/migrations/20260904120500_phase2_food_roster_order_fix.sql");
+  assert.match(hotfix, /get_meal_roster[\s\S]*order by 3;/);
+  assert.match(hotfix, /get_meal_attendance[\s\S]*order by 8 desc;/);
+});
+
 test("Head Count uses a server-computed workspace and atomic reconciliation payload", async () => {
   const [migration, backend, page] = await Promise.all([
     read("supabase/migrations/20260904110000_phase2_wellness_daily_operations.sql"),
