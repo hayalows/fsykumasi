@@ -67,18 +67,19 @@ test("Report preview stays responsive and makes filtered export scope explicit",
 });
 
 test("Housing exposes room occupants with server-derived check-in context", async () => {
-  const [migration, page, loader] = await Promise.all([
+  const [migration, housing, dialogs, loader] = await Promise.all([
     read("supabase/migrations/20260904133500_phase3_housing_context.sql"),
-    read("src/pages/Housing.jsx"),
+    read("src/pages/HousingV4.jsx"),
+    read("src/pages/HousingDialogsV4.jsx"),
     read("src/lib/housing-context.js"),
   ]);
   assert.match(migration, /get_housing_assignments_v2/);
   assert.match(migration, /checkin_status text/);
   assert.match(migration, /participant_badge_assignments/);
-  assert.match(page, /Open \$\{room\.name\} occupants/);
-  assert.match(page, /People in this room/);
-  assert.match(page, /Checked in/);
-  assert.match(page, /Awaiting check-in/);
+  assert.match(housing, /setSelectedRoom\(r\)/);
+  assert.match(dialogs, /People in this room/);
+  assert.match(dialogs, /Checked in/);
+  assert.match(dialogs, /Awaiting check-in/);
   assert.match(loader, /get_housing_assignments_v2/);
 });
 
