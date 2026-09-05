@@ -1,5 +1,5 @@
-const CACHE_NAME = "fsy-kumasi-shell-v19";
-// Release marker: refined Registration & Check-in journey with unit autocomplete.
+const CACHE_NAME = "fsy-kumasi-shell-v20";
+// Release marker: personalized, task-first Overview workspace.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
