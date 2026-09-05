@@ -161,7 +161,7 @@ function DraftCompany({ company, targetGroups }) {
   return <div className="draft-company-row"><button onClick={() => setOpen((value) => !value)} aria-expanded={open}><span className="disclosure-chevron">{open ? "⌄" : "›"}</span><span><b>{company.name}</b><small>{youthCount} youth · {company.groups.length} groups</small></span><Status tone={company.groups.length === targetGroups ? "good" : "warn"}>{company.groups.length}/{targetGroups}</Status></button>{open ? <div className="draft-company-groups">{company.groups.map((group) => <div key={group.id}><b>{group.name}</b><small>{group.members.length} youth · {group.sex === "Female" ? "YW" : "YM"} · {ageSummary(group.members)}</small></div>)}</div> : null}</div>;
 }
 
-export function Groups({ participants, assignment, onPublish, live = false, canManage = false, sessionId, onNavigatePeople, sessionName }) {
+export function Groups({ companyIds = null, participants, assignment, onPublish, live = false, canManage = false, sessionId, onNavigatePeople, sessionName }) {
   const [settings, setSettings] = useState(DEFAULT_STRUCTURE_SETTINGS);
   const [draftSettings, setDraftSettings] = useState(DEFAULT_STRUCTURE_SETTINGS);
   const [structure, setStructure] = useState({ groups: [], companies: [], published: false });
@@ -185,8 +185,8 @@ export function Groups({ participants, assignment, onPublish, live = false, canM
   useEffect(() => { setVisibleLimit(20); }, [companyQuery, companyFilter]);
 
   const published = live ? structure.published : Boolean(assignment?.published);
-  const groups = live ? structure.groups : (assignment?.groups || []);
-  const companies = live ? structure.companies : (assignment?.companies || []);
+  const groups = (live ? structure.groups : (assignment?.groups || [])).filter(group => companyIds === null || companyIds.includes(group.companyId));
+  const companies = (live ? structure.companies : (assignment?.companies || [])).filter(company => companyIds === null || companyIds.includes(company.id));
   const counselorsAssigned = groups.filter((group) => group.counselorId).length;
   const publishedYouth = groups.reduce((sum, group) => sum + Number(group.memberCount || 0), 0);
   const participantsByGroup = useMemo(() => participants.reduce((map, person) => {

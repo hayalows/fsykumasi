@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build && node scripts/prepare-sites-build.mjs",
     "preview": "vite preview",
-    "test": "node --test tests/access.test.mjs tests/grouping.test.mjs tests/import.test.mjs tests/registration.test.mjs tests/review.test.mjs tests/schema-contract.test.mjs tests/field-operations.test.mjs tests/identity-arrival.test.mjs tests/phase2-operations.test.mjs tests/phase3-reports.test.mjs tests/staff-access.test.mjs tests/birthdays-ui.test.mjs tests/housing-modal-space.test.mjs tests/registration-ux-v5.test.mjs tests/registration-journey.test.mjs tests/registration-housing-handoff.test.mjs tests/overview-ux.test.mjs",
+    "test": "node --test tests/*.test.mjs",
     "test:sites": "node --test tests/sites-worker.test.mjs"
   },
   "dependencies": {

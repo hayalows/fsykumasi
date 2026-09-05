@@ -45,7 +45,7 @@ test("the last full session administrator is protected", () => {
 });
 
 test("Access is a guided login lifecycle rather than a second Assignments screen", () => {
-  assert.match(accessPage, /Give leaders the login they need/i);
+  assert.match(accessPage, /Manage website accounts and committee responsibilities/i);
   assert.match(accessPage, /Needs access/);
   assert.match(accessPage, /Set companies/);
   assert.match(accessPage, /People & accounts/);
@@ -112,7 +112,7 @@ test("optional account activity cannot block the Access directory", () => {
 test("secondary Access actions use progressive disclosure without hiding the primary company picker", () => {
   assert.match(accessPage, /className="staff-access-more"/);
   assert.match(accessPage, /className="panel staff-access-help"/);
-  assert.match(accessPage, /Older \/ exception access/);
+  assert.match(accessPage, /Website accounts & committee members/);
   assert.match(companySheet, /className="assistant-company-picker"/);
 });
 

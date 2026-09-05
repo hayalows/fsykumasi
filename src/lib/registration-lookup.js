@@ -19,6 +19,6 @@ export function uniqueUnitMatch(options, value) {
 
 export function matchesRegistrationSearch(row, query, housing) {
   const text = normalize(query);
-  return !text || [row.fullName, row.preferredName, row.fsyId, row.unit, row.stake,
+  return !text || [row.fullName, row.preferredName, row.fsyId, ...(row.previousFsyIds||[]), row.unit, row.stake,
     row.companyName, row.groupName, housing?.roomName].filter(Boolean).join(" ").toLowerCase().includes(text);
 }

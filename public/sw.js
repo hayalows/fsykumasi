@@ -1,4 +1,4 @@
-const CACHE_NAME = "fsy-kumasi-shell-v20";
+const CACHE_NAME = "fsy-kumasi-shell-v21";
 // Release marker: personalized, task-first Overview workspace.
 const CORE_ASSETS = [
   "/",
