@@ -1,7 +1,7 @@
 -- Run against development after migrations. All fixtures roll back.
 begin;
 do $$
-declare sid uuid:=extensions.gen_random_uuid(); admin_id uuid:=extensions.gen_random_uuid(); ac_id uuid:=extensions.gen_random_uuid(); committee_id uuid:=extensions.gen_random_uuid(); c1 uuid:=extensions.gen_random_uuid(); c2 uuid:=extensions.gen_random_uuid(); g1 uuid:=extensions.gen_random_uuid(); g2 uuid:=extensions.gen_random_uuid(); p1 uuid:=extensions.gen_random_uuid(); p2 uuid:=extensions.gen_random_uuid(); p3 uuid:=extensions.gen_random_uuid(); rid uuid; item uuid; result jsonb; blocked boolean; tid uuid;
+declare sid uuid:=extensions.gen_random_uuid(); admin_id uuid:=extensions.gen_random_uuid(); ac_id uuid:=extensions.gen_random_uuid(); committee_id uuid:=extensions.gen_random_uuid(); c1 uuid:=extensions.gen_random_uuid(); c2 uuid:=extensions.gen_random_uuid(); g1 uuid:=extensions.gen_random_uuid(); g2 uuid:=extensions.gen_random_uuid(); p1 uuid:=extensions.gen_random_uuid(); p2 uuid:=extensions.gen_random_uuid(); p3 uuid:=extensions.gen_random_uuid(); rid uuid; item uuid; result jsonb; blocked boolean; tid uuid; leader_role public.app_role; invite record;
 begin
  insert into auth.users(id,email) values(admin_id,'fsy-test-admin@example.invalid'),(ac_id,'fsy-test-ac@example.invalid'),(committee_id,'fsy-test-food@example.invalid');
  insert into public.profiles(user_id,display_name,email) values(admin_id,'Test admin','fsy-test-admin@example.invalid'),(ac_id,'Test AC','fsy-test-ac@example.invalid'),(committee_id,'Test Food','fsy-test-food@example.invalid') on conflict(user_id) do nothing;
@@ -18,6 +18,10 @@ begin
  rid:=public.open_headcount_round_v3(sid,'Test count');
  if (select count(*) from public.headcount_round_people where round_id=rid)<>2 then raise exception 'FAIL snapshot roster'; end if;
  if exists(select 1 from public.headcount_round_people where round_id=rid and status<>'unresolved') then raise exception 'FAIL default presence'; end if;
+ foreach leader_role in array array['coordinator','logistics_admin','session_director']::public.app_role[] loop
+ update public.access_assignments set role=leader_role where session_id=sid and user_id=admin_id;
+ if jsonb_array_length(public.get_headcount_roster_v4(sid)->'people')<>2 then raise exception 'FAIL leadership oversight %',leader_role;end if;
+ end loop;
  perform set_config('request.jwt.claim.sub',ac_id::text,true);
  result:=public.get_headcount_roster_v4(sid);
  if jsonb_array_length(result->'people')<>1 then raise exception 'FAIL AC roster scope with added Food committee'; end if;
@@ -29,7 +33,13 @@ begin
  blocked:=false;begin perform public.set_headcount_person_v3(item,'missing',0,null);exception when others then blocked:=true;end;
  if not blocked then raise exception 'FAIL stale update permitted';end if;
  if not private.has_capability(sid,'food_view') then raise exception 'FAIL additive Food capability';end if;
+ perform set_config('request.jwt.claim.sub',admin_id::text,true);
+ select * into invite from public.create_leader_invite(sid,'fsy-test-food@example.invalid','Test Food','committee_viewer','{}',array['food']);
+ if exists(select 1 from public.leader_invites where id=invite.invite_id and staff_id is not null) then raise exception 'FAIL staff-free invite';end if;
  perform set_config('request.jwt.claim.sub',committee_id::text,true);
+ perform public.claim_leader_invite_authenticated(invite.invite_code);
+ blocked:=false;begin perform public.claim_leader_invite_authenticated(invite.invite_code);exception when others then blocked:=true;end;
+ if not blocked then raise exception 'FAIL invite reused';end if;
  if not private.has_capability(sid,'food_view') then raise exception 'FAIL committee-only account';end if;
  update public.access_assignments set active=false where session_id=sid and user_id=committee_id;
  if private.has_capability(sid,'food_view') or private.has_team_capability(sid,'food_view') then raise exception 'FAIL disabled committee retains access';end if;
