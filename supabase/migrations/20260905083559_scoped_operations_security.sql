@@ -122,4 +122,3 @@ end;
 $$;
 revoke all on function public.create_leader_invite(uuid,text,text,public.app_role,uuid[],text[]) from public;
 grant execute on function public.create_leader_invite(uuid,text,text,public.app_role,uuid[],text[]) to authenticated;
-

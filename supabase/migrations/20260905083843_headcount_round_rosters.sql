@@ -179,4 +179,3 @@ end;
 $$;
 revoke all on function public.get_headcount_workspace(uuid) from public, anon;
 grant execute on function public.get_headcount_workspace(uuid) to authenticated;
-

@@ -145,12 +145,12 @@ export function createInitialAccessRequests() { return demoAccessRequests; }
 export function Access({
   requests = [], invites = [], currentRole = "logistics_admin", currentCapabilities = [], onDecision,
   onRefreshRoster, onCreateInvite, onRevokeInvite, onCreateRecovery, onManageLeaderAccess, roster = demoUsers, companies = [], teams = [],
-  live = false, sessionName, companyLimit = 4,
+  sessionId: requestedSessionId = "", live = false, sessionName, companyLimit = 4,
 }) {
   const [newAccount,setNewAccount]=useState(false);
   const [teamTarget,setTeamTarget]=useState(null);
   const [recoveryResult,setRecoveryResult]=useState(null);
-  const [sessionId, setSessionId] = useState("");
+  const [sessionId, setSessionId] = useState(requestedSessionId);
   const [directory, setDirectory] = useState(live ? [] : demoDirectory());
   const [activityByUser, setActivityByUser] = useState(new Map());
   const [onlineUserIds, setOnlineUserIds] = useState(new Set());
@@ -180,8 +180,8 @@ export function Access({
 
   useEffect(() => {
     if (!live) return;
-    resolveCurrentAccessSessionId().then((id) => { setSessionId(id); return refresh(id); }).catch((err) => setError(err.message || "Website access could not be loaded."));
-  }, [live]);
+    (requestedSessionId ? Promise.resolve(requestedSessionId) : resolveCurrentAccessSessionId()).then((id) => { setSessionId(id); return refresh(id); }).catch((err) => setError(err.message || "Website access could not be loaded."));
+  }, [live, requestedSessionId]);
   useEffect(() => live && sessionId ? subscribeSessionPresence(sessionId, setOnlineUserIds) : undefined, [live, sessionId]);
 
   const counts = useMemo(() => Object.fromEntries(FILTERS.map(([key]) => [key, directory.filter((item) => item.accessState === key).length])), [directory]);

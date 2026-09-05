@@ -1,7 +1,7 @@
 -- Run against development after migrations. All fixtures roll back.
 begin;
 do $$
-declare sid uuid:=extensions.gen_random_uuid(); admin_id uuid:=extensions.gen_random_uuid(); ac_id uuid:=extensions.gen_random_uuid(); committee_id uuid:=extensions.gen_random_uuid(); c1 uuid:=extensions.gen_random_uuid(); c2 uuid:=extensions.gen_random_uuid(); g1 uuid:=extensions.gen_random_uuid(); g2 uuid:=extensions.gen_random_uuid(); p1 uuid:=extensions.gen_random_uuid(); p2 uuid:=extensions.gen_random_uuid(); rid uuid; item uuid; result jsonb; blocked boolean; tid uuid;
+declare sid uuid:=extensions.gen_random_uuid(); admin_id uuid:=extensions.gen_random_uuid(); ac_id uuid:=extensions.gen_random_uuid(); committee_id uuid:=extensions.gen_random_uuid(); c1 uuid:=extensions.gen_random_uuid(); c2 uuid:=extensions.gen_random_uuid(); g1 uuid:=extensions.gen_random_uuid(); g2 uuid:=extensions.gen_random_uuid(); p1 uuid:=extensions.gen_random_uuid(); p2 uuid:=extensions.gen_random_uuid(); p3 uuid:=extensions.gen_random_uuid(); rid uuid; item uuid; result jsonb; blocked boolean; tid uuid;
 begin
  insert into auth.users(id,email) values(admin_id,'fsy-test-admin@example.invalid'),(ac_id,'fsy-test-ac@example.invalid'),(committee_id,'fsy-test-food@example.invalid');
  insert into public.profiles(user_id,display_name,email) values(admin_id,'Test admin','fsy-test-admin@example.invalid'),(ac_id,'Test AC','fsy-test-ac@example.invalid'),(committee_id,'Test Food','fsy-test-food@example.invalid') on conflict(user_id) do nothing;
@@ -52,6 +52,15 @@ begin
  if not exists(select 1 from public.headcount_round_people where person_id=p1 and company_id=c1) then raise exception 'FAIL historical count moved';end if;
  perform set_config('request.jwt.claim.sub',ac_id::text,true);
  if (public.get_headcount_summary_v3(sid)->>'total')::int<>1 then raise exception 'FAIL summary scope';end if;
+ perform set_config('request.jwt.claim.sub',admin_id::text,true);
+ insert into public.origin_code_registry(session_id,canonical_name,code) values(sid,'Test Stake','TEST');
+ insert into public.participants(id,session_id,registration_id,first_name,last_name,sex,unit_name,stake_name,source_kind,verification_status,registration_status)
+ values(p3,sid,'test-3','Test','Replacement','male','Unit C','Test Stake','on_site','verified','approved');
+ insert into public.participant_private_details(session_id,participant_id,date_of_birth) values(sid,p3,'2010-01-01');
+ insert into public.participant_badge_assignments(session_id,participant_id,company_id,group_id,slot_number,origin_code,fsy_id,badge_name,state) values(sid,p2,c2,g2,2,'TEST','pending','Test Two','finalized');
+ update public.participants set attendance_status='confirmed_not_attending' where id=p2;
+ if public.replace_arrival_vacancy(p2,p3)<>'C02-03-TEST' then raise exception 'FAIL replacement reused identifier';end if;
+ if not exists(select 1 from public.participant_badge_assignments where participant_id=p2 and state='retired' and fsy_id='C02-02-TEST') then raise exception 'FAIL original replacement identity lost';end if;
  -- Exercise API grants using authenticated role, not only the database owner.
  perform set_config('fsy.test.session',sid::text,true);
  perform set_config('request.jwt.claim.sub',ac_id::text,true);
@@ -60,7 +69,7 @@ set local role authenticated;
 do $$ declare payload jsonb;begin
  payload:=public.get_headcount_roster_v4(current_setting('fsy.test.session')::uuid);
  if jsonb_array_length(payload->'people')<>1 then raise exception 'FAIL authenticated RPC scope';end if;
- if (select count(*) from public.participants where session_id=current_setting('fsy.test.session')::uuid)<>2 then raise exception 'FAIL additive Food lookup scope';end if;
+ if (select count(*) from public.participants where session_id=current_setting('fsy.test.session')::uuid)<>3 then raise exception 'FAIL additive Food lookup scope';end if;
 end; $$;
 reset role;
 rollback;

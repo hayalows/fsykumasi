@@ -9,7 +9,7 @@ export function overviewFocus({role, capabilities = [], headcount, rosterSummary
   const awaiting = rosterSummary?.round ? Number(rosterSummary.unresolved||0) : Math.max(0, companies.length - reports.length);
   const missing = rosterSummary?.round ? Number(rosterSummary.missing||0) : reports.reduce((n,row) => n + Math.max(0,row.expected_count-row.accounted_count),0);
   const items = [];
-  if (round && !round.closes_at && has('headcount_view')) items.push({id:'headcount', title:round.label, detail:`${awaiting} ${rosterSummary?.round ? "people not checked" : "companies still to report"}${missing ? ` · ${missing} missing` : ""}`, action:'Open head count', priority: missing ? 100 : awaiting ? 80 : 5});
+  if (round && !round.closes_at && has('headcount_view')) items.push({id:'headcount', title:round.label, detail:`${awaiting} ${rosterSummary?.round ? "people not checked" : (awaiting===1?"company still to report":"companies still to report")}${missing ? ` · ${missing} missing` : ""}`, action:'Open head count', priority: missing ? 100 : awaiting ? 80 : 5});
   if (has('wellness_private') && wellnessOpen) items.push({id:'wellness',title:`${wellnessOpen} open Wellness visits`,detail:'Review the current queue and follow-up needs.',action:'Open Wellness',priority:90});
   if (has('housing_view') && waitingRooms) items.push({id:'housing',title:`${waitingRooms} arrivals waiting for a room`,detail:'Registration has checked them in. Continue their room assignment.',action:'Assign rooms',priority:70});
   if (has('food_view') && foodOpen) items.push({id:'food',title:`${foodOpen} dietary responses to review`,detail:'Check each response and confirm the accommodation with the Food team.',action:'Review dietary needs',priority:50});

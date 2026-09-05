@@ -176,4 +176,3 @@ end;
 $$;
 revoke all on function public.claim_leader_invite_authenticated(text) from public;
 grant execute on function public.claim_leader_invite_authenticated(text) to authenticated;
-

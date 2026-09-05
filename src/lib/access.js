@@ -6,7 +6,7 @@ export const ROLE_META = {
     rank: 1,
   },
   committee_viewer: {
-    label: "Committee viewer",
+    label: "Committee member",
     visibility: "Assigned committee scope",
     canApproveAccess: false,
     rank: 1,
