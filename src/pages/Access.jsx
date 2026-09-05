@@ -1,3 +1,4 @@
+import { AccountSetup,AccountTeams } from "../components/AccountSetup.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { Buildings } from "@phosphor-icons/react/Buildings";
 import { Key } from "@phosphor-icons/react/Key";
@@ -127,15 +128,15 @@ function LegacyAccountEditor({ user, companies, teams, onClose, onSave }) {
     catch (err) { setError(err.message || "This exception account could not be updated."); }
     finally { setBusy(false); }
   };
-  return <DismissibleLayer open onClose={onClose} title="Legacy account settings" sheet><div className="field-sheet">
+  return <DismissibleLayer open onClose={onClose} title="Account settings" sheet><div className="field-sheet">
     <button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} aria-label="Close"><X/></button>
-    <span className="kicker">Exception account</span><h2>{user.name}</h2><p>{user.email}</p>
-    <div className="notice compact-notice"><WarningCircle/><div><b>Not linked to a Staff identity yet</b><p>Use this editor only for older or committee accounts. New staff access should be created from Assignments.</p></div></div>
+    <span className="kicker">Website account</span><h2>{user.name}</h2><p>{user.email}</p>
+    <div className="notice compact-notice"><WarningCircle/><div><b>Independent website account</b><p>Website access and committee responsibilities do not require a Staff record.</p></div></div>
     <label>Access role<select value={role} onChange={(event) => { setRole(event.target.value); if (event.target.value !== "assistant_coordinator") setCompanyIds([]); }}><option value="assistant_coordinator">Assistant coordinator</option><option value="coordinator">Coordinator</option><option value="logistics_admin">Logistical administrator</option><option value="session_director">Session directing couple</option><option value="committee_viewer">Committee viewer</option></select></label>
     {role === "assistant_coordinator" ? <div className="company-picker">{companies.map((company) => <label key={company.id} className={companyIds.includes(company.id) ? "selected" : ""}><input type="checkbox" checked={companyIds.includes(company.id)} onChange={() => toggleCompany(company.id)}/><span>{company.name}</span></label>)}</div> : null}
-    {role === "committee_viewer" ? <div className="access-team-picker">{teams.map((team) => <label key={team.key} className={teamKeys.includes(team.key) ? "selected" : ""}><input type="checkbox" checked={teamKeys.includes(team.key)} onChange={() => toggleTeam(team.key)}/><span><b>{team.name}</b><small>{team.description}</small></span></label>)}</div> : null}
+    {<div className="access-team-picker">{teams.map((team) => <label key={team.key} className={teamKeys.includes(team.key) ? "selected" : ""}><input type="checkbox" checked={teamKeys.includes(team.key)} onChange={() => toggleTeam(team.key)}/><span><b>{team.name}</b><small>{team.description}</small></span></label>)}</div>}
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
-    <div className="field-sheet-actions"><button className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={busy || (role === "assistant_coordinator" && !companyIds.length) || (role === "committee_viewer" && !teamKeys.length)} onClick={save}>{busy ? "Saving…" : "Save exception account"}</button></div>
+    <div className="field-sheet-actions"><button className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={busy || (role === "assistant_coordinator" && !companyIds.length) || (role === "committee_viewer" && !teamKeys.length)} onClick={save}>{busy ? "Saving…" : "Save account"}</button></div>
   </div></DismissibleLayer>;
 }
 
@@ -143,9 +144,12 @@ export function createInitialAccessRequests() { return demoAccessRequests; }
 
 export function Access({
   requests = [], invites = [], currentRole = "logistics_admin", currentCapabilities = [], onDecision,
-  onRevokeInvite, onCreateRecovery, onManageLeaderAccess, roster = demoUsers, companies = [], teams = [],
+  onCreateInvite, onRevokeInvite, onCreateRecovery, onManageLeaderAccess, roster = demoUsers, companies = [], teams = [],
   live = false, sessionName, companyLimit = 4,
 }) {
+  const [newAccount,setNewAccount]=useState(false);
+  const [teamTarget,setTeamTarget]=useState(null);
+  const [recoveryResult,setRecoveryResult]=useState(null);
   const [sessionId, setSessionId] = useState("");
   const [directory, setDirectory] = useState(live ? [] : demoDirectory());
   const [activityByUser, setActivityByUser] = useState(new Map());
@@ -215,7 +219,7 @@ export function Access({
     setBusyId(person.staffId); setError(""); setNotice("");
     try {
       const created = await onCreateRecovery(person.userId);
-      if (created?.code) { await navigator.clipboard.writeText(created.code).catch(() => {}); setNotice(`Recovery code created for ${person.name} and copied when this device allowed it.`); }
+      if (created?.code) { setRecoveryResult({...created,name:person.name}); }
       else setNotice(`Recovery access was prepared for ${person.name}.`);
     } catch (err) { setError(err.message || "Recovery access could not be prepared."); }
     finally { setBusyId(""); }
@@ -230,7 +234,7 @@ export function Access({
   };
 
   return <section className="page staff-access-page">
-    <PageHead title="Access" sessionName={sessionName} description="Give leaders the login they need. Their FSY role and company responsibility stay connected to Assignments automatically." />
+    <PageHead title="Access" sessionName={sessionName} description="Manage website accounts and committee responsibilities. Linked staff assignments stay in sync." action={canManage ? <button className="primary" onClick={()=>setNewAccount(true)}><UserPlus/>Invite account</button> : null} />
     {!canManage ? <div className="notice"><WarningCircle/><div><b>View only</b><p>A Full Session Administrator is required to invite, enable or disable website access.</p></div></div> : null}
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
     {notice ? <MutationFeedback><b>Done</b> · {notice}</MutationFeedback> : null}
@@ -258,6 +262,7 @@ export function Access({
           <div className="staff-access-actions">
             {needsCompanies ? <button className="primary" disabled={!canManage || rowBusy} onClick={() => openCompanies(person, person.accessState === "not_enabled")}><Buildings/>Set companies</button> : null}
             {!needsCompanies && person.operationalRole === "assistant_coordinator" ? <button className="secondary compact-button" disabled={!canManage || rowBusy} onClick={() => openCompanies(person, false)}><Buildings/>Companies</button> : null}
+            {person.userId ? <button className="secondary compact-button" disabled={!canManage||rowBusy} onClick={()=>setTeamTarget(roster.find(u=>u.userId===person.userId)||{userId:person.userId,name:person.name,teamKeys:[]})}>Committees</button> : null}
             {person.accessState === "not_enabled" && !needsCompanies ? <button className="primary" disabled={!canManage || rowBusy} onClick={() => setInviteTarget(person)}><UserPlus/>Give access</button> : null}
             {person.accessState === "invited" ? <button className="primary" disabled={!canManage || rowBusy} onClick={() => setInviteTarget(person)}>Setup link</button> : null}
             {person.accessState === "disabled" ? <button className="primary" disabled={!canManage || rowBusy} onClick={() => toggleAccess(person, true)}>Enable access</button> : null}
@@ -269,17 +274,20 @@ export function Access({
 
     <details className="panel staff-access-help"><summary>How access works</summary><div className="staff-access-guide"><div><span>1 · Responsibility</span><b>Role and companies come first</b><p>Assistant Coordinators need at least one company so their account has a useful scope.</p></div><div><span>2 · Access</span><b>Create the setup link</b><p>Confirm the email, copy the link and send it to the leader.</p></div><div><span>3 · Sync</span><b>Future changes follow automatically</b><p>Changing an AC's companies updates their linked website permissions too.</p></div></div></details>
 
-    {(pendingLegacy.length || legacyInvites.length || legacyRoster.length) ? <details className="panel legacy-access-details">
-      <summary>Older / exception access ({pendingLegacy.length + legacyInvites.length + legacyRoster.length})</summary>
+    {(pendingLegacy.length || legacyInvites.length || legacyRoster.length) ? <section className="panel legacy-access-details staff-access-account-list">
+      <h2>Website accounts & committee members</h2><p>These accounts do not need a Staff record.</p>
       <div className="legacy-access-list">
         {pendingLegacy.map((request) => <div className="legacy-access-row" key={request.id}><span><b>{request.name}</b><small>Pending request · {roleLabel(request.role)} · {request.scope}</small></span><button className="secondary" disabled={!canManage} onClick={() => setReviewRequest(request)}>Review</button></div>)}
-        {legacyInvites.map((invite) => <div className="legacy-access-row" key={invite.id}><span><b>{invite.display_name || invite.email}</b><small>Older invite · {roleLabel(invite.role)}</small></span><button className="secondary" disabled={!canManage} onClick={() => onRevokeInvite?.(invite.id)}>Revoke</button></div>)}
-        {legacyRoster.map((user) => { const userId = user.userId || user.user_id; return <div className="legacy-access-row" key={user.id || userId || user.email}><span><b>{user.name}</b><small>{roleLabel(user.role || user.roleKey)} · {user.email} · {user.role === "assistant_coordinator" ? `${user.companyIds?.length || 0} companies` : roleVisibility(user.role || user.roleKey)}</small><AccountActivity userId={userId} accessState="active" onlineUserIds={onlineUserIds} activityByUser={activityByUser}/></span><div className="staff-access-actions">{onCreateRecovery && userId ? <button className="secondary" onClick={() => onCreateRecovery(userId)}><Key/>Recovery</button> : null}{onManageLeaderAccess && user.id ? <button className="text-action" onClick={() => setLegacyTarget(user)}>Legacy settings</button> : null}</div></div>; })}
+        {legacyInvites.map((invite) => <div className="legacy-access-row" key={invite.id}><span><b>{invite.display_name || invite.email}</b><small>Setup pending · {roleLabel(invite.role)}</small></span><button className="secondary" disabled={!canManage} onClick={() => onRevokeInvite?.(invite.id)}>Revoke</button></div>)}
+        {legacyRoster.map((user) => { const userId = user.userId || user.user_id; return <div className="legacy-access-row" key={user.id || userId || user.email}><span><b>{user.name}</b><small>{roleLabel(user.role || user.roleKey)} · {user.email} · {user.role === "assistant_coordinator" ? `${user.companyIds?.length || 0} companies` : roleVisibility(user.role || user.roleKey)}</small><AccountActivity userId={userId} accessState="active" onlineUserIds={onlineUserIds} activityByUser={activityByUser}/></span><div className="staff-access-actions">{onCreateRecovery && userId ? <button className="secondary" onClick={() => recovery({userId,name:user.name,staffId:userId})}><Key/>Recovery</button> : null}{onManageLeaderAccess && user.id ? <button className="text-action" onClick={() => setLegacyTarget(user)}>Account settings</button> : null}</div></div>; })}
       </div>
-    </details> : null}
+    </section> : null}
 
     <div className="staff-access-lifecycle-note"><ShieldCheck weight="fill"/><div><b>Full Session Administrators</b><p>Coordinators, Logistical Administrators and the Session Directing Couple can manage website access for the whole session. Account activity is shown only here for administration and support.</p></div></div>
 
+    {newAccount ? <AccountSetup teams={teams} companies={companies} onCreate={onCreateInvite} onClose={()=>setNewAccount(false)}/> : null}
+    {teamTarget ? <AccountTeams user={teamTarget} sessionId={sessionId} teams={teams} onClose={()=>setTeamTarget(null)} onSaved={refresh}/> : null}
+    {recoveryResult ? <DismissibleLayer open onClose={()=>setRecoveryResult(null)} title="Recovery code" sheet><div className="headcount-create"><h2>Recovery for {recoveryResult.name}</h2><label>One-time code<input readOnly value={recoveryResult.code}/></label><p>Expires {new Date(recoveryResult.expiresAt).toLocaleString()}. Share only with the account owner.</p><button className="secondary" onClick={()=>setRecoveryResult(null)}>Done</button></div></DismissibleLayer> : null}
     {inviteTarget ? <StaffAccessInvite staff={inviteTarget} onClose={() => setInviteTarget(null)} onInvited={() => refresh()} /> : null}
     {companyTarget ? <AssistantCompanySheet staff={companyTarget.person} companies={companies} directory={directory} companyLimit={companyLimit} continueToAccess={companyTarget.continueToAccess} onClose={() => setCompanyTarget(null)} onSaved={afterCompanySave} onContinue={continueAfterCompanies}/> : null}
     {reviewRequest ? <RequestReview request={reviewRequest} companies={companies} teams={teams} onClose={() => setReviewRequest(null)} onDecision={onDecision}/> : null}

@@ -1,39 +1,19 @@
-import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import test from "node:test";
-
-const root = new URL("../", import.meta.url);
-const read = (path) => readFile(new URL(path, root), "utf8");
-
-test("Overview is personalized by capability and starts with one next action", async () => {
-  const source = await read("src/pages/Overview.jsx");
-  assert.match(source, /Next best action/);
-  assert.match(source, /Personalized to your access/);
-  assert.match(source, /Only what you can use/);
-  assert.match(source, /canRegistration/);
-  assert.match(source, /canHousing/);
-  assert.match(source, /canWellness/);
-  assert.match(source, /canFood/);
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { overviewFocus } from '../src/lib/overview-focus.js';
+test('an AC with several committee tools is still company-scoped',()=>{
+ const f=overviewFocus({role:'assistant_coordinator',capabilities:['housing_view','food_view','wellness_status']});
+ assert.equal(f.whole,false); assert.equal(f.primary.id,'groups');
 });
-
-test("Overview uses progressive disclosure and responsive task hierarchy", async () => {
-  const [source, css] = await Promise.all([
-    read("src/pages/Overview.jsx"),
-    read("src/pages/overview-v2.css"),
-  ]);
-  assert.match(source, /<details className="panel overview-v2-setup"/);
-  assert.match(source, /Session pulse/);
-  assert.match(source, /Nothing urgent right now/);
-  assert.match(css, /grid-template-columns:minmax\(0,1\.15fr\)/);
-  assert.match(css, /@media\(max-width:720px\)/);
-  assert.match(css, /min-height:50px/);
-  assert.match(css, /prefers-reduced-motion/);
+test('unresolved head count takes precedence over routine registration',()=>{
+ const f=overviewFocus({role:'coordinator',capabilities:['headcount_view','registration_manage'],reviewCount:12,headcount:{round:{id:'r',label:'Lunch'},companies:[{id:'c'}],submissions:[{round_id:'r',expected_count:40,accounted_count:38}]}});
+ assert.equal(f.primary.id,'headcount');assert.equal(f.missing,2);assert.equal(f.others[0].id,'registration');
 });
-
-test("Overview does not expose irrelevant setup as the primary team experience", async () => {
-  const source = await read("src/pages/Overview.jsx");
-  assert.match(source, /const broadOps/);
-  assert.match(source, /broadOps && setupIncomplete/);
-  assert.doesNotMatch(source, /Conference operations, without the noise/);
-  assert.doesNotMatch(source, /Fast by design/);
+test('a food committee member receives their own work without session leadership',()=>{
+ const f=overviewFocus({role:'committee_viewer',capabilities:['food_view'],foodOpen:5});
+ assert.equal(f.primary.id,'food');assert.equal(f.whole,false);assert.equal(f.others.length,0);
+});
+test('closed head count does not remain a live action',()=>{
+ const f=overviewFocus({role:'assistant_coordinator',capabilities:['headcount_view'],headcount:{round:{id:'r',closes_at:'2026-09-05'},companies:[{}]}});
+ assert.equal(f.primary.id,'groups');
 });

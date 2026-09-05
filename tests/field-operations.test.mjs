@@ -18,9 +18,9 @@ test("confirmed non-attendance stays out of operations", () => {
 test("field modules are capability-driven and website access follows Assignments", async () => {
   const [shell,access,fieldLib] = await Promise.all([read("src/components/AppShell.jsx"),read("src/pages/Access.jsx"),read("src/lib/field-operations.js")]);
   assert.match(shell,/housing_view/); assert.match(shell,/wellness_private/); assert.match(shell,/food_view/);
-  assert.match(access,/Their FSY role and company responsibility stay connected to Assignments automatically/);
+  assert.match(access,/Linked staff assignments stay in sync/);
   assert.match(access,/Full Session Administrators/);
-  assert.match(access,/Older \/ exception access/);
+  assert.match(access,/Website accounts & committee members/);
   assert.match(access,/onManageLeaderAccess/);
   assert.match(fieldLib,/manage_leader_access/); assert.match(fieldLib,/get_session_team_catalog/);
 });
@@ -31,7 +31,7 @@ test("field mutation controls are wired to their save actions", async () => {
   assert.match(dialogs,/Save assignment/);
   assert.match(dialogs,/onClick=\{createAndAssign\}[\s\S]*Create room & assign/);
   assert.match(housing,/setSelected\(\{person:p,assignment:a\}\)/);
-  assert.match(access,/onClick=\{save\}[\s\S]*Save exception account/);
+  assert.match(access,/onClick=\{save\}[\s\S]*Save account/);
   assert.match(invite,/onSubmit=\{submit\}[\s\S]*Create setup link/);
 });
 

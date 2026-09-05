@@ -1,3 +1,4 @@
+import { loadRpcPages } from "./rpc-pages.js";
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 
 export const NO_SHOW_CONFIRMATION_SOURCES = [
@@ -18,10 +19,17 @@ async function rpc(name, args) {
   return data;
 }
 
+async function loadIdentityAliases(sessionId) {
+  const rows=await loadRpcPages(client(),"get_fsy_id_history",{p_session_id:sessionId},["participant_id","changed_at","previous_fsy_id"]);
+  const map=new Map(); for(const row of rows) map.set(row.participant_id,[...(map.get(row.participant_id)||[]),row.previous_fsy_id]); return map;
+}
+
 export async function loadOperationalIdentityMap(sessionId) {
   if (!sessionId) return new Map();
-  const rows = await rpc("get_participant_operational_identity", { p_session_id: sessionId });
+  const rows = await loadRpcPages(client(), "get_participant_operational_identity", { p_session_id: sessionId }, ["participant_id"]);
+  const aliases=await loadIdentityAliases(sessionId);
   return new Map((rows || []).map((row) => [row.participant_id, {
+    previousFsyIds: aliases.get(row.participant_id)||[],
     fsyId: row.fsy_id || "",
     badgeName: row.badge_name || "",
     badgeState: row.badge_state || "",
@@ -39,9 +47,11 @@ export async function loadOperationalIdentityMap(sessionId) {
 }
 
 export async function loadIdentityRoster(sessionId) {
-  const rows = await rpc("get_participant_operational_identity", { p_session_id: sessionId });
+  const rows = await loadRpcPages(client(), "get_participant_operational_identity", { p_session_id: sessionId }, ["participant_id"]);
+  const aliases=await loadIdentityAliases(sessionId);
   return (rows || []).map((row) => ({
     participantId: row.participant_id,
+    previousFsyIds: aliases.get(row.participant_id)||[],
     fsyId: row.fsy_id || "",
     badgeName: row.badge_name || row.full_name || "",
     badgeState: row.badge_state || "",
@@ -97,7 +107,7 @@ export async function updateBadgeName(participantId, badgeName) {
 }
 
 export async function loadArrivalRoster(sessionId) {
-  const rows = await rpc("get_arrival_reconciliation", { p_session_id: sessionId });
+  const rows = await loadRpcPages(client(), "get_arrival_reconciliation", { p_session_id: sessionId }, ["participant_id"]);
   return (rows || []).map((row) => ({
     participantId: row.participant_id,
     fsyId: row.fsy_id || "",

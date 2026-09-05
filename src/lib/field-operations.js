@@ -1,3 +1,5 @@
+import { loadRpcPages } from "./rpc-pages.js";
+import { dietaryNeedsReview } from "./dietary.js";
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 
 function client() {
@@ -69,8 +71,7 @@ export async function manageLeaderAccess({ assignmentId, role, companyIds = [], 
 }
 
 export async function loadParticipantEligibility(sessionId) {
-  const { data, error } = await client().rpc("get_participant_eligibility", { p_session_id: sessionId });
-  if (error) throw error;
+  const data = await loadRpcPages(client(), "get_participant_eligibility", { p_session_id: sessionId }, ["participant_id"]);
   return new Map((data || []).map((row) => [row.participant_id, { eligible: Boolean(row.eligible), reason: row.reason || "Needs review" }]));
 }
 
@@ -280,9 +281,8 @@ export async function resolveWellnessFollowUp(encounterId) {
 }
 
 export async function loadFoodNeeds(sessionId) {
-  const { data, error } = await client().rpc("get_food_needs", { p_session_id: sessionId });
-  if (error) throw error;
-  return (data || []).map((row) => ({
+  const data = await loadRpcPages(client(), "get_food_needs", { p_session_id: sessionId }, ["person_type", "person_id"]);
+  return (data || []).filter((row) => dietaryNeedsReview(row.dietary_information)).map((row) => ({
     personType: row.person_type,
     personId: row.person_id,
     name: row.display_name,
@@ -325,8 +325,7 @@ export async function loadMealServices(sessionId, serviceDate) {
 }
 
 export async function loadMealAttendance(serviceId) {
-  const { data, error } = await client().rpc("get_meal_attendance", { p_meal_service_id: serviceId });
-  if (error) throw error;
+  const data = await loadRpcPages(client(), "get_meal_attendance", { p_meal_service_id: serviceId }, ["attendance_id"]);
   return (data || []).map((row) => ({
     id: row.attendance_id,
     personType: row.person_type,
@@ -340,8 +339,7 @@ export async function loadMealAttendance(serviceId) {
 }
 
 export async function loadMealRoster(sessionId) {
-  const { data, error } = await client().rpc("get_meal_roster", { p_session_id: sessionId });
-  if (error) throw error;
+  const data = await loadRpcPages(client(), "get_meal_roster", { p_session_id: sessionId }, ["person_type", "person_id"]);
   return (data || []).map((row) => ({
     personType: row.person_type,
     personId: row.person_id,

@@ -1,0 +1,20 @@
+import React from 'react';
+import {createRoot} from 'react-dom/client';
+import {HeadcountRoster} from '../../src/pages/HeadcountRoster.jsx';
+import {Overview} from '../../src/pages/Overview.jsx';
+import {Access} from '../../src/pages/Access.jsx';
+import {Food} from '../../src/pages/Food.jsx';
+import {supabase} from '../../src/lib/supabase.js';
+import '../../src/styles.css';
+import '../../src/interface-system.css';
+import '../../src/modal-system.css';
+import '../../src/pages/headcount-roster.css';
+const role=new URLSearchParams(location.search).get('role')||'assistant_coordinator';const whole=role!=='assistant_coordinator'&&role!=='committee_viewer';
+const people=Array.from({length:whole?80:40},(_,i)=>({id:String(i),person_id:String(i),round_id:'round',company_id:i<40?'one':'two',company_name:i<40?'Company 1':'Company 2',display_name:`Test participant ${i+1}`,person_type:i%10===0?'staff':'participant',fsy_id:`C01-${String(i+1).padStart(2,'0')}-TEST`,group_name:'Group 1',status:i%11===0?'missing':'unresolved',revision:0}));
+const rounds=[{id:'round',label:'Lunch · Monday',opens_at:'2026-09-14T12:00:00Z',closes_at:null}];
+// Synthetic preview only. This entry point is excluded from production builds.
+if(supabase)supabase.rpc=async(name,args)=>{if(name==='get_headcount_roster_v3')return {data:{rounds,people}};if(name==='set_headcount_person_v3'){const p=people.find(p=>p.id===args.p_id);p.status=args.p_status;p.note=args.p_note;p.revision++;}if(name==='confirm_headcount_company_v3')people.filter(p=>p.company_id===args.p_company_id&&p.status==='unresolved').forEach(p=>{p.status='present';p.revision++;});return {data:[]};};
+const caps=role==='committee_viewer'?['food_view','food_manage']:['headcount_view','headcount_record','meal_attendance_view',...(whole?['registration_manage','housing_view','food_view','food_manage','access_admin']:[])];
+const view=new URLSearchParams(location.search).get('view');const teams=[{key:'food',name:'Food',description:'Meal operations and dietary needs'},{key:'housing',name:'Housing',description:'Rooms and arrival handoffs'}];
+const common={sessionName:'FSY synthetic verification',currentRole:role,capabilities:caps};
+createRoot(document.getElementById('root')).render(view==='overview'?<Overview {...common} currentUser={{display_name:'Test Leader'}} fieldSummary={{housingWaiting:5,foodOpen:8}} companies={[{name:'Company 1'}]} headcount={{round:rounds[0],companies:[{name:'Company 1'}],submissions:[]}} setActive={()=>{}}/>:view==='access'?<Access {...common} currentCapabilities={caps} teams={teams} onCreateInvite={async()=>({code:'SYNTHETIC-NOT-A-REAL-CODE',expiresAt:'2026-09-20'})}/>:view==='food'?<Food {...common} participants={people.map(p=>({id:p.id,fullName:p.display_name,company:p.company_name,fsyId:p.fsy_id}))}/>:<HeadcountRoster {...common} sessionId="synthetic"/>);

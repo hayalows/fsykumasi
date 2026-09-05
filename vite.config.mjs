@@ -5,6 +5,7 @@ export default defineConfig({
   build: {
     outDir: "dist/client",
     rollupOptions: {
+      ...(process.env.VERCEL_ENV === "preview" ? { input: { main: "index.html", responsive: "tests/fixtures/responsive.html", workspace: "tests/fixtures/workspace.html" } } : {}),
       output: {
         manualChunks(id) {
           if (id.includes("node_modules/@supabase")) return "supabase";
