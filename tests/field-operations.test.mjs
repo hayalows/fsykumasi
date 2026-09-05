@@ -26,16 +26,17 @@ test("field modules are capability-driven and website access follows Assignments
 });
 
 test("field mutation controls are wired to their save actions", async () => {
-  const [housing,access,invite] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/Access.jsx"),read("src/components/StaffAccessInvite.jsx")]);
-  assert.match(housing,/onClick=\{save\}/);
-  assert.match(housing,/const primaryLabel[\s\S]*Save assignment/);
-  assert.match(housing,/onClick=\{createAndAssign\}[\s\S]*Create room & assign/);
+  const [housing,dialogs,access,invite] = await Promise.all([read("src/pages/HousingV4.jsx"),read("src/pages/HousingDialogsV4.jsx"),read("src/pages/Access.jsx"),read("src/components/StaffAccessInvite.jsx")]);
+  assert.match(dialogs,/onClick=\{save\}/);
+  assert.match(dialogs,/Save assignment/);
+  assert.match(dialogs,/onClick=\{createAndAssign\}[\s\S]*Create room & assign/);
+  assert.match(housing,/setSelected\(\{person:p,assignment:a\}\)/);
   assert.match(access,/onClick=\{save\}[\s\S]*Save exception account/);
   assert.match(invite,/onSubmit=\{submit\}[\s\S]*Create setup link/);
 });
 
 test("sensitive modules call guarded server RPCs", async () => {
-  const [housing,wellness,food] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/Wellness.jsx"),read("src/pages/Food.jsx")]);
+  const [housing,wellness,food] = await Promise.all([read("src/pages/HousingV4.jsx"),read("src/pages/Wellness.jsx"),read("src/pages/Food.jsx")]);
   assert.match(housing,/housing_manage/); assert.match(wellness,/wellness_private/); assert.match(food,/food_view/);
   assert.doesNotMatch(food,/medicalInformation/);
 });
@@ -59,45 +60,42 @@ test("team company visibility and Housing eligibility are enforced server-side",
   assert.match(housingEligibility,/revoke all on function public\.assign_housing_person[\s\S]*from public,anon/);
 });
 
-test("Housing shows the complete people universe instead of silently truncating the roster", async () => {
-  const housing = await read("src/pages/Housing.jsx");
-  assert.match(housing,/People to house/);
-  assert.match(housing,/participants ·/);
-  assert.match(housing,/staff/);
-  assert.match(housing,/personStatus, setPersonStatus.*needs/);
-  assert.match(housing,/Everyone/);
+test("Housing keeps the full people universe available while prioritizing arrived youth", async () => {
+  const housing = await read("src/pages/HousingV4.jsx");
+  assert.match(housing,/const \[personStatus,setPersonStatus\]=useState\("arrivals"\)/);
+  assert.match(housing,/Overall housing coverage/);
+  assert.match(housing,/Need room/);
   assert.match(housing,/Participants/);
   assert.match(housing,/Staff/);
+  assert.match(housing,/const PERSON_BATCH = 60/);
   assert.doesNotMatch(housing,/slice\(0,\s*80\)/);
-  assert.match(housing,/PERSON_BATCH = 60/);
   assert.match(housing,/Show \{Math\.min\(PERSON_BATCH/);
 });
 
 test("Housing room browsing scales and uses a clear availability disclosure", async () => {
-  const [housing,styles] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/housing-polish.css")]);
-  assert.match(housing,/ROOM_BATCH = 24/);
-  assert.match(housing,/Search housing rooms/);
+  const [housing,styles] = await Promise.all([read("src/pages/HousingV4.jsx"),read("src/pages/housing-handoff.css")]);
+  assert.match(housing,/const ROOM_BATCH = 24/);
+  assert.match(housing,/Search rooms/);
   assert.match(housing,/Availability/);
   assert.match(housing,/All rooms ·/);
   assert.match(housing,/Spaces available ·/);
-  assert.match(housing,/Full rooms ·/);
+  assert.match(housing,/>Full ·/);
   assert.match(housing,/Open spaces/);
-  assert.match(housing,/room\.occupancy/);
+  assert.match(housing,/r\.occupancy/);
   assert.match(housing,/Show \{Math\.min\(ROOM_BATCH/);
-  assert.match(styles,/\.housing-room-filter/);
-  assert.match(styles,/\.housing-room-capacity/);
-  assert.match(styles,/@media \(max-width: 760px\)/);
+  assert.match(styles,/\.housing-v4-toolbar\.rooms/);
+  assert.match(styles,/\.housing-v4-room-card/);
+  assert.match(styles,/@media \(max-width:700px\)/);
 });
 
 test("Housing person-first assignment can create a compatible room in one transaction", async () => {
-  const [housing,client,migration] = await Promise.all([
-    read("src/pages/Housing.jsx"),
+  const [dialogs,client,migration] = await Promise.all([
+    read("src/pages/HousingDialogsV4.jsx"),
     read("src/lib/housing-actions.js"),
     read("supabase/migrations/20260904230500_housing_move_reason_and_assignment_v2.sql"),
   ]);
-  assert.match(housing,/Create new room/);
-  assert.match(housing,/Create room & assign/);
-  assert.match(housing,/automatically use/);
+  assert.match(dialogs,/Create room & assign/);
+  assert.match(dialogs,/Room use will be set to/);
   assert.match(client,/create_housing_room_and_assign_v2/);
   assert.match(migration,/create or replace function public\.create_housing_room_and_assign_v2/);
   assert.match(migration,/person_sex/);
@@ -107,14 +105,14 @@ test("Housing person-first assignment can create a compatible room in one transa
 });
 
 test("Housing room moves expose an optional recommended reason and preserve it in audit history", async () => {
-  const [housing,client,migration] = await Promise.all([
-    read("src/pages/Housing.jsx"),
+  const [dialogs,client,migration] = await Promise.all([
+    read("src/pages/HousingDialogsV4.jsx"),
     read("src/lib/housing-actions.js"),
     read("supabase/migrations/20260904230500_housing_move_reason_and_assignment_v2.sql"),
   ]);
-  assert.match(housing,/Reason for room change/);
-  assert.match(housing,/Optional · recommended/);
-  assert.match(housing,/roomChanged/);
+  assert.match(dialogs,/Reason for room change/);
+  assert.match(dialogs,/Optional · recommended/);
+  assert.match(dialogs,/roomChanged/);
   assert.match(client,/p_move_reason/);
   assert.match(migration,/housing_assignment_updated/);
   assert.match(migration,/housing_moved/);
@@ -123,23 +121,22 @@ test("Housing room moves expose an optional recommended reason and preserve it i
 });
 
 test("Housing room detail uses passive arrival metadata rather than button-like status pills", async () => {
-  const [housing,styles] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/housing-polish.css")]);
-  assert.match(housing,/Awaiting check-in/);
-  assert.match(housing,/housing-arrival-state/);
-  assert.match(housing,/room-occupant-row-v3/);
-  assert.doesNotMatch(housing,/room-occupant-state[^\n]*<Status/);
-  assert.match(styles,/\.housing-arrival-state\.waiting/);
-  assert.match(styles,/\.room-occupant-row-v3/);
+  const [dialogs,styles] = await Promise.all([read("src/pages/HousingDialogsV4.jsx"),read("src/pages/housing-handoff.css")]);
+  assert.match(dialogs,/Awaiting check-in/);
+  assert.match(dialogs,/Checked in/);
+  assert.match(dialogs,/housing-v4-occupants/);
+  assert.doesNotMatch(dialogs,/room-occupant-state[^\n]*<Status/);
+  assert.match(styles,/\.housing-v4-occupants/);
 });
 
 test("Housing modals use responsive task-focused surfaces", async () => {
-  const [housing,styles,polish] = await Promise.all([read("src/pages/Housing.jsx"),read("src/pages/housing-ux.css"),read("src/pages/housing-polish.css")]);
-  assert.match(housing,/housing-room-detail-modal/);
-  assert.match(housing,/housing-assignment-modal/);
-  assert.match(housing,/housing-room-editor-modal/);
-  assert.match(housing,/Location & notes/);
-  assert.match(housing,/Assignment details/);
-  assert.match(polish,/width: min\(900px/);
-  assert.match(styles,/border-radius: 22px 22px 0 0/);
+  const [dialogs,styles] = await Promise.all([read("src/pages/HousingDialogsV4.jsx"),read("src/pages/housing-handoff.css")]);
+  assert.match(dialogs,/housing-v4-room-detail-layer/);
+  assert.match(dialogs,/housing-v4-assignment-layer/);
+  assert.match(dialogs,/housing-v4-room-editor-layer/);
+  assert.match(dialogs,/Location & notes/);
+  assert.match(dialogs,/Assignment details/);
+  assert.match(styles,/width:min\(980px/);
+  assert.match(styles,/border-radius:20px 20px 0 0/);
   assert.match(styles,/env\(safe-area-inset-bottom\)/);
 });
