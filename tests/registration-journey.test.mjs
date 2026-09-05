@@ -40,7 +40,7 @@ test("Registration presents one Registration & check-in journey", async () => {
   assert.match(source, /Setup & review/);
   assert.match(source, /<RegistrationJourney view="desk"/);
   assert.match(source, /<RegistrationJourney view="roster"/);
-  assert.match(wrapper, /RegistrationJourneyV3/);
+  assert.match(wrapper, /RegistrationJourneyV4/);
   assert.doesNotMatch(source, /ArrivalOperations/);
 });
 
