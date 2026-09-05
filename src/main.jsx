@@ -18,6 +18,7 @@ import "./modal-system.css";
 import "./modal-polish.css";
 import "./housing-assignment-v4.css";
 import "./components/staff-role-transition.css";
+import "./modal-refinement-v2.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
