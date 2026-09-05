@@ -28,6 +28,15 @@ test("the handoff is derived from check-in and disappears after Housing assignme
   assert.match(lib, /table: "housing_assignments"/);
 });
 
+test("check-in reads use a narrow RLS-safe helper without exposing broad capability checks", async () => {
+  const migration = await read("supabase/migrations/20260905015200_fix_checkin_rls_capability_helper.sql");
+  assert.match(migration, /create or replace function private\.can_read_checkin/);
+  assert.match(migration, /security definer/);
+  assert.match(migration, /grant execute on function private\.can_read_checkin\(uuid, uuid\) to authenticated/);
+  assert.match(migration, /using \(private\.can_read_checkin\(session_id, participant_id\)\)/);
+  assert.doesNotMatch(migration, /grant execute on function private\.has_capability/);
+});
+
 test("Housing room work remains complete and adaptive", async () => {
   const [housing, dialogs, css] = await Promise.all([
     read("src/pages/HousingV4.jsx"),
