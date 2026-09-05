@@ -61,7 +61,7 @@ export function AccountSetup({ teams = [], companies = [], onCreate, onClose }) 
         <label className="account-code-field">Setup code<input readOnly value={created.code} /></label>
         <small>Expires {new Date(created.expiresAt).toLocaleString()}.</small>
         {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
-        <div className="account-ready-actions">
+        <div className="account-ready-actions field-sheet-actions">
           <button className="primary" type="button" onClick={async () => {
             try {
               await navigator.clipboard.writeText(`${window.location.origin}/?invite=${encodeURIComponent(created.code)}`);
@@ -111,7 +111,7 @@ export function AccountSetup({ teams = [], companies = [], onCreate, onClose }) 
         </details>}
 
         {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
-        <footer className="account-setup-actions-v2">
+        <footer className="account-setup-actions-v2 field-sheet-actions">
           <button type="button" className="secondary" disabled={busy} onClick={close}>Cancel</button>
           <button className="primary" disabled={busy || !onCreate || !name.trim() || !email.trim() || (needsCommittee && !teamKeys.length) || (needsCompanies && !companyIds.length)}>{busy ? "Creating invite…" : <>Create invite<ArrowRight /></>}</button>
         </footer>
@@ -160,7 +160,7 @@ export function AccountTeams({ user, sessionId, teams, onClose, onSaved }) {
       <header className="account-setup-header-v2"><span className="kicker">Additional access</span><h2>{user.name}</h2><p>Add only the committee tools this person needs beyond their primary responsibility.</p></header>
       <TeamChoices teams={teams} selected={selected} onChange={setSelected} />
       {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
-      <footer className="account-setup-actions-v2"><button className="secondary" type="button" onClick={close} disabled={busy}>Cancel</button><button className="primary" type="button" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save responsibilities"}</button></footer>
+      <footer className="account-setup-actions-v2 field-sheet-actions"><button className="secondary" type="button" onClick={close} disabled={busy}>Cancel</button><button className="primary" type="button" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save responsibilities"}</button></footer>
     </div>
   </DismissibleLayer>;
 }
