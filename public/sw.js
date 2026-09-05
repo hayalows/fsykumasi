@@ -1,4 +1,4 @@
-const CACHE_NAME = "fsy-kumasi-shell-v17";
+const CACHE_NAME = "fsy-kumasi-shell-v18";
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
