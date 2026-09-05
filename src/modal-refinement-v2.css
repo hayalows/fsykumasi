@@ -1,1 +1,496 @@
-x
+/*
+ * Final responsive refinement for consequential admin sheets.
+ *
+ * Keep one clear scrolling surface, prevent form controls from creating
+ * horizontal overflow, and size radio/checkbox controls explicitly so generic
+ * form rules cannot stretch them on compact screens.
+ */
+
+.dismissible-layer .layer-panel {
+  overflow-x: hidden;
+}
+
+.dismissible-layer .field-sheet,
+.dismissible-layer .headcount-create,
+.dismissible-layer .staff-access-sheet-body,
+.dismissible-layer .staff-access-invite-form,
+.dismissible-layer .staff-access-ready,
+.dismissible-layer .manual-leader-form,
+.dismissible-layer section,
+.dismissible-layer fieldset,
+.dismissible-layer label,
+.dismissible-layer label > span {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dismissible-layer input:not([type="checkbox"]):not([type="radio"]),
+.dismissible-layer select,
+.dismissible-layer textarea {
+  max-width: 100%;
+}
+
+/* Native choice controls must never inherit full-width text-field sizing. */
+.dismissible-layer input[type="radio"],
+.dismissible-layer input[type="checkbox"] {
+  box-sizing: border-box;
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  padding: 0 !important;
+  margin: 0;
+  flex: 0 0 20px;
+  accent-color: var(--blue-25);
+}
+
+/* Guided staff responsibility change. */
+@supports selector(.layer-panel:has(.staff-role-transition-sheet)) {
+  .dismissible-layer .layer-panel:has(.staff-role-transition-sheet) {
+    width: min(760px, calc(100vw - 48px));
+    max-width: 760px;
+  }
+}
+
+.staff-role-transition-sheet {
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.role-transition-choice-grid > label,
+.role-transition-company-options > label {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+}
+
+.role-transition-choice-grid > label {
+  display: grid;
+}
+
+.role-transition-choice-grid > label > input,
+.role-transition-company-options > label > input {
+  align-self: start;
+  margin-top: 2px;
+}
+
+.role-transition-choice-grid > label > span,
+.role-transition-company-options > label > span {
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.role-transition-choice-grid b,
+.role-transition-choice-grid small,
+.role-transition-company-options b,
+.role-transition-company-options small {
+  display: block;
+  max-width: 100%;
+}
+
+.role-transition-section,
+.role-transition-review,
+.role-transition-route,
+.role-transition-selected-companies,
+.role-transition-company-picker,
+.role-transition-company-picker-body,
+.role-transition-company-options {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.role-transition-route span,
+.role-transition-route strong,
+.role-transition-section-head b,
+.role-transition-section-head small,
+.role-transition-review b,
+.role-transition-review small {
+  overflow-wrap: anywhere;
+}
+
+.role-transition-actions .primary {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Access and committee modals use the same choice-control geometry. */
+.dismissible-layer .company-picker label,
+.dismissible-layer .access-team-picker label,
+.dismissible-layer .account-choice {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dismissible-layer .company-picker label > input[type="checkbox"],
+.dismissible-layer .access-team-picker label > input[type="checkbox"],
+.dismissible-layer .account-choice > input[type="checkbox"] {
+  align-self: start;
+  margin-top: 2px;
+}
+
+.account-setup-sheet,
+.account-team-sheet {
+  width: min(100%, 680px) !important;
+}
+
+.account-setup-shell,
+.account-team-shell {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.account-setup-header,
+.account-team-header {
+  padding-right: 50px;
+}
+
+.account-setup-header h2,
+.account-team-header h2 {
+  margin-bottom: 7px;
+}
+
+.account-setup-header p,
+.account-team-header p {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.account-setup-form {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.account-setup-form > label {
+  display: grid;
+  gap: 6px;
+  font-weight: 780;
+}
+
+.account-setup-form > label > input,
+.account-setup-form > label > select,
+.account-setup-shell > label > input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.account-setup-form fieldset,
+.account-team-shell fieldset {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  display: grid;
+  gap: 9px;
+  background: var(--surface-soft);
+}
+
+.account-setup-form legend,
+.account-team-shell legend {
+  padding: 0 5px;
+  color: var(--blue-35);
+  font-weight: 820;
+}
+
+.account-setup-form fieldset > p {
+  margin: 0 0 3px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.account-choice {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #d6e5ea;
+  border-radius: 11px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  background: #fff;
+  cursor: pointer;
+}
+
+.account-choice:has(input:checked) {
+  border-color: var(--blue-5);
+  background: var(--blue-5-tint);
+}
+
+.account-choice > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.account-choice small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.account-ready-actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 760px) {
+  .modal-backdrop.dismissible-layer {
+    min-height: 100dvh;
+  }
+
+  .dismissible-layer .layer-panel {
+    max-height: 96dvh;
+    padding: 22px 16px calc(18px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sheet-layer .layer-panel:not(.assistant-company-sheet):not(.person-detail-modal)::before {
+    margin-bottom: 12px;
+  }
+
+  .dismissible-layer .modal-close {
+    width: 44px;
+    height: 44px;
+    top: 12px;
+    right: 12px;
+  }
+
+  .dismissible-layer .field-sheet-actions {
+    margin-inline: -16px;
+    padding-inline: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 9px;
+  }
+
+  .dismissible-layer .field-sheet-actions > button {
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+  }
+
+  .staff-role-transition-sheet {
+    gap: 12px;
+  }
+
+  .staff-role-transition-sheet > .kicker {
+    padding-right: 50px;
+  }
+
+  .staff-role-transition-sheet > h2 {
+    max-width: calc(100% - 48px);
+    margin: -3px 0 0;
+    font-size: clamp(27px, 8vw, 32px);
+    line-height: 1.04;
+    letter-spacing: -.03em;
+  }
+
+  .role-transition-intro {
+    margin-top: -2px;
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+
+  .role-transition-route {
+    width: 100%;
+    padding: 9px 11px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .role-transition-route strong {
+    text-align: right;
+  }
+
+  .role-transition-section {
+    width: 100%;
+    padding: 13px;
+    gap: 12px;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .role-transition-section-head {
+    gap: 9px;
+  }
+
+  .role-transition-section-head b {
+    font-size: 15px;
+    line-height: 1.25;
+  }
+
+  .role-transition-section-head small {
+    font-size: 12px;
+  }
+
+  .role-transition-choice-grid,
+  .role-transition-company-options {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .role-transition-choice-grid > label,
+  .role-transition-company-options > label {
+    min-height: 0;
+    padding: 13px;
+    gap: 11px;
+    border-radius: 12px;
+  }
+
+  .role-transition-choice-grid b,
+  .role-transition-company-options b {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .role-transition-choice-grid small,
+  .role-transition-company-options small {
+    font-size: 12.5px;
+    line-height: 1.42;
+  }
+
+  .role-transition-field select,
+  .role-transition-field input:not([type="radio"]):not([type="checkbox"]) {
+    min-height: 50px;
+    font-size: 16px;
+  }
+
+  .role-transition-selected-companies > div {
+    padding: 11px 12px;
+  }
+
+  .role-transition-selected-companies button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .role-transition-company-picker > summary {
+    min-height: 48px;
+  }
+
+  .role-transition-review {
+    padding: 13px;
+  }
+
+  .role-transition-review > div {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .role-transition-review b {
+    font-size: 12.5px;
+  }
+
+  .role-transition-actions {
+    grid-template-columns: minmax(96px, .72fr) minmax(0, 1.28fr) !important;
+  }
+
+  .role-transition-actions .primary,
+  .role-transition-actions .secondary {
+    min-height: 52px;
+  }
+
+  .account-setup-sheet,
+  .account-team-sheet,
+  .staff-access-sheet {
+    width: 100% !important;
+  }
+
+  .account-setup-shell,
+  .account-team-shell {
+    gap: 13px;
+  }
+
+  .account-setup-header,
+  .account-team-header {
+    padding-right: 48px;
+  }
+
+  .account-setup-header h2,
+  .account-team-header h2 {
+    font-size: 24px;
+  }
+
+  .account-setup-form fieldset,
+  .account-team-shell fieldset {
+    padding: 12px;
+  }
+
+  .account-choice {
+    min-height: 48px;
+    padding: 12px;
+  }
+
+  .account-ready-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .account-ready-actions > button {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .dismissible-layer .layer-panel {
+    padding-inline: 14px;
+  }
+
+  .dismissible-layer .field-sheet-actions {
+    margin-inline: -14px;
+    padding-inline: 14px;
+  }
+
+  .role-transition-actions {
+    grid-template-columns: minmax(84px, .62fr) minmax(0, 1.38fr) !important;
+  }
+
+  .role-transition-route {
+    font-size: 11.5px;
+  }
+
+  .account-ready-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 761px) {
+  .staff-role-transition-sheet > h2 {
+    padding-right: 44px;
+  }
+
+  .role-transition-actions {
+    justify-content: flex-end;
+  }
+
+  .role-transition-actions .secondary {
+    min-width: 118px;
+  }
+
+  .role-transition-actions .primary {
+    min-width: 230px;
+  }
+}
