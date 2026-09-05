@@ -171,6 +171,24 @@ export async function setStaffOperationalRole(staffId, role) {
   if (error) throw error;
 }
 
+export async function transitionStaffOperationalRole({
+  staffId,
+  role,
+  replacementCounselorId = null,
+  counselorGroupId = null,
+  companyIds = [],
+}) {
+  const { data, error } = await client().rpc("transition_staff_operational_role", {
+    p_staff_id: staffId,
+    p_role: role,
+    p_replacement_counselor_id: replacementCounselorId || null,
+    p_counselor_group_id: counselorGroupId || null,
+    p_company_ids: companyIds || [],
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function assignCounselorToGroup(staffId, groupId) {
   const { error } = await client().rpc("assign_counselor_to_group", { p_staff_id: staffId, p_group_id: groupId });
   if (error) throw error;
