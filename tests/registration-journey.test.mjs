@@ -1,6 +1,30 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { buildUnitDirectory, uniqueUnitMatch, matchesRegistrationSearch } from "../src/lib/registration-lookup.js";
+
+test("unit lookup preserves ambiguous names instead of guessing the most common stake", () => {
+  const rows = [
+    { unit: "First Ward", stake: "North Stake" },
+    { unit: " First Ward ", stake: "North Stake" },
+    { unit: "First Ward", stake: "South Stake" },
+    { unit: "Second Branch", stake: "East District" },
+    { unit: "", stake: "North Stake" },
+  ];
+  const directory = buildUnitDirectory(rows);
+  assert.equal(directory.length, 3);
+  assert.equal(uniqueUnitMatch(directory, "first ward"), null);
+  assert.equal(uniqueUnitMatch(directory, " SECOND BRANCH ").stake, "East District");
+  assert.equal(uniqueUnitMatch(directory, "New Unit"), null);
+});
+
+test("cross-filter search finds existing participants regardless of arrival status", () => {
+  const arrived = { fullName: "Test Participant", checkinStatus: "arrived", unit: "Test Branch", fsyId: "TEST-12" };
+  assert.equal(matchesRegistrationSearch(arrived, " test participant "), true);
+  assert.equal(matchesRegistrationSearch(arrived, "test-12"), true);
+  assert.equal(matchesRegistrationSearch(arrived, "room 4", { roomName: "Room 4" }), true);
+  assert.equal(matchesRegistrationSearch(arrived, "Another Person"), false);
+});
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
@@ -59,8 +83,7 @@ test("on-site registration uses the session unit directory and fills stake or di
     read("src/pages/RegistrationJourneyPartsV3.jsx"),
   ]);
   assert.match(journey, /const unitDirectory = useMemo/);
-  assert.match(journey, /row\.unit/);
-  assert.match(journey, /row\.stake/);
+  assert.match(journey, /buildUnitDirectory\(rows\)/);
   assert.match(journey, /unitDirectory=\{unitDirectory\}/);
   assert.match(parts, /function UnitCombobox/);
   assert.match(parts, /aria-autocomplete="list"/);

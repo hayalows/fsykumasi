@@ -14,6 +14,8 @@ import { DeskFilters, OnSiteDetails, PersonJourney, arrivalLabel, arrivalTone, d
 import "./registration-journey-v2.css";
 import "./registration-journey-v3.css";
 
+import { buildUnitDirectory, matchesRegistrationSearch } from "../lib/registration-lookup.js";
+
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 const PAGE_SIZE = 60;
 const FILTER_LABELS = {
@@ -76,24 +78,7 @@ export function RegistrationJourney({ view = "desk", sessionId, setImported, cap
 
   const housingByPerson = useMemo(() => new Map(housingAssignments.map((item) => [item.personId, item])), [housingAssignments]);
   const currentRows = useMemo(() => rows.filter((row) => row.isCurrent), [rows]);
-  const unitDirectory = useMemo(() => {
-    const byUnit = new Map();
-    rows.forEach((row) => {
-      const unit = String(row.unit || "").trim();
-      if (!unit) return;
-      const stake = String(row.stake || "").trim();
-      const key = unit.toLowerCase();
-      if (!byUnit.has(key)) byUnit.set(key, { unit, stakeCounts: new Map() });
-      if (stake) {
-        const entry = byUnit.get(key);
-        entry.stakeCounts.set(stake, (entry.stakeCounts.get(stake) || 0) + 1);
-      }
-    });
-    return [...byUnit.values()].map((entry) => {
-      const stake = [...entry.stakeCounts.entries()].sort((a, b) => b[1] - a[1] || collator.compare(a[0], b[0]))[0]?.[0] || "";
-      return { unit: entry.unit, stake };
-    }).sort((a, b) => collator.compare(a.unit, b.unit));
-  }, [rows]);
+  const unitDirectory = useMemo(() => buildUnitDirectory(rows), [rows]);
 
   const counts = useMemo(() => ({
     all: currentRows.length,
@@ -119,7 +104,7 @@ export function RegistrationJourney({ view = "desk", sessionId, setImported, cap
       if (filter === "not_attending" && row.attendanceStatus !== "confirmed_not_attending") return false;
       if (!text) return true;
       const housing = housingByPerson.get(row.participantId);
-      return `${row.fullName} ${row.preferredName || ""} ${row.fsyId || ""} ${row.unit || ""} ${row.stake || ""} ${row.companyName || ""} ${row.groupName || ""} ${housing?.roomName || ""}`.toLowerCase().includes(text);
+      return matchesRegistrationSearch(row, text, housing);
     }).sort((a, b) => {
       if (["all", "expected"].includes(filter)) {
         const aReady = isReady(a, eligibilityMap.get(a.participantId));
@@ -133,6 +118,7 @@ export function RegistrationJourney({ view = "desk", sessionId, setImported, cap
     });
   }, [currentRows, eligibilityMap, housingByPerson, query, filter, sourceFilter]);
 
+  const matchingInOtherViews = query.trim() ? currentRows.filter((row) => matchesRegistrationSearch(row, query, housingByPerson.get(row.participantId))).length : 0;
   const visible = filtered.slice(0, shown);
   const selectedRow = rows.find((row) => row.participantId === selectedId) || null;
   const selectedEligibility = selectedRow ? eligibilityMap.get(selectedRow.participantId) : null;
@@ -214,6 +200,7 @@ export function RegistrationJourney({ view = "desk", sessionId, setImported, cap
   return <section className={`regjourney regjourney-${view} regjourney-v2 regjourney-v3`}>
     {view === "roster" ? <div className="regjourney-roster-head regjourney-roster-head-v2 regjourney-roster-head-v3"><div><span className="kicker">Session roster</span><h2>Everyone in one place</h2><p>Search current participants, arrivals and on-site additions.</p></div><div><b>{counts.all.toLocaleString()}</b><span>current participants</span></div></div> : null}
 
+    {error && !selectedRow && !onsiteOpen ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
     {message ? <MutationFeedback tone={message.tone}>{message.text}</MutationFeedback> : null}
 
     <article className="panel regjourney-worklist regjourney-worklist-v2 regjourney-worklist-v3">
@@ -245,7 +232,7 @@ export function RegistrationJourney({ view = "desk", sessionId, setImported, cap
             <div className="regjourney-row-action">{ready && canCheckin ? <button type="button" className="primary" disabled={busyId === row.participantId} onClick={() => checkIn(row)}>{busyId === row.participantId ? "Saving…" : "Check in"}<Check /></button> : problem && canManageRegistration ? <button type="button" className="secondary resolve" onClick={() => openPerson(row)}>Resolve<ArrowRight /></button> : <button type="button" className="secondary" onClick={() => openPerson(row)}>View</button>}</div>
           </div>;
         })}
-        {!visible.length && query.trim().length >= 2 ? <div className="regjourney-no-match"><MagnifyingGlass size={30}/><div><b>No participant found for “{query}”</b><p>Try a shorter spelling or another detail. If the youth is genuinely missing, add them here.</p></div>{canManageRegistration ? <button type="button" className="primary" onClick={() => { setOnsiteOpen(true); setError(""); }}>Add on-site participant<UserPlus /></button> : null}</div> : null}
+        {!visible.length && query.trim().length >= 2 ? <div className="regjourney-no-match"><MagnifyingGlass size={30}/><div><b>{matchingInOtherViews ? "Participant matches are hidden by your filters" : `No participant found for “${query}”`}</b><p>{matchingInOtherViews ? `${matchingInOtherViews} matching record(s) exist in the roster. Check them before adding anyone.` : "Try a shorter spelling or another detail before adding a new participant."}</p></div>{matchingInOtherViews ? <button type="button" className="primary" onClick={() => { setFilter("all"); setSourceFilter("all"); }}>Search everyone<ArrowRight /></button> : canManageRegistration ? <button type="button" className="primary" onClick={() => { setOnsiteOpen(true); setError(""); }}>Add on-site participant<UserPlus /></button> : null}</div> : null}
         {!visible.length && query.trim().length < 2 ? <Empty icon={CheckCircle} title={filter === "ready" ? "No one is ready right now" : "Nothing in this view"} text={filter === "ready" ? "Open Needs attention for unresolved records or search for the participant directly." : "Choose another status or search for a participant."} /> : null}
       </div>
       {filtered.length > shown ? <button type="button" className="secondary regjourney-show-more" onClick={() => setShown((value) => value + PAGE_SIZE)}>Show {Math.min(PAGE_SIZE, filtered.length - shown)} more</button> : null}

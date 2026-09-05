@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ArrowRight } from "@phosphor-icons/react/ArrowRight";
 import { Check } from "@phosphor-icons/react/Check";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
@@ -10,6 +10,8 @@ import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { X } from "@phosphor-icons/react/X";
 import { Empty, MutationFeedback, Status } from "../components/UI.jsx";
 import { NO_SHOW_CONFIRMATION_SOURCES } from "../lib/identity-arrival.js";
+
+import { uniqueUnitMatch } from "../lib/registration-lookup.js";
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 const EMPTY_FORM = {
@@ -53,7 +55,7 @@ function LayerCloseButton({ onClose }) {
 
 function GroupPicker({ groups, companies, row, busy, onChoose }) {
   const [query, setQuery] = useState("");
-  const [showAll, setShowAll] = useState(false);
+  const [visibleLimit, setVisibleLimit] = useState(6);
   const companyById = useMemo(() => new Map(companies.map((item) => [item.id, item])), [companies]);
   const choices = useMemo(() => groups
     .filter((group) => sexValue(group.sex) === sexValue(row.sex))
@@ -66,14 +68,14 @@ function GroupPicker({ groups, companies, row, busy, onChoose }) {
       return `${group.displayName || group.name} ${company?.name || ""}`.toLowerCase().includes(text);
     });
   }, [choices, companyById, query]);
-  const visible = query.trim() ? filtered.slice(0, 10) : filtered.slice(0, showAll ? 20 : 6);
+  const visible = filtered.slice(0, visibleLimit);
   return <div className="regjourney-group-picker">
-    {choices.length > 6 ? <label className="regjourney-inline-search"><span className="sr-only">Find counselor group</span><MagnifyingGlass aria-hidden="true"/><input value={query} onChange={(event) => { setQuery(event.target.value); setShowAll(false); }} placeholder="Find a counselor group or company" /></label> : null}
+    {choices.length > 6 ? <label className="regjourney-inline-search"><span className="sr-only">Find counselor group</span><MagnifyingGlass aria-hidden="true"/><input value={query} onChange={(event) => { setQuery(event.target.value); setVisibleLimit(6); }} placeholder="Find a counselor group or company" /></label> : null}
     <div className="regjourney-choice-list">
       {visible.map((group, index) => { const company = companyById.get(group.companyId); return <button type="button" key={group.id} className="regjourney-choice" disabled={busy} onClick={() => onChoose(group)}><span><b>{group.displayName || group.name}</b><small>{company?.name || "Company"} · {Number(group.memberCount || 0)} currently assigned</small></span><span className="regjourney-choice-end">{!query.trim() && index === 0 ? <em>Best fit</em> : null}<ArrowRight /></span></button>; })}
       {!visible.length ? <Empty icon={UsersThree} title="No matching counselor groups" text="Try another group or company name." /> : null}
     </div>
-    {!query.trim() && filtered.length > 6 ? <button type="button" className="text-action regjourney-show-groups" onClick={() => setShowAll((value) => !value)}>{showAll ? "Show fewer groups" : `Show ${Math.min(14, filtered.length - 6)} more groups`}</button> : null}
+    {filtered.length > visible.length ? <button type="button" className="text-action regjourney-show-groups" onClick={() => setVisibleLimit((value) => value + 14)}>Show {Math.min(14, filtered.length - visible.length)} more groups</button> : null}
   </div>;
 }
 
@@ -81,6 +83,8 @@ function UnitCombobox({ value, stake, options = [], onChange, onStakeChange }) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const blurTimer = useRef(null);
+  const listId = useId();
+  useEffect(() => () => window.clearTimeout(blurTimer.current), []);
   const normalized = value.trim().toLowerCase();
   const matches = useMemo(() => {
     if (!normalized) return [];
@@ -92,17 +96,17 @@ function UnitCombobox({ value, stake, options = [], onChange, onStakeChange }) {
     }).filter((item) => item.score < 2).sort((a, b) => a.score - b.score || collator.compare(a.option.unit, b.option.unit));
     return ranked.slice(0, 8).map((item) => item.option);
   }, [normalized, options]);
-  const exact = useMemo(() => options.find((option) => option.unit.trim().toLowerCase() === normalized), [normalized, options]);
+  const exact = useMemo(() => uniqueUnitMatch(options, value), [normalized, options]);
 
   const choose = (option) => {
     onChange(option.unit);
-    if (option.stake) onStakeChange(option.stake);
+    onStakeChange(option.stake || "");
     setOpen(false);
     setActiveIndex(0);
   };
   const handleChange = (nextValue) => {
     onChange(nextValue);
-    const nextExact = options.find((option) => option.unit.trim().toLowerCase() === nextValue.trim().toLowerCase());
+    const nextExact = uniqueUnitMatch(options, nextValue);
     if (nextExact?.stake) onStakeChange(nextExact.stake);
     else if (value.trim().toLowerCase() !== nextValue.trim().toLowerCase()) onStakeChange("");
     setOpen(Boolean(nextValue.trim()));
@@ -112,11 +116,11 @@ function UnitCombobox({ value, stake, options = [], onChange, onStakeChange }) {
     if (!open || !matches.length) return;
     if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((index) => (index + 1) % matches.length); }
     if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((index) => (index - 1 + matches.length) % matches.length); }
-    if (event.key === "Enter") { event.preventDefault(); choose(matches[activeIndex]); }
-    if (event.key === "Escape") setOpen(false);
+    if (event.key === "Enter") { event.preventDefault(); if (matches[activeIndex]) choose(matches[activeIndex]); }
+    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setOpen(false); }
   };
   return <div className="regjourney-unit-field">
-    <div className="regjourney-combobox" role="combobox" aria-expanded={open && Boolean(matches.length)} aria-haspopup="listbox">
+    <div className="regjourney-combobox">
       <MagnifyingGlass aria-hidden="true" />
       <input
         required
@@ -125,16 +129,21 @@ function UnitCombobox({ value, stake, options = [], onChange, onStakeChange }) {
         onFocus={() => { if (value.trim()) setOpen(true); }}
         onBlur={() => { blurTimer.current = window.setTimeout(() => setOpen(false), 120); }}
         onKeyDown={handleKeyDown}
+        role="combobox"
+        aria-label="Ward / branch"
+        aria-expanded={open && Boolean(matches.length)}
+        aria-haspopup="listbox"
+        aria-activedescendant={open && matches[activeIndex] ? `${listId}-${activeIndex}` : undefined}
         aria-autocomplete="list"
-        aria-controls="regjourney-unit-options"
+        aria-controls={open && matches.length ? listId : undefined}
         placeholder="Start typing a ward or branch"
         autoComplete="off"
       />
-      {open && matches.length ? <div id="regjourney-unit-options" className="regjourney-unit-options" role="listbox">
-        {matches.map((option, index) => <button type="button" role="option" aria-selected={index === activeIndex} className={index === activeIndex ? "active" : ""} key={`${option.unit}-${option.stake}`} onMouseDown={(event) => event.preventDefault()} onClick={() => { if (blurTimer.current) window.clearTimeout(blurTimer.current); choose(option); }}><span><b>{option.unit}</b>{option.stake ? <small>{option.stake}</small> : null}</span><ArrowRight /></button>)}
+      {open && matches.length ? <div id={listId} className="regjourney-unit-options" role="listbox">
+        {matches.map((option, index) => <button type="button" role="option" tabIndex={-1} id={`${listId}-${index}`} aria-selected={index === activeIndex} className={index === activeIndex ? "active" : ""} key={`${option.unit}-${option.stake}`} onMouseDown={(event) => event.preventDefault()} onClick={() => { if (blurTimer.current) window.clearTimeout(blurTimer.current); choose(option); }}><span><b>{option.unit}</b>{option.stake ? <small>{option.stake}</small> : null}</span><ArrowRight /></button>)}
       </div> : null}
     </div>
-    <small className={`regjourney-field-note${exact?.stake && stake ? " matched" : ""}`}>{exact?.stake && stake ? `Stake / district filled automatically · ${stake}` : "Search the session directory. You can still type a new unit if it is not listed."}</small>
+    <small className={`regjourney-field-note${exact?.stake && exact.stake === stake ? " matched" : ""}`}>{exact?.stake && exact.stake === stake ? `Stake / district filled automatically · ${stake}` : "Search the session directory. You can still type a new unit if it is not listed."}</small>
   </div>;
 }
 
