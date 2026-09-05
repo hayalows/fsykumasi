@@ -1,1 +1,1 @@
-export { RegistrationJourney } from "./RegistrationJourneyV2.jsx";
+export { RegistrationJourney } from "./RegistrationJourneyV3.jsx";
