@@ -101,6 +101,14 @@ export function Food({ sessionId, capabilities = [], sessionName, participants =
   }, [reloadBase]);
 
   useEffect(() => {
+    if (!live || !canViewMeals || selectedServiceId) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== 'hidden') loadMealServices(sessionId, null).then(setServices).catch(err=>setError(err.message));
+    }, 12000);
+    return () => window.clearInterval(timer);
+  }, [live, canViewMeals, selectedServiceId, sessionId]);
+
+  useEffect(() => {
     if (!canViewDietary && tab === "needs") setTab("meals");
   }, [canViewDietary, tab]);
 
@@ -124,7 +132,7 @@ export function Food({ sessionId, capabilities = [], sessionName, participants =
       setProgress(nextProgress);
       setServices(nextServices);
     } catch (err) {
-      if (!quiet) setError(err.message || "Unable to refresh meal attendance.");
+      setError(err.message || "Meal attendance could not refresh. The last confirmed figures are shown.");
     }
   }, [live, sessionId]);
 
@@ -190,6 +198,7 @@ export function Food({ sessionId, capabilities = [], sessionName, participants =
     setRowBusy(participantId, true);
     setError("");
 
+    if (!live) {
     const optimistic = { ...person, id: `pending:${participantId}`, servedAt: new Date().toISOString() };
     setAttendance((current) => nextServed
       ? current.some((item) => item.personId === participantId) ? current : [optimistic, ...current]
@@ -201,6 +210,7 @@ export function Food({ sessionId, capabilities = [], sessionName, participants =
       ? { ...row, servedCount: Math.max(0, Number(row.servedCount || 0) + (nextServed ? 1 : -1)) }
       : row));
 
+    }
     try {
       if (live) await setParticipantMealServed({ serviceId: selectedService.id, participantId, served: nextServed });
       if (live) await refreshSelected(selectedService.id, true);

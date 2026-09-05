@@ -113,7 +113,7 @@ export function IdentityFoundation({ sessionId, capabilities = [], onChanged }) 
       if (filter === "pending" && row.fsyId) return false;
       if (filter === "origin" && row.originCode) return false;
       if (filter === "badge" && !row.nameReviewRequired && !row.needsReprint) return false;
-      return !query || `${row.fsyId} ${row.fullName} ${row.preferredName} ${row.stake} ${row.unit} ${row.companyName} ${row.groupName} ${row.originCode}`.toLowerCase().includes(query);
+      return !query || `${row.fsyId} ${(row.previousFsyIds||[]).join(" ")} ${row.fullName} ${row.preferredName} ${row.stake} ${row.unit} ${row.companyName} ${row.groupName} ${row.originCode}`.toLowerCase().includes(query);
     }).slice(0, 300);
   }, [rows, search, filter]);
 
@@ -176,7 +176,7 @@ export function IdentityFoundation({ sessionId, capabilities = [], onChanged }) 
   return <section className="ops-workspace identity-shell-v5">
     <article className="panel identity-readiness-v5">
       <div className="identity-readiness-head-v5">
-        <div><span className="kicker">FSY identity workflow</span><h2>Prepare, review, then finalize</h2><p>FSY IDs are operational identifiers. The original Church registration ID and registered name stay untouched.</p></div>
+        <div><span className="kicker">FSY identity workflow</span><h2>Prepare, review, then finalize</h2><p>Company → sequence → stake/unit identifier. Existing sequences are preserved, and earlier IDs stay searchable.</p></div>
         <Status tone={finalized ? "good" : prepared ? "warn" : "muted"}>{finalized ? "Finalized" : prepared ? "Draft ready" : "Not prepared"}</Status>
       </div>
       <div className="identity-stepper-v5" aria-label="FSY ID workflow">
@@ -209,7 +209,7 @@ export function IdentityFoundation({ sessionId, capabilities = [], onChanged }) 
       <div className="identity-roster-v5">
         {filtered.map((row) => <div className={`identity-row-v5${row.nameReviewRequired || row.needsReprint ? " review" : ""}`} key={row.participantId}>
           <div className="identity-person-v5"><span className="person-avatar">{initials(row.fullName)}</span><span><b>{row.fullName}</b><small>{row.unit || "Unit not recorded"}{row.stake ? ` · ${row.stake}` : ""}</small></span></div>
-          <div className="identity-id-v5"><span>FSY ID</span><b className="mono-id">{row.fsyId || "Pending"}</b><small>{row.originCode || "Origin unresolved"}</small></div>
+          <div className="identity-id-v5"><span>FSY ID</span><b className="mono-id">{row.fsyId || "Pending"}</b><small>{row.originCode || "Origin unresolved"}</small>{row.previousFsyIds?.length?<small>Previous: {row.previousFsyIds.join(", ")}</small>:null}</div>
           <div className="identity-group-v5"><span>Company / group</span><b>{row.companyName || "Unassigned"}</b><small>{row.groupName || "No counselor group"}</small></div>
           <div className="identity-badge-v5"><span>Badge</span><button type="button" className="identity-badge-button-v5" disabled={!canManage || !row.fsyId} onClick={() => { setEditing(row); setBadgeName(row.badgeName || row.fullName); }}>{row.badgeName || row.fullName}</button>{row.nameReviewRequired ? <small className="warning-copy"><WarningCircle /> Preferred name review</small> : row.needsReprint ? <small className="warning-copy">Reprint needed</small> : <small>Ready</small>}</div>
         </div>)}
@@ -282,7 +282,7 @@ export function ArrivalOperations({ sessionId, capabilities = [], onChanged }) {
     return rows.filter((row) => {
       if (status === "arrived" && row.checkinStatus !== "arrived") return false;
       if (status !== "all" && status !== "arrived" && (row.checkinStatus === "arrived" || row.attendanceStatus !== status)) return false;
-      return !query || `${row.fsyId} ${row.fullName} ${row.preferredName} ${row.stake} ${row.unit} ${row.companyName} ${row.groupName}`.toLowerCase().includes(query);
+      return !query || `${row.fsyId} ${(row.previousFsyIds||[]).join(" ")} ${row.fullName} ${row.preferredName} ${row.stake} ${row.unit} ${row.companyName} ${row.groupName}`.toLowerCase().includes(query);
     }).slice(0, 400);
   }, [rows, search, status]);
 

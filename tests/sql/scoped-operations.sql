@@ -19,7 +19,7 @@ begin
  if (select count(*) from public.headcount_round_people where round_id=rid)<>2 then raise exception 'FAIL snapshot roster'; end if;
  if exists(select 1 from public.headcount_round_people where round_id=rid and status<>'unresolved') then raise exception 'FAIL default presence'; end if;
  perform set_config('request.jwt.claim.sub',ac_id::text,true);
- result:=public.get_headcount_roster_v3(sid);
+ result:=public.get_headcount_roster_v4(sid);
  if jsonb_array_length(result->'people')<>1 then raise exception 'FAIL AC roster scope with added Food committee'; end if;
  select id into item from public.headcount_round_people where round_id=rid and person_id=p2;
  blocked:=false;begin perform public.set_headcount_person_v3(item,'present',0,null);exception when others then blocked:=true;end;
@@ -44,13 +44,21 @@ begin
  if not exists(select 1 from public.participant_badge_assignments where participant_id=p1 and fsy_id='C01-01-TEST') then raise exception 'FAIL company-first ID';end if;
  blocked:=false;begin update public.participant_badge_assignments set slot_number=2 where participant_id=p1;exception when others then blocked:=true;end;
  if not blocked then raise exception 'FAIL silent slot renumber';end if;
+ -- A transfer must preserve the original identity and snapshot company.
+ update public.participants set group_id=g2 where id=p1;
+ if not exists(select 1 from public.participant_badge_assignments where participant_id=p1 and company_id=c1 and state='retired') then raise exception 'FAIL transfer retired history';end if;
+ if not exists(select 1 from public.participant_badge_assignments where participant_id=p1 and company_id=c2 and fsy_id='C02-01-TEST' and needs_reprint) then raise exception 'FAIL transfer new identity';end if;
+ if not exists(select 1 from public.participant_badge_id_history where participant_id=p1 and previous_fsy_id='C01-01-TEST') then raise exception 'FAIL transfer alias';end if;
+ if not exists(select 1 from public.headcount_round_people where person_id=p1 and company_id=c1) then raise exception 'FAIL historical count moved';end if;
+ perform set_config('request.jwt.claim.sub',ac_id::text,true);
+ if (public.get_headcount_summary_v3(sid)->>'total')::int<>1 then raise exception 'FAIL summary scope';end if;
  -- Exercise API grants using authenticated role, not only the database owner.
  perform set_config('fsy.test.session',sid::text,true);
  perform set_config('request.jwt.claim.sub',ac_id::text,true);
 end; $$;
 set local role authenticated;
 do $$ declare payload jsonb;begin
- payload:=public.get_headcount_roster_v3(current_setting('fsy.test.session')::uuid);
+ payload:=public.get_headcount_roster_v4(current_setting('fsy.test.session')::uuid);
  if jsonb_array_length(payload->'people')<>1 then raise exception 'FAIL authenticated RPC scope';end if;
  if (select count(*) from public.participants where session_id=current_setting('fsy.test.session')::uuid)<>2 then raise exception 'FAIL additive Food lookup scope';end if;
 end; $$;

@@ -100,8 +100,7 @@ export async function loadHousingRooms(sessionId) {
 }
 
 export async function loadHousingAssignments(sessionId) {
-  const { data, error } = await client().rpc("get_housing_assignments", { p_session_id: sessionId });
-  if (error) throw error;
+  const data = await loadRpcPages(client(), "get_housing_assignments", { p_session_id: sessionId }, ["assignment_id"]);
   return (data || []).map((row) => ({
     id: row.assignment_id,
     roomId: row.room_id,

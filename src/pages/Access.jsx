@@ -144,7 +144,7 @@ export function createInitialAccessRequests() { return demoAccessRequests; }
 
 export function Access({
   requests = [], invites = [], currentRole = "logistics_admin", currentCapabilities = [], onDecision,
-  onCreateInvite, onRevokeInvite, onCreateRecovery, onManageLeaderAccess, roster = demoUsers, companies = [], teams = [],
+  onRefreshRoster, onCreateInvite, onRevokeInvite, onCreateRecovery, onManageLeaderAccess, roster = demoUsers, companies = [], teams = [],
   live = false, sessionName, companyLimit = 4,
 }) {
   const [newAccount,setNewAccount]=useState(false);
@@ -286,7 +286,7 @@ export function Access({
     <div className="staff-access-lifecycle-note"><ShieldCheck weight="fill"/><div><b>Full Session Administrators</b><p>Coordinators, Logistical Administrators and the Session Directing Couple can manage website access for the whole session. Account activity is shown only here for administration and support.</p></div></div>
 
     {newAccount ? <AccountSetup teams={teams} companies={companies} onCreate={onCreateInvite} onClose={()=>setNewAccount(false)}/> : null}
-    {teamTarget ? <AccountTeams user={teamTarget} sessionId={sessionId} teams={teams} onClose={()=>setTeamTarget(null)} onSaved={refresh}/> : null}
+    {teamTarget ? <AccountTeams user={teamTarget} sessionId={sessionId} teams={teams} onClose={()=>setTeamTarget(null)} onSaved={async()=>{await refresh();await onRefreshRoster?.();}}/> : null}
     {recoveryResult ? <DismissibleLayer open onClose={()=>setRecoveryResult(null)} title="Recovery code" sheet><div className="headcount-create"><h2>Recovery for {recoveryResult.name}</h2><label>One-time code<input readOnly value={recoveryResult.code}/></label><p>Expires {new Date(recoveryResult.expiresAt).toLocaleString()}. Share only with the account owner.</p><button className="secondary" onClick={()=>setRecoveryResult(null)}>Done</button></div></DismissibleLayer> : null}
     {inviteTarget ? <StaffAccessInvite staff={inviteTarget} onClose={() => setInviteTarget(null)} onInvited={() => refresh()} /> : null}
     {companyTarget ? <AssistantCompanySheet staff={companyTarget.person} companies={companies} directory={directory} companyLimit={companyLimit} continueToAccess={companyTarget.continueToAccess} onClose={() => setCompanyTarget(null)} onSaved={afterCompanySave} onContinue={continueAfterCompanies}/> : null}

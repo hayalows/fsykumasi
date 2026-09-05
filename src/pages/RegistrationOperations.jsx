@@ -62,7 +62,7 @@ export function IdentityFoundation({ sessionId, capabilities = [], onChanged }) 
     try {
       const count = await rebuildDraftFsyIds(sessionId);
       await reload(); await onChanged?.();
-      setMessage({ tone: "success", text: `${Number(count || 0).toLocaleString()} draft FSY IDs prepared using female groups first, then male groups.` });
+      setMessage({ tone: "success", text: `${Number(count || 0).toLocaleString()} new draft FSY IDs prepared. Existing sequences were preserved.` });
     } catch (error) { setMessage({ tone: "error", text: error.message || "Unable to prepare FSY IDs." }); }
     finally { setBusy(false); }
   };
@@ -99,7 +99,7 @@ export function IdentityFoundation({ sessionId, capabilities = [], onChanged }) 
       <div>
         <span className="kicker">Operational identity</span>
         <h2>FSY IDs and badge names</h2>
-        <p>Keep the Church/source registration ID untouched. FSY IDs are a separate field tool: origin + company + roster slot, with Young Women numbered before Young Men.</p>
+        <p>Keep the Church/source registration ID untouched. FSY IDs are a separate field tool: company number → sequence within that company → stake/unit identifier. Existing sequences stay fixed; earlier IDs remain searchable.</p>
       </div>
       {canManage ? <div className="ops-actions">
         <button className="secondary" onClick={prepare} disabled={busy || readiness?.finalizedIds > 0}><ArrowClockwise />{readiness?.draftIds ? "Rebuild draft IDs" : "Prepare IDs"}</button>
