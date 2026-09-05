@@ -49,16 +49,17 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
     const canPeople = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"people_lookup");
     const canGroups = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"groups_view");
     const canCheckin = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"checkin_record");
+    const canRegistration = WHOLE_SESSION.has(currentRole) || has(currentCapabilities,"registration_view") || has(currentCapabilities,"registration_manage");
     const canHeadcount = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"headcount_view") || has(currentCapabilities,"headcount_record");
     const canReports = REPORT_CAPABILITIES.some((capability) => has(currentCapabilities, capability));
     const today = [["overview","Overview",SquaresFour]];
-    if (canCheckin) today.push(["checkin","Check-in",CheckCircle]);
+    if (canRegistration) today.push(["registration","Registration & check-in",IdentificationCard]);
+    else if (canCheckin) today.push(["checkin","Check-in",CheckCircle]);
     if (canHeadcount) today.push(["headcount","Head count",ClipboardText]);
     if (canGroups) today.push(["groups","Groups & companies",Buildings]);
 
     const peopleAndSetup = [];
     if (canPeople) peopleAndSetup.push(["people","People",UsersThree]);
-    if (WHOLE_SESSION.has(currentRole) || has(currentCapabilities,"registration_view") || has(currentCapabilities,"registration_manage")) peopleAndSetup.push(["registration","Registration",IdentificationCard]);
     if (WHOLE_SESSION.has(currentRole) || has(currentCapabilities,"staff_manage")) peopleAndSetup.push(["assignments","Assignments",Users]);
 
     const teamTools = [];
@@ -138,7 +139,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
       {isTraining?<div className="training-banner" role="status"><b>Training sandbox</b><span>Everything in this workspace is synthetic. Test operations without touching the real FSY session.</span></div>:null}
       {syncError?<div className="sync-warning" role="alert"><span>Live updates paused: {syncError}</span><button onClick={onRefresh}>Reconnect</button></div>:null}
       {children}
-      <nav className="mobile-nav" aria-label="Primary mobile navigation">{allMain.filter(([id])=>nav.mobile.some(([mobileId])=>mobileId===id)).map(([id,label,Icon])=><button type="button" key={id} className={active===id?"active":""} onClick={()=>navigate(id)} aria-current={active===id?"page":undefined}><Icon size={21} weight={active===id?"fill":"regular"}/><span>{label.replace(" & companies","")}</span></button>)}<button type="button" className={hasSecondaryActive?"active":""} onClick={openMenu} aria-label="Open more navigation" aria-expanded={menu}><List size={21} weight={hasSecondaryActive?"fill":"regular"}/><span>More</span></button></nav>
+      <nav className="mobile-nav" aria-label="Primary mobile navigation">{allMain.filter(([id])=>nav.mobile.some(([mobileId])=>mobileId===id)).map(([id,label,Icon])=><button type="button" key={id} className={active===id?"active":""} onClick={()=>navigate(id)} aria-current={active===id?"page":undefined}><Icon size={21} weight={active===id?"fill":"regular"}/><span>{label.replace("Registration & check-in","Check-in").replace(" & companies","")}</span></button>)}<button type="button" className={hasSecondaryActive?"active":""} onClick={openMenu} aria-label="Open more navigation" aria-expanded={menu}><List size={21} weight={hasSecondaryActive?"fill":"regular"}/><span>More</span></button></nav>
     </main>
   </div>;
 }
