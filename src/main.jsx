@@ -27,6 +27,7 @@ import "./registration-checkin-v6.css";
 import "./registration-flow-v7.css";
 import "./account-page-v9.css";
 import "./operations-ux-v10.css";
+import "./access-assignments-v11.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
