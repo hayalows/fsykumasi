@@ -1,15 +1,16 @@
 /*
- * Sidebar navigation v2.
+ * Sidebar navigation v3.
  *
- * The drawer keeps global navigation predictable while letting the middle section
- * scroll independently. Header, session context, and account controls remain
- * stable, long session themes wrap instead of being clipped, and a selected tool
- * inside More is the only strong selection state.
+ * Phone navigation is intentionally compact and predictable: top-level work first,
+ * secondary tools on demand, one strong current-page state, stable session context,
+ * and a fixed account footer. The navigation body is the only scrolling region.
+ * Width and height rules are based on the available viewport rather than individual
+ * device models so the drawer behaves consistently across iPhone and Android phones.
  */
 
 .session-badge {
   height: auto !important;
-  min-height: 64px;
+  min-height: 58px;
   overflow: visible !important;
   align-content: start;
 }
@@ -21,60 +22,74 @@
   overflow: visible;
   text-overflow: clip;
   overflow-wrap: anywhere;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
-/* When a child destination is active, More is context, not a second selected page. */
+/* A secondary destination is selected inside the disclosure. More itself remains
+   contextual rather than competing with the current page. */
 .sidebar-more-trigger.active {
   color: #eef9fc !important;
-  background: rgba(196, 233, 245, .09) !important;
-  box-shadow: inset 3px 0 0 rgba(196, 233, 245, .5);
-  font-weight: 800;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-weight: 760;
 }
 
-.sidebar-more-trigger.active:hover {
+.sidebar-more-trigger.active:hover,
+.sidebar-more-trigger.active[aria-expanded="true"] {
   color: #fff !important;
-  background: rgba(196, 233, 245, .13) !important;
+  background: rgba(196, 233, 245, .07) !important;
 }
 
 .sidebar-more-items button.active {
   color: var(--blue-35) !important;
   background: var(--blue-5) !important;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
 @media (max-width: 760px) {
   .sidebar {
     inset: 0 auto 0 0;
-    width: min(88vw, 340px);
+    width: clamp(288px, 82vw, 328px);
     height: 100dvh;
     max-height: 100dvh;
     padding:
-      max(12px, env(safe-area-inset-top))
-      12px
-      max(10px, env(safe-area-inset-bottom));
+      max(10px, env(safe-area-inset-top))
+      10px
+      max(8px, env(safe-area-inset-bottom));
     gap: 0;
     overflow: hidden;
-    box-shadow: 24px 0 60px rgba(0, 40, 61, .2);
+    box-shadow: 22px 0 54px rgba(0, 40, 61, .22);
+    transition: transform .22s cubic-bezier(.2,.8,.2,1), visibility .22s step-end;
+  }
+
+  .sidebar.open {
+    transition: transform .22s cubic-bezier(.2,.8,.2,1), visibility 0s step-start;
   }
 
   .sidebar-scrim {
-    background: rgba(0, 42, 60, .54);
+    background: rgba(0, 42, 60, .50);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
+    animation: sidebar-scrim-in .18s ease-out both;
   }
 
+  @keyframes sidebar-scrim-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Brand: enough identity to orient the user, without consuming the drawer. */
   .brand {
-    min-height: 58px;
-    padding: 2px 5px 8px;
-    gap: 10px;
+    min-height: 54px;
+    padding: 2px 4px 6px;
+    gap: 9px;
   }
 
   .brand-symbol.compact {
-    width: 44px;
-    height: 44px;
-    padding: 4px;
-    border-radius: 13px;
+    width: 42px;
+    height: 42px;
+    padding: 3px;
+    border-radius: 12px;
   }
 
   .brand > div {
@@ -85,23 +100,24 @@
   .brand b {
     display: block;
     font-size: 17px;
-    line-height: 1.15;
+    line-height: 1.12;
+    letter-spacing: -.015em;
   }
 
   .brand small {
     margin-top: 2px;
-    font-size: 11.5px;
+    font-size: 11px;
     line-height: 1.2;
   }
 
   .sidebar-close {
     display: grid !important;
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     margin-left: auto;
     flex: none;
     color: #e7f5f9;
-    border-radius: 12px;
+    border-radius: 11px;
   }
 
   .sidebar-close:hover,
@@ -109,34 +125,42 @@
     background: rgba(255, 255, 255, .08);
   }
 
+  /* Session context is a compact orientation cue, not a hero card. */
   .session-badge {
-    min-height: 70px;
-    margin: 7px 4px 13px;
-    padding: 11px 13px 12px;
-    gap: 5px;
-    border-radius: 15px;
+    min-height: 58px;
+    margin: 4px 3px 9px;
+    padding: 9px 11px 10px;
+    gap: 3px;
+    border-radius: 13px;
+    background: rgba(196, 233, 245, .065);
+    border-color: rgba(196, 233, 245, .20);
     overflow: visible !important;
   }
 
   .session-badge span {
-    font-size: 10.5px;
-    line-height: 1.2;
-    letter-spacing: .14em;
+    font-size: 10px;
+    line-height: 1.15;
+    letter-spacing: .13em;
   }
 
   .session-badge small {
-    font-size: 12.5px;
-    line-height: 1.38;
+    font-size: 12.25px;
+    line-height: 1.32;
     color: #e2f2f7;
   }
 
-  /* Only the navigation body scrolls. This keeps identity and sign-out reachable. */
+  /* Critical layout rule: a flexed CSS grid otherwise stretches its auto rows to
+     fill the drawer, which made each navigation item look ~100px apart on phones. */
   .sidebar-nav {
     min-height: 0;
     flex: 1 1 auto;
+    display: grid !important;
+    grid-auto-rows: max-content;
+    align-content: start;
+    gap: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 2px 2px 10px;
+    padding: 2px 1px 8px;
     overscroll-behavior-y: contain;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
@@ -147,16 +171,20 @@
   }
 
   .nav-group {
-    gap: 3px;
+    display: grid;
+    grid-auto-rows: max-content;
+    align-content: start;
+    gap: 2px;
   }
 
   .nav-group + .nav-group {
-    margin-top: 12px;
+    margin-top: 9px;
   }
 
   .nav-group-label {
-    padding: 3px 11px 5px;
-    font-size: 9.5px;
+    padding: 5px 10px 4px;
+    color: #a9d1dd;
+    font-size: 9px;
     line-height: 1.2;
     letter-spacing: .13em;
   }
@@ -164,62 +192,90 @@
   .sidebar nav button {
     min-height: 48px !important;
     height: auto !important;
-    padding: 8px 11px;
-    grid-template-columns: 24px minmax(0, 1fr) auto;
-    gap: 10px;
-    border-radius: 12px;
+    padding: 7px 10px;
+    grid-template-columns: 23px minmax(0, 1fr) auto;
+    gap: 9px;
+    border-radius: 11px;
+    transition: background-color .14s ease, color .14s ease, transform .1s ease;
+  }
+
+  .sidebar nav button:active {
+    transform: scale(.992);
   }
 
   .sidebar nav button > span {
     min-width: 0;
     font-size: 14px;
-    line-height: 1.2;
+    line-height: 1.22;
+    letter-spacing: -.01em;
     white-space: normal;
     overflow-wrap: break-word;
   }
 
   .sidebar nav button svg {
+    width: 21px;
+    height: 21px;
     flex: none;
   }
 
+  .sidebar nav button.active:not(.sidebar-more-trigger) {
+    color: var(--blue-35);
+    background: rgba(196, 233, 245, .94);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.28);
+    font-weight: 820;
+  }
+
+  /* More reads as a disclosure, not another destination card. */
   .nav-group-more {
-    margin-top: 13px !important;
-    padding-top: 10px;
-    border-top: 1px solid rgba(196, 233, 245, .15);
+    margin-top: 9px !important;
+    padding-top: 8px;
+    border-top: 1px solid rgba(196, 233, 245, .13);
   }
 
   .sidebar-more-trigger {
-    min-height: 46px !important;
+    min-height: 44px !important;
+    padding-block: 5px !important;
+    color: #d9edf3;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
-  .sidebar-more-trigger.active {
-    color: #f3fbfd !important;
-    background: rgba(196, 233, 245, .08) !important;
-    box-shadow: inset 3px 0 0 rgba(196, 233, 245, .42);
+  .sidebar-more-trigger[aria-expanded="true"] {
+    color: #fff;
+    background: rgba(196, 233, 245, .065) !important;
+  }
+
+  .sidebar-more-trigger .more-chevron {
+    transition: transform .18s cubic-bezier(.2,.8,.2,1);
   }
 
   .sidebar-more-items {
+    display: grid;
+    grid-auto-rows: max-content;
+    align-content: start;
     gap: 0;
-    margin: 4px 0 0;
-    padding: 2px 0 0;
-    border-left: 0;
+    margin: 3px 0 0 10px;
+    padding: 1px 0 2px 7px;
+    border-left: 1px solid rgba(196, 233, 245, .16);
   }
 
   .sidebar-more-group {
     display: grid;
-    gap: 2px;
-    padding: 7px 0 4px;
-    border-top: 1px solid rgba(196, 233, 245, .11);
+    grid-auto-rows: max-content;
+    gap: 1px;
+    padding: 5px 0 3px;
   }
 
-  .sidebar-more-group:first-child {
-    border-top: 0;
+  .sidebar-more-group + .sidebar-more-group {
+    margin-top: 3px;
+    padding-top: 7px;
+    border-top: 1px solid rgba(196, 233, 245, .09);
   }
 
   .sidebar-more-label {
-    padding: 2px 12px 4px;
-    color: #9fcbd9;
-    font-size: 9px;
+    padding: 2px 9px 3px;
+    color: #96c5d3;
+    font-size: 8.5px;
     font-weight: 900;
     line-height: 1.2;
     letter-spacing: .13em;
@@ -227,50 +283,62 @@
   }
 
   .sidebar-more-items button {
-    min-height: 46px !important;
-    margin: 0 3px;
-    padding: 8px 10px !important;
-    border-radius: 11px;
+    min-height: 44px !important;
+    margin: 0 2px;
+    padding: 6px 9px !important;
+    border-radius: 10px;
+  }
+
+  .sidebar-more-items button > span {
+    font-size: 13.5px;
   }
 
   .sidebar-more-items button.active {
     color: var(--blue-35) !important;
-    background: var(--blue-5) !important;
+    background: rgba(196, 233, 245, .94) !important;
   }
 
+  /* Account stays reachable while the navigation body scrolls independently. */
   .sidebar-foot {
     flex: none;
-    margin-top: 5px;
-    padding: 10px 3px 1px;
-    grid-template-columns: minmax(0, 1fr) 44px;
-    gap: 5px;
+    min-height: 58px;
+    margin-top: 4px;
+    padding: 8px 2px 0;
+    grid-template-columns: minmax(0, 1fr) 42px;
+    gap: 4px;
+    border-top-color: rgba(255,255,255,.12);
     background: var(--blue-50);
   }
 
   .sidebar-profile {
     min-width: 0;
-    min-height: 52px;
-    padding: 5px 6px;
+    min-height: 48px;
+    padding: 4px 5px;
     border: 0;
-    border-radius: 12px;
+    border-radius: 11px;
     display: grid;
-    grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-columns: 36px minmax(0, 1fr);
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     color: #fff;
     background: transparent;
     text-align: left;
   }
 
+  .sidebar-profile .navii-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
   .sidebar-profile:hover,
   .sidebar-profile:active {
-    background: rgba(255, 255, 255, .07);
+    background: rgba(255, 255, 255, .065);
   }
 
   .sidebar-account-copy {
     min-width: 0;
     display: grid;
-    gap: 2px;
+    gap: 1px;
   }
 
   .sidebar-account-copy b,
@@ -282,21 +350,21 @@
   }
 
   .sidebar-account-copy b {
-    font-size: 13.5px;
+    font-size: 13px;
     line-height: 1.2;
   }
 
   .sidebar-account-copy small {
-    font-size: 11px;
+    font-size: 10.5px;
     line-height: 1.2;
   }
 
   .sidebar-signout {
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     padding: 0;
     border: 0;
-    border-radius: 12px;
+    border-radius: 11px;
     display: grid;
     place-items: center;
     color: #d7edf4;
@@ -309,7 +377,8 @@
     background: rgba(255, 255, 255, .08);
   }
 
-  /* The tab bar should not visually compete with an open navigation drawer. */
+  /* A modal drawer owns navigation while open, so the tab bar leaves the visual
+     and touch hierarchy until the drawer closes. */
   .sidebar.open ~ .workspace .mobile-nav {
     transform: translate3d(0, 115%, 0);
     opacity: 0;
@@ -317,10 +386,12 @@
   }
 }
 
-@media (max-width: 390px) {
+/* Small Android phones and older compact iPhones retain comfortable tap targets
+   by making the drawer wider relative to the viewport rather than shrinking text. */
+@media (max-width: 350px) {
   .sidebar {
-    width: min(91vw, 334px);
-    padding-inline: 10px;
+    width: calc(100vw - 18px);
+    padding-inline: 8px;
   }
 
   .sidebar nav button > span {
@@ -328,9 +399,62 @@
   }
 }
 
+/* Larger phones and narrow tablets get a stable maximum drawer width. */
+@media (min-width: 600px) and (max-width: 760px) {
+  .sidebar {
+    width: 344px;
+  }
+}
+
+/* Short phones and landscape mode prioritize destinations while retaining the
+   session cue and account controls. The middle area remains scrollable. */
+@media (max-width: 760px) and (max-height: 700px) {
+  .brand {
+    min-height: 48px;
+    padding-bottom: 3px;
+  }
+
+  .brand-symbol.compact {
+    width: 38px;
+    height: 38px;
+  }
+
+  .session-badge {
+    min-height: 50px;
+    margin-block: 3px 6px;
+    padding: 7px 10px 8px;
+  }
+
+  .session-badge small {
+    font-size: 11.5px;
+  }
+
+  .nav-group-label {
+    padding-top: 3px;
+  }
+
+  .sidebar nav button {
+    min-height: 44px !important;
+    padding-block: 5px;
+  }
+
+  .sidebar-foot {
+    min-height: 52px;
+    padding-top: 5px;
+  }
+
+  .sidebar-profile {
+    min-height: 44px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar-scrim,
+  .sidebar nav button,
   .sidebar-more-trigger .more-chevron,
   .sidebar.open ~ .workspace .mobile-nav {
-    transition: none;
+    animation: none !important;
+    transition: none !important;
   }
 }
