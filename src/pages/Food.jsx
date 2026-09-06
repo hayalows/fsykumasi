@@ -1,9 +1,8 @@
 /**
- * Stable Food route contract. The active implementation lives in FoodV2 so the
- * public route stays unchanged while the workspace can evolve independently.
+ * Stable Food route contract. FoodV3 keeps live serving focused on the next
+ * participant while meal setup, progress and closure stay secondary.
  *
- * Access remains capability-driven through food_view / meal attendance roles.
- * Participant serving remains a type="checkbox" interaction. Each tick saves immediately.
- * Dietary needs remain a separate Food workflow and do not load with the serving desk.
+ * Access remains capability-driven and dietary review remains a separate
+ * workflow from meal attendance.
  */
-export { Food } from "./FoodV2.jsx";
+export { Food } from "./FoodV3.jsx";
