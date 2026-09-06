@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CaretDown } from "@phosphor-icons/react/CaretDown";
 import { EnvelopeSimple } from "@phosphor-icons/react/EnvelopeSimple";
-import { IdentificationBadge } from "@phosphor-icons/react/IdentificationBadge";
-import { Key } from "@phosphor-icons/react/Key";
 import { PencilSimple } from "@phosphor-icons/react/PencilSimple";
 import { ShieldCheck } from "@phosphor-icons/react/ShieldCheck";
 import { SignOut } from "@phosphor-icons/react/SignOut";
@@ -76,14 +74,14 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
 
   return (
     <section className="page profile-page">
-      <PageHead title="Account" sessionName={activeSessionName} description="Update your name, review access, or manage security." />
+      <PageHead title="Account" sessionName={activeSessionName} description="Your details, access and sign-in security." />
 
       <article className="panel profile-identity-card">
         <div className="profile-identity-main">
           <AccountAvatar seed={currentUser?.user_id || currentUser?.id} label={`${displayName} profile`} size={68} className="profile-avatar-large" />
           <div className="profile-identity-copy"><span className="kicker">Signed-in account</span><h2>{displayName}</h2><p>{email}</p><span className="profile-role-chip"><ShieldCheck weight="fill" />{roleLabel(currentRole)}</span></div>
         </div>
-        <button className="secondary profile-edit-trigger" onClick={() => { setError(""); setEditing((value) => !value); }} aria-expanded={editing}><PencilSimple />{editing ? "Close edit" : "Edit"}</button>
+        <button className="secondary profile-edit-trigger" onClick={() => { setError(""); setEditing((value) => !value); }} aria-expanded={editing} aria-label={editing ? "Close name editor" : "Edit account name"}><PencilSimple /><span className="profile-edit-label">{editing ? "Close" : "Edit"}</span></button>
       </article>
 
       {editing ? <article className="panel profile-edit-card profile-inline-card">
@@ -97,7 +95,7 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
       </article> : saved ? <div className="auth-success profile-save-confirmation" role="status"><Status tone="good">Name saved</Status></div> : null}
 
       <details className="panel progressive-section profile-disclosure">
-        <summary><span><span className="kicker">Permissions</span><b>{roleLabel(currentRole)} · {scope}</b><small>{activeSessionName}</small></span><CaretDown className="disclosure-icon" size={20} /></summary>
+        <summary><span><span className="kicker">Access</span><b>{roleLabel(currentRole)}</b><small>{scope} · {activeSessionName}</small></span><CaretDown className="disclosure-icon" size={20} /></summary>
         <div className="progressive-section-body profile-disclosure-body">
           <dl className="profile-details">
             <div><dt>Role</dt><dd>{roleLabel(currentRole)}</dd></div>
@@ -109,7 +107,7 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
       </details>
 
       <details className="panel progressive-section profile-disclosure profile-security-disclosure">
-        <summary><span><span className="kicker">Security</span><b>Change password</b><small>Password-first sign-in for daily use</small></span><Key size={20} className="panel-symbol" /></summary>
+        <summary><span><span className="kicker">Security</span><b>Password</b><small>Change the password you use to sign in.</small></span><CaretDown className="disclosure-icon" size={20} /></summary>
         <div className="progressive-section-body profile-disclosure-body">
           <form className="profile-form" onSubmit={submitPassword}>
             <label>Current password<input required type="password" value={passwords.current} onChange={(event) => setPasswords({ ...passwords, current: event.target.value })} autoComplete="current-password" /></label>
@@ -122,10 +120,9 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
       </details>
 
       <div className="profile-signout-row">
-        <span className="kicker">Session</span>
-        <button className="secondary compact-button" onClick={onSignOut} disabled={!onSignOut}><SignOut />Sign out</button>
+        <span className="profile-signout-copy"><span className="kicker">Session</span><small>Sign out of this device when you are done.</small></span>
+        <button className="secondary compact-button" onClick={onSignOut} disabled={!onSignOut}><SignOut /><span>Sign out</span></button>
       </div>
     </section>
   );
 }
-

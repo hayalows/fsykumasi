@@ -25,6 +25,7 @@ import "./sidebar-navigation-v2.css";
 import "./registration-modal-v4.css";
 import "./registration-checkin-v6.css";
 import "./registration-flow-v7.css";
+import "./account-page-v9.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

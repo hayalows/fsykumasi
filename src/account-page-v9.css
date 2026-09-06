@@ -1,0 +1,397 @@
+/* Account v9: compact, stable settings layout for phones and desktop. */
+.profile-page {
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  gap: 12px;
+}
+
+.profile-page .page-head {
+  margin-bottom: 0;
+}
+
+.profile-page .page-head p:last-child {
+  max-width: 54ch;
+}
+
+.profile-identity-card.panel {
+  min-width: 0;
+  margin: 0 !important;
+  padding: 18px 20px !important;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.profile-identity-main {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.profile-identity-copy {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 3px;
+}
+
+.profile-identity-copy .kicker {
+  margin-bottom: 2px;
+}
+
+.profile-identity-copy h2 {
+  min-width: 0;
+  margin: 0;
+  font-size: 23px;
+  line-height: 1.16;
+  overflow-wrap: anywhere;
+}
+
+.profile-identity-copy p {
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.profile-role-chip {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(141, 191, 103, .42);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #31591c;
+  background: #f1f8ec;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.profile-role-chip svg {
+  flex: none;
+}
+
+.profile-edit-trigger {
+  min-width: 88px;
+  min-height: 44px;
+  padding-inline: 13px;
+}
+
+.profile-edit-label {
+  display: inline;
+}
+
+.profile-inline-card.panel {
+  margin: 0 !important;
+  padding: 18px !important;
+}
+
+.profile-disclosure.panel {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.profile-disclosure > summary {
+  min-height: 74px !important;
+  padding: 13px 16px !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-disclosure > summary > span:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.profile-disclosure > summary .kicker {
+  margin-bottom: 1px;
+}
+
+.profile-disclosure > summary b {
+  min-width: 0;
+  color: var(--blue-35);
+  font-size: 15px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.profile-disclosure > summary small {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.profile-disclosure > summary .disclosure-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.profile-disclosure-body {
+  padding: 0 16px 16px !important;
+}
+
+.profile-details {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profile-details > div {
+  min-width: 0;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  display: grid;
+  gap: 3px;
+}
+
+.profile-details dt {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.profile-details dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--blue-35);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.profile-capabilities {
+  margin-top: 12px;
+}
+
+.profile-form input,
+.profile-form select,
+.profile-form textarea {
+  min-width: 0;
+}
+
+.profile-signout-row {
+  min-width: 0;
+  margin-top: 2px;
+  padding: 12px 2px 0;
+  border-top: 1px solid rgba(203, 223, 231, .9);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.profile-signout-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.profile-signout-copy .kicker {
+  margin: 0;
+}
+
+.profile-signout-copy small {
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.profile-signout-row .compact-button {
+  min-height: 46px;
+  flex: none;
+}
+
+@media (max-width: 760px) {
+  .profile-page {
+    max-width: none;
+    padding-top: 16px;
+    padding-bottom: 24px;
+    gap: 10px;
+  }
+
+  .profile-page .page-head {
+    gap: 5px;
+    margin-bottom: 2px;
+  }
+
+  .profile-page .page-head .eyebrow {
+    margin-bottom: 4px;
+  }
+
+  .profile-page .page-head h1 {
+    margin-bottom: 5px;
+    font-size: clamp(30px, 8vw, 34px);
+  }
+
+  .profile-page .page-head p:last-child {
+    max-width: 36ch;
+    font-size: 13.5px;
+    line-height: 1.42;
+  }
+
+  .profile-identity-card.panel {
+    padding: 14px !important;
+    gap: 10px;
+  }
+
+  .profile-identity-main {
+    min-width: 0;
+    gap: 11px;
+  }
+
+  .profile-identity-card .navii-avatar.profile-avatar-large {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    border-radius: 15px;
+  }
+
+  .profile-identity-copy .kicker {
+    font-size: 9px;
+  }
+
+  .profile-identity-copy h2 {
+    font-size: 20px !important;
+    line-height: 1.14;
+  }
+
+  .profile-identity-copy p {
+    font-size: 12.5px;
+    line-height: 1.32;
+  }
+
+  .profile-role-chip {
+    margin-top: 5px;
+    padding: 5px 8px;
+    gap: 6px;
+    font-size: 11.5px;
+  }
+
+  .profile-edit-trigger {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 !important;
+    font-size: 0 !important;
+  }
+
+  .profile-edit-trigger svg {
+    width: 20px;
+    height: 20px;
+    margin: 0 !important;
+  }
+
+  .profile-edit-label {
+    display: none !important;
+  }
+
+  .profile-inline-card.panel {
+    padding: 14px !important;
+  }
+
+  .profile-disclosure > summary {
+    min-height: 68px !important;
+    padding: 11px 14px !important;
+    gap: 10px;
+  }
+
+  .profile-disclosure > summary .kicker {
+    font-size: 9px;
+  }
+
+  .profile-disclosure > summary b {
+    font-size: 14px;
+    line-height: 1.22;
+  }
+
+  .profile-disclosure > summary small {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  .profile-disclosure-body {
+    padding: 0 14px 14px !important;
+  }
+
+  .profile-details {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .profile-details > div {
+    padding: 9px 10px;
+  }
+
+  .profile-form input,
+  .profile-form select,
+  .profile-form textarea {
+    font-size: 16px;
+  }
+
+  .profile-signout-row {
+    margin-top: 0;
+    padding: 4px 0 0;
+    border-top: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .profile-signout-row .compact-button {
+    width: 100%;
+    min-height: 50px;
+  }
+}
+
+@media (max-width: 360px) {
+  .profile-identity-card.panel {
+    grid-template-columns: minmax(0, 1fr) 44px;
+    padding: 12px !important;
+  }
+
+  .profile-identity-main {
+    gap: 9px;
+  }
+
+  .profile-identity-card .navii-avatar.profile-avatar-large {
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    border-radius: 14px;
+  }
+
+  .profile-identity-copy h2 {
+    font-size: 18px !important;
+  }
+
+  .profile-role-chip {
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-page .disclosure-icon {
+    transition: none !important;
+  }
+}
