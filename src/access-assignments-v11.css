@@ -1,0 +1,202 @@
+/* Access + Assignments v11
+   Final responsibility/access boundary and adaptive field-workflow layer. */
+
+.access-v3,.assignments-v2{max-width:1180px;margin-inline:auto}
+.access-v3 .page-head,.assignments-v2 .page-head{align-items:flex-start}
+.access-v3 .page-head .primary,.assignments-v2 .page-head .primary{min-height:44px;white-space:nowrap}
+
+.access-v3-boundary{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;padding:14px 16px;border:1px solid rgba(0,81,117,.12);border-radius:18px;background:rgba(245,251,253,.88)}
+.access-v3-boundary>svg{width:24px;height:24px;color:var(--blue,#005175)}
+.access-v3-boundary b{display:block;font-size:14px}
+.access-v3-boundary p{margin:3px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+.access-v3-boundary .secondary{min-height:42px}
+
+.access-v3-assignment-warning{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;border:1px solid rgba(180,116,0,.2);background:#fffaf0;border-radius:16px;padding:13px 15px;color:inherit}
+.access-v3-assignment-warning>svg{width:22px;height:22px;color:#9a6200}
+.access-v3-assignment-warning span{display:grid;gap:2px}
+.access-v3-assignment-warning small{color:var(--muted);font-weight:500;line-height:1.4}
+.access-v3-assignment-warning strong{color:var(--blue,#005175);font-size:13px}
+
+.access-v3-tools{display:grid;grid-template-columns:minmax(260px,1fr) auto;gap:12px;align-items:end}
+.access-v3-tools .search-field{margin:0}
+.access-v3-filters{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:none;padding:2px}
+.access-v3-filters::-webkit-scrollbar{display:none}
+.access-v3-filters button{min-height:44px;display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(0,0,0,.08);background:#fff;border-radius:999px;padding:0 13px;color:var(--muted);white-space:nowrap}
+.access-v3-filters button.active{background:rgba(0,81,117,.09);border-color:rgba(0,81,117,.2);color:var(--blue,#005175);font-weight:700}
+.access-v3-filters b{min-width:20px;height:20px;border-radius:999px;display:grid;place-items:center;background:rgba(0,0,0,.06);font-size:11px}
+
+.access-v3-directory{padding:0!important;overflow:hidden}
+.access-v3-directory-head{display:flex;justify-content:space-between;align-items:end;gap:16px;padding:18px 20px;border-bottom:1px solid rgba(0,0,0,.06)}
+.access-v3-directory-head h2{margin:3px 0 0;font-size:20px}
+.access-v3-directory-head p{margin:0;color:var(--muted);font-size:13px}
+.access-v3-list{display:grid}
+.access-v3-row{display:grid;grid-template-columns:minmax(220px,1.35fr) minmax(175px,.9fr) minmax(165px,.78fr) auto;gap:18px;align-items:center;padding:15px 20px;border-bottom:1px solid rgba(0,0,0,.055)}
+.access-v3-row:last-child{border-bottom:0}
+.access-v3-row:hover{background:rgba(0,81,117,.018)}
+.access-v3-row.needs-assignment{background:#fffcf5}
+.access-v3-person,.access-v3-current-person{display:flex;align-items:center;gap:11px;min-width:0}
+.access-v3-person>span:last-child,.access-v3-current-person>span:last-child{display:grid;gap:3px;min-width:0}
+.access-v3-person b,.access-v3-person small,.access-v3-assignment,.access-v3-state{min-width:0;overflow-wrap:anywhere}
+.access-v3-person small,.access-v3-assignment small,.access-v3-state small{color:var(--muted)}
+.access-v3-assignment{display:grid;gap:4px}
+.access-v3-assignment>small{font-size:12px;font-weight:700}
+.access-v3-scope,.staff-access-whole-session{font-size:13px;line-height:1.35}
+.access-v3-state{display:grid;justify-items:start;gap:5px}
+.access-v3-state .status{white-space:nowrap}
+.access-v3-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:128px}
+.access-v3-actions>.primary,.access-v3-actions>.secondary{min-height:42px}
+.access-v3 .staff-access-more{position:relative}
+.access-v3 .staff-access-more summary{min-height:42px;min-width:58px;display:grid;place-items:center;border:1px solid rgba(0,0,0,.1);border-radius:11px;background:#fff;cursor:pointer;list-style:none;font-size:13px;font-weight:700}
+.access-v3 .staff-access-more summary::-webkit-details-marker{display:none}
+.access-v3 .staff-access-more>div{right:0;left:auto;z-index:20}
+
+.access-v3-committee{padding:0!important;overflow:visible}
+.access-v3-committee>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:64px;padding:0 18px;cursor:pointer}
+.access-v3-committee>summary::-webkit-details-marker{display:none}
+.access-v3-committee>summary span{display:grid;gap:3px}
+.access-v3-committee>summary small{color:var(--muted);font-weight:500}
+.access-v3-committee-body{border-top:1px solid rgba(0,0,0,.06);padding:12px 16px 16px;display:grid;gap:8px}
+.access-v3-committee-callout{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px;border-radius:14px;background:rgba(0,81,117,.045)}
+.access-v3-committee-callout p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.legacy-access-row{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:58px;padding:8px 10px;border:1px solid rgba(0,0,0,.06);border-radius:13px}
+.legacy-access-row>span{display:grid;gap:3px;min-width:0}
+.legacy-access-row small{color:var(--muted);overflow-wrap:anywhere}
+
+.committee-access-shell{position:relative}
+.committee-access-form,.committee-access-ready{display:grid;gap:18px;padding:24px}
+.committee-access-form header h2,.committee-access-ready h2{margin:4px 0 6px}
+.committee-access-form header p,.committee-access-ready p{margin:0;color:var(--muted);line-height:1.5}
+.committee-access-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.committee-access-section-head{display:grid;gap:2px;margin-bottom:8px}
+.committee-access-section-head small{color:var(--muted)}
+.committee-access-ready-icon{width:34px;height:34px;color:#27844d}
+
+.assignment-v2-overview{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:18px 20px;border:1px solid rgba(0,81,117,.11);background:linear-gradient(135deg,rgba(246,251,253,.96),#fff);border-radius:20px}
+.assignment-v2-overview h2{margin:4px 0;font-size:22px}
+.assignment-v2-overview p{margin:0;color:var(--muted);font-size:13px}
+.assignment-v2-overview-actions{display:flex;gap:8px;align-items:center}
+.assignment-v2-overview-actions button{min-height:44px}
+.assignment-v2-suggestion{display:flex;justify-content:space-between;gap:20px;align-items:center}
+.assignment-v2-suggestion h3{margin:3px 0 5px}
+.assignment-v2-suggestion p{margin:0;color:var(--muted)}
+.assignment-v2-suggestion-actions{display:flex;gap:8px}
+
+.assignment-v2-workspace-nav{display:grid;gap:7px}
+.assignment-v2-workspace-nav>.segmented-control{width:min(680px,100%)}
+.assignment-v2-workspace-nav>p{margin:0;color:var(--muted);font-size:13px}
+.assignment-v2-workspace{padding:0!important;overflow:hidden}
+.assignment-v2-section-head{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:18px 20px;border-bottom:1px solid rgba(0,0,0,.06)}
+.assignment-v2-section-head h2{margin:3px 0 4px;font-size:20px}
+.assignment-v2-section-head p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+.assignment-v2-toolbar{display:grid;grid-template-columns:minmax(250px,1fr) minmax(180px,240px);gap:12px;align-items:end;padding:14px 20px;background:rgba(0,0,0,.012);border-bottom:1px solid rgba(0,0,0,.05)}
+.assignment-v2-toolbar .search-field{margin:0}
+.assignment-v2-toolbar>label{display:grid;gap:5px;font-size:12px;font-weight:700;color:var(--muted)}
+.assignment-v2-toolbar select{min-height:44px}
+
+.assignment-v2-people-list,.assignment-v2-coverage-list{display:grid}
+.assignment-v2-person-row{display:grid;grid-template-columns:minmax(230px,1.2fr) minmax(190px,1fr) minmax(190px,.8fr);gap:18px;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(0,0,0,.055)}
+.assignment-v2-person-row:last-child{border-bottom:0}
+.assignment-v2-person{display:flex;align-items:center;gap:11px;min-width:0}
+.assignment-v2-person>span:last-child{display:grid;gap:3px;min-width:0}
+.assignment-v2-person small{color:var(--muted);overflow-wrap:anywhere}
+.assignment-v2-person-context{display:grid;gap:3px;min-width:0}
+.assignment-v2-person-context small,.assignment-v2-role-select>span{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:800}
+.assignment-v2-person-context b{font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+.assignment-v2-role-select{display:grid;gap:5px}
+.assignment-v2-role-select select{min-height:44px;width:100%}
+
+.assignment-v2-coverage-row{display:grid;grid-template-columns:minmax(220px,1.2fr) minmax(220px,1fr) auto;gap:18px;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(0,0,0,.055)}
+.assignment-v2-coverage-row:last-child{border-bottom:0}
+.assignment-v2-coverage-row.open{background:rgba(255,249,235,.48)}
+.assignment-v2-coverage-row>div:first-child{display:grid;gap:4px}
+.assignment-v2-coverage-row small{color:var(--muted)}
+.assignment-v2-current-person{display:flex;align-items:center;gap:10px;min-width:0}
+.assignment-v2-current-person>span:last-child,.assignment-v2-current-person>span:only-child{display:grid;gap:2px;min-width:0}
+.assignment-v2-current-person b{font-size:13px;overflow-wrap:anywhere}
+.assignment-v2-coverage-action{display:flex;justify-content:flex-end}
+.assignment-v2-coverage-action .primary{min-height:42px;white-space:nowrap}
+.assignment-v2-coverage-action .text-action{min-height:42px;padding:0 8px}
+.assignment-v2-show-more{margin:14px 20px;min-height:44px}
+
+.assignment-v2-picker{display:grid;gap:14px}
+.assignment-v2-picker>p{margin:-5px 0 2px;color:var(--muted);line-height:1.45}
+.assignment-v2-picker-list{display:grid;gap:7px;max-height:min(52vh,480px);overflow:auto;padding-right:2px}
+.assignment-v2-picker-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:11px;align-items:center;text-align:left;min-height:62px;padding:8px 10px;border:1px solid rgba(0,0,0,.07);background:#fff;border-radius:13px;color:inherit}
+.assignment-v2-picker-row:hover{border-color:rgba(0,81,117,.22);background:rgba(0,81,117,.025)}
+.assignment-v2-picker-row>span:nth-child(2){display:grid;gap:3px;min-width:0}
+.assignment-v2-picker-row small{color:var(--muted);overflow-wrap:anywhere}
+.assignment-v2-picker-row strong{color:var(--blue,#005175);font-size:13px}
+.assignment-v2-new-leader-form{display:grid;gap:16px}
+.assignment-v2-new-leader-form>p{margin:-7px 0 0;color:var(--muted);line-height:1.5}
+
+@media (max-width:900px){
+  .access-v3-row{grid-template-columns:minmax(0,1.25fr) minmax(150px,.8fr) auto;gap:12px}
+  .access-v3-state{grid-column:2}
+  .access-v3-actions{grid-column:3;grid-row:1 / span 2}
+  .assignment-v2-person-row{grid-template-columns:minmax(0,1fr) minmax(200px,.8fr)}
+  .assignment-v2-person-context{grid-column:1}
+  .assignment-v2-role-select{grid-column:2;grid-row:1 / span 2}
+}
+
+@media (max-width:760px){
+  .access-v3,.assignments-v2{gap:12px}
+  .access-v3 .page-head,.assignments-v2 .page-head{gap:12px}
+  .access-v3 .page-head-action,.assignments-v2 .page-head-action{width:100%}
+  .access-v3 .page-head-action .primary,.assignments-v2 .page-head-action .primary{width:100%;justify-content:center;min-height:48px}
+  .access-v3-boundary{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:13px 14px}
+  .access-v3-boundary .secondary{grid-column:1 / -1;width:100%;min-height:46px}
+  .access-v3-assignment-warning{grid-template-columns:auto minmax(0,1fr);padding:12px 13px}
+  .access-v3-assignment-warning strong{grid-column:2}
+  .access-v3-tools{grid-template-columns:1fr;gap:9px}
+  .access-v3-filters{margin-inline:-2px;padding-bottom:3px}
+  .access-v3-filters button{min-height:46px}
+  .access-v3-directory-head{padding:15px 14px}
+  .access-v3-row{grid-template-columns:1fr;gap:11px;padding:14px}
+  .access-v3-assignment,.access-v3-state,.access-v3-actions{grid-column:auto;grid-row:auto}
+  .access-v3-assignment{padding-left:50px}
+  .access-v3-state{display:flex;align-items:center;flex-wrap:wrap;padding-left:50px}
+  .access-v3-actions{justify-content:stretch;min-width:0}
+  .access-v3-actions>.primary,.access-v3-actions>.secondary{flex:1;min-height:48px;justify-content:center}
+  .access-v3 .staff-access-more{margin-left:auto}
+  .access-v3 .staff-access-more summary{min-height:48px;min-width:70px}
+  .access-v3 .staff-access-more>div{position:fixed!important;left:12px!important;right:12px!important;bottom:calc(82px + env(safe-area-inset-bottom))!important;top:auto!important;min-width:0!important}
+  .access-v3-committee>summary{min-height:68px;padding:0 14px}
+  .access-v3-committee-callout,.legacy-access-row{align-items:stretch;flex-direction:column}
+  .access-v3-committee-callout .secondary,.legacy-access-row .secondary{width:100%;min-height:46px;justify-content:center}
+  .committee-access-grid{grid-template-columns:1fr}
+  .committee-access-form,.committee-access-ready{padding:20px 16px max(18px,env(safe-area-inset-bottom))}
+
+  .assignment-v2-overview{grid-template-columns:1fr;padding:15px 14px;gap:13px}
+  .assignment-v2-overview h2{font-size:20px}
+  .assignment-v2-overview-actions{display:grid;grid-template-columns:1fr 1fr}
+  .assignment-v2-overview-actions button{min-height:48px;justify-content:center}
+  .assignment-v2-suggestion{align-items:stretch;flex-direction:column}
+  .assignment-v2-suggestion-actions{display:grid;grid-template-columns:1fr 1fr}
+  .assignment-v2-suggestion-actions button{min-height:48px}
+  .assignment-v2-workspace-nav>.segmented-control{width:100%;overflow-x:auto}
+  .assignment-v2-section-head{align-items:flex-start;padding:15px 14px}
+  .assignment-v2-toolbar{grid-template-columns:1fr;padding:12px 14px}
+  .assignment-v2-toolbar select{min-height:48px;font-size:16px}
+  .assignment-v2-person-row{grid-template-columns:1fr;gap:10px;padding:14px}
+  .assignment-v2-person-context,.assignment-v2-role-select{grid-column:auto;grid-row:auto}
+  .assignment-v2-person-context{padding-left:50px}
+  .assignment-v2-role-select select{min-height:48px;font-size:16px}
+  .assignment-v2-coverage-row{grid-template-columns:1fr;gap:11px;padding:14px}
+  .assignment-v2-current-person{padding-left:2px}
+  .assignment-v2-coverage-action{justify-content:stretch}
+  .assignment-v2-coverage-action .primary,.assignment-v2-coverage-action .text-action{width:100%;min-height:48px;justify-content:center}
+  .assignment-v2-show-more{width:calc(100% - 28px);margin:14px;min-height:48px}
+  .assignment-v2-picker-list{max-height:none;overflow:visible}
+  .assignment-v2-picker-row{min-height:68px}
+  .assignment-v2-new-leader-form input,.assignment-v2-new-leader-form select,.committee-access-form input{font-size:16px;min-height:48px}
+}
+
+@media (max-width:390px){
+  .assignment-v2-overview-actions,.assignment-v2-suggestion-actions{grid-template-columns:1fr}
+  .access-v3-directory-head{align-items:flex-start;flex-direction:column;gap:5px}
+  .access-v3-assignment,.access-v3-state,.assignment-v2-person-context{padding-left:0}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .access-v3 *,.assignments-v2 *{scroll-behavior:auto!important}
+}
