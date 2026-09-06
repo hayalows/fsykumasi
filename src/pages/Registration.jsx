@@ -14,15 +14,15 @@ import "./registration-journey.css";
 const MODE_META = {
   desk: {
     title: "Check-in desk",
-    help: "Find each youth once. Check in ready participants immediately and resolve on-site or assignment issues without leaving the journey.",
+    help: "Search the participant. Check them in if ready, or resolve only what is blocking them.",
   },
   roster: {
     title: "Roster",
-    help: "See the registration list, checked-in youth, on-site additions, assignments, and people who still need attention in one view.",
+    help: "Search and review everyone, including arrivals and on-site additions.",
   },
   setup: {
     title: "Setup & review",
-    help: "Maintain the registration source, prepare FSY IDs, and work data exceptions outside the live check-in line.",
+    help: "Prepare registration data, FSY IDs and exceptions before check-in.",
   },
 };
 
@@ -57,7 +57,7 @@ export function Registration(props) {
       <PageHead
         title="Registration & check-in"
         sessionName={sessionName}
-        description="One journey from the registration list to arrival. Find the participant, resolve what is needed, and finish check-in without sending them between pages."
+        description="Find the participant, resolve what is blocking them, and check them in."
       />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
         <SegmentedControl
