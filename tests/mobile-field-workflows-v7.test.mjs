@@ -51,14 +51,15 @@ test("mobile navigation promotes scoped and currently active field tools", async
   assert.match(shell, /hasSecondaryActive=nav\.moreIds\.has\(active\) && !mobileItems\.some/);
 });
 
-test("new field-workflow styles load last and ship with PWA shell v30", async () => {
+test("new field-workflow styles load last and ship with PWA shell v31", async () => {
   const [main, sw, housingExport] = await Promise.all([
     read("src/main.jsx"),
     read("public/sw.js"),
     read("src/pages/Housing.jsx"),
   ]);
   assert.ok(main.indexOf('import "./housing-operations-v5.css";') > main.indexOf('import "./housing-assignment-v4.css";'));
+  assert.ok(main.indexOf('import "./housing-room-action-v8.css";') > main.indexOf('import "./housing-operations-v5.css";'));
   assert.ok(main.indexOf('import "./registration-flow-v7.css";') > main.indexOf('import "./registration-checkin-v6.css";'));
-  assert.match(sw, /fsy-kumasi-shell-v30/);
+  assert.match(sw, /fsy-kumasi-shell-v31/);
   assert.match(housingExport, /HousingV5/);
 });

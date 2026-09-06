@@ -1,0 +1,78 @@
+/* Housing v8: keep room creation inside the Rooms workspace, especially on phones. */
+.housing-v5-room-panel-head {
+  align-items: center;
+}
+
+.housing-v5-room-panel-head > div:first-child {
+  min-width: 0;
+}
+
+.housing-v5-room-panel-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.housing-v5-add-room {
+  min-height: 44px;
+  padding: 0 14px;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.housing-v5-room-grid > .empty {
+  grid-column: 1 / -1;
+}
+
+.housing-v5-room-grid > .empty .housing-v5-empty-add-room {
+  margin-top: 8px;
+}
+
+@media (max-width: 760px) {
+  .housing-v5-room-panel-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 13px 12px 11px;
+  }
+
+  .housing-v5-room-panel-head h2 {
+    margin-bottom: 2px;
+  }
+
+  .housing-v5-room-panel-head p {
+    max-width: 25ch;
+  }
+
+  .housing-v5-room-panel-actions {
+    align-self: start;
+  }
+
+  .housing-v5-add-room {
+    min-height: 46px;
+    min-width: 108px;
+    padding: 0 12px;
+    border-radius: 11px;
+  }
+
+  .housing-v5-room-grid > .empty {
+    padding: 26px 12px 28px;
+  }
+
+  .housing-v5-room-grid > .empty .housing-v5-empty-add-room {
+    width: min(100%, 280px);
+    min-height: 50px;
+  }
+}
+
+@media (max-width: 380px) {
+  .housing-v5-room-panel-head {
+    grid-template-columns: 1fr;
+  }
+
+  .housing-v5-room-panel-actions,
+  .housing-v5-add-room {
+    width: 100%;
+  }
+}
