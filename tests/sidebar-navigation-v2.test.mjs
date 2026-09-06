@@ -39,12 +39,9 @@ test("drawer adapts to compact, wider and short phone viewports from viewport ru
 });
 
 test("sidebar refinement stays after shared modal layers and ships with the current PWA shell", async () => {
-  const [main, sw] = await Promise.all([
-    read("src/main.jsx"),
-    read("public/sw.js"),
-  ]);
+  const [main, sw] = await Promise.all([read("src/main.jsx"), read("public/sw.js")]);
   const sidebarImport = main.indexOf('import "./sidebar-navigation-v2.css";');
   const previousImport = main.indexOf('import "./modal-refinement-v2.css";');
   assert.ok(sidebarImport > previousImport, "sidebar overrides should load after earlier shared shell and modal layers");
-  assert.match(sw, /fsy-kumasi-shell-v32/);
+  assert.match(sw, /fsy-kumasi-shell-v33/);
 });
