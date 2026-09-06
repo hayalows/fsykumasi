@@ -52,7 +52,7 @@ test("mobile navigation keeps responsibility-first destinations stable", async (
   assert.match(shell, /const activeInMore=nav\.moreIds\.has\(active\) && !nav\.mobile\.some/);
 });
 
-test("new field-workflow styles load last and ship with PWA shell v32", async () => {
+test("new field-workflow styles load last and ship with PWA shell v33", async () => {
   const [main, sw, housingExport] = await Promise.all([
     read("src/main.jsx"),
     read("public/sw.js"),
@@ -61,6 +61,6 @@ test("new field-workflow styles load last and ship with PWA shell v32", async ()
   assert.ok(main.indexOf('import "./housing-operations-v5.css";') > main.indexOf('import "./housing-assignment-v4.css";'));
   assert.ok(main.indexOf('import "./housing-room-action-v8.css";') > main.indexOf('import "./housing-operations-v5.css";'));
   assert.ok(main.indexOf('import "./registration-flow-v7.css";') > main.indexOf('import "./registration-checkin-v6.css";'));
-  assert.match(sw, /fsy-kumasi-shell-v32/);
+  assert.match(sw, /fsy-kumasi-shell-v33/);
   assert.match(housingExport, /HousingV5/);
 });
