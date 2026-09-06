@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildOperationalInbox } from "../src/lib/overview-inbox.js";
 
-test("assistant coordinator stays company-scoped and sees coverage work first", () => {
+test("assistant coordinator stays company-scoped and sees uncovered structure first", () => {
   const inbox = buildOperationalInbox({
     role: "assistant_coordinator",
     capabilities: ["groups_view", "headcount_view"],
@@ -13,7 +13,8 @@ test("assistant coordinator stays company-scoped and sees coverage work first", 
   });
   assert.equal(inbox.whole, false);
   assert.equal(inbox.scopeLabel, "4 assigned companies");
-  assert.equal(inbox.primary.id, "assignments");
+  assert.equal(inbox.primary.id, "groups");
+  assert.match(inbox.primary.title, /counselor group uncovered/);
   assert.equal(inbox.metrics.find((item) => item.label === "Youth")?.value, 78);
 });
 

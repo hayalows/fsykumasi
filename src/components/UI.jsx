@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef } from "react";
+import { ArrowCounterClockwise } from "@phosphor-icons/react/ArrowCounterClockwise";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
+import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { X } from "@phosphor-icons/react/X";
 import { demoSession } from "../data/session.js";
 
@@ -64,6 +66,21 @@ export function MutationFeedback({ tone = "success", children, className = "" })
   return <div className={`mutation-feedback ${tone} ${className}`.trim()} role={tone === "error" ? "alert" : "status"} aria-live="polite">
     {tone === "success" ? <CheckCircle weight="fill" aria-hidden="true" /> : null}
     <span>{children}</span>
+  </div>;
+}
+
+export function ActionToast({ message, actionLabel = "Undo", onAction, onDismiss, busy = false, tone = "success", autoDismissMs = 6500 }) {
+  useEffect(() => {
+    if (!message || !autoDismissMs) return undefined;
+    const timer = window.setTimeout(() => onDismiss?.(), autoDismissMs);
+    return () => window.clearTimeout(timer);
+  }, [message, autoDismissMs, onDismiss]);
+  if (!message) return null;
+  return <div className={`action-toast tone-${tone}`} role="status" aria-live="polite">
+    <span>{tone === "success" ? <CheckCircle weight="fill" aria-hidden="true" /> : <WarningCircle weight="fill" aria-hidden="true" />}</span>
+    <b>{message}</b>
+    {onAction ? <button type="button" disabled={busy} onClick={onAction}><ArrowCounterClockwise aria-hidden="true" />{busy ? "Working…" : actionLabel}</button> : null}
+    {onDismiss ? <button type="button" className="action-toast-dismiss" aria-label="Dismiss message" onClick={onDismiss}><X /></button> : null}
   </div>;
 }
 
@@ -194,4 +211,15 @@ export function DismissibleLayer({ open, onClose, title, children, className = "
       </div>
     </div>
   );
+}
+
+export function ConfirmActionSheet({ open, onClose, title, description, impact, confirmLabel, cancelLabel = "Cancel", onConfirm, busy = false, tone = "danger" }) {
+  if (!open) return null;
+  return <DismissibleLayer open onClose={() => !busy && onClose?.()} title={title} sheet className="confirm-action-layer">
+    <div className={`confirm-action-sheet tone-${tone}`}>
+      <div className="confirm-action-icon"><WarningCircle weight="fill" aria-hidden="true" /></div>
+      <div className="confirm-action-copy"><span className="kicker">Confirm change</span><h2>{title}</h2><p>{description}</p>{impact ? <div className="confirm-action-impact">{impact}</div> : null}</div>
+      <div className="confirm-action-buttons"><button type="button" className="secondary" disabled={busy} onClick={onClose}>{cancelLabel}</button><button type="button" className={tone === "danger" ? "danger confirm-action-primary" : "primary confirm-action-primary"} disabled={busy} onClick={onConfirm}>{busy ? "Working…" : confirmLabel}</button></div>
+    </div>
+  </DismissibleLayer>;
 }

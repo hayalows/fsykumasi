@@ -13,16 +13,19 @@ import "./registration-journey.css";
 
 const MODE_META = {
   desk: {
-    title: "Check-in desk",
-    help: "Search the participant. Check them in if ready, or resolve only what is blocking them.",
+    phase: "Arrival day",
+    title: "Live check-in",
+    help: "Search the participant. If something blocks check-in, resolve only that issue and keep the desk moving.",
   },
   roster: {
-    title: "Roster",
-    help: "Search and review everyone, including arrivals and on-site additions.",
+    phase: "Exceptions",
+    title: "Exceptions & roster",
+    help: "Find people who need a closer look, including arrivals, replacements and on-site additions.",
   },
   setup: {
-    title: "Setup & review",
-    help: "Prepare registration data, FSY IDs and exceptions before check-in.",
+    phase: "Before session",
+    title: "Prepare",
+    help: "Prepare registration data, FSY IDs and review items before the arrival queue starts.",
   },
 };
 
@@ -52,27 +55,27 @@ export function Registration(props) {
   const cohortSummary = props.cohort;
   const modeMeta = MODE_META[mode];
 
-  return <div className="registration-enhanced registration-workspace registration-workspace-v5 registration-unified">
+  return <div className="registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10">
     <section className="page registration-workspace-intro registration-workspace-intro-v5 registration-unified-intro">
       <PageHead
         title="Registration & check-in"
         sessionName={sessionName}
-        description="Find the participant, resolve what is blocking them, and check them in."
+        description="Use the work area that matches what is happening now. Arrival-day check-in stays focused on one person at a time."
       />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
         <SegmentedControl
           className="registration-mode-switch registration-workspace-tabs registration-workspace-tabs-v5 registration-unified-tabs"
-          label="Registration and check-in workspace"
+          label="Registration and check-in work area"
           value={mode}
           onChange={setMode}
           options={[
-            { value: "desk", label: "Check-in desk", id: "registration-mode-desk" },
-            { value: "roster", label: "Roster", id: "registration-mode-roster" },
-            { value: "setup", label: "Setup & review", count: cohortSummary?.reviewExceptions || 0, id: "registration-mode-setup" },
+            { value: "desk", label: "Live check-in", id: "registration-mode-desk" },
+            { value: "roster", label: "Exceptions", id: "registration-mode-roster" },
+            { value: "setup", label: "Prepare", count: cohortSummary?.reviewExceptions || 0, id: "registration-mode-setup" },
           ]}
         />
         <div className="registration-mode-cue-v5" role="status">
-          <div><span className="kicker">Current work area</span><b>{modeMeta.title}</b></div>
+          <div><span className="kicker">{modeMeta.phase}</span><b>{modeMeta.title}</b></div>
           <p>{modeMeta.help}</p>
           {cohortSummary ? <small><b>{formatCount(cohortSummary.eligible)} eligible youth</b><span>{formatCount(cohortSummary.records)} registration records{cohortSummary.reviewExceptions ? ` · ${formatCount(cohortSummary.reviewExceptions)} need review` : ""}</span></small> : null}
         </div>
@@ -86,7 +89,7 @@ export function Registration(props) {
         <div className="registration-setup-nav-wrap">
           <SegmentedControl
             className="registration-setup-tabs"
-            label="Registration setup area"
+            label="Registration preparation area"
             value={setupMode}
             onChange={setSetupMode}
             options={[

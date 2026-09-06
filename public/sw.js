@@ -1,5 +1,5 @@
-const CACHE_NAME = "fsy-kumasi-shell-v31";
-// Release marker: contextual Housing room creation in the Rooms workspace with mobile-safe actions.
+const CACHE_NAME = "fsy-kumasi-shell-v32";
+// Release marker: task-first FSY operations UX with recoverable actions and mobile-focused workflows.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",

@@ -15,28 +15,31 @@ test("confirmed non-attendance stays out of operations", () => {
   assert.equal(operationalEligibility(person).ok,false);
 });
 
-test("field modules are capability-driven and website access follows Assignments", async () => {
-  const [shell,access,fieldLib] = await Promise.all([read("src/components/AppShell.jsx"),read("src/pages/Access.jsx"),read("src/lib/field-operations.js")]);
+test("field modules are capability-driven and website access stays tied to staff responsibility", async () => {
+  const [shell,access,fieldLib] = await Promise.all([read("src/components/AppShell.jsx"),read("src/pages/AccessV2.jsx"),read("src/lib/field-operations.js")]);
   assert.match(shell,/housing_view/); assert.match(shell,/wellness_private/); assert.match(shell,/food_view/);
-  assert.match(access,/Linked staff assignments stay in sync/);
-  assert.match(access,/Full Session Administrators/);
-  assert.match(access,/Website accounts & committee members/);
-  assert.match(access,/onManageLeaderAccess/);
+  assert.match(access,/Start with the person/);
+  assert.match(access,/FSY responsibility, company scope and website account stay together/);
+  assert.match(access,/People & accounts/);
+  assert.match(access,/AssistantCompanySheet/);
+  assert.match(access,/AccountTeams/);
   assert.match(fieldLib,/manage_leader_access/); assert.match(fieldLib,/get_session_team_catalog/);
 });
 
 test("field mutation controls are wired to their save actions", async () => {
-  const [housing,dialogs,access,invite] = await Promise.all([read("src/pages/HousingV4.jsx"),read("src/pages/HousingDialogsV4.jsx"),read("src/pages/Access.jsx"),read("src/components/StaffAccessInvite.jsx")]);
+  const [housing,dialogs,access,invite] = await Promise.all([read("src/pages/HousingV4.jsx"),read("src/pages/HousingDialogsV4.jsx"),read("src/pages/AccessV2.jsx"),read("src/components/StaffAccessInvite.jsx")]);
   assert.match(dialogs,/onClick=\{save\}/);
   assert.match(dialogs,/Save assignment/);
   assert.match(dialogs,/onClick=\{createAndAssign\}[\s\S]*Create room & assign/);
   assert.match(housing,/setSelected\(\{person:p,assignment:a\}\)/);
-  assert.match(access,/onClick=\{save\}[\s\S]*Save account/);
+  assert.match(access,/setStaffWebsiteAccess/);
+  assert.match(access,/toggleAccess/);
+  assert.match(access,/Give access/);
   assert.match(invite,/onSubmit=\{submit\}[\s\S]*Create setup link/);
 });
 
 test("sensitive modules call guarded server RPCs", async () => {
-  const [housing,wellness,food] = await Promise.all([read("src/pages/HousingV4.jsx"),read("src/pages/Wellness.jsx"),read("src/pages/Food.jsx")]);
+  const [housing,wellness,food] = await Promise.all([read("src/pages/HousingV4.jsx"),read("src/pages/WellnessV2.jsx"),read("src/pages/FoodV3.jsx")]);
   assert.match(housing,/housing_manage/); assert.match(wellness,/wellness_private/); assert.match(food,/food_view/);
   assert.doesNotMatch(food,/medicalInformation/);
 });

@@ -31,22 +31,24 @@ test("meal progress is participant-first and session leaders can see overall pro
   assert.match(migration, /private\.has_capability\(target_session, 'food_view'\)/);
 });
 
-test("Food v2 is a focused large-row serving checklist with immediate local feedback", async () => {
+test("Food live service keeps participant serving fast, scoped and recoverable", async () => {
   const [wrapper, page, css, shell, app] = await Promise.all([
     read("src/pages/Food.jsx"),
-    read("src/pages/FoodV2.jsx"),
+    read("src/pages/FoodV3.jsx"),
     read("src/pages/food-v2.css"),
     read("src/components/AppShell.jsx"),
     read("src/App.jsx"),
   ]);
-  assert.match(wrapper, /FoodV2/);
+  assert.match(wrapper, /FoodV3/);
   assert.match(page, /type="checkbox"/);
-  assert.match(page, /Tap the whole row to mark served/);
+  assert.match(page, /Tap the row when food is handed over/);
   assert.match(page, /setParticipantMealServedV2/);
   assert.match(page, /loadMealRosterPageV2/);
   assert.match(page, /REFRESH_INTERVAL = 20000/);
-  assert.match(page, /Meal controls/);
+  assert.match(page, /Meal details & controls/);
   assert.match(page, /tab === "needs"/);
+  assert.match(page, /ActionToast/);
+  assert.match(page, /ConfirmActionSheet/);
   assert.doesNotMatch(page, /loadMealRoster\(/);
   assert.doesNotMatch(page, /loadMealAttendance\(/);
   assert.doesNotMatch(page, /12000/);
