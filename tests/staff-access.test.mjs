@@ -6,8 +6,11 @@ const migration = readFileSync(new URL("../supabase/migrations/20260904194500_st
 const triggerFix = readFileSync(new URL("../supabase/migrations/20260904194600_staff_access_trigger_fix.sql", import.meta.url), "utf8");
 const accessUxMigration = readFileSync(new URL("../supabase/migrations/20260904214500_access_experience_presence_and_ac_company_management.sql", import.meta.url), "utf8");
 const roleTransitionMigration = readFileSync(new URL("../supabase/migrations/20260905121000_guided_staff_role_transitions.sql", import.meta.url), "utf8");
-const accessPage = readFileSync(new URL("../src/pages/AccessV2.jsx", import.meta.url), "utf8");
-const assignmentsPage = readFileSync(new URL("../src/pages/Assignments.jsx", import.meta.url), "utf8");
+const accessPage = readFileSync(new URL("../src/pages/AccessV3.jsx", import.meta.url), "utf8");
+const accessWrapper = readFileSync(new URL("../src/pages/Access.jsx", import.meta.url), "utf8");
+const assignmentsPage = readFileSync(new URL("../src/pages/AssignmentsV2.jsx", import.meta.url), "utf8");
+const assignmentsWrapper = readFileSync(new URL("../src/pages/Assignments.jsx", import.meta.url), "utf8");
+const committeeSetup = readFileSync(new URL("../src/components/CommitteeAccessSetup.jsx", import.meta.url), "utf8");
 const roleTransitionSheet = readFileSync(new URL("../src/components/StaffRoleTransitionSheet.jsx", import.meta.url), "utf8");
 const transitionStyles = readFileSync(new URL("../src/components/staff-role-transition.css", import.meta.url), "utf8");
 const operationsClient = readFileSync(new URL("../src/lib/operations.js", import.meta.url), "utf8");
@@ -17,6 +20,7 @@ const companySheet = readFileSync(new URL("../src/components/AssistantCompanyShe
 const appShell = readFileSync(new URL("../src/components/AppShell.jsx", import.meta.url), "utf8");
 const uiComponents = readFileSync(new URL("../src/components/UI.jsx", import.meta.url), "utf8");
 const modalSystem = readFileSync(new URL("../src/modal-system.css", import.meta.url), "utf8");
+const v11Styles = readFileSync(new URL("../src/access-assignments-v11.css", import.meta.url), "utf8");
 const mainEntry = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
 
 test("staff and login identity are linked explicitly", () => {
@@ -48,12 +52,13 @@ test("the last full session administrator is protected", () => {
   assert.match(migration, /You cannot remove the only Full Session Administrator\. Give another leader full access first\./i);
 });
 
-test("Access is a guided person-first login lifecycle rather than a second Assignments screen", () => {
-  assert.match(accessPage, /Start with the person/i);
+test("active Access routes to the focused sign-in lifecycle", () => {
+  assert.match(accessWrapper, /AccessV3/);
+  assert.match(accessPage, /Control who can sign in\. FSY roles and company assignments are managed in Assignments\./);
+  assert.match(accessPage, /Assignments decides responsibility/);
+  assert.match(accessPage, /Give access/);
   assert.match(accessPage, /Needs access/);
-  assert.match(accessPage, /Set companies/);
-  assert.match(accessPage, /People & accounts/);
-  assert.match(accessPage, /FSY responsibility, company scope and website account stay together/);
+  assert.match(accessPage, /Committee & older accounts/);
   assert.match(staffClient, /invited:\s*"Invite sent"/);
   assert.match(staffClient, /active:\s*"Access active"/);
   assert.match(staffClient, /disabled:\s*"Access disabled"/);
@@ -61,37 +66,39 @@ test("Access is a guided person-first login lifecycle rather than a second Assig
   assert.match(staffClient, /get_staff_access_directory/);
 });
 
+test("Access reads assignment context instead of becoming another assignment editor", () => {
+  assert.match(accessPage, /Finish assignment/);
+  assert.match(accessPage, /Open Assignments/);
+  assert.match(accessPage, /person\.companyNames\.join\(" · "\)/);
+  assert.doesNotMatch(accessPage, /AssistantCompanySheet/);
+  assert.doesNotMatch(accessPage, /setAssistantCoordinatorCompanies/);
+  assert.doesNotMatch(accessPage, /Set companies/);
+  assert.doesNotMatch(accessPage, /Primary responsibility/);
+});
+
 test("Access can render its initial empty live directory before data arrives", () => {
   assert.match(accessPage, /live\s*\?\s*\[\]\s*:\s*demoDirectory\(\)/);
-  assert.match(accessPage, /<Empty title=/);
+  assert.match(accessPage, /<Empty/);
   assert.match(uiComponents, /\{Icon \? <span className="empty-icon"><Icon size=\{25\} \/><\/span> : null\}/);
 });
 
-test("Assistant Coordinators can resolve missing company scope without a disabled dead end", () => {
-  assert.match(accessPage, /setCompanyTarget\(\{person,continueToAccess:person\.accessState==="not_enabled"\}\)/);
-  assert.match(companySheet, /Save & continue/);
-  assert.match(companySheet, /Suggest companies/);
-  assert.match(companySheet, /All companies/);
-  assert.match(companySheet, /assistant-company-picker/);
+test("Assistant Coordinator company scope remains server-protected even though it is edited in Assignments", () => {
   assert.match(staffClient, /suggest_assistant_coordinator_companies/);
   assert.match(staffClient, /set_assistant_coordinator_companies/);
   assert.match(accessUxMigration, /create or replace function public\.suggest_assistant_coordinator_companies/);
   assert.match(accessUxMigration, /create or replace function public\.set_assistant_coordinator_companies/);
-});
-
-test("company picker uses natural ordering and keeps manual selection directly visible", () => {
-  assert.match(companySheet, /localeCompare\(companyLabel\(b\).*numeric: true/);
-  assert.match(companySheet, /className="assistant-company-list"/);
-  assert.doesNotMatch(companySheet, /assistant-company-manual/);
-});
-
-test("company transfers are explicit, capacity-limited and protect active Assistant Coordinator scope", () => {
   assert.match(accessUxMigration, /cardinality\(desired\) > max_load/i);
   assert.match(accessUxMigration, /donor_without_scope/i);
   assert.match(accessUxMigration, /would leave % with active website access but no company/i);
   assert.match(accessUxMigration, /assistant_coordinator_companies_set/i);
+});
+
+test("legacy company picker remains safe for older flows without being part of Access v3", () => {
+  assert.match(companySheet, /localeCompare\(companyLabel\(b\).*numeric: true/);
+  assert.match(companySheet, /className="assistant-company-list"/);
   assert.match(companySheet, /currently assigned to another Assistant Coordinator/i);
   assert.match(companySheet, /Nothing changes until you save/i);
+  assert.doesNotMatch(accessPage, /AssistantCompanySheet/);
 });
 
 test("Access shows admin-only sign-in recency and authenticated private live presence", () => {
@@ -114,18 +121,28 @@ test("optional account activity cannot block the Access directory", () => {
   assert.match(staffClient, /return new Map\(\);/);
 });
 
-test("secondary Access actions use progressive disclosure without hiding the primary company picker", () => {
+test("secondary Access actions stay progressive and consequential actions are protected", () => {
   assert.match(accessPage, /className="staff-access-more"/);
-  assert.match(accessPage, /className="panel access-v2-exceptions"/);
-  assert.match(accessPage, /Independent accounts & older requests/);
-  assert.match(companySheet, /className="assistant-company-picker"/);
+  assert.match(accessPage, /Committee tools/);
+  assert.match(accessPage, /Recovery/);
+  assert.match(accessPage, /Disable sign-in/);
+  assert.match(accessPage, /ConfirmActionSheet/);
+  assert.match(accessPage, /ActionToast/);
+  assert.match(accessPage, /Revoke invite/);
+});
+
+test("committee-only access is a separate narrow flow rather than a duplicate role picker", () => {
+  assert.match(committeeSetup, /Website-only access/);
+  assert.match(committeeSetup, /role: "committee_viewer"/);
+  assert.match(committeeSetup, /Committee tools/);
+  assert.match(committeeSetup, /does not create or change an FSY staff assignment/);
+  assert.doesNotMatch(committeeSetup, /Assistant coordinator/);
+  assert.doesNotMatch(committeeSetup, /Company scope/);
 });
 
 test("shared dialogs use responsive desktop proportions and mobile bottom sheets", () => {
   assert.match(mainEntry, /\.\/modal-system\.css/);
   assert.match(modalSystem, /\.dismissible-layer \.layer-panel/);
-  assert.match(modalSystem, /\.assistant-company-sheet\.app-modal-wide/);
-  assert.match(modalSystem, /grid-template-columns: minmax\(250px, 290px\) minmax\(0, 1fr\)/);
   assert.match(modalSystem, /@media \(max-width: 760px\)/);
   assert.match(modalSystem, /place-items: end center/);
   assert.match(modalSystem, /env\(safe-area-inset-bottom\)/);
@@ -133,24 +150,36 @@ test("shared dialogs use responsive desktop proportions and mobile bottom sheets
   assert.match(transitionStyles, /@media \(max-width: 640px\)/);
 });
 
-test("Assignments keeps website access separate but easy to find", () => {
-  assert.match(assignmentsPage, /Who serves where/);
-  assert.match(assignmentsPage, /Who can sign in and which extra committee tools they have/);
+test("active Assignments owns FSY responsibility and keeps website access separate", () => {
+  assert.match(assignmentsWrapper, /AssignmentsV2/);
+  assert.match(assignmentsPage, /Set who serves where\. Website sign-in is managed separately in Access\./);
   assert.match(assignmentsPage, /Open Access/);
-  assert.match(assignmentsPage, /Give access/);
-  assert.match(assignmentsPage, /Add without access/);
-  assert.match(assignmentsPage, /Add & give access/);
+  assert.match(assignmentsPage, /Add leader/);
+  assert.doesNotMatch(assignmentsPage, /StaffAccessInvite/);
+  assert.doesNotMatch(assignmentsPage, /Add & give access/);
+  assert.doesNotMatch(assignmentsPage, /Give access/);
+  assert.doesNotMatch(assignmentsPage, /accessStateLabel/);
 });
 
-test("Assignments presents a clear three-step staffing workflow", () => {
-  assert.match(assignmentsPage, /Staffing at a glance/);
-  assert.match(assignmentsPage, /assignment-flow-step/);
-  assert.match(assignmentsPage, /id="assignment-staff-roles"/);
-  assert.match(assignmentsPage, /id="assignment-counselor-groups"/);
-  assert.match(assignmentsPage, /id="assignment-company-supervision"/);
-  assert.match(assignmentsPage, /Role changes are reviewed before saving/);
+test("Assignments presents three focused workspaces instead of one long staffing page", () => {
+  assert.match(assignmentsPage, /value: "people", label: "People"/);
+  assert.match(assignmentsPage, /value: "groups", label: "Counselor groups"/);
+  assert.match(assignmentsPage, /value: "companies", label: "Companies"/);
+  assert.match(assignmentsPage, /workspace === "people"/);
+  assert.match(assignmentsPage, /workspace === "groups"/);
+  assert.match(assignmentsPage, /workspace === "companies"/);
   assert.match(assignmentsPage, /Search counselor groups/);
   assert.match(assignmentsPage, /Search companies/);
+});
+
+test("Assignments is gap-first for counselor groups and companies", () => {
+  assert.match(assignmentsPage, /useState\("needs"\)/);
+  assert.match(assignmentsPage, /Needs Counselor/);
+  assert.match(assignmentsPage, /Needs AC/);
+  assert.match(assignmentsPage, /Suggest coverage/);
+  assert.match(assignmentsPage, /Nothing changes until you apply it/);
+  assert.match(assignmentsPage, /Assign Counselor/);
+  assert.match(assignmentsPage, /Assign AC/);
 });
 
 test("role changes use one atomic guided transition instead of surfacing dependency errors", () => {
@@ -162,7 +191,7 @@ test("role changes use one atomic guided transition instead of surfacing depende
   assert.match(roleTransitionMigration, /grant execute on function public\.transition_staff_operational_role/i);
   assert.match(operationsClient, /transition_staff_operational_role/);
   assert.match(assignmentsPage, /StaffRoleTransitionSheet/);
-  assert.match(assignmentsPage, /setTransitionTarget\(\{ person, targetRole: event\.target\.value \}\)/);
+  assert.match(assignmentsPage, /setTransitionTarget\(\{ person, targetRole \}\)/);
 });
 
 test("guided role change explains consequences and supports the common Counselor to AC handoff", () => {
@@ -175,11 +204,23 @@ test("guided role change explains consequences and supports the common Counselor
   assert.match(roleTransitionSheet, /Confirm responsibility change/);
 });
 
-test("large assignment lists are searchable and progressively revealed instead of capped at forty", () => {
-  assert.doesNotMatch(assignmentsPage, /slice\(0, 40\)/);
+test("large assignment lists are searchable and progressively revealed", () => {
+  assert.match(assignmentsPage, /filteredStaff\.slice\(0, visibleStaff\)/);
   assert.match(assignmentsPage, /filteredGroups\.slice\(0, visibleGroups\)/);
   assert.match(assignmentsPage, /filteredCompanies\.slice\(0, visibleCompanies\)/);
+  assert.match(assignmentsPage, /Show 30 more/);
   assert.match(assignmentsPage, /Show 24 more groups/);
   assert.match(assignmentsPage, /Show 24 more companies/);
-  assert.match(assignmentsPage, /Available Counselor · no group yet/);
+});
+
+test("Access and Assignments v11 is adaptive and loaded after the earlier operational layer", () => {
+  const v10 = mainEntry.indexOf('import "./operations-ux-v10.css";');
+  const v11 = mainEntry.indexOf('import "./access-assignments-v11.css";');
+  assert.ok(v11 > v10);
+  assert.match(v11Styles, /@media \(max-width:760px\)/);
+  assert.match(v11Styles, /@media \(max-width:390px\)/);
+  assert.match(v11Styles, /min-height:48px/);
+  assert.match(v11Styles, /font-size:16px/);
+  assert.match(v11Styles, /env\(safe-area-inset-bottom\)/);
+  assert.match(v11Styles, /prefers-reduced-motion:reduce/);
 });
