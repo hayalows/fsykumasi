@@ -1,5 +1,5 @@
-const CACHE_NAME = "fsy-kumasi-shell-v28";
-// Release marker: adaptive Registration and on-site sheets with one scroll surface and stable mobile step layout.
+const CACHE_NAME = "fsy-kumasi-shell-v29";
+// Release marker: search-first Registration desk with adaptive in-flow mobile controls and scan-friendly rows.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
