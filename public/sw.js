@@ -1,5 +1,5 @@
-const CACHE_NAME = "fsy-kumasi-shell-v26";
-// Release marker: refined mobile drawer navigation, unclipped session context, and calmer active states.
+const CACHE_NAME = "fsy-kumasi-shell-v27";
+// Release marker: adaptive mobile drawer spacing, compact hierarchy, and consistent navigation across phone sizes.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
