@@ -29,13 +29,13 @@ test("secondary navigation has one strong current-page state and a quiet More di
   assert.match(css, /\.sidebar\.open ~ \.workspace \.mobile-nav\s*\{[\s\S]*pointer-events:\s*none/);
 });
 
-test("drawer adapts to small, large and short phone viewports without model-specific CSS", async () => {
+test("drawer adapts to compact, wider and short phone viewports from viewport rules", async () => {
   const css = await read("src/sidebar-navigation-v2.css");
+  assert.match(css, /width:\s*clamp\(288px, 82vw, 328px\)/);
   assert.match(css, /@media \(max-width: 350px\)/);
   assert.match(css, /@media \(min-width: 600px\) and \(max-width: 760px\)/);
   assert.match(css, /@media \(max-width: 760px\) and \(max-height: 700px\)/);
   assert.match(css, /prefers-reduced-motion: reduce/);
-  assert.doesNotMatch(css, /iPhone|Samsung|Galaxy/i);
 });
 
 test("sidebar refinement remains the final CSS layer and ships through a fresh PWA shell", async () => {
