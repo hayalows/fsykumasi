@@ -1,5 +1,6 @@
 const CACHE_NAME = "fsy-kumasi-shell-v33";
 // Release marker: connected Access and Assignments leader setup with refined mobile and desktop workflows.
+// Production deployment marker: v33 connected leader setup.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
