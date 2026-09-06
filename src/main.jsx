@@ -20,6 +20,7 @@ import "./housing-assignment-v4.css";
 import "./components/staff-role-transition.css";
 import "./modal-refinement-v2.css";
 import "./sidebar-navigation-v2.css";
+import "./registration-modal-v4.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
