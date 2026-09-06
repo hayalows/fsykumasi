@@ -169,7 +169,7 @@ export function LeaderSetupFlow({ sessionId, person = null, onClose, onComplete 
         <button type="button" data-layer-close className="icon-button" onClick={onClose} disabled={busy} aria-label="Close"><X /></button>
       </header>
 
-      {!created ? <div className="leader-setup-progress" aria-label={`Step ${displayStep} of ${totalSteps}`}>{Array.from({ length: totalSteps }, (_, index) => <i key={index} className={displayStep >= index + 1 ? "done" : ""} />)}</div> : null}
+      {!created ? <div className="leader-setup-progress" style={{ gridTemplateColumns: `repeat(${totalSteps}, minmax(0, 1fr))` }} aria-label={`Step ${displayStep} of ${totalSteps}`}>{Array.from({ length: totalSteps }, (_, index) => <i key={index} className={displayStep >= index + 1 ? "done" : ""} />)}</div> : null}
 
       <div className="leader-setup-scroll">
         {!existing && step === 1 && !created ? <section className="leader-setup-section">
