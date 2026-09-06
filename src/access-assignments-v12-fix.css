@@ -1,0 +1,41 @@
+/* Final v12 modal targeting fix: DismissibleLayer applies the custom class to the panel itself. */
+.dismissible-layer .layer-panel.leader-setup-layer {
+  width: min(700px, calc(100vw - 28px));
+  max-width: 700px;
+  max-height: min(88dvh, 760px);
+  padding: 0;
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
+.dismissible-layer .layer-panel.leader-setup-layer .leader-setup-flow {
+  height: min(88dvh, 760px);
+  min-height: 0;
+}
+
+@media (max-width: 760px) {
+  .dismissible-layer .layer-panel.leader-setup-layer {
+    width: 100%;
+    max-width: none;
+    height: calc(100dvh - max(8px, env(safe-area-inset-top)));
+    max-height: calc(100dvh - max(8px, env(safe-area-inset-top)));
+    margin: 0;
+    border-radius: 20px 20px 0 0;
+    padding: 0 !important;
+  }
+
+  .dismissible-layer .layer-panel.leader-setup-layer .leader-setup-flow {
+    height: 100%;
+    max-height: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leader-setup-flow *,
+  .access-v4 *,
+  .assignments-v3 * {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
+}
