@@ -1,5 +1,5 @@
-const CACHE_NAME = "fsy-kumasi-shell-v30";
-// Release marker: queue-first Housing and full-screen mobile Registration workflows with stable confirmations.
+const CACHE_NAME = "fsy-kumasi-shell-v31";
+// Release marker: contextual Housing room creation in the Rooms workspace with mobile-safe actions.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
