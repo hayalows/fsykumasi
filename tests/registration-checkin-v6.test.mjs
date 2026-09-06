@@ -38,18 +38,18 @@ test("mobile Registration controls reflow in document flow instead of floating o
   assert.doesNotMatch(css, /iPhone|Galaxy|Samsung|Pixel/i);
 });
 
-test("Registration workspace copy is concise and the v6 layer ships last before the focused v7 flow layer", async () => {
+test("Registration workspace copy stays concise and the focused flow layer loads last", async () => {
   const [registration, main, sw] = await Promise.all([
     read("src/pages/Registration.jsx"),
     read("src/main.jsx"),
     read("public/sw.js"),
   ]);
-  assert.match(registration, /Search the participant\. Check them in if ready/);
-  assert.match(registration, /description="Find the participant, resolve what is blocking them, and check them in\."/);
+  assert.match(registration, /Search the participant\. If something blocks check-in, resolve only that issue and keep the desk moving\./);
+  assert.match(registration, /description="Use the work area that matches what is happening now\. Arrival-day check-in stays focused on one person at a time\."/);
   const v6 = main.indexOf('import "./registration-checkin-v6.css";');
   const modal = main.indexOf('import "./registration-modal-v4.css";');
   const v7 = main.indexOf('import "./registration-flow-v7.css";');
   assert.ok(v6 > modal, "Registration desk refinements should load after modal and legacy workspace layers");
   assert.ok(v7 > v6, "focused mobile flow refinements should load after desk refinements");
-  assert.match(sw, /fsy-kumasi-shell-v31/);
+  assert.match(sw, /fsy-kumasi-shell-v32/);
 });
