@@ -13,6 +13,7 @@ import { FirstAidKit } from "@phosphor-icons/react/FirstAidKit";
 import { ForkKnife } from "@phosphor-icons/react/ForkKnife";
 import { IdentificationCard } from "@phosphor-icons/react/IdentificationCard";
 import { List } from "@phosphor-icons/react/List";
+import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { SignOut } from "@phosphor-icons/react/SignOut";
 import { SquaresFour } from "@phosphor-icons/react/SquaresFour";
 import { Users } from "@phosphor-icons/react/Users";
@@ -23,6 +24,7 @@ import { BrandMark } from "./BrandMark.jsx";
 import { demoSession } from "../data/session.js";
 import { isSupabaseConfigured, supabaseEnvironment } from "../lib/supabase.js";
 import { roleLabel } from "../lib/access.js";
+import { relativeFreshness } from "../lib/ux-errors.js";
 import { trackSessionPresence } from "../lib/presence.js";
 import "./session-switcher.css";
 
@@ -35,13 +37,18 @@ function isStandaloneDisplay() {
   if (typeof window === "undefined") return false;
   return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator?.standalone === true;
 }
+function uniqueItems(items = []) {
+  const seen = new Set();
+  return items.filter((item) => item && !seen.has(item[0]) && seen.add(item[0]));
+}
 
-export function AppShell({ active, setActive, attentionCount = 0, currentUser, currentRole = "logistics_admin", currentCapabilities = [], sessionInfo, sessions = [], selectedSessionId = "", onSessionChange, onSignOut, syncError = "", onRefresh, children }) {
+export function AppShell({ active, setActive, attentionCount = 0, currentUser, currentRole = "logistics_admin", currentCapabilities = [], sessionInfo, sessions = [], selectedSessionId = "", onSessionChange, onSignOut, syncError = "", lastUpdatedAt = "", onRefresh, children }) {
   const [menu, setMenu] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [online, setOnline] = useState(() => typeof navigator === "undefined" ? true : navigator.onLine);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [installed, setInstalled] = useState(isStandaloneDisplay);
+  const [clock, setClock] = useState(Date.now());
   const menuButtonRef = useRef(null);
   const sidebarRef = useRef(null);
 
@@ -52,22 +59,26 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
     const canRegistration = WHOLE_SESSION.has(currentRole) || has(currentCapabilities,"registration_view") || has(currentCapabilities,"registration_manage");
     const canHeadcount = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"headcount_view") || has(currentCapabilities,"headcount_record");
     const canReports = REPORT_CAPABILITIES.some((capability) => has(currentCapabilities, capability));
-    const today = [["overview","Overview",SquaresFour]];
-    if (canRegistration) today.push(["registration","Registration & check-in",IdentificationCard]);
-    else if (canCheckin) today.push(["checkin","Check-in",CheckCircle]);
-    if (canHeadcount) today.push(["headcount","Head count",ClipboardText]);
-    if (canGroups) today.push(["groups","Groups & companies",Buildings]);
+    const canHousing = has(currentCapabilities,"housing_view");
+    const canWellness = has(currentCapabilities,"wellness_private") || has(currentCapabilities,"wellness_status");
+    const canFood = has(currentCapabilities,"food_view") || has(currentCapabilities,"meal_attendance_view");
 
-    const peopleAndSetup = [];
-    if (canPeople) peopleAndSetup.push(["people","People",UsersThree]);
-    if (WHOLE_SESSION.has(currentRole) || has(currentCapabilities,"staff_manage")) peopleAndSetup.push(["assignments","Assignments",Users]);
+    const overview = ["overview","Overview",SquaresFour];
+    const registration = canRegistration ? ["registration","Registration & check-in",IdentificationCard] : canCheckin ? ["checkin","Check-in",CheckCircle] : null;
+    const headcount = canHeadcount ? ["headcount","Head count",ClipboardText] : null;
+    const groups = canGroups ? ["groups", currentRole === "assistant_coordinator" ? "My company" : "Groups & companies",Buildings] : null;
+    const people = canPeople ? ["people","People",UsersThree] : null;
+    const housing = canHousing ? ["housing","Housing",Bed] : null;
+    const wellness = canWellness ? ["wellness","Wellness",FirstAidKit] : null;
+    const food = canFood ? ["food","Food",ForkKnife] : null;
+    const reports = canReports ? ["reports","Reports",ChartBar] : null;
 
-    const teamTools = [];
-    if (has(currentCapabilities,"housing_view")) teamTools.push(["housing","Housing",Bed]);
-    if (has(currentCapabilities,"wellness_private") || has(currentCapabilities,"wellness_status")) teamTools.push(["wellness","Wellness",FirstAidKit]);
-    if (has(currentCapabilities,"food_view") || has(currentCapabilities,"meal_attendance_view")) teamTools.push(["food","Food",ForkKnife]);
-    if (canReports) teamTools.push(["reports","Reports",ChartBar]);
-
+    const today = uniqueItems([overview, registration, headcount, groups]);
+    const peopleAndSetup = uniqueItems([
+      people,
+      (WHOLE_SESSION.has(currentRole) || has(currentCapabilities,"staff_manage")) ? ["assignments","Assignments",Users] : null,
+    ]);
+    const teamTools = uniqueItems([housing, wellness, food, reports]);
     const adminAndUtilities = [];
     if (currentRole === "coordinator" || ["logistics_admin","session_director"].includes(currentRole) || has(currentCapabilities,"access_admin")) adminAndUtilities.push(["access","Access",Users]);
     adminAndUtilities.push(["birthdays","Birthdays",Cake]);
@@ -78,13 +89,23 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
       ["Admin & utilities", adminAndUtilities],
     ].filter(([, items]) => items.length);
     const moreItems = more.flatMap(([, items]) => items);
-    const defaultMobile = today.slice(0,4);
-    const scopedPrimary = currentRole === "committee_viewer" ? teamTools[0] : null;
-    const mobile = scopedPrimary ? [...defaultMobile.slice(0, Math.max(0, 3)), scopedPrimary].filter(Boolean).slice(0,4) : defaultMobile;
-    return { today, more, moreItems, moreIds: new Set(moreItems.map(([id]) => id)), mobile };
+
+    let mobile;
+    if (currentRole === "assistant_coordinator") {
+      mobile = uniqueItems([overview, groups, headcount, people]).slice(0,4);
+    } else if (currentRole === "committee_viewer") {
+      const primaryTeam = canHousing ? housing : canFood ? food : canWellness ? wellness : registration;
+      mobile = uniqueItems([overview, primaryTeam, people, headcount || registration]).slice(0,4);
+    } else {
+      mobile = uniqueItems([overview, registration, headcount, people]).slice(0,4);
+    }
+    if (mobile.length < 4) mobile = uniqueItems([...mobile, groups, housing, food, wellness]).slice(0,4);
+
+    return { today, more, moreItems, moreIds: new Set(moreItems.map(([id]) => id)), mobile, canPeople };
   }, [currentRole,currentCapabilities]);
 
   useEffect(() => { const update=()=>setOnline(navigator.onLine); window.addEventListener("online",update); window.addEventListener("offline",update); return()=>{window.removeEventListener("online",update);window.removeEventListener("offline",update);}; }, []);
+  useEffect(() => { const timer=window.setInterval(()=>setClock(Date.now()),15000); return()=>window.clearInterval(timer); }, []);
   useEffect(() => {
     const userId = currentUser?.user_id || currentUser?.id;
     if (!isSupabaseConfigured || !sessionInfo?.id || !userId) return undefined;
@@ -120,11 +141,10 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
   const displayName=currentUser?.display_name||"FSY Leader"; const displayRole=roleLabel(currentRole);
   const selectedSession=sessions.find((item)=>item.session_id===selectedSessionId); const isTraining=sessionInfo?.status==="training"||selectedSession?.session_status==="training";
   const sessionTitle=sessionInfo?.name||selectedSession?.session_name||demoSession.name;
-  const activeSecondary=nav.moreItems.find(([id])=>id===active) || null;
-  const mobileItems=activeSecondary && !nav.mobile.some(([id])=>id===active) ? [...nav.mobile.slice(0,3), activeSecondary] : nav.mobile;
-  const hasSecondaryActive=nav.moreIds.has(active) && !mobileItems.some(([id])=>id===active);
-  const connectionLabel=!online?"Offline":isTraining?"Training data":isSupabaseConfigured?`${supabaseEnvironment==="production"?"Production":"Development"} data`:"Demo data";
-  const connectionShort=!online?"Offline":isTraining?"Training":isSupabaseConfigured?(supabaseEnvironment==="production"?"Live":"Dev"):"Demo";
+  const activeInMore=nav.moreIds.has(active) && !nav.mobile.some(([id])=>id===active);
+  const freshness=lastUpdatedAt ? relativeFreshness(lastUpdatedAt, clock) : "";
+  const connectionLabel=!online?"Offline":syncError?"Update problem":isTraining?"Training data":isSupabaseConfigured?`Connected${freshness?` · ${freshness}`:""}`:"Demo data";
+  const connectionShort=!online?"Offline":syncError?"Retry":isTraining?"Training":isSupabaseConfigured?"Connected":"Demo";
   const navItem=([id,label,Icon])=><button key={id} type="button" className={active===id?"active":""} onClick={()=>navigate(id)} aria-current={active===id?"page":undefined}><Icon size={20} weight={active===id?"fill":"regular"}/><span>{label}</span>{id==="access"&&attentionCount>0?<em>{attentionCount}</em>:null}</button>;
 
   return <div className="app-shell">
@@ -139,11 +159,11 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
       {installPrompt&&!installed?<button type="button" className="sidebar-install" onClick={installApp}><DownloadSimple size={21}/><span><b>Install FSY Ops</b><small>Open it like an app on this device</small></span></button>:null}
       <div className="sidebar-foot"><button className={active==="profile"?"sidebar-profile active":"sidebar-profile"} onClick={()=>navigate("profile")} aria-label="Open your profile" aria-current={active==="profile"?"page":undefined}><AccountAvatar seed={currentUser?.user_id||currentUser?.id} label={`${displayName} profile`} size={38}/><span className="sidebar-account-copy"><b>{displayName}</b><small>{displayRole}</small></span></button>{onSignOut?<button className="sidebar-signout" onClick={onSignOut} aria-label="Sign out" title="Sign out"><SignOut size={18}/></button>:null}</div>
     </aside>
-    <main className="workspace"><header className="topbar"><button ref={menuButtonRef} className="icon-button menu-button" onClick={openMenu} aria-label="Open menu" aria-expanded={menu}><List/></button><div className="session">{sessions.length>1&&onSessionChange?<select className="session-select" value={selectedSessionId} onChange={(e)=>onSessionChange(e.target.value)} aria-label="Choose FSY workspace">{sessions.map((item)=><option key={item.session_id} value={item.session_id}>{item.session_status==="training"?`Training · ${item.session_name}`:item.session_name}</option>)}</select>:<span>{sessionTitle}</span>}<small>{isTraining?"Safe sandbox · synthetic people only":"Planning workspace"}</small></div><div className="top-actions"><span className={`connection ${isTraining?"demo":isSupabaseConfigured&&online?"live":"demo"}`} data-backend-environment={supabaseEnvironment}><span className="connection-label-full">{connectionLabel}</span><span className="connection-label-short">{connectionShort}</span></span><button className="icon-button notification-button" onClick={()=>attentionCount&&nav.moreIds.has("access")?navigate("access"):undefined} aria-label={attentionCount?`${attentionCount} access notifications`:"Notifications"}><Bell/>{attentionCount>0?<i>{attentionCount}</i>:null}</button><button className="top-profile-button" onClick={()=>navigate("profile")} aria-label="Open your profile" title="Profile"><AccountAvatar seed={currentUser?.user_id||currentUser?.id} label={`${displayName} profile`} size={34}/></button></div></header>
+    <main className="workspace"><header className="topbar"><button ref={menuButtonRef} className="icon-button menu-button" onClick={openMenu} aria-label="Open menu" aria-expanded={menu}><List/></button><div className="session">{sessions.length>1&&onSessionChange?<select className="session-select" value={selectedSessionId} onChange={(e)=>onSessionChange(e.target.value)} aria-label="Choose FSY workspace">{sessions.map((item)=><option key={item.session_id} value={item.session_id}>{item.session_status==="training"?`Training · ${item.session_name}`:item.session_name}</option>)}</select>:<span>{sessionTitle}</span>}<small>{isTraining?"Safe sandbox · synthetic people only":"Planning workspace"}</small></div><div className="top-actions">{nav.canPeople?<button type="button" className="icon-button global-search-button" onClick={()=>navigate("people")} aria-label="Find a participant or staff member" title="Find someone"><MagnifyingGlass/></button>:null}<span className={`connection ${isTraining?"demo":isSupabaseConfigured&&online&&!syncError?"live":"demo"}`} data-backend-environment={supabaseEnvironment} title={connectionLabel}><span className="connection-label-full">{connectionLabel}</span><span className="connection-label-short">{connectionShort}</span></span><button className="icon-button notification-button" onClick={()=>attentionCount&&nav.moreIds.has("access")?navigate("access"):undefined} aria-label={attentionCount?`${attentionCount} access notifications`:"Notifications"}><Bell/>{attentionCount>0?<i>{attentionCount}</i>:null}</button><button className="top-profile-button" onClick={()=>navigate("profile")} aria-label="Open your profile" title="Profile"><AccountAvatar seed={currentUser?.user_id||currentUser?.id} label={`${displayName} profile`} size={34}/></button></div></header>
       {isTraining?<div className="training-banner" role="status"><b>Training sandbox</b><span>Everything in this workspace is synthetic. Test operations without touching the real FSY session.</span></div>:null}
-      {syncError?<div className="sync-warning" role="alert"><span>Live updates paused: {syncError}</span><button onClick={onRefresh}>Reconnect</button></div>:null}
+      {syncError?<div className="sync-warning" role="alert"><span>We could not refresh live FSY data. What is already on screen may be out of date.</span><button onClick={onRefresh}>Try again</button></div>:null}
       {children}
-      <nav className="mobile-nav" aria-label="Primary mobile navigation">{mobileItems.map(([id,label,Icon])=><button type="button" key={id} className={active===id?"active":""} onClick={()=>navigate(id)} aria-current={active===id?"page":undefined}><Icon size={21} weight={active===id?"fill":"regular"}/><span>{label.replace("Registration & check-in","Check-in").replace(" & companies","")}</span></button>)}<button type="button" className={hasSecondaryActive?"active":""} onClick={openMenu} aria-label="Open more navigation" aria-expanded={menu}><List size={21} weight={hasSecondaryActive?"fill":"regular"}/><span>More</span></button></nav>
+      <nav className="mobile-nav" aria-label="Primary mobile navigation">{nav.mobile.map(([id,label,Icon])=><button type="button" key={id} className={active===id?"active":""} onClick={()=>navigate(id)} aria-current={active===id?"page":undefined}><Icon size={21} weight={active===id?"fill":"regular"}/><span>{label.replace("Registration & check-in","Check-in").replace("Groups & companies","Groups")}</span></button>)}<button type="button" className={activeInMore?"active":""} onClick={openMenu} aria-label="Open more navigation" aria-expanded={menu}><List size={21} weight={activeInMore?"fill":"regular"}/><span>More</span></button></nav>
     </main>
   </div>;
 }
