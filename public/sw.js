@@ -1,5 +1,5 @@
-const CACHE_NAME = "fsy-kumasi-shell-v32";
-// Release marker: task-first FSY operations UX with recoverable actions and mobile-focused workflows.
+const CACHE_NAME = "fsy-kumasi-shell-v33";
+// Release marker: connected Access and Assignments leader setup with refined mobile and desktop workflows.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",

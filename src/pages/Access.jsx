@@ -1,2 +1,2 @@
-// Access owns website sign-in. Assignments owns FSY responsibility and company scope.
-export { Access, createInitialAccessRequests } from "./AccessV3.jsx";
+// Access controls website sign-in while the connected setup flow can complete authoritative leader assignments in context.
+export { Access, createInitialAccessRequests } from "./AccessV4.jsx";
