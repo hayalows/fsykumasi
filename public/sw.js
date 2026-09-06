@@ -1,5 +1,5 @@
-const CACHE_NAME = "fsy-kumasi-shell-v25";
-// Release marker: faster paged Food serving, lazy dietary review, and responsive Food v2.
+const CACHE_NAME = "fsy-kumasi-shell-v26";
+// Release marker: refined mobile drawer navigation, unclipped session context, and calmer active states.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
