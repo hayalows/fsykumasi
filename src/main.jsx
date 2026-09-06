@@ -17,11 +17,13 @@ import "./phase3-reports.css";
 import "./modal-system.css";
 import "./modal-polish.css";
 import "./housing-assignment-v4.css";
+import "./housing-operations-v5.css";
 import "./components/staff-role-transition.css";
 import "./modal-refinement-v2.css";
 import "./sidebar-navigation-v2.css";
 import "./registration-modal-v4.css";
 import "./registration-checkin-v6.css";
+import "./registration-flow-v7.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
