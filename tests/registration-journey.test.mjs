@@ -35,9 +35,9 @@ test("Registration presents one Registration & check-in journey", async () => {
     read("src/pages/RegistrationJourney.jsx"),
   ]);
   assert.match(source, /title="Registration & check-in"/);
-  assert.match(source, /Check-in desk/);
-  assert.match(source, /Roster/);
-  assert.match(source, /Setup & review/);
+  assert.match(source, /Live check-in/);
+  assert.match(source, /Exceptions/);
+  assert.match(source, /Prepare/);
   assert.match(source, /<RegistrationJourney view="desk"/);
   assert.match(source, /<RegistrationJourney view="roster"/);
   assert.match(wrapper, /RegistrationJourneyV5/);
@@ -123,5 +123,6 @@ test("navigation prefers the unified registration desk for Registration users", 
   const shell = await read("src/components/AppShell.jsx");
   assert.match(shell, /canRegistration/);
   assert.match(shell, /Registration & check-in/);
-  assert.match(shell, /else if \(canCheckin\)/);
+  assert.match(shell, /canCheckin/);
+  assert.match(shell, /\["checkin","Check-in",CheckCircle\]/);
 });
