@@ -27,10 +27,10 @@ test("on-site registration adapts to compact phones without nested suggestion ov
   assert.doesNotMatch(css, /iPhone|Samsung|Galaxy|Pixel/i);
 });
 
-test("registration modal refinements load last and ship through a fresh PWA shell", async () => {
+test("registration modal refinements stay after shared shell layers and ship through the current PWA shell", async () => {
   const [main, sw] = await Promise.all([read("src/main.jsx"), read("public/sw.js")]);
   const registrationImport = main.indexOf('import "./registration-modal-v4.css";');
   const sidebarImport = main.indexOf('import "./sidebar-navigation-v2.css";');
   assert.ok(registrationImport > sidebarImport, "registration modal overrides should load after shared shell layers");
-  assert.match(sw, /fsy-kumasi-shell-v28/);
+  assert.match(sw, /fsy-kumasi-shell-v29/);
 });
