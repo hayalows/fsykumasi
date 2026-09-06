@@ -29,6 +29,7 @@ import "./account-page-v9.css";
 import "./operations-ux-v10.css";
 import "./access-assignments-v11.css";
 import "./access-assignments-v12.css";
+import "./access-assignments-v12-fix.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
