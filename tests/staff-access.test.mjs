@@ -6,7 +6,7 @@ const migration = readFileSync(new URL("../supabase/migrations/20260904194500_st
 const triggerFix = readFileSync(new URL("../supabase/migrations/20260904194600_staff_access_trigger_fix.sql", import.meta.url), "utf8");
 const accessUxMigration = readFileSync(new URL("../supabase/migrations/20260904214500_access_experience_presence_and_ac_company_management.sql", import.meta.url), "utf8");
 const roleTransitionMigration = readFileSync(new URL("../supabase/migrations/20260905121000_guided_staff_role_transitions.sql", import.meta.url), "utf8");
-const accessPage = readFileSync(new URL("../src/pages/Access.jsx", import.meta.url), "utf8");
+const accessPage = readFileSync(new URL("../src/pages/AccessV2.jsx", import.meta.url), "utf8");
 const assignmentsPage = readFileSync(new URL("../src/pages/Assignments.jsx", import.meta.url), "utf8");
 const roleTransitionSheet = readFileSync(new URL("../src/components/StaffRoleTransitionSheet.jsx", import.meta.url), "utf8");
 const transitionStyles = readFileSync(new URL("../src/components/staff-role-transition.css", import.meta.url), "utf8");
@@ -48,11 +48,12 @@ test("the last full session administrator is protected", () => {
   assert.match(migration, /You cannot remove the only Full Session Administrator\. Give another leader full access first\./i);
 });
 
-test("Access is a guided login lifecycle rather than a second Assignments screen", () => {
-  assert.match(accessPage, /Manage website accounts and committee responsibilities/i);
+test("Access is a guided person-first login lifecycle rather than a second Assignments screen", () => {
+  assert.match(accessPage, /Start with the person/i);
   assert.match(accessPage, /Needs access/);
   assert.match(accessPage, /Set companies/);
   assert.match(accessPage, /People & accounts/);
+  assert.match(accessPage, /FSY responsibility, company scope and website account stay together/);
   assert.match(staffClient, /invited:\s*"Invite sent"/);
   assert.match(staffClient, /active:\s*"Access active"/);
   assert.match(staffClient, /disabled:\s*"Access disabled"/);
@@ -61,13 +62,13 @@ test("Access is a guided login lifecycle rather than a second Assignments screen
 });
 
 test("Access can render its initial empty live directory before data arrives", () => {
-  assert.match(accessPage, /live \? \[\] : demoDirectory\(\)/);
+  assert.match(accessPage, /live\s*\?\s*\[\]\s*:\s*demoDirectory\(\)/);
   assert.match(accessPage, /<Empty title=/);
   assert.match(uiComponents, /\{Icon \? <span className="empty-icon"><Icon size=\{25\} \/><\/span> : null\}/);
 });
 
 test("Assistant Coordinators can resolve missing company scope without a disabled dead end", () => {
-  assert.match(accessPage, /openCompanies\(person, person\.accessState === "not_enabled"\)/);
+  assert.match(accessPage, /setCompanyTarget\(\{person,continueToAccess:person\.accessState==="not_enabled"\}\)/);
   assert.match(companySheet, /Save & continue/);
   assert.match(companySheet, /Suggest companies/);
   assert.match(companySheet, /All companies/);
@@ -115,8 +116,8 @@ test("optional account activity cannot block the Access directory", () => {
 
 test("secondary Access actions use progressive disclosure without hiding the primary company picker", () => {
   assert.match(accessPage, /className="staff-access-more"/);
-  assert.match(accessPage, /className="panel staff-access-help"/);
-  assert.match(accessPage, /Website accounts & committee members/);
+  assert.match(accessPage, /className="panel access-v2-exceptions"/);
+  assert.match(accessPage, /Independent accounts & older requests/);
   assert.match(companySheet, /className="assistant-company-picker"/);
 });
 
