@@ -1,5 +1,5 @@
-const CACHE_NAME = "fsy-kumasi-shell-v27";
-// Release marker: adaptive mobile drawer spacing, compact hierarchy, and consistent navigation across phone sizes.
+const CACHE_NAME = "fsy-kumasi-shell-v28";
+// Release marker: adaptive Registration and on-site sheets with one scroll surface and stable mobile step layout.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
