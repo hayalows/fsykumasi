@@ -7,7 +7,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 test("Wellness has an explicit active-visit checkout and follow-up lifecycle", async () => {
   const [migration, page, fieldLib] = await Promise.all([
     read("supabase/migrations/20260904110000_phase2_wellness_daily_operations.sql"),
-    read("src/pages/Wellness.jsx"),
+    read("src/pages/WellnessV2.jsx"),
     read("src/lib/field-operations.js"),
   ]);
   assert.match(migration, /create unique index if not exists wellness_active_participant_uq/);
@@ -19,7 +19,8 @@ test("Wellness has an explicit active-visit checkout and follow-up lifecycle", a
   assert.match(migration, /follow_up_status = case when p_outcome = 'follow_up_needed' then 'open'/);
   assert.match(page, /Check out this visit/);
   assert.match(page, /already has an active Wellness visit/);
-  assert.match(page, /Follow-up queue/);
+  assert.match(page, /Follow-up/);
+  assert.match(page, /Oldest active visit appears first/);
   assert.match(fieldLib, /checkout_wellness_encounter/);
   assert.match(fieldLib, /resolve_wellness_follow_up/);
 });
@@ -37,7 +38,7 @@ test("Wellness status-only reads exclude private concern and medicine fields", a
 test("Food meal attendance is independent, idempotent, and guarded by RPCs", async () => {
   const [migration, page, fieldLib, mealLib] = await Promise.all([
     read("supabase/migrations/20260904110000_phase2_wellness_daily_operations.sql"),
-    read("src/pages/Food.jsx"),
+    read("src/pages/FoodV3.jsx"),
     read("src/lib/field-operations.js"),
     read("src/lib/meal-attendance.js"),
   ]);
@@ -48,8 +49,9 @@ test("Food meal attendance is independent, idempotent, and guarded by RPCs", asy
   assert.match(migration, /on conflict do nothing returning id, served_at/);
   assert.match(migration, /revoke all on public\.meal_services, public\.meal_attendance from anon, authenticated/);
   assert.match(page, /type="checkbox"/);
-  assert.match(page, /Each tick saves immediately/);
+  assert.match(page, /Tap the row when food is handed over/);
   assert.match(page, /Dietary needs/);
+  assert.match(page, /ActionToast/);
   assert.match(fieldLib, /get_meal_roster/);
   assert.match(fieldLib, /mark_meal_served/);
   assert.match(mealLib, /set_participant_meal_served/);
