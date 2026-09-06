@@ -78,7 +78,10 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
       ["Admin & utilities", adminAndUtilities],
     ].filter(([, items]) => items.length);
     const moreItems = more.flatMap(([, items]) => items);
-    return { today, more, moreItems, moreIds: new Set(moreItems.map(([id]) => id)), mobile: today.slice(0,4) };
+    const defaultMobile = today.slice(0,4);
+    const scopedPrimary = currentRole === "committee_viewer" ? teamTools[0] : null;
+    const mobile = scopedPrimary ? [...defaultMobile.slice(0, Math.max(0, 3)), scopedPrimary].filter(Boolean).slice(0,4) : defaultMobile;
+    return { today, more, moreItems, moreIds: new Set(moreItems.map(([id]) => id)), mobile };
   }, [currentRole,currentCapabilities]);
 
   useEffect(() => { const update=()=>setOnline(navigator.onLine); window.addEventListener("online",update); window.addEventListener("offline",update); return()=>{window.removeEventListener("online",update);window.removeEventListener("offline",update);}; }, []);
@@ -117,11 +120,12 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
   const displayName=currentUser?.display_name||"FSY Leader"; const displayRole=roleLabel(currentRole);
   const selectedSession=sessions.find((item)=>item.session_id===selectedSessionId); const isTraining=sessionInfo?.status==="training"||selectedSession?.session_status==="training";
   const sessionTitle=sessionInfo?.name||selectedSession?.session_name||demoSession.name;
-  const hasSecondaryActive=nav.moreIds.has(active);
+  const activeSecondary=nav.moreItems.find(([id])=>id===active) || null;
+  const mobileItems=activeSecondary && !nav.mobile.some(([id])=>id===active) ? [...nav.mobile.slice(0,3), activeSecondary] : nav.mobile;
+  const hasSecondaryActive=nav.moreIds.has(active) && !mobileItems.some(([id])=>id===active);
   const connectionLabel=!online?"Offline":isTraining?"Training data":isSupabaseConfigured?`${supabaseEnvironment==="production"?"Production":"Development"} data`:"Demo data";
   const connectionShort=!online?"Offline":isTraining?"Training":isSupabaseConfigured?(supabaseEnvironment==="production"?"Live":"Dev"):"Demo";
   const navItem=([id,label,Icon])=><button key={id} type="button" className={active===id?"active":""} onClick={()=>navigate(id)} aria-current={active===id?"page":undefined}><Icon size={20} weight={active===id?"fill":"regular"}/><span>{label}</span>{id==="access"&&attentionCount>0?<em>{attentionCount}</em>:null}</button>;
-  const allMain=nav.today;
 
   return <div className="app-shell">
     {menu?<button className="sidebar-scrim" onClick={()=>setMenu(false)} aria-label="Close menu" tabIndex={-1}/>:null}
@@ -130,7 +134,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
       <div className={isTraining?"session-badge training":"session-badge"}><span>{isTraining?"Training":sessionInfo?.year||demoSession.year}</span><small>{isTraining?"Synthetic rehearsal workspace":demoSession.theme}</small></div>
       <nav className="sidebar-nav">
         <div className="nav-group"><span className="nav-group-label">Today</span>{nav.today.map(navItem)}</div>
-        {nav.more.length?<div className="nav-group nav-group-more"><button type="button" className={hasSecondaryActive?"sidebar-more-trigger active":"sidebar-more-trigger"} onClick={()=>setMoreOpen((v)=>!v)} aria-expanded={moreOpen} aria-controls="sidebar-more-tools"><DotsThree size={22}/><span>More</span><CaretDown size={17} className={moreOpen?"more-chevron open":"more-chevron"}/></button>{moreOpen?<div id="sidebar-more-tools" className="sidebar-more-items">{nav.more.map(([label,items])=><div className="sidebar-more-group" key={label}><span className="sidebar-more-label">{label}</span>{items.map(navItem)}</div>)}</div>:null}</div>:null}
+        {nav.more.length?<div className="nav-group nav-group-more"><button type="button" className={nav.moreIds.has(active)?"sidebar-more-trigger active":"sidebar-more-trigger"} onClick={()=>setMoreOpen((v)=>!v)} aria-expanded={moreOpen} aria-controls="sidebar-more-tools"><DotsThree size={22}/><span>More</span><CaretDown size={17} className={moreOpen?"more-chevron open":"more-chevron"}/></button>{moreOpen?<div id="sidebar-more-tools" className="sidebar-more-items">{nav.more.map(([label,items])=><div className="sidebar-more-group" key={label}><span className="sidebar-more-label">{label}</span>{items.map(navItem)}</div>)}</div>:null}</div>:null}
       </nav>
       {installPrompt&&!installed?<button type="button" className="sidebar-install" onClick={installApp}><DownloadSimple size={21}/><span><b>Install FSY Ops</b><small>Open it like an app on this device</small></span></button>:null}
       <div className="sidebar-foot"><button className={active==="profile"?"sidebar-profile active":"sidebar-profile"} onClick={()=>navigate("profile")} aria-label="Open your profile" aria-current={active==="profile"?"page":undefined}><AccountAvatar seed={currentUser?.user_id||currentUser?.id} label={`${displayName} profile`} size={38}/><span className="sidebar-account-copy"><b>{displayName}</b><small>{displayRole}</small></span></button>{onSignOut?<button className="sidebar-signout" onClick={onSignOut} aria-label="Sign out" title="Sign out"><SignOut size={18}/></button>:null}</div>
@@ -139,7 +143,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
       {isTraining?<div className="training-banner" role="status"><b>Training sandbox</b><span>Everything in this workspace is synthetic. Test operations without touching the real FSY session.</span></div>:null}
       {syncError?<div className="sync-warning" role="alert"><span>Live updates paused: {syncError}</span><button onClick={onRefresh}>Reconnect</button></div>:null}
       {children}
-      <nav className="mobile-nav" aria-label="Primary mobile navigation">{allMain.filter(([id])=>nav.mobile.some(([mobileId])=>mobileId===id)).map(([id,label,Icon])=><button type="button" key={id} className={active===id?"active":""} onClick={()=>navigate(id)} aria-current={active===id?"page":undefined}><Icon size={21} weight={active===id?"fill":"regular"}/><span>{label.replace("Registration & check-in","Check-in").replace(" & companies","")}</span></button>)}<button type="button" className={hasSecondaryActive?"active":""} onClick={openMenu} aria-label="Open more navigation" aria-expanded={menu}><List size={21} weight={hasSecondaryActive?"fill":"regular"}/><span>More</span></button></nav>
+      <nav className="mobile-nav" aria-label="Primary mobile navigation">{mobileItems.map(([id,label,Icon])=><button type="button" key={id} className={active===id?"active":""} onClick={()=>navigate(id)} aria-current={active===id?"page":undefined}><Icon size={21} weight={active===id?"fill":"regular"}/><span>{label.replace("Registration & check-in","Check-in").replace(" & companies","")}</span></button>)}<button type="button" className={hasSecondaryActive?"active":""} onClick={openMenu} aria-label="Open more navigation" aria-expanded={menu}><List size={21} weight={hasSecondaryActive?"fill":"regular"}/><span>More</span></button></nav>
     </main>
   </div>;
 }
