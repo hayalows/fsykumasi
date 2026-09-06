@@ -43,15 +43,16 @@ test("Housing is queue-first on mobile and room choices explain recommendation r
   assert.match(css, /\.housing-v5-panel\.mobile-hidden \{ display: none; \}/);
 });
 
-test("mobile navigation promotes scoped and currently active field tools", async () => {
+test("mobile navigation keeps responsibility-first destinations stable", async () => {
   const shell = await read("src/components/AppShell.jsx");
-  assert.match(shell, /currentRole === "committee_viewer" \? teamTools\[0\]/);
-  assert.match(shell, /activeSecondary/);
-  assert.match(shell, /mobileItems/);
-  assert.match(shell, /hasSecondaryActive=nav\.moreIds\.has\(active\) && !mobileItems\.some/);
+  assert.match(shell, /currentRole === "assistant_coordinator"/);
+  assert.match(shell, /currentRole === "committee_viewer"/);
+  assert.match(shell, /const primaryTeam = canHousing \? housing : canFood \? food : canWellness \? wellness : registration/);
+  assert.match(shell, /mobile = uniqueItems\(\[overview, primaryTeam, people, headcount \|\| registration\]\)\.slice\(0,4\)/);
+  assert.match(shell, /const activeInMore=nav\.moreIds\.has\(active\) && !nav\.mobile\.some/);
 });
 
-test("new field-workflow styles load last and ship with PWA shell v31", async () => {
+test("new field-workflow styles load last and ship with PWA shell v32", async () => {
   const [main, sw, housingExport] = await Promise.all([
     read("src/main.jsx"),
     read("public/sw.js"),
@@ -60,6 +61,6 @@ test("new field-workflow styles load last and ship with PWA shell v31", async ()
   assert.ok(main.indexOf('import "./housing-operations-v5.css";') > main.indexOf('import "./housing-assignment-v4.css";'));
   assert.ok(main.indexOf('import "./housing-room-action-v8.css";') > main.indexOf('import "./housing-operations-v5.css";'));
   assert.ok(main.indexOf('import "./registration-flow-v7.css";') > main.indexOf('import "./registration-checkin-v6.css";'));
-  assert.match(sw, /fsy-kumasi-shell-v31/);
+  assert.match(sw, /fsy-kumasi-shell-v32/);
   assert.match(housingExport, /HousingV5/);
 });
