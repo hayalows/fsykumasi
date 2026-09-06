@@ -52,7 +52,8 @@ function balancedCompanyIds(companies, staff, maxLoad, currentStaffId = "") {
 
 export function LeaderSetupFlow({ sessionId, person = null, onClose, onComplete }) {
   const existing = Boolean(person?.staffId);
-  const [step, setStep] = useState(existing ? 2 : 1);
+  const firstStep = existing ? 2 : 1;
+  const [step, setStep] = useState(firstStep);
   const [name, setName] = useState(person?.name || "");
   const [role, setRole] = useState(person?.operationalRole || "assistant_coordinator");
   const [email, setEmail] = useState(person?.accountEmail || person?.email || "");
@@ -102,6 +103,9 @@ export function LeaderSetupFlow({ sessionId, person = null, onClose, onComplete 
 
   const canAdvanceDetails = name.trim().length >= 2 && ACCOUNT_ROLES.has(role);
   const canFinish = !loading && !busy && canAdvanceDetails && (role !== "assistant_coordinator" || companyIds.length > 0) && companyIds.length <= maxLoad;
+  const displayStep = existing ? step - 1 : step;
+  const totalSteps = existing ? 2 : 3;
+  const canGoBack = step > firstStep;
 
   const toggleCompany = (companyId) => {
     setError("");
@@ -113,6 +117,11 @@ export function LeaderSetupFlow({ sessionId, person = null, onClose, onComplete 
       }
       return [...current, companyId];
     });
+  };
+
+  const applyBalancedSuggestion = () => {
+    setError("");
+    setCompanyIds(balancedCompanyIds(companies, staff, maxLoad, existing ? person?.staffId : ""));
   };
 
   const copy = async (value, label) => {
@@ -155,15 +164,15 @@ export function LeaderSetupFlow({ sessionId, person = null, onClose, onComplete 
   return <DismissibleLayer open onClose={() => !busy && onClose()} title="Leader setup" sheet className="leader-setup-layer">
     <div className="leader-setup-flow">
       <header className="leader-setup-header">
-        {step > 1 && !created && !existing ? <button type="button" className="icon-button leader-setup-back" onClick={() => setStep(step - 1)} aria-label="Back"><ArrowLeft /></button> : <span />}
+        {canGoBack && !created ? <button type="button" className="icon-button leader-setup-back" onClick={() => setStep(step - 1)} aria-label="Back"><ArrowLeft /></button> : <span />}
         <div><span className="kicker">Leader setup</span><h2>{created ? "Setup complete" : existing ? `Finish ${name}'s setup` : "Add a leader"}</h2></div>
         <button type="button" data-layer-close className="icon-button" onClick={onClose} disabled={busy} aria-label="Close"><X /></button>
       </header>
 
-      {!created ? <div className="leader-setup-progress" aria-label={`Step ${step} of 3`}><i className="done"/><i className={step >= 2 ? "done" : ""}/><i className={step >= 3 ? "done" : ""}/></div> : null}
+      {!created ? <div className="leader-setup-progress" aria-label={`Step ${displayStep} of ${totalSteps}`}>{Array.from({ length: totalSteps }, (_, index) => <i key={index} className={displayStep >= index + 1 ? "done" : ""} />)}</div> : null}
 
       <div className="leader-setup-scroll">
-        {step === 1 && !created ? <section className="leader-setup-section">
+        {!existing && step === 1 && !created ? <section className="leader-setup-section">
           <div className="leader-setup-section-title"><UserPlus /><div><b>Who is this leader?</b><small>Add the responsibility first. Access can be prepared before you finish.</small></div></div>
           <label>Full name<input autoFocus required minLength={2} maxLength={120} value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" /></label>
           <label>FSY responsibility<select value={role} onChange={(event) => setRole(event.target.value)}>{ROLE_OPTIONS.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
@@ -173,7 +182,7 @@ export function LeaderSetupFlow({ sessionId, person = null, onClose, onComplete 
         {step === 2 && !created ? <section className="leader-setup-section">
           <div className="leader-setup-section-title"><Buildings /><div><b>{role === "assistant_coordinator" ? "Company scope and sign-in" : "Website sign-in"}</b><small>{role === "assistant_coordinator" ? "Choose where this leader serves, then confirm the email they will use." : "Confirm the email this leader will use to sign in."}</small></div></div>
           {role === "assistant_coordinator" ? <>
-            <div className="leader-setup-selection-head"><span><b>Companies</b><small>{companyIds.length}/{maxLoad} selected</small></span>{!existing ? <button type="button" className="text-action" onClick={() => setCompanyIds(balancedCompanyIds(companies, staff, maxLoad))}>Use balanced suggestion</button> : null}</div>
+            <div className="leader-setup-selection-head"><span><b>Companies</b><small>{companyIds.length}/{maxLoad} selected</small></span>{(!existing || !companyIds.length) ? <button type="button" className="text-action" onClick={applyBalancedSuggestion}>Use balanced suggestion</button> : null}</div>
             <input className="leader-setup-company-search" type="search" value={companyQuery} onChange={(event) => setCompanyQuery(event.target.value)} placeholder="Search companies" aria-label="Search companies" />
             <div className="leader-setup-company-list">{filteredCompanies.map((company) => {
               const selected = companyIds.includes(company.id);
@@ -207,7 +216,7 @@ export function LeaderSetupFlow({ sessionId, person = null, onClose, onComplete 
       </div>
 
       {!created ? <footer className="leader-setup-footer">
-        {step > 1 ? <button type="button" className="secondary" disabled={busy} onClick={() => setStep(step - 1)}>Back</button> : <button type="button" className="secondary" disabled={busy} onClick={onClose}>Cancel</button>}
+        {canGoBack ? <button type="button" className="secondary" disabled={busy} onClick={() => setStep(step - 1)}>Back</button> : <button type="button" className="secondary" disabled={busy} onClick={onClose}>Cancel</button>}
         {step < 3 ? <button type="button" className="primary" disabled={loading || (step === 1 && !canAdvanceDetails) || (step === 2 && role === "assistant_coordinator" && !companyIds.length)} onClick={() => setStep(step + 1)}>Continue</button> : <button type="button" className="primary" disabled={!canFinish} onClick={finish}>{busy ? "Finishing…" : "Finish setup"}</button>}
       </footer> : <footer className="leader-setup-footer"><span /><button type="button" className="primary" onClick={onClose}>Done</button></footer>}
     </div>
