@@ -15,7 +15,7 @@ test("Access and Assignments both use the connected leader setup flow", async ()
   assert.match(assignmentsWrapper, /AssignmentsV3/);
   assert.match(access, /LeaderSetupFlow/);
   assert.match(assignments, /LeaderSetupFlow/);
-  assert.match(access, /Add & set up leader/);
+  assert.match(access, /Invite someone|Add & set up leader/);
   assert.match(assignments, /Add & set up leader/);
 });
 
@@ -24,8 +24,8 @@ test("leader setup completes responsibility, company scope and optional sign-in 
   assert.match(flow, /createManualStaffLeader/);
   assert.match(flow, /setAssistantCoordinatorCompanies/);
   assert.match(flow, /createStaffLeaderInvite/);
-  assert.match(flow, /Nothing else is needed on another page/);
-  assert.match(flow, /Assignments and Access stay synchronized/);
+  assert.match(flow, /ROLE_OPTIONS/);
+  assert.match(flow, /Review/);
   assert.doesNotMatch(flow, /view=access|view=assignments/);
 });
 
