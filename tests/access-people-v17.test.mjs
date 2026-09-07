@@ -69,3 +69,11 @@ test("each person row exposes one main task while secondary actions stay under M
   assert.match(access, /Disable sign-in/);
   assert.match(access, /Remove old access/);
 });
+
+test("Access v17 ships with a fresh PWA shell so existing clients update", async () => {
+  const sw = await read("public/sw.js");
+  assert.match(sw, /fsy-kumasi-shell-v39/);
+  assert.match(sw, /Access operations v17/);
+  assert.match(sw, /skipWaiting/);
+  assert.match(sw, /clients\.claim/);
+});
