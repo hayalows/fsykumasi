@@ -62,6 +62,6 @@ test("new field-workflow styles load last and ship with the current PWA shell", 
   assert.ok(main.indexOf('import "./housing-operations-v5.css";') > main.indexOf('import "./housing-assignment-v4.css";'));
   assert.ok(main.indexOf('import "./housing-room-action-v8.css";') > main.indexOf('import "./housing-operations-v5.css";'));
   assert.ok(main.indexOf('import "./registration-flow-v7.css";') > main.indexOf('import "./registration-checkin-v6.css";'));
-  assert.match(sw, /fsy-kumasi-shell-v34/);
+  assert.match(sw, /fsy-kumasi-shell-v35/);
   assert.match(housingExport, /HousingV5/);
 });

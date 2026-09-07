@@ -47,7 +47,7 @@ test("Overview actions carry exact destinations", () => {
 });
 
 test("v34 shell and final responsive reliability CSS are wired last", () => {
-  assert.match(read("public/sw.js"),/fsy-kumasi-shell-v34/); assert.match(read("src/main.jsx"),/operations-reliability-v12\.css/);
+  assert.match(read("public/sw.js"),/fsy-kumasi-shell-v35/); assert.match(read("src/main.jsx"),/operations-reliability-v12\.css/);
 });
 
 

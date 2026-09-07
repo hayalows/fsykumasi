@@ -55,7 +55,7 @@ test("Access defaults to setup work and Assignments suggestions are deterministi
 
 test("PWA shell keeps connected setup and the current Housing release", async () => {
   const [sw, main] = await Promise.all([read("public/sw.js"), read("src/main.jsx")]);
-  assert.match(sw, /fsy-kumasi-shell-v34/);
+  assert.match(sw, /fsy-kumasi-shell-v35/);
   assert.match(sw, /Housing UX v13/);
   assert.match(main, /access-assignments-v12\.css/);
 });
