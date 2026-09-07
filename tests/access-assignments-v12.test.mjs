@@ -57,12 +57,12 @@ test("Access defaults to unfinished work and Assignments suggestions are determi
   assert.match(assignments, /Review before applying/);
 });
 
-test("PWA shell keeps Housing and connected setup while shipping Access operations v16", async () => {
+test("PWA shell keeps Housing and connected setup while shipping the current Access release", async () => {
   const [sw, main] = await Promise.all([read("public/sw.js"), read("src/main.jsx")]);
-  assert.match(sw, /fsy-kumasi-shell-v38/);
+  assert.match(sw, /fsy-kumasi-shell-v39/);
   assert.match(sw, /Housing workflow v14/);
   assert.match(sw, /Access \+ Assignments v15/);
-  assert.match(sw, /Access operations v16/);
+  assert.match(sw, /Access operations v17/);
   assert.match(main, /access-assignments-v12\.css/);
   assert.match(main, /access-assignments-v15\.css/);
   assert.match(main, /access-operations-v16\.css/);
