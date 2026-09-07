@@ -137,6 +137,21 @@ export async function createManualStaffLeader({ sessionId, name, email = "", rol
   return first(data) || data;
 }
 
+export async function reconcileExistingStaffAccounts(sessionId) {
+  const { data, error } = await client().rpc("reconcile_existing_staff_accounts", {
+    p_session_id: sessionId,
+  });
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    userId: row.account_user_id,
+    staffId: row.resolved_staff_id || null,
+    outcome: row.outcome || "",
+    createdStaff: Boolean(row.created_staff),
+    needsCompanyReview: Boolean(row.needs_company_review),
+    detail: row.detail || "",
+  }));
+}
+
 export async function adoptLegacyAccessAccount({ sessionId, userId, staffId = null }) {
   const { data, error } = await client().rpc("adopt_legacy_access_account", {
     p_session_id: sessionId,

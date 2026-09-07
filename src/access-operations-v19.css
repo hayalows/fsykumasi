@@ -1,0 +1,35 @@
+.access-v19 .access-v17-row.repair-needed{
+  border-color:color-mix(in srgb,var(--warning,#d18a00) 34%,var(--border));
+  background:color-mix(in srgb,var(--warning-soft,#fff8e8) 56%,var(--surface));
+}
+
+.access-v19 .access-v17-person>span:last-child em{
+  display:block;
+  margin-top:3px;
+  max-width:32ch;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--muted);
+  font-size:.76rem;
+  font-style:normal;
+}
+
+.access-v19 .access-v19-sync p{max-width:62ch}
+
+.access-v19 .access-v17-row.repair-needed .access-v17-state .status{
+  white-space:nowrap;
+}
+
+@media(max-width:760px){
+  .access-v19 .access-v17-person>span:last-child em{
+    max-width:min(70vw,34ch);
+  }
+  .access-v19 .access-v17-row.repair-needed .access-v17-actions>.primary{
+    width:100%;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .access-v19 .access-v18-spinner{animation:none}
+}
