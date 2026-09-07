@@ -55,9 +55,9 @@ test("room search and filters adapt to the pane width rather than viewport width
   assert.match(css, /housing-v6-room-controls \.search input[\s\S]*min-width:\s*0/);
 });
 
-test("Housing workflow v14 is the final style layer and ships PWA shell v36", async () => {
+test("Housing workflow v14 remains loaded and current PWA shell ships v38", async () => {
   const [main, sw] = await Promise.all([read("src/main.jsx"), read("public/sw.js")]);
   assert.ok(main.indexOf('import "./housing-ux-v14.css";') > main.indexOf('import "./housing-ux-v13.css";'));
-  assert.match(sw, /fsy-kumasi-shell-v36/);
+  assert.match(sw, /fsy-kumasi-shell-v38/);
   assert.match(sw, /Housing workflow v14/);
 });
