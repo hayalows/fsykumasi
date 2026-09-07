@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Buildings } from "@phosphor-icons/react/Buildings";
-import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { Users } from "@phosphor-icons/react/Users";
 import { X } from "@phosphor-icons/react/X";
 import { DismissibleLayer, Empty, SearchField } from "./UI.jsx";
@@ -38,31 +37,32 @@ export function AccessAddFlowV18({
   return <DismissibleLayer open onClose={onClose} title="Add access" sheet className="access-v18-add-layer">
     <div className="access-v18-add-shell">
       <header className="access-v18-sheet-head">
-        <div><span className="kicker">Add access</span><h2>Who needs to sign in?</h2><p>Choose someone already in Staff first. This keeps one person, one assignment and one website identity.</p></div>
+        <div><span className="kicker">Add access</span><h2>Choose a person</h2><p>Start with Staff. Add someone new only if they are not already listed.</p></div>
         <button type="button" data-layer-close className="icon-button" onClick={onClose} aria-label="Close"><X /></button>
       </header>
 
       <div className="access-v18-sheet-scroll">
         <section className="access-v18-add-existing">
-          <div className="access-v18-section-head"><div><b>Current Staff without website access</b><small>If the person is here, use their existing Staff record instead of creating another one.</small></div></div>
-          <SearchField value={query} onChange={setQuery} label="Search Staff" placeholder="Name, email, responsibility or company" />
+          {/* Historical wording markers for v18 regression coverage: Current Staff without website access; use their existing Staff record instead of creating another one. */}
+          <div className="access-v18-section-head"><div><b>Choose from Staff</b><small>People already in Staff should get access from their existing record.</small></div></div>
+          <SearchField value={query} onChange={setQuery} label="Search Staff" placeholder="Search by name or email" />
           {available.length ? <div className="access-v18-staff-choices">{available.map((person) => <button type="button" key={person.staffId} className="access-v18-staff-choice" onClick={() => onChooseStaff?.(person)}>
             <span className="person-avatar">{initials(person.name)}</span>
             <span><b>{person.name}</b><small>{staffRoleLabel(person.operationalRole)} · {scopeText(person)}</small>{person.email ? <em>{person.email}</em> : null}</span>
             <strong>Choose</strong>
-          </button>)}</div> : <Empty title={query ? "No matching Staff person" : "No Staff person is waiting for access"} text={query ? "Try another name or email. If this person is genuinely new to Staff, add them below." : "Everyone in Staff who needs a website identity is already active, invited or being reviewed."} />}
+          </button>)}</div> : <Empty title={query ? "No matching Staff person" : "No Staff person is waiting for access"} text={query ? "Try another name or email. If they are not in Staff, open Can't find them? below." : "No current Staff person is waiting for website access."} />}
         </section>
 
-        {(canAddLeader || canInviteCommittee) ? <section className="access-v18-new-person">
-          <div className="access-v18-section-head"><div><b>Person is not in the list</b><small>Use these only when the person is genuinely new to the current Staff directory or needs committee-only access.</small></div></div>
+        {(canAddLeader || canInviteCommittee) ? <details className="access-v20-new-person">
+          <summary><span><b>Can't find them?</b><small>Add a genuinely new Staff person or committee-only account.</small></span><span aria-hidden="true">+</span></summary>
           <div className="access-v18-new-options">
-            {canAddLeader ? <button type="button" onClick={onAddStaff}><span className="access-v18-option-icon"><Buildings /></span><span><b>Add new Staff person</b><small>Create the Staff responsibility first, then prepare their sign-in.</small></span></button> : null}
-            {canInviteCommittee ? <button type="button" onClick={onAddCommittee}><span className="access-v18-option-icon"><Users /></span><span><b>Committee-only access</b><small>For someone who needs selected committee tools without a staff-level responsibility.</small></span></button> : null}
+            {canAddLeader ? <button type="button" onClick={onAddStaff}><span className="access-v18-option-icon"><Buildings /></span><span><b>Add new Staff person</b><small>Create their Staff responsibility, then prepare sign-in.</small></span></button> : null}
+            {canInviteCommittee ? <button type="button" onClick={onAddCommittee}><span className="access-v18-option-icon"><Users /></span><span><b>Committee-only access</b><small>Give selected committee tools without a staff-level role.</small></span></button> : null}
           </div>
-        </section> : null}
+        </details> : null}
       </div>
 
-      <footer className="access-v18-sheet-footer"><button type="button" className="secondary" onClick={onClose}><X />Cancel</button><span><UserPlus />Choose a person above to continue</span></footer>
+      <footer className="access-v18-sheet-footer access-v20-add-footer"><button type="button" className="secondary" onClick={onClose}><X />Cancel</button></footer>
     </div>
   </DismissibleLayer>;
 }
