@@ -57,10 +57,13 @@ test("Housing keeps wayfinding protection and room recommendation logic", () => 
   assert.match(dialogs, /locationReady/);
 });
 
-test("Housing UX v13 is the final style layer and PWA shell v35", () => {
+test("Housing v13 safeguards remain loaded before the v14 workflow layer", () => {
   const main = read("src/main.jsx");
   const sw = read("public/sw.js");
-  assert.ok(main.indexOf('import "./housing-ux-v13.css";') > main.indexOf('import "./operations-reliability-v12.css";'));
-  assert.match(sw, /fsy-kumasi-shell-v35/);
-  assert.match(sw, /Housing UX v13/);
+  const v13 = main.indexOf('import "./housing-ux-v13.css";');
+  const v14 = main.indexOf('import "./housing-ux-v14.css";');
+  assert.ok(v13 > main.indexOf('import "./operations-reliability-v12.css";'));
+  assert.ok(v14 > v13, "Housing workflow v14 should refine rather than bypass the v13 safeguards");
+  assert.match(sw, /fsy-kumasi-shell-v36/);
+  assert.match(sw, /Housing workflow v14/);
 });
