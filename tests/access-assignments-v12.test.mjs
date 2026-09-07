@@ -40,12 +40,13 @@ test("existing leaders cannot back into the new-person identity step", async () 
   assert.match(flow, /const totalSteps = existing \? 2 : 3/);
 });
 
-test("mobile leader setup is a full-height single task with sticky actions", async () => {
-  const css = await read("src/access-assignments-v12.css");
-  assert.match(css, /height:calc\(100dvh - max\(8px,env\(safe-area-inset-top\)\)\)/);
-  assert.match(css, /leader-setup-scroll\{[^}]*overflow:auto/);
-  assert.match(css, /leader-setup-footer\{[^}]*safe-area-inset-bottom/);
-  assert.match(css, /font-size:16px/);
+test("mobile leader setup keeps a full-height single task with sticky actions", async () => {
+  const [baseCss, v16Css] = await Promise.all([read("src/access-assignments-v12.css"), read("src/access-ux-v16.css")]);
+  assert.match(baseCss, /leader-setup-scroll\{[^}]*overflow:auto/);
+  assert.match(baseCss, /leader-setup-footer\{[^}]*safe-area-inset-bottom/);
+  assert.match(baseCss, /font-size:16px/);
+  assert.match(v16Css, /position:fixed;inset:0;width:100vw;height:100dvh/);
+  assert.match(v16Css, /leader-setup-footer\{[^}]*safe-area-inset-bottom/);
 });
 
 test("Access defaults to unfinished work and Assignments suggestions are deterministic", async () => {
@@ -57,11 +58,11 @@ test("Access defaults to unfinished work and Assignments suggestions are determi
   assert.match(assignments, /Review before applying/);
 });
 
-test("PWA shell keeps Housing v14 and ships Access + Assignments v15", async () => {
+test("PWA shell keeps the earlier interface layers and advances Access UX to v16", async () => {
   const [sw, main] = await Promise.all([read("public/sw.js"), read("src/main.jsx")]);
-  assert.match(sw, /fsy-kumasi-shell-v37/);
-  assert.match(sw, /Housing workflow v14/);
-  assert.match(sw, /Access \+ Assignments v15/);
+  assert.match(sw, /fsy-kumasi-shell-v38/);
+  assert.match(sw, /Access UX v16/);
   assert.match(main, /access-assignments-v12\.css/);
   assert.match(main, /access-assignments-v15\.css/);
+  assert.match(main, /access-ux-v16\.css/);
 });

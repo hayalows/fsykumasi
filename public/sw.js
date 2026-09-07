@@ -1,6 +1,6 @@
-const CACHE_NAME = "fsy-kumasi-shell-v37";
-// Release marker: Access + Assignments v15 with one invitation flow, visible committee scope and task-first assignment setup.
-// Previous Housing workflow v14 shipped as fsy-kumasi-shell-v36 and remains part of this release.
+const CACHE_NAME = "fsy-kumasi-shell-v38";
+// Release marker: Access UX v16 with viewport-safe menus, unified legacy migration, live presence and responsive setup sheets.
+// Previous Access + Assignments v15 shipped as fsy-kumasi-shell-v37 and remains part of this release.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
