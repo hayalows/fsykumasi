@@ -21,6 +21,8 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Prepare retry patch
+        run: python3 scripts/fix-operations-v12-bootstrap.py
       - name: Apply v12 patch set
         run: python3 scripts/apply-operations-reliability-v12.py
       - name: Install dependencies
