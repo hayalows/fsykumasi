@@ -26,7 +26,7 @@ function ageRange(members) {
 
 function ageBand(age) {
   const value = Number(age);
-  if (value >= 14 && value <= 15) return "14–15";
+  if (value >= 13 && value <= 15) return "13–15";
   if (value >= 16 && value <= 18) return "16–18";
   return "Other ages";
 }
