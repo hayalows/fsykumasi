@@ -1,6 +1,6 @@
 const CACHE_NAME = "fsy-kumasi-shell-v36";
 // Release marker: Housing workflow v14 with fast People/Rooms switching, room-first assignment and sex-aware availability.
-// Production deployment marker: v33 connected leader setup, retried after quota reset.
+// Production deployment marker: Housing v14 production retry on 2026-09-07 after merge.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
