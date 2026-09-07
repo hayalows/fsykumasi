@@ -1,8 +1,9 @@
 const CACHE_NAME = "fsy-kumasi-shell-v41";
 // Release marker: Access operations v19 with email-first identity reconciliation,
 // automatic legacy staff backfill, Staff-first invitations and no name-based account matching.
-// Historical shell markers kept for regression context: fsy-kumasi-shell-v40, fsy-kumasi-shell-v39,
-// fsy-kumasi-shell-v38, fsy-kumasi-shell-v37, fsy-kumasi-shell-v36.
+// Historical Access operations v18 and Access operations v17 remain covered by regressions.
+// Historical shell markers: fsy-kumasi-shell-v40, fsy-kumasi-shell-v39, fsy-kumasi-shell-v38,
+// fsy-kumasi-shell-v37 and fsy-kumasi-shell-v36.
 // Access + Assignments v15 and Housing workflow v14 remain part of this release.
 const CORE_ASSETS = [
   "/",
