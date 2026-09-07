@@ -6,7 +6,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("Access v18 is active while AccessV17 remains available for historical coverage", async () => {
   const wrapper = await read("src/pages/Access.jsx");
-  assert.match(wrapper, /AccessV17 remains/);
+  assert.match(wrapper, /AccessV17 remain/);
   assert.match(wrapper, /AccessV18/);
 });
 
