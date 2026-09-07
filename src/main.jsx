@@ -32,6 +32,7 @@ import "./access-assignments-v12.css";
 import "./access-assignments-v12-fix.css";
 import "./operations-reliability-v12.css";
 import "./housing-ux-v13.css";
+import "./housing-ux-v14.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
