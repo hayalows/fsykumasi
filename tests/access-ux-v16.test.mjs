@@ -16,11 +16,11 @@ test("older accounts, older invites and older requests are folded into the main 
 });
 
 test("legacy migration reuses the connected leader setup and bypasses only the record being replaced", async () => {
-  const access = await read("src/pages/AccessV4.jsx");
+  const [access, flow] = await Promise.all([read("src/pages/AccessV4.jsx"), read("src/components/LeaderSetupFlow.jsx")]);
   assert.match(access, /migrationMode: true/);
   assert.match(access, /knownAccounts=\{setupTarget\.migrationMode \? \[\] : roster\}/);
   assert.match(access, /pendingInvites=\{setupTarget\.migrationMode \? \[\] : invites\}/);
-  assert.match(access, /createStaffLeaderInvite/);
+  assert.match(flow, /createStaffLeaderInvite/);
 });
 
 test("Access exposes live online state and offline sign-in recency", async () => {
