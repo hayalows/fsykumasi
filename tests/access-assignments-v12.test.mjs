@@ -8,10 +8,10 @@ test("Access and Assignments both use the connected leader setup flow", async ()
   const [accessWrapper, assignmentsWrapper, access, assignments] = await Promise.all([
     read("src/pages/Access.jsx"),
     read("src/pages/Assignments.jsx"),
-    read("src/pages/AccessV4.jsx"),
+    read("src/pages/AccessV5.jsx"),
     read("src/pages/AssignmentsV3.jsx"),
   ]);
-  assert.match(accessWrapper, /AccessV4/);
+  assert.match(accessWrapper, /AccessV5/);
   assert.match(assignmentsWrapper, /AssignmentsV3/);
   assert.match(access, /LeaderSetupFlow/);
   assert.match(assignments, /LeaderSetupFlow/);
@@ -40,16 +40,16 @@ test("existing leaders cannot back into the new-person identity step", async () 
   assert.match(flow, /const totalSteps = existing \? 2 : 3/);
 });
 
-test("mobile leader setup is a full-height single task with sticky actions", async () => {
-  const css = await read("src/access-assignments-v12.css");
-  assert.match(css, /height:calc\(100dvh - max\(8px,env\(safe-area-inset-top\)\)\)/);
-  assert.match(css, /leader-setup-scroll\{[^}]*overflow:auto/);
-  assert.match(css, /leader-setup-footer\{[^}]*safe-area-inset-bottom/);
-  assert.match(css, /font-size:16px/);
+test("mobile leader setup remains one full-height task with safe actions", async () => {
+  const [baseCss, v16Css] = await Promise.all([read("src/access-assignments-v12.css"), read("src/access-operations-v16.css")]);
+  assert.match(baseCss, /leader-setup-scroll\{[^}]*overflow:auto/);
+  assert.match(baseCss, /leader-setup-footer\{[^}]*safe-area-inset-bottom/);
+  assert.match(v16Css, /height:calc\(100dvh - max\(8px,env\(safe-area-inset-top\)\)\)/);
+  assert.match(v16Css, /leader-setup-footer button\{width:100%;min-width:0/);
 });
 
 test("Access defaults to unfinished work and Assignments suggestions are deterministic", async () => {
-  const [access, assignments] = await Promise.all([read("src/pages/AccessV4.jsx"), read("src/pages/AssignmentsV3.jsx")]);
+  const [access, assignments] = await Promise.all([read("src/pages/AccessV5.jsx"), read("src/pages/AssignmentsV3.jsx")]);
   assert.match(access, /initialFilter[\s\S]*"needs"/);
   assert.match(access, /Needs action/);
   assert.doesNotMatch(assignments, /Math\.random/);
@@ -57,11 +57,13 @@ test("Access defaults to unfinished work and Assignments suggestions are determi
   assert.match(assignments, /Review before applying/);
 });
 
-test("PWA shell keeps Housing v14 and ships Access + Assignments v15", async () => {
+test("PWA shell keeps Housing and connected setup while shipping Access operations v16", async () => {
   const [sw, main] = await Promise.all([read("public/sw.js"), read("src/main.jsx")]);
-  assert.match(sw, /fsy-kumasi-shell-v37/);
+  assert.match(sw, /fsy-kumasi-shell-v38/);
   assert.match(sw, /Housing workflow v14/);
   assert.match(sw, /Access \+ Assignments v15/);
+  assert.match(sw, /Access operations v16/);
   assert.match(main, /access-assignments-v12\.css/);
   assert.match(main, /access-assignments-v15\.css/);
+  assert.match(main, /access-operations-v16\.css/);
 });
