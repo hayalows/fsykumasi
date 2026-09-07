@@ -1,0 +1,256 @@
+/* Access operations v20
+   Calmer desktop density, grouped responsibility context, progressive setup disclosure,
+   and single-scroll mobile sheets. No access, identity or permission logic changes here. */
+
+.access-v20-shell{display:contents}
+.access-v20-shell .access-v19{max-width:1160px;margin-inline:auto;gap:14px}
+.access-v20-shell .access-v19 .page-head{margin-bottom:2px}
+.access-v20-shell .access-v19 .page-head p{max-width:620px;color:var(--muted);line-height:1.46}
+.access-v20-shell .access-v19 .page-head .primary{min-height:42px;padding-inline:14px}
+
+/* Readiness is information, not another card. */
+.access-v20-shell .access-v17-attention,
+.access-v20-shell .access-v17-ready,
+.access-v20-shell .access-v18-preparing{
+  border:0;
+  border-radius:0;
+  background:transparent;
+  padding:2px 2px 4px;
+  box-shadow:none;
+}
+.access-v20-shell .access-v17-attention,
+.access-v20-shell .access-v17-ready{grid-template-columns:auto minmax(0,1fr) auto;gap:9px}
+.access-v20-shell .access-v17-ready{grid-template-columns:auto minmax(0,1fr)}
+.access-v20-shell .access-v17-attention>svg,
+.access-v20-shell .access-v17-ready>svg{width:18px;height:18px;margin-top:1px}
+.access-v20-shell .access-v17-attention b,
+.access-v20-shell .access-v17-ready b,
+.access-v20-shell .access-v18-preparing b{font-size:12.5px}
+.access-v20-shell .access-v17-attention p,
+.access-v20-shell .access-v17-ready p,
+.access-v20-shell .access-v18-preparing p{font-size:11px}
+.access-v20-shell .access-v17-attention button{min-height:34px;padding:5px 10px}
+.access-v20-shell .access-v18-spinner{width:19px;height:19px}
+
+/* Keep the controls on one calm line on laptop screens. */
+.access-v20-shell .access-v17-toolbar{grid-template-columns:auto minmax(240px,1fr) auto;gap:9px}
+.access-v20-shell .access-v17-tabs{padding:3px;border-radius:11px}
+.access-v20-shell .access-v17-tabs button{min-height:36px;padding:6px 10px;font-size:11.5px}
+.access-v20-shell .access-v17-search .search-field{margin:0}
+.access-v20-shell .access-v17-filters>summary{min-height:40px;border-radius:10px}
+.access-v20-shell .access-v17-meta{margin:-2px 2px 0;font-size:10px;gap:5px 12px}
+/* "Active" is already represented by the People view and status rows. Keep only operational signals here. */
+.access-v20-shell .access-v17-meta>span:nth-child(2){display:none}
+
+/* The view tabs already name the list. Remove the repeated card header. */
+.access-v20-shell .access-v17-directory{border-radius:16px;overflow:visible!important}
+.access-v20-shell .access-v17-directory-head{display:none}
+.access-v20-shell .access-v17-list{border-radius:16px;background:#fff;overflow:visible}
+.access-v20-shell .access-v17-row:first-child{border-top:0;border-radius:16px 16px 0 0}
+.access-v20-shell .access-v17-row:last-child{border-radius:0 0 16px 16px}
+.access-v20-shell .access-v17-row:only-child{border-radius:16px}
+
+/* One row answers three questions: who, what access state, what can I do. Assignment sits with the person. */
+.access-v20-shell .access-v17-row{
+  grid-template-columns:minmax(330px,1fr) minmax(190px,.55fr) auto;
+  grid-template-rows:auto auto;
+  column-gap:18px;
+  row-gap:2px;
+  min-height:76px;
+  padding:13px 16px;
+  background:#fff;
+}
+.access-v20-shell .access-v17-row:hover{background:#fbfdfe}
+.access-v20-shell .access-v17-row.needs-attention{
+  background:#fffdf8;
+  box-shadow:inset 3px 0 0 #e6b65b;
+}
+.access-v20-shell .access-v17-row.needs-attention:hover{background:#fffaf0}
+.access-v20-shell .access-v17-row.repair-needed{
+  background:#fffaf2;
+  box-shadow:inset 3px 0 0 #d49527;
+}
+.access-v20-shell .access-v17-person{grid-column:1;grid-row:1;align-self:end}
+.access-v20-shell .access-v17-person .person-avatar{width:36px;height:36px;font-size:11px}
+.access-v20-shell .access-v17-person b{font-size:13px;line-height:1.25}
+.access-v20-shell .access-v17-person small{font-size:10.5px;line-height:1.3}
+.access-v20-shell .access-v17-person>span:last-child em{margin-top:1px;font-size:10px;max-width:42ch}
+.access-v20-shell .access-v17-scope{
+  grid-column:1;
+  grid-row:2;
+  min-width:0;
+  padding-left:46px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  color:var(--muted);
+}
+.access-v20-shell .access-v17-scope>small{display:none}
+.access-v20-shell .access-v17-scope .access-v3-scope{font-size:10.5px;color:var(--muted);line-height:1.35}
+.access-v20-shell .access-v17-scope .staff-access-whole-session{
+  min-height:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:var(--muted);
+  font-size:10.5px;
+  font-weight:600;
+}
+.access-v20-shell .access-v17-scope .company-chip-empty{min-height:0;padding:0;border:0;background:transparent;font-size:10.5px}
+.access-v20-shell .access-v17-scope .access-v15-team-chips{gap:4px}
+.access-v20-shell .access-v17-scope .access-v15-team-chips i{min-height:22px;padding:2px 7px;font-size:9.8px}
+.access-v20-shell .access-v17-state{grid-column:2;grid-row:1/3;align-self:center;gap:5px}
+.access-v20-shell .access-v17-state .status{font-size:10.5px}
+.access-v20-shell .access-v17-state .account-activity{font-size:10px;color:var(--muted)}
+.access-v20-shell .access-v17-actions{grid-column:3;grid-row:1/3;align-self:center;gap:6px}
+.access-v20-shell .access-v17-actions>button,
+.access-v20-shell .access-v17 .staff-access-more>summary{min-height:38px}
+.access-v20-shell .access-v17-actions>button.primary{padding-inline:12px}
+.access-v20-shell .access-v17 .staff-access-more>summary{border-color:transparent;background:transparent;color:var(--muted)}
+.access-v20-shell .access-v17 .staff-access-more>summary:hover,
+.access-v20-shell .access-v17 .staff-access-more[open]>summary{border-color:var(--line);background:#fff;color:var(--blue-35)}
+.access-v20-shell .access-v17 .staff-access-more>div{min-width:210px;border-radius:13px}
+
+/* Add access: existing Staff is the normal path. Rare paths stay collapsed until requested. */
+.dismissible-layer .layer-panel.access-v18-add-layer{width:min(680px,calc(100vw - 40px));max-width:680px;max-height:calc(100dvh - 36px);border-radius:20px}
+.access-v18-add-layer .access-v18-add-shell{height:min(660px,calc(100dvh - 36px));max-height:calc(100dvh - 36px)}
+.access-v18-add-layer .access-v18-sheet-head{padding:16px 18px 13px}
+.access-v18-add-layer .access-v18-sheet-head h2{font-size:20px}
+.access-v18-add-layer .access-v18-sheet-head p{font-size:11.5px;max-width:520px}
+.access-v18-add-layer .access-v18-sheet-scroll{padding:16px 18px 20px;gap:14px}
+.access-v18-add-layer .access-v18-section-head b{font-size:12.5px}
+.access-v18-add-layer .access-v18-section-head small{font-size:10.5px}
+.access-v18-add-layer .access-v18-staff-choices{gap:5px}
+.access-v18-add-layer .access-v18-staff-choice{min-height:64px;border-radius:11px;padding:9px 10px}
+.access-v18-add-layer .access-v18-staff-choice .person-avatar{width:36px;height:36px}
+.access-v18-add-layer .access-v18-staff-choice b{font-size:12px}
+.access-v18-add-layer .access-v18-staff-choice small,
+.access-v18-add-layer .access-v18-staff-choice em{font-size:10px}
+.access-v20-new-person{border-top:1px solid var(--line);padding-top:2px}
+.access-v20-new-person>summary{list-style:none;cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:14px;color:var(--blue-35)}
+.access-v20-new-person>summary::-webkit-details-marker{display:none}
+.access-v20-new-person>summary>span:first-child{display:grid;gap:2px}
+.access-v20-new-person>summary b{font-size:12.5px}
+.access-v20-new-person>summary small{color:var(--muted);font-size:10.5px;font-weight:500}
+.access-v20-new-person>summary>span:last-child{font-size:20px;line-height:1;color:var(--muted);transition:transform .15s ease}
+.access-v20-new-person[open]>summary>span:last-child{transform:rotate(45deg)}
+.access-v20-new-person .access-v18-new-options{margin-top:8px}
+.access-v20-new-person .access-v18-new-options>button{min-height:72px;border-radius:12px;padding:10px}
+.access-v20-add-footer{grid-template-columns:auto;justify-content:start;min-height:62px;padding:9px 16px calc(9px + env(safe-area-inset-bottom))}
+.access-v20-add-footer>button{min-width:98px;min-height:42px}
+
+/* Leader setup: keep one scroll surface and reduce repeated explanatory panels. */
+.dismissible-layer .layer-panel.leader-setup-layer{width:min(660px,calc(100vw - 40px));max-width:660px;border-radius:20px}
+.dismissible-layer .layer-panel.leader-setup-layer .leader-setup-flow{height:min(690px,calc(100dvh - 36px));max-height:calc(100dvh - 36px)}
+.leader-setup-v15 .leader-setup-header{padding:13px 15px 9px}
+.leader-setup-v15 .leader-setup-header h2{font-size:18px}
+.leader-setup-v15 .leader-setup-scroll{padding:17px 19px 21px;gap:12px}
+.leader-setup-v15 .leader-setup-section{gap:14px}
+.leader-setup-v15 .leader-setup-section-title b{font-size:14px}
+.leader-setup-v15 .leader-setup-section-title small{font-size:10.8px}
+.leader-setup-v15 .leader-setup-role-options{gap:6px}
+.leader-setup-v15 .leader-setup-role-options>button{min-height:66px;border-radius:11px;padding:10px}
+.leader-setup-v15 .leader-setup-role-options small{font-size:10px}
+.leader-setup-v15 .leader-setup-section:not(.leader-setup-success)>.leader-setup-note{display:none}
+.leader-setup-v15 .leader-setup-company-list{max-height:none!important;overflow:visible!important;padding:0!important}
+.leader-setup-v15 .leader-setup-company-list label{border-radius:10px;padding:9px 10px}
+.leader-setup-v15 .leader-setup-committee-choice .account-choice-list-v2{max-height:none!important;overflow:visible!important}
+.leader-setup-v15 .leader-setup-review{border-radius:12px}
+.leader-setup-v15 .leader-setup-review>div{padding:10px 12px}
+.leader-setup-v15 .leader-setup-footer{padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.leader-setup-v15 .leader-setup-footer button{min-height:44px}
+.leader-setup-v15 .leader-setup-success{gap:12px;padding:4px 0}
+.leader-setup-v15 .leader-setup-success-icon{width:38px;height:38px}
+.leader-setup-v15 .leader-setup-success h3{font-size:20px}
+.leader-setup-v15 .leader-setup-code{padding:12px;border-radius:12px}
+
+/* Committee access is another task sheet, not a second nested scroller. */
+.dismissible-layer .layer-panel.account-team-sheet{width:min(660px,calc(100vw - 40px));max-width:660px;max-height:calc(100dvh - 36px);padding:0;overflow:hidden;border-radius:20px}
+.account-team-sheet .account-setup-shell-v2{max-height:calc(100dvh - 36px);overflow:auto;overscroll-behavior:contain;padding:24px;gap:18px}
+.account-team-sheet .account-choice-list-v2{max-height:none!important;overflow:visible!important}
+.account-team-sheet .account-setup-header-v2 h2{font-size:24px}
+.account-team-sheet .account-setup-header-v2 p{font-size:12px}
+
+@media(max-width:980px){
+  .access-v20-shell .access-v17-row{grid-template-columns:minmax(0,1fr) minmax(170px,.62fr) auto;column-gap:13px}
+  .access-v20-shell .access-v17-person>span:last-child em{max-width:34ch}
+}
+
+@media(max-width:760px){
+  .access-v20-shell .access-v19{gap:12px}
+  .access-v20-shell .access-v19 .page-head{gap:8px}
+  .access-v20-shell .access-v19 .page-head p{font-size:12.5px;line-height:1.4}
+  .access-v20-shell .access-v17-attention,
+  .access-v20-shell .access-v17-ready{grid-template-columns:auto minmax(0,1fr);align-items:start;padding-inline:1px}
+  .access-v20-shell .access-v17-attention button{grid-column:2;justify-self:start;margin-top:3px}
+  .access-v20-shell .access-v17-toolbar{position:static;grid-template-columns:1fr auto;padding:0;background:transparent;gap:7px}
+  .access-v20-shell .access-v17-tabs{grid-column:1/-1}
+  .access-v20-shell .access-v17-search{grid-column:1}
+  .access-v20-shell .access-v17-filters{grid-column:2}
+  .access-v20-shell .access-v17-meta{margin-top:-1px}
+  .access-v20-shell .access-v17-directory{border-radius:14px}
+  .access-v20-shell .access-v17-list{border-radius:14px}
+  .access-v20-shell .access-v17-row{
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto auto auto;
+    gap:4px;
+    padding:13px 13px 12px;
+    min-height:0;
+  }
+  .access-v20-shell .access-v17-row:first-child{border-radius:14px 14px 0 0}
+  .access-v20-shell .access-v17-row:last-child{border-radius:0 0 14px 14px}
+  .access-v20-shell .access-v17-row:only-child{border-radius:14px}
+  .access-v20-shell .access-v17-person{grid-column:1;grid-row:1;align-self:auto}
+  .access-v20-shell .access-v17-scope{grid-column:1;grid-row:2;padding-left:46px;min-height:20px;margin-top:-1px}
+  .access-v20-shell .access-v17-state{grid-column:1;grid-row:3;padding-left:46px;margin-top:5px;align-self:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .access-v20-shell .access-v17-actions{grid-column:1;grid-row:4;align-self:auto;justify-content:flex-start;width:100%;margin-top:8px}
+  .access-v20-shell .access-v17-actions>button.primary{flex:1;min-width:140px;min-height:44px}
+  .access-v20-shell .access-v17 .staff-access-more>summary{min-height:44px;border-color:var(--line);background:#fff;color:var(--blue-35)}
+  .access-v20-shell .access-v17 .staff-access-more>div{border-radius:15px}
+
+  .dismissible-layer .layer-panel.access-v18-add-layer,
+  .dismissible-layer .layer-panel.leader-setup-layer,
+  .dismissible-layer .layer-panel.account-team-sheet{
+    width:100%;
+    max-width:none;
+    height:calc(100dvh - max(8px,env(safe-area-inset-top)));
+    max-height:calc(100dvh - max(8px,env(safe-area-inset-top)));
+    border-radius:18px 18px 0 0;
+  }
+  .access-v18-add-layer .access-v18-add-shell,
+  .dismissible-layer .layer-panel.leader-setup-layer .leader-setup-flow{height:100%;max-height:none}
+  .access-v18-add-layer .access-v18-sheet-head{padding:13px 13px 11px}
+  .access-v18-add-layer .access-v18-sheet-scroll{padding:13px;gap:12px}
+  .access-v20-new-person .access-v18-new-options{grid-template-columns:1fr}
+  .access-v20-add-footer{padding-inline:12px}
+  .leader-setup-v15 .leader-setup-header{padding:11px 11px 8px}
+  .leader-setup-v15 .leader-setup-scroll{padding:14px 13px 18px}
+  .leader-setup-v15 .leader-setup-role-options{grid-template-columns:1fr}
+  .leader-setup-v15 .leader-setup-footer{padding-inline:11px}
+  .account-team-sheet .account-setup-shell-v2{height:100%;max-height:none;padding:20px 16px 24px}
+}
+
+@media(max-width:430px){
+  .access-v20-shell .access-v17-scope,
+  .access-v20-shell .access-v17-state{padding-left:44px}
+  .access-v20-shell .access-v17-person>span:last-child em{max-width:72vw}
+  .access-v20-shell .access-v17-actions{display:grid;grid-template-columns:minmax(0,1fr) auto}
+  .access-v20-shell .access-v17-actions>.primary{width:100%}
+  .access-v20-shell .access-v17-actions>.staff-access-more:only-child{grid-column:1/-1;justify-self:start}
+  .access-v18-add-layer .access-v18-sheet-head h2{font-size:19px}
+  .access-v20-new-person>summary{min-height:52px}
+  .leader-setup-v15 .leader-setup-copy-actions{grid-template-columns:1fr}
+}
+
+@media(max-height:700px) and (min-width:761px){
+  .dismissible-layer .layer-panel.access-v18-add-layer,
+  .dismissible-layer .layer-panel.leader-setup-layer,
+  .dismissible-layer .layer-panel.account-team-sheet{max-height:calc(100dvh - 16px)}
+  .access-v18-add-layer .access-v18-add-shell,
+  .dismissible-layer .layer-panel.leader-setup-layer .leader-setup-flow,
+  .account-team-sheet .account-setup-shell-v2{height:calc(100dvh - 16px);max-height:calc(100dvh - 16px)}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .access-v20-new-person>summary>span:last-child{transition:none}
+}
