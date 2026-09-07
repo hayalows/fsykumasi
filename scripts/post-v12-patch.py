@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -38,11 +39,14 @@ replace_once(
     'useEffect(() => { if (tab === "needs") loadNeeds(); }, [loadNeeds, tab]);',
     'useEffect(() => { if (initialTab === "dietary" || initialTab === "needs") setTab("needs"); if (initialFilter) setDietaryFilter(initialFilter === "all" ? "all" : initialFilter === "reviewed" ? "reviewed" : "open"); }, [initialTab, initialFilter]);\n  useEffect(() => { if (tab === "needs") loadNeeds(); }, [loadNeeds, tab]);',
 )
-replace_once(
-    "src/App.jsx",
-    ':effectiveActive==="food"?<Food sessionId={sessionInfo?.id} capabilities={currentCapabilities} sessionName={sessionName} participants={participants} live={live}/>',
-    ':effectiveActive==="food"?<Food sessionId={sessionInfo?.id} capabilities={currentCapabilities} sessionName={sessionName} participants={participants} live={live} initialTab={workspaceContext.tab||""} initialFilter={workspaceContext.filter||""}/>',
-)
+app_path=ROOT/"src/App.jsx"
+app=app_path.read_text()
+pattern=r'(:effectiveActive==="food"\?<Food\b[^>]*?)(/>)'
+matches=list(re.finditer(pattern,app))
+if len(matches)!=1:
+    raise RuntimeError(f"src/App.jsx: expected one Food render branch, found {len(matches)}")
+app=re.sub(pattern, r'\1 initialTab={workspaceContext.tab||""} initialFilter={workspaceContext.filter||""}\2', app, count=1)
+app_path.write_text(app)
 
 # Current release expectations: v34 supersedes v33 after this cohesive reliability release.
 for p in (ROOT/"tests").glob("*.mjs"):
