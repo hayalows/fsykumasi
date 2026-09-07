@@ -136,3 +136,27 @@ export async function createManualStaffLeader({ sessionId, name, email = "", rol
   if (error) throw error;
   return first(data) || data;
 }
+
+export async function adoptLegacyAccessAccount({ sessionId, userId, staffId = null }) {
+  const { data, error } = await client().rpc("adopt_legacy_access_account", {
+    p_session_id: sessionId,
+    p_user_id: userId,
+    p_staff_id: staffId || null,
+  });
+  if (error) throw error;
+  const row = first(data) || {};
+  return {
+    staffId: row.staff_id || staffId || null,
+    name: row.display_name || "FSY leader",
+    operationalRole: row.operational_role || "",
+    createdStaff: Boolean(row.created_staff),
+  };
+}
+
+export async function retireLegacyAccessAccount({ sessionId, userId }) {
+  const { error } = await client().rpc("retire_legacy_access_account", {
+    p_session_id: sessionId,
+    p_user_id: userId,
+  });
+  if (error) throw error;
+}
