@@ -1,6 +1,6 @@
-const CACHE_NAME = "fsy-kumasi-shell-v39";
-// Release marker: Access operations v17 with one person per row, focused attention queue,
-// progressive filters, seamless existing-account connection and responsive admin actions.
+const CACHE_NAME = "fsy-kumasi-shell-v40";
+// Release marker: Access operations v18 with automatic existing-sign-in reconciliation,
+// Staff-first access setup, conflict-only identity review and responsive people-first admin actions.
 // Access + Assignments v15 and Housing workflow v14 remain part of this release.
 const CORE_ASSETS = [
   "/",
