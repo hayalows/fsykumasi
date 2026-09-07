@@ -1,7 +1,8 @@
 const CACHE_NAME = "fsy-kumasi-shell-v42";
 // Release marker: Access operations v20 with calmer responsive rows, progressive setup disclosure
 // and single-scroll task sheets. Access identity and permission behavior remains on v19.
-// Historical Access operations v19, Access operations v18 and Access operations v17 remain covered by regressions.
+// Historical Access operations v19 used email-first identity reconciliation with automatic staff backfill.
+// Historical Access operations v18 and Access operations v17 remain covered by regressions.
 // Historical shell markers: fsy-kumasi-shell-v41, fsy-kumasi-shell-v40, fsy-kumasi-shell-v39,
 // fsy-kumasi-shell-v38, fsy-kumasi-shell-v37 and fsy-kumasi-shell-v36.
 // Access + Assignments v15 and Housing workflow v14 remain part of this release.
