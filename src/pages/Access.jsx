@@ -1,4 +1,4 @@
-// AccessV5 and AccessV17 remain in the repository for historical regression coverage.
-// Access v18 keeps one person per row, reconciles existing staff-level sign-ins automatically,
-// searches current Staff before creating anyone new, and asks for identity help only on real conflicts.
-export { Access, createInitialAccessRequests } from "./AccessV18.jsx";
+// AccessV17 and AccessV18 remain in the repository for historical regression coverage.
+// Access v19 treats auth user_id + email as website identity, keeps names out of identity matching,
+// reconciles existing staff-level sign-ins in the database, and asks admins only for real setup work.
+export { Access, createInitialAccessRequests } from "./AccessV19.jsx";
