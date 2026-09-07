@@ -23,6 +23,16 @@ test("Access v19 never uses names as an identity key", async () => {
   assert.doesNotMatch(access, /strongStaffMatch/);
 });
 
+test("full-session Access administrators can add staff-level access without a redundant capability flag", async () => {
+  const wrapper = await read("src/pages/Access.jsx");
+  assert.match(wrapper, /FULL_SESSION_ACCESS_ADMINS/);
+  assert.match(wrapper, /coordinator/);
+  assert.match(wrapper, /logistics_admin/);
+  assert.match(wrapper, /session_director/);
+  assert.match(wrapper, /staff_manage/);
+  assert.match(wrapper, /<AccessV19/);
+});
+
 test("new Staff setup allows an existing auth email while committee duplicates remain protected", async () => {
   const access = await read("src/pages/AccessV19.jsx");
   assert.match(access, /setupTarget\?\.newStaffOnly \? \[\] : knownAccounts/);
