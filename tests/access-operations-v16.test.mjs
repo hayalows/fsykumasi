@@ -73,11 +73,11 @@ test("mobile and short desktop modal layouts preserve safe, reachable actions", 
   assert.match(css, /legacy-migration-footer button\{width:100%;min-width:0;min-height:48px\}/);
 });
 
-test("v16 ships as the final interface layer with a fresh PWA shell", async () => {
+test("v16 remains loaded beneath the current Access release", async () => {
   const [main, sw] = await Promise.all([read("src/main.jsx"), read("public/sw.js")]);
   const v15 = main.indexOf('import "./access-assignments-v15.css";');
   const v16 = main.indexOf('import "./access-operations-v16.css";');
   assert.ok(v16 > v15);
-  assert.match(sw, /fsy-kumasi-shell-v38/);
-  assert.match(sw, /Access operations v16/);
+  assert.match(sw, /fsy-kumasi-shell-v39/);
+  assert.match(sw, /Access operations v17/);
 });
