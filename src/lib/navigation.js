@@ -5,7 +5,6 @@ export const WORKSPACE_VIEWS = [
   "assignments",
   "birthdays",
   "groups",
-  "checkin",
   "headcount",
   "housing",
   "wellness",
@@ -16,24 +15,59 @@ export const WORKSPACE_VIEWS = [
 ];
 
 const viewSet = new Set(WORKSPACE_VIEWS);
+const NAV_KEYS = ["view", "mode", "tab", "filter", "person", "staff", "company", "group"];
 
-export function readWorkspaceLocation() {
-  if (typeof window === "undefined") return { view: "overview", personId: "" };
-  const params = new URLSearchParams(window.location.search);
-  const requestedView = params.get("view");
+function clean(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function normalizeWorkspaceDestination(destination = {}) {
+  const source = typeof destination === "string" ? { view: destination } : destination || {};
+  const legacyCheckin = source.view === "checkin";
+  const requestedView = legacyCheckin ? "registration" : clean(source.view);
   return {
     view: viewSet.has(requestedView) ? requestedView : "overview",
-    personId: params.get("person") || "",
+    mode: legacyCheckin ? "desk" : clean(source.mode),
+    tab: clean(source.tab),
+    filter: clean(source.filter),
+    personId: clean(source.personId || source.person),
+    staffId: clean(source.staffId || source.staff),
+    companyId: clean(source.companyId || source.company),
+    groupId: clean(source.groupId || source.group),
+    legacyCheckin,
   };
 }
 
-export function writeWorkspaceLocation(view, { personId = "", replace = false } = {}) {
+export function readWorkspaceLocation() {
+  if (typeof window === "undefined") return normalizeWorkspaceDestination({ view: "overview" });
+  const params = new URLSearchParams(window.location.search);
+  return normalizeWorkspaceDestination({
+    view: params.get("view") || "overview",
+    mode: params.get("mode") || "",
+    tab: params.get("tab") || "",
+    filter: params.get("filter") || "",
+    person: params.get("person") || "",
+    staff: params.get("staff") || "",
+    company: params.get("company") || "",
+    group: params.get("group") || "",
+  });
+}
+
+export function writeWorkspaceLocation(destination, options = {}) {
   if (typeof window === "undefined") return;
+  const next = normalizeWorkspaceDestination(
+    typeof destination === "string" ? { view: destination, ...options } : { ...(destination || {}), ...options },
+  );
   const url = new URL(window.location.href);
-  if (view && view !== "overview") url.searchParams.set("view", view);
-  else url.searchParams.delete("view");
-  if (view === "people" && personId) url.searchParams.set("person", personId);
-  else url.searchParams.delete("person");
-  const next = `${url.pathname}${url.search}${url.hash}`;
-  window.history[replace ? "replaceState" : "pushState"]({ view, personId }, "", next);
+  NAV_KEYS.forEach((key) => url.searchParams.delete(key));
+  if (next.view !== "overview") url.searchParams.set("view", next.view);
+  if (next.mode) url.searchParams.set("mode", next.mode);
+  if (next.tab) url.searchParams.set("tab", next.tab);
+  if (next.filter) url.searchParams.set("filter", next.filter);
+  if (next.view === "people" && next.personId) url.searchParams.set("person", next.personId);
+  if (next.staffId) url.searchParams.set("staff", next.staffId);
+  if (next.companyId) url.searchParams.set("company", next.companyId);
+  if (next.groupId) url.searchParams.set("group", next.groupId);
+  const href = `${url.pathname}${url.search}${url.hash}`;
+  window.history[options.replace || next.replace ? "replaceState" : "pushState"](next, "", href);
 }

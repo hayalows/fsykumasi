@@ -74,7 +74,7 @@ function searchText(person) {
   ].filter(Boolean).join(" ").toLowerCase();
 }
 
-function BirthdayPerson({ person, busy, onUpdate }) {
+function BirthdayPerson({ person, busy, onUpdate, onOpenAssignment }) {
   const staff = person.kind === "staff";
   const details = secondaryContext(person);
 
@@ -92,6 +92,7 @@ function BirthdayPerson({ person, busy, onUpdate }) {
     </div>
 
     <div className="birthday-person-action">
+      {staff && onOpenAssignment ? <button type="button" className="birthday-open-assignment" onClick={() => onOpenAssignment(person.staffId)}>Open assignment</button> : null}
       {person.acknowledged ? <>
         <Status tone="good"><Check />Acknowledged</Status>
         <button
@@ -115,7 +116,7 @@ function BirthdayPerson({ person, busy, onUpdate }) {
   </article>;
 }
 
-function BirthdayDay({ date, items, index, openState, onOpenChange, busyId, onUpdate }) {
+function BirthdayDay({ date, items, index, openState, onOpenChange, busyId, onUpdate, onOpenAssignment }) {
   const remaining = items.filter((person) => !person.acknowledged).length;
   const isOpen = openState ?? (remaining > 0 || index === 0);
 
@@ -143,12 +144,13 @@ function BirthdayDay({ date, items, index, openState, onOpenChange, busyId, onUp
         person={person}
         busy={busyId === keyFor(person)}
         onUpdate={onUpdate}
+        onOpenAssignment={onOpenAssignment}
       />)}
     </div>
   </details>;
 }
 
-export function Birthdays({ birthdays = [], staffBirthdays = [], onSetAcknowledgement, onSetStaffAcknowledgement, sessionName }) {
+export function Birthdays({ birthdays = [], staffBirthdays = [], onSetAcknowledgement, onSetStaffAcknowledgement, onOpenAssignment, loading = false, sessionName }) {
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -223,7 +225,7 @@ export function Birthdays({ birthdays = [], staffBirthdays = [], onSetAcknowledg
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
     {notice ? <MutationFeedback>{notice}</MutationFeedback> : null}
 
-    {!people.length ? <article className="panel birthday-empty-panel"><Empty icon={Cake} title="No birthdays in your current scope" text="Birthdays appear here from participant registration and staff records for this session." /></article> : <>
+    {loading && !people.length ? <article className="panel birthday-empty-panel" aria-busy="true"><div className="ops-loading-list"><div className="ops-skeleton-row"><i/><span><b/><small/></span><em/></div><div className="ops-skeleton-row"><i/><span><b/><small/></span><em/></div></div></article> : !people.length ? <article className="panel birthday-empty-panel"><Empty icon={Cake} title="No birthdays in your current scope" text="Birthdays appear here from participant registration and staff records for this session." /></article> : <>
       <section className="birthday-overview panel" aria-label="Birthday overview">
         <div className="birthday-overview-copy">
           <span className="birthday-overview-icon"><Cake size={28} /></span>
@@ -281,6 +283,7 @@ export function Birthdays({ birthdays = [], staffBirthdays = [], onSetAcknowledg
           onOpenChange={(day, isOpen) => setOpenDays((current) => ({ ...current, [day]: isOpen }))}
           busyId={busyId}
           onUpdate={update}
+          onOpenAssignment={onOpenAssignment}
         />)}
       </div> : <article className="panel birthday-filter-empty"><Empty
         icon={Cake}

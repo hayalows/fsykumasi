@@ -30,10 +30,14 @@ const MODE_META = {
 };
 
 export function Registration(props) {
-  const { imported = [], live = false, sessionId, sessionName, capabilities = [], onOperationalDataChanged } = props;
-  const [mode, setMode] = useState("desk");
+  const { imported = [], live = false, sessionId, sessionName, capabilities = [], onOperationalDataChanged, initialMode = "desk", initialFilter = "", onNavigate } = props;
+  const canUseRegistrationTools = capabilities.includes("registration_view") || capabilities.includes("registration_manage") || !live;
+  const normalizedMode = canUseRegistrationTools && ["desk","roster","setup"].includes(initialMode) ? initialMode : "desk";
+  const [mode, setMode] = useState(normalizedMode);
   const [setupMode, setSetupMode] = useState("registration");
   const [structureSettings, setStructureSettings] = useState(DEFAULT_STRUCTURE_SETTINGS);
+  useEffect(() => { setMode(normalizedMode); }, [normalizedMode]);
+  const chooseMode = (next) => { setMode(next); onNavigate?.({ view: "registration", mode: next, filter: "" }); };
 
   useEffect(() => {
     let active = true;
@@ -63,17 +67,17 @@ export function Registration(props) {
         description="Use the work area that matches what is happening now. Arrival-day check-in stays focused on one person at a time."
       />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
-        <SegmentedControl
+        {canUseRegistrationTools ? <SegmentedControl
           className="registration-mode-switch registration-workspace-tabs registration-workspace-tabs-v5 registration-unified-tabs"
           label="Registration and check-in work area"
           value={mode}
-          onChange={setMode}
+          onChange={chooseMode}
           options={[
             { value: "desk", label: "Live check-in", id: "registration-mode-desk" },
             { value: "roster", label: "Exceptions", id: "registration-mode-roster" },
             { value: "setup", label: "Prepare", count: cohortSummary?.reviewExceptions || 0, id: "registration-mode-setup" },
           ]}
-        />
+        /> : null}
         <div className="registration-mode-cue-v5" role="status">
           <div><span className="kicker">{modeMeta.phase}</span><b>{modeMeta.title}</b></div>
           <p>{modeMeta.help}</p>
@@ -83,8 +87,8 @@ export function Registration(props) {
     </section>
 
     <div className="registration-workspace-pane registration-workspace-pane-v5 registration-unified-pane">
-      {mode === "desk" ? <div role="tabpanel" aria-labelledby="registration-mode-desk"><RegistrationJourney view="desk" sessionId={sessionId} setImported={props.setImported} capabilities={capabilities} onOperationalDataChanged={onOperationalDataChanged} /></div> : null}
-      {mode === "roster" ? <div role="tabpanel" aria-labelledby="registration-mode-roster"><RegistrationJourney view="roster" sessionId={sessionId} setImported={props.setImported} capabilities={capabilities} onOperationalDataChanged={onOperationalDataChanged} /></div> : null}
+      {mode === "desk" ? <div role="tabpanel" aria-labelledby="registration-mode-desk"><RegistrationJourney view="desk" initialFilter={initialFilter} sessionId={sessionId} setImported={props.setImported} capabilities={capabilities} onOperationalDataChanged={onOperationalDataChanged} /></div> : null}
+      {mode === "roster" ? <div role="tabpanel" aria-labelledby="registration-mode-roster"><RegistrationJourney view="roster" initialFilter={initialFilter} sessionId={sessionId} setImported={props.setImported} capabilities={capabilities} onOperationalDataChanged={onOperationalDataChanged} /></div> : null}
       {mode === "setup" ? <div role="tabpanel" aria-labelledby="registration-mode-setup" className="registration-setup-shell">
         <div className="registration-setup-nav-wrap">
           <SegmentedControl

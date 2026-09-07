@@ -4,6 +4,7 @@ import { Check } from "@phosphor-icons/react/Check";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
+import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { DismissibleLayer, Empty, MutationFeedback, SearchField, Status } from "../components/UI.jsx";
 import { assignParticipantToGroup, loadGroupingPlan, loadParticipants, recordCheckin, verifyOnSiteParticipant } from "../lib/backend.js";
 import { hasCapability, loadParticipantEligibility } from "../lib/field-operations.js";
@@ -29,7 +30,7 @@ const FILTER_LABELS = {
   not_attending: "Not attending",
 };
 
-export function RegistrationJourney({ view = "desk", sessionId, setImported, capabilities = [], onOperationalDataChanged }) {
+export function RegistrationJourney({ view = "desk", initialFilter = "", sessionId, setImported, capabilities = [], onOperationalDataChanged }) {
   const canManageRegistration = hasCapability(capabilities, "registration_manage");
   const canCheckin = hasCapability(capabilities, "checkin_record") || canManageRegistration;
   const [rows, setRows] = useState([]);
@@ -41,7 +42,7 @@ export function RegistrationJourney({ view = "desk", sessionId, setImported, cap
   const [housingAssignments, setHousingAssignments] = useState([]);
   const [sessionStart, setSessionStart] = useState("");
   const [query, setQuery] = useState("");
-  const [filter, setFilterState] = useState(view === "desk" ? "ready" : "all");
+  const [filter, setFilterState] = useState(initialFilter || (view === "desk" ? "ready" : "all"));
   const [sourceFilter, setSourceFilter] = useState("all");
   const [shown, setShown] = useState(PAGE_SIZE);
   const [selectedId, setSelectedId] = useState("");
@@ -49,33 +50,32 @@ export function RegistrationJourney({ view = "desk", sessionId, setImported, cap
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const searchRef = useRef(null);
 
   const setFilter = (value) => { setFilterState(value); setShown(PAGE_SIZE); };
 
-  const reload = async () => {
+  const reload = async ({ initial = false } = {}) => {
     if (!sessionId) return;
-    const [nextRows, nextEligibility, nextReadiness, nextVacancies, grouping, nextHousing, startsOn] = await Promise.all([
-      loadArrivalRoster(sessionId),
-      loadParticipantEligibility(sessionId),
-      loadIdentityReadiness(sessionId),
-      canManageRegistration ? loadArrivalVacancies(sessionId) : Promise.resolve([]),
-      loadGroupingPlan(sessionId),
-      loadRegistrationHousingStatus(sessionId),
-      loadOnSiteReferenceDate(sessionId),
-    ]);
-    setRows(nextRows);
-    setEligibilityMap(nextEligibility);
-    setIdentityReadiness(nextReadiness);
-    setVacancies(nextVacancies);
-    setGroups(grouping.groups || []);
-    setCompanies(grouping.companies || []);
-    setHousingAssignments(nextHousing.filter((item) => item.personType === "participant"));
-    setSessionStart(startsOn || "");
+    if (initial) setInitialLoading(true); else setRefreshing(true);
+    setLoadError("");
+    try {
+      const [nextRows, nextEligibility, nextReadiness, nextVacancies, grouping, nextHousing, startsOn] = await Promise.all([
+        loadArrivalRoster(sessionId), loadParticipantEligibility(sessionId), loadIdentityReadiness(sessionId),
+        canManageRegistration ? loadArrivalVacancies(sessionId) : Promise.resolve([]), loadGroupingPlan(sessionId),
+        loadRegistrationHousingStatus(sessionId), loadOnSiteReferenceDate(sessionId),
+      ]);
+      setRows(nextRows); setEligibilityMap(nextEligibility); setIdentityReadiness(nextReadiness); setVacancies(nextVacancies);
+      setGroups(grouping.groups || []); setCompanies(grouping.companies || []);
+      setHousingAssignments(nextHousing.filter((item) => item.personType === "participant")); setSessionStart(startsOn || "");
+    } catch (err) { setLoadError(err.message || "Registration workspace could not load."); throw err; }
+    finally { if (initial) setInitialLoading(false); setRefreshing(false); }
   };
 
-  useEffect(() => { reload().catch((err) => setMessage({ tone: "error", text: err.message || "Registration workspace could not load." })); }, [sessionId, canManageRegistration]);
-  useEffect(() => { setFilterState(view === "desk" ? "ready" : "all"); setShown(PAGE_SIZE); }, [view]);
+  useEffect(() => { reload({ initial: true }).catch(() => {}); }, [sessionId, canManageRegistration]);
+  useEffect(() => { setFilterState(initialFilter || (view === "desk" ? "ready" : "all")); setShown(PAGE_SIZE); }, [view, initialFilter]);
 
   const housingByPerson = useMemo(() => new Map(housingAssignments.map((item) => [item.personId, item])), [housingAssignments]);
   const currentRows = useMemo(() => rows.filter((row) => row.isCurrent), [rows]);
@@ -251,8 +251,9 @@ export function RegistrationJourney({ view = "desk", sessionId, setImported, cap
 
     {error && !selectedRow && !onsiteOpen ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
     {message ? <MutationFeedback tone={message.tone}>{message.text}</MutationFeedback> : null}
+    {loadError && rows.length ? <MutationFeedback tone="error">Roster refresh failed. Showing the last roster that loaded successfully. <button type="button" className="text-action" onClick={() => reload()}>Retry</button></MutationFeedback> : null}
 
-    <article className="panel regjourney-worklist regjourney-worklist-v2 regjourney-worklist-v3">
+    <article className="panel regjourney-worklist regjourney-worklist-v2 regjourney-worklist-v3" aria-busy={initialLoading || refreshing}>
       <div className="regjourney-search-row" ref={searchRef}>
         <SearchField
           value={query}
@@ -271,13 +272,15 @@ export function RegistrationJourney({ view = "desk", sessionId, setImported, cap
       </div> : null}
 
       <div className="regjourney-result-line regjourney-result-line-v3 regjourney-result-line-v6" role="status">
-        <span><b>{filtered.length.toLocaleString()}</b> {searching ? "matches" : activeFilterLabel.toLowerCase()}</span>
+        <span><b>{initialLoading ? "—" : filtered.length.toLocaleString()}</b> {initialLoading ? "loading roster" : searching ? "matches" : activeFilterLabel.toLowerCase()}</span>{refreshing && !initialLoading ? <small className="regjourney-updating">Updating…</small> : null}
         {filtered.length > shown ? <span className="regjourney-result-detail-v6">· showing first {shown.toLocaleString()}</span> : null}
         {!searching && (filter !== defaultFilter || sourceFilter !== "all") ? <button type="button" className="text-action" onClick={() => { setFilter(defaultFilter); setSourceFilter("all"); }}>Reset</button> : null}
       </div>
 
       <div className="regjourney-list regjourney-list-v2">
-        {visible.map((row) => {
+        {initialLoading ? <div className="ops-loading-list" role="status" aria-live="polite"><span className="sr-only">Loading roster</span>{Array.from({length:5},(_,index)=><div className="ops-skeleton-row" key={index}><i/><span><b/><small/></span><em/></div>)}</div> : null}
+        {!initialLoading && loadError && !rows.length ? <Empty icon={WarningCircle} title="Roster did not load" text="Your sign-in is still active. Try loading the roster again." action={<button type="button" className="primary" onClick={() => reload({ initial: true })}>Retry roster</button>}/> : null}
+        {!initialLoading && visible.map((row) => {
           const eligibility = eligibilityMap.get(row.participantId);
           const housing = housingByPerson.get(row.participantId);
           const problem = rowProblem(row, eligibility);
@@ -293,8 +296,8 @@ export function RegistrationJourney({ view = "desk", sessionId, setImported, cap
           </div>;
         })}
 
-        {!visible.length && searching ? <div className="regjourney-no-match"><MagnifyingGlass size={30}/><div><b>{matchingInOtherViews ? "Participant matches are hidden by these roster filters" : "No participant found"}</b><p>{matchingInOtherViews ? `${matchingInOtherViews} matching record(s) exist. Reset the roster filters to see them.` : "Check the spelling or try an FSY ID, ward/branch, company, counselor group or room before adding anyone."}</p></div>{matchingInOtherViews ? <button type="button" className="primary" onClick={() => { setFilter("all"); setSourceFilter("all"); }}>Reset roster filters<ArrowRight /></button> : canManageRegistration ? <button type="button" className="primary" onClick={() => { setOnsiteOpen(true); setError(""); }}>Add on-site participant<UserPlus /></button> : null}</div> : null}
-        {!visible.length && !searching ? <Empty icon={CheckCircle} title={filter === "ready" ? "No one is ready right now" : "Nothing in this view"} text={filter === "ready" ? "Open Needs attention for unresolved records or search for the participant directly." : "Choose another status or search for a participant."} /> : null}
+        {!initialLoading && !visible.length && searching ? <div className="regjourney-no-match"><MagnifyingGlass size={30}/><div><b>{matchingInOtherViews ? "Participant matches are hidden by these roster filters" : "No participant found"}</b><p>{matchingInOtherViews ? `${matchingInOtherViews} matching record(s) exist. Reset the roster filters to see them.` : "Check the spelling or try an FSY ID, ward/branch, company, counselor group or room before adding anyone."}</p></div>{matchingInOtherViews ? <button type="button" className="primary" onClick={() => { setFilter("all"); setSourceFilter("all"); }}>Reset roster filters<ArrowRight /></button> : canManageRegistration ? <button type="button" className="primary" onClick={() => { setOnsiteOpen(true); setError(""); }}>Add on-site participant<UserPlus /></button> : null}</div> : null}
+        {!initialLoading && !loadError && !visible.length && !searching ? <Empty icon={CheckCircle} title={filter === "ready" ? "No one is ready right now" : "Nothing in this view"} text={filter === "ready" ? "Open Needs attention for unresolved records or search for the participant directly." : "Choose another status or search for a participant."} /> : null}
       </div>
 
       {filtered.length > shown ? <button type="button" className="secondary regjourney-show-more" onClick={() => setShown((value) => value + PAGE_SIZE)}>Show {Math.min(PAGE_SIZE, filtered.length - shown)} more</button> : null}

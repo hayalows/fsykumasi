@@ -47,7 +47,7 @@ test("mobile leader setup is a full-height single task with sticky actions", asy
 
 test("Access defaults to setup work and Assignments suggestions are deterministic", async () => {
   const [access, assignments] = await Promise.all([read("src/pages/AccessV4.jsx"), read("src/pages/AssignmentsV3.jsx")]);
-  assert.match(access, /useState\("needs"\)/);
+  assert.match(access, /initialFilter[\s\S]*"needs"/);
   assert.match(access, /Needs setup/);
   assert.doesNotMatch(assignments, /Math\.random/);
   assert.match(assignments, /accountSetupNeeded/);
@@ -55,7 +55,7 @@ test("Access defaults to setup work and Assignments suggestions are deterministi
 
 test("PWA shell marks the connected setup release", async () => {
   const [sw, main] = await Promise.all([read("public/sw.js"), read("src/main.jsx")]);
-  assert.match(sw, /fsy-kumasi-shell-v33/);
-  assert.match(sw, /connected Access and Assignments leader setup/);
+  assert.match(sw, /fsy-kumasi-shell-v34/);
+  assert.match(sw, /truthful loading, canonical check-in, Housing wayfinding and scoped operations/);
   assert.match(main, /access-assignments-v12\.css/);
 });

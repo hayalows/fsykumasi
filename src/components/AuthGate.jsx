@@ -290,6 +290,10 @@ export function PasswordRecoveryScreen({ onUpdate, onCancel }) {
   );
 }
 
+export function WorkspaceRecoveryScreen({ message, supportReference, onRetry, onSignOut }) {
+  return <main className="auth-page workspace-recovery-page"><section className="auth-card loading-card workspace-recovery-card"><BrandMark/><span className="kicker">Signed in</span><h2>Your FSY workspace needs another try</h2><p>{message || "Your account is signed in. Some workspace information did not load yet."}</p><div className="runtime-recovery-actions"><button className="primary full" onClick={onRetry}>Try loading workspace again</button><button className="secondary full" onClick={onSignOut}>Sign out</button></div>{supportReference?<small>Support reference: <b>{supportReference}</b></small>:null}</section></main>;
+}
+
 export function LoadingScreen({ text = "Connecting to FSY Kumasi…" }) {
   return <main className="auth-page"><section className="auth-card loading-card"><BrandMark /><div className="loading-dot"/><h2>{text}</h2></section></main>;
 }

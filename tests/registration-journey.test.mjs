@@ -124,5 +124,6 @@ test("navigation prefers the unified registration desk for Registration users", 
   assert.match(shell, /canRegistration/);
   assert.match(shell, /Registration & check-in/);
   assert.match(shell, /canCheckin/);
-  assert.match(shell, /\["checkin","Check-in",CheckCircle\]/);
+  assert.match(shell, /canRegistration \|\| canCheckin/);
+  assert.doesNotMatch(shell, /\["checkin"/);
 });

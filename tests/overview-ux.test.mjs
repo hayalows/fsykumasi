@@ -13,7 +13,8 @@ test("assistant coordinator stays company-scoped and sees uncovered structure fi
   });
   assert.equal(inbox.whole, false);
   assert.equal(inbox.scopeLabel, "4 assigned companies");
-  assert.equal(inbox.primary.id, "groups");
+  assert.equal(inbox.primary.id, "assignments");
+  assert.deepEqual(inbox.primary.destination, { view: "assignments", tab: "groups", filter: "needs" });
   assert.match(inbox.primary.title, /counselor group uncovered/);
   assert.equal(inbox.metrics.find((item) => item.label === "Youth")?.value, 78);
 });

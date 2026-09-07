@@ -104,11 +104,11 @@ export function Overview({
           <h3>{inbox.primary.title}</h3>
           <p>{inbox.primary.detail}</p>
         </div>
-        <button className="primary" type="button" onClick={() => setActive(inbox.primary.id)}>{inbox.primary.action}<ArrowRight /></button>
+        <button className="primary" type="button" onClick={() => setActive(inbox.primary.destination || inbox.primary.id)}>{inbox.primary.action}<ArrowRight /></button>
       </article>
 
       {inbox.others.length ? <div className="overview-followups" aria-label="Also needs attention">
-        {inbox.others.map((item) => <button key={`${item.id}:${item.title}`} type="button" onClick={() => setActive(item.id)}>
+        {inbox.others.map((item) => <button key={`${item.id}:${item.title}`} type="button" onClick={() => setActive(item.destination || item.id)}>
           <span className={`overview-task-dot tone-${item.tone || "default"}`} aria-hidden="true" />
           <span><b>{item.title}</b><small>{item.detail}</small></span>
           <ArrowRight />

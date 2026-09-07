@@ -120,11 +120,18 @@ export function AccountSetup({ teams = [], companies = [], onCreate, onClose }) 
   </DismissibleLayer>;
 }
 
+function teamSensitivity(team) {
+  if (team.key === "wellness" || team.capabilities?.includes("wellness_private")) return "Sensitive · private health information";
+  if (team.key === "financial" || team.capabilities?.includes("financial_view")) return "Sensitive · financial information";
+  if (team.capabilities?.includes("access_admin")) return "High impact · account administration";
+  return "";
+}
+
 export function TeamChoices({ teams, selected, onChange, compact = false }) {
   return <div className={compact ? "account-choice-list-v2 compact" : "account-choice-list-v2"} role="group" aria-label="Committee responsibilities">
     {teams.map((team) => <label className={selected.includes(team.key) ? "account-choice-v2 selected" : "account-choice-v2"} key={team.key}>
       <input type="checkbox" checked={selected.includes(team.key)} onChange={(event) => onChange(event.target.checked ? [...selected, team.key] : selected.filter((key) => key !== team.key))} />
-      <span><b>{team.name}</b><small>{team.description}</small></span>
+      <span><b>{team.name}</b><small>{team.description}</small>{teamSensitivity(team) ? <em className="account-responsibility-sensitivity">{teamSensitivity(team)}</em> : null}</span>
     </label>)}
   </div>;
 }
@@ -158,7 +165,7 @@ export function AccountTeams({ user, sessionId, teams, onClose, onSaved }) {
     <div className="account-setup-shell-v2">
       <button type="button" data-layer-close className="icon-button modal-close" onClick={close} disabled={busy} aria-label="Close"><X /></button>
       <header className="account-setup-header-v2"><span className="kicker">Additional access</span><h2>{user.name}</h2><p>Add only the committee tools this person needs beyond their primary responsibility.</p></header>
-      <TeamChoices teams={teams} selected={selected} onChange={setSelected} />
+      <div className="account-responsibility-summary"><b>{selected.length ? `${selected.length} additional ${selected.length === 1 ? "responsibility" : "responsibilities"}` : "No additional committee responsibilities"}</b><small>Primary FSY responsibility stays separate. Add only work this person genuinely needs.</small></div><TeamChoices teams={teams} selected={selected} onChange={setSelected} />
       {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
       <footer className="account-setup-actions-v2 field-sheet-actions"><button className="secondary" type="button" onClick={close} disabled={busy}>Cancel</button><button className="primary" type="button" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save responsibilities"}</button></footer>
     </div>

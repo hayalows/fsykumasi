@@ -5,12 +5,13 @@ import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { Clock } from "@phosphor-icons/react/Clock";
 import { Plus } from "@phosphor-icons/react/Plus";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
+import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { Empty, MutationFeedback, PageHead, SearchField, SegmentedControl } from "../components/UI.jsx";
 import { loadStaff } from "../lib/operations.js";
 import { hasCapability, loadHousingRooms } from "../lib/field-operations.js";
 import { loadHousingAssignmentsV2 } from "../lib/housing-context.js";
 import { loadHousingArrivalQueue, subscribeToHousingHandoff } from "../lib/housing-handoff.js";
-import { RoomDetail, RoomEditor, humanizeRole, initials, roomLocation, sexLabel, waitLabel } from "./HousingDialogsV4.jsx";
+import { RoomDetail, RoomEditor, humanizeRole, initials, roomHasWayfinding, roomLocation, sexLabel, waitLabel } from "./HousingDialogsV4.jsx";
 import { AssignmentEditorV5 } from "./HousingAssignmentV5.jsx";
 import "./field-operations.css";
 import "./housing-handoff.css";
@@ -19,7 +20,7 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "bas
 const PERSON_BATCH = 60;
 const ROOM_BATCH = 24;
 
-export function Housing({ sessionId, participants = [], capabilities = [], sessionName }) {
+export function Housing({ sessionId, participants = [], capabilities = [], sessionName, initialArea = "", initialFilter = "" }) {
   const canView = hasCapability(capabilities, "housing_view");
   const canManage = hasCapability(capabilities, "housing_manage");
   const [rooms, setRooms] = useState([]);
@@ -27,13 +28,13 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
   const [staff, setStaff] = useState([]);
   const [arrivalQueue, setArrivalQueue] = useState([]);
   const [roomQuery, setRoomQuery] = useState("");
-  const [roomFilter, setRoomFilter] = useState("all");
+  const [roomFilter, setRoomFilter] = useState(initialFilter === "needs-location" ? "incomplete" : "all");
   const [roomLimit, setRoomLimit] = useState(ROOM_BATCH);
   const [personQuery, setPersonQuery] = useState("");
-  const [personStatus, setPersonStatus] = useState("arrivals");
+  const [personStatus, setPersonStatus] = useState(initialArea === "assigned" ? "assigned" : "arrivals");
   const [personType, setPersonType] = useState("all");
   const [personLimit, setPersonLimit] = useState(PERSON_BATCH);
-  const [mobileArea, setMobileArea] = useState("queue");
+  const [mobileArea, setMobileArea] = useState(initialArea === "rooms" ? "rooms" : initialArea === "assigned" ? "assigned" : "queue");
   const [roomOpen, setRoomOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -41,22 +42,19 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
   const [now, setNow] = useState(Date.now());
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const reload = async () => {
+  const reload = async ({ initial = false } = {}) => {
     if (!sessionId || !canView) return;
-    const [nextRooms, nextAssignments, nextStaff, nextQueue] = await Promise.all([
-      loadHousingRooms(sessionId),
-      loadHousingAssignmentsV2(sessionId),
-      loadStaff(sessionId),
-      loadHousingArrivalQueue(sessionId),
-    ]);
-    setRooms(nextRooms);
-    setAssignments(nextAssignments);
-    setStaff(nextStaff);
-    setArrivalQueue(nextQueue);
+    if (initial) setInitialLoading(true); else setRefreshing(true);
+    try { const [nextRooms, nextAssignments, nextStaff, nextQueue] = await Promise.all([loadHousingRooms(sessionId), loadHousingAssignmentsV2(sessionId), loadStaff(sessionId), loadHousingArrivalQueue(sessionId)]); setRooms(nextRooms); setAssignments(nextAssignments); setStaff(nextStaff); setArrivalQueue(nextQueue); setError(""); }
+    catch (err) { setError(err.message || "Unable to load Housing."); throw err; }
+    finally { if (initial) setInitialLoading(false); setRefreshing(false); }
   };
 
-  useEffect(() => { reload().catch((err) => setError(err.message || "Unable to load Housing.")); }, [sessionId, canView]);
+  useEffect(() => { reload({ initial: true }).catch(() => {}); }, [sessionId, canView]);
+  useEffect(() => { if (initialArea === "rooms") setMobileArea("rooms"); else if (initialArea === "assigned") { setMobileArea("assigned"); setPersonStatus("assigned"); } else if (initialArea === "arrivals") { setMobileArea("queue"); setPersonStatus("arrivals"); } if (initialFilter === "needs-location") setRoomFilter("incomplete"); }, [initialArea, initialFilter]);
   useEffect(() => {
     if (!sessionId || !canView) return undefined;
     return subscribeToHousingHandoff(sessionId, () => reload().catch(() => {}));
@@ -113,12 +111,13 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
   const openSpaces = Math.max(0, totalBeds - occupied);
   const openRooms = rooms.filter((room) => room.occupancy < room.capacity).length;
   const fullRooms = rooms.length - openRooms;
+  const incompleteRooms = rooms.filter((room) => !roomHasWayfinding(room)).length;
   const oldestWaiting = waitingPeople[0]?.waitLabel || "No one waiting";
 
   const filteredRooms = useMemo(() => {
     const text = roomQuery.trim().toLowerCase();
     return rooms
-      .filter((room) => roomFilter === "all" || (roomFilter === "open" ? room.occupancy < room.capacity : room.occupancy >= room.capacity))
+      .filter((room) => roomFilter === "all" || (roomFilter === "open" ? room.occupancy < room.capacity : roomFilter === "full" ? room.occupancy >= room.capacity : !roomHasWayfinding(room)))
       .filter((room) => !text || `${room.name} ${room.building} ${room.floor}`.toLowerCase().includes(text))
       .sort((a, b) => collator.compare(a.name, b.name));
   }, [rooms, roomQuery, roomFilter]);
@@ -152,10 +151,12 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
     {saved ? <MutationFeedback>{saved}</MutationFeedback> : null}
 
-    <div className={`housing-v5-live${waitingPeople.length ? " attention" : ""}`} role="status" aria-live="polite">
-      <div><span className="kicker">Live from Registration</span><b>{waitingPeople.length ? `${waitingPeople.length} waiting for rooms` : "No arrivals waiting"}</b><small>{waitingPeople.length ? `${oldestWaiting} · oldest first` : "New checked-in arrivals appear here automatically."}</small></div>
+    <div className={`housing-v5-live${waitingPeople.length ? " attention" : ""}`} role="status" aria-live="polite" aria-busy={initialLoading || refreshing}>
+      <div><span className="kicker">Live from Registration</span><b>{initialLoading ? "Loading Housing…" : waitingPeople.length ? `${waitingPeople.length} waiting for rooms` : "No arrivals waiting"}</b><small>{initialLoading ? "Checking arrivals, rooms and current assignments." : waitingPeople.length ? `${oldestWaiting} · oldest first` : refreshing ? "Updating…" : "New checked-in arrivals appear here automatically."}</small></div>
       <div className="housing-v5-live-stats"><span><b>{openSpaces}</b><small>spaces open</small></span><span><b>{openRooms}</b><small>rooms open</small></span></div>
     </div>
+
+    {!initialLoading && incompleteRooms ? <div className="housing-location-banner"><WarningCircle/><span><b>{incompleteRooms} {incompleteRooms === 1 ? "room needs" : "rooms need"} a location</b><small>Add wayfinding before assigning anyone new to those rooms.</small></span><button type="button" className="secondary" onClick={() => { setMobileArea("rooms"); setRoomFilter("incomplete"); }}>Review rooms</button></div> : null}
 
     <div className="housing-v5-mobile-tabs" role="tablist" aria-label="Housing work">
       <button type="button" role="tab" aria-selected={mobileArea === "queue"} className={mobileArea === "queue" ? "active" : ""} onClick={() => chooseMobileArea("queue")}><span>Arrivals</span><b>{waitingPeople.length}</b></button>
@@ -198,9 +199,9 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
 
       <article className={`panel housing-v5-panel housing-v5-rooms${mobileArea !== "rooms" ? " mobile-hidden" : ""}`}>
         <div className="housing-v5-panel-head housing-v5-room-panel-head"><div><span className="kicker">Rooms</span><h2>Room map</h2><p>{rooms.length ? `${rooms.length} rooms · ${openRooms} with space · ${fullRooms} full` : "Add rooms before assignments begin."}</p></div>{canManage ? <div className="housing-v5-room-panel-actions"><button type="button" className="primary housing-v5-add-room" onClick={() => setRoomOpen(true)}><Plus/>Add room</button></div> : <Buildings size={22}/>}</div>
-        <div className="housing-v5-room-controls"><SearchField value={roomQuery} onChange={(value) => { setRoomQuery(value); setRoomLimit(ROOM_BATCH); }} label="Search rooms" placeholder="Room, building or floor"/><label><span>Availability</span><select value={roomFilter} onChange={(event) => { setRoomFilter(event.target.value); setRoomLimit(ROOM_BATCH); }}><option value="all">All rooms · {rooms.length}</option><option value="open">Spaces available · {openRooms}</option><option value="full">Full · {fullRooms}</option></select></label></div>
+        <div className="housing-v5-room-controls"><SearchField value={roomQuery} onChange={(value) => { setRoomQuery(value); setRoomLimit(ROOM_BATCH); }} label="Search rooms" placeholder="Room, building or floor"/><label><span>Availability</span><select value={roomFilter} onChange={(event) => { setRoomFilter(event.target.value); setRoomLimit(ROOM_BATCH); }}><option value="all">All rooms · {rooms.length}</option><option value="open">Spaces available · {openRooms}</option><option value="full">Full · {fullRooms}</option><option value="incomplete">Needs location · {incompleteRooms}</option></select></label></div>
         <div className="housing-v5-room-grid">
-          {visibleRooms.map((room) => { const open = Math.max(0, room.capacity - room.occupancy); return <button type="button" key={room.id} className="housing-v5-room-card" onClick={() => setSelectedRoom(room)}><span><b>{room.name}</b><small>{roomLocation(room)}</small></span><span className="capacity"><strong>{room.occupancy}/{room.capacity}</strong><small>{open ? `${open} open` : "Full"}</small></span><i><span style={{ width: `${Math.min(100, (room.occupancy / Math.max(1, room.capacity)) * 100)}%` }}/></i><em>{room.sex ? `${sexLabel(room.sex)} housing` : "Unrestricted"}</em></button>; })}
+          {visibleRooms.map((room) => { const open = Math.max(0, room.capacity - room.occupancy); return <button type="button" key={room.id} className={`housing-v5-room-card${roomHasWayfinding(room) ? "" : " needs-location"}`} onClick={() => setSelectedRoom(room)}><span><b>{room.name}</b><small>{roomLocation(room)}</small></span><span className="capacity"><strong>{room.occupancy}/{room.capacity}</strong><small>{open ? `${open} open` : "Full"}</small></span><i><span style={{ width: `${Math.min(100, (room.occupancy / Math.max(1, room.capacity)) * 100)}%` }}/></i><em>{room.sex ? `${sexLabel(room.sex)} housing` : "Unrestricted"}</em></button>; })}
           {!filteredRooms.length ? <Empty icon={Bed} title={rooms.length ? "No rooms match" : "No rooms yet"} text={rooms.length ? "Try another search or availability filter." : "Add the first room here, then begin assigning people."} action={canManage && !rooms.length ? <button type="button" className="primary housing-v5-empty-add-room" onClick={() => setRoomOpen(true)}><Plus/>Add first room</button> : null}/> : null}
         </div>
         {filteredRooms.length > visibleRooms.length ? <button type="button" className="secondary housing-v5-more" onClick={() => setRoomLimit((value) => value + ROOM_BATCH)}>Show {Math.min(ROOM_BATCH, filteredRooms.length - roomLimit)} more rooms</button> : null}

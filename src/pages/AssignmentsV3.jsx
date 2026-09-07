@@ -42,14 +42,14 @@ function AssignmentPicker({ title, description, query, setQuery, choices, emptyT
   return <DismissibleLayer open onClose={() => !busy && onClose()} title={title} sheet className="assignment-v2-picker-layer"><div className="field-sheet assignment-v2-picker"><button type="button" data-layer-close className="icon-button modal-close" onClick={onClose} disabled={busy} aria-label="Close"><X /></button><span className="kicker">Choose person</span><h2>{title}</h2><p>{description}</p><SearchField value={query} onChange={setQuery} label="Search available people" placeholder="Name or unit" /><div className="assignment-v2-picker-list">{choices.length ? choices.map((person) => <button type="button" key={person.id} className="assignment-v2-picker-row" disabled={busy} onClick={() => onPick(person)}><span className="person-avatar">{personInitials(person.name)}</span><span><b>{person.name}</b><small>{[person.unit, person.stake].filter(Boolean).join(" · ") || ROLE_LABELS[person.operationalRole]}</small></span><strong>{busy === person.id ? "Assigning…" : "Choose"}</strong></button>) : <Empty title="No available person found" text={emptyText} />}</div></div></DismissibleLayer>;
 }
 
-export function Assignments({ sessionId, canManage = false, sessionName }) {
+export function Assignments({ sessionId, canManage = false, initialWorkspace = "", initialFilter = "", initialStaffId = "", sessionName }) {
   const [staff, setStaff] = useState([]);
   const [structure, setStructure] = useState({ groups: [], companies: [], published: false });
   const [settings, setSettings] = useState({ companiesPerAssistantCoordinator: 4 });
   const [accessDirectory, setAccessDirectory] = useState([]);
-  const [workspace, setWorkspace] = useState("people");
+  const [workspace, setWorkspace] = useState(["people","groups","companies"].includes(initialWorkspace) ? initialWorkspace : "people");
   const [query, setQuery] = useState(""); const [roleFilter, setRoleFilter] = useState("all");
-  const [groupQuery, setGroupQuery] = useState(""); const [groupFilter, setGroupFilter] = useState("needs");
+  const [groupQuery, setGroupQuery] = useState(""); const [groupFilter, setGroupFilter] = useState(initialWorkspace === "groups" && initialFilter === "all" ? "all" : "needs");
   const [companyQuery, setCompanyQuery] = useState(""); const [companyFilter, setCompanyFilter] = useState("needs");
   const [visibleStaff, setVisibleStaff] = useState(30); const [visibleGroups, setVisibleGroups] = useState(24); const [visibleCompanies, setVisibleCompanies] = useState(24);
   const [transitionTarget, setTransitionTarget] = useState(null); const [setupTarget, setSetupTarget] = useState(null);
@@ -65,6 +65,7 @@ export function Assignments({ sessionId, canManage = false, sessionName }) {
     try { setAccessDirectory(await loadStaffAccessDirectory(sessionId)); } catch { setAccessDirectory([]); }
   };
   useEffect(() => { let active = true; setInitialLoading(true); setError(""); refresh().catch((err) => { if (active) setError(err.message || "Assignments could not be loaded."); }).finally(() => { if (active) setInitialLoading(false); }); return () => { active = false; }; }, [sessionId]);
+  useEffect(() => { if (["people","groups","companies"].includes(initialWorkspace)) setWorkspace(initialWorkspace); if (initialWorkspace === "groups" && initialFilter) setGroupFilter(initialFilter === "all" ? "all" : "needs"); if (initialWorkspace === "companies" && initialFilter) setCompanyFilter(initialFilter === "all" ? "all" : "needs"); }, [initialWorkspace, initialFilter]);
   useEffect(() => setVisibleStaff(30), [query, roleFilter]); useEffect(() => setVisibleGroups(24), [groupQuery, groupFilter]); useEffect(() => setVisibleCompanies(24), [companyQuery, companyFilter]);
 
   const groups = structure.groups || []; const companies = structure.companies || [];
@@ -82,6 +83,8 @@ export function Assignments({ sessionId, canManage = false, sessionName }) {
   const filteredStaff = useMemo(() => { const text = query.trim().toLowerCase(); return staff.filter((person) => (roleFilter === "all" || person.operationalRole === roleFilter) && (!text || `${person.name} ${person.unit || ""} ${person.stake || ""} ${ROLE_LABELS[person.operationalRole] || ""}`.toLowerCase().includes(text))); }, [staff, query, roleFilter]);
   const filteredGroups = useMemo(() => { const text = groupQuery.trim().toLowerCase(); return groups.filter((group) => (groupFilter === "all" || (groupFilter === "needs" ? !group.counselorId : Boolean(group.counselorId))) && (!text || `${groupLabel(group)} ${companyLabel(companyById.get(group.companyId))} ${staffById.get(group.counselorId)?.name || ""}`.toLowerCase().includes(text))).sort((a, b) => Number(Boolean(a.counselorId)) - Number(Boolean(b.counselorId)) || groupLabel(a).localeCompare(groupLabel(b), undefined, { numeric: true })); }, [groups, groupQuery, groupFilter, companyById, staffById]);
   const filteredCompanies = useMemo(() => { const text = companyQuery.trim().toLowerCase(); return companies.filter((company) => (companyFilter === "all" || (companyFilter === "needs" ? !company.assistantCoordinatorIds?.length : Boolean(company.assistantCoordinatorIds?.length))) && (!text || `${companyLabel(company)} ${(company.assistantCoordinatorIds || []).map((id) => staffById.get(id)?.name || "").join(" ")}`.toLowerCase().includes(text))).sort((a, b) => Number(Boolean(a.assistantCoordinatorIds?.length)) - Number(Boolean(b.assistantCoordinatorIds?.length)) || companyLabel(a).localeCompare(companyLabel(b), undefined, { numeric: true })); }, [companies, companyQuery, companyFilter, staffById]);
+
+  useEffect(() => { if (!initialStaffId || !staff.length || setupTarget) return; const person = staff.find((item) => item.id === initialStaffId); if (person) { setWorkspace("people"); setQuery(person.name); } }, [initialStaffId, staff]);
 
   const personContext = (person) => { if (person.operationalRole === "counselor") { const group = groups.find((item) => item.id === person.counselorGroupId); return group ? groupLabel(group) : "Available · no counselor group yet"; } if (person.operationalRole === "assistant_coordinator") { const names = (person.companyIds || []).map((id) => companyLabel(companyById.get(id))).filter(Boolean); return names.length ? names.join(" · ") : "No companies assigned yet"; } return "Whole session responsibility"; };
   const setupPerson = (person) => { const access = accessByStaff.get(person.id) || {}; return { staffId: person.id, name: person.name, operationalRole: person.operationalRole, companyIds: person.companyIds || [], companyNames: (person.companyIds || []).map((id) => companyLabel(companyById.get(id))).filter(Boolean), email: access.email || "", accountEmail: access.accountEmail || "", accessState: access.accessState || "not_enabled" }; };
