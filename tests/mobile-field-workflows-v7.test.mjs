@@ -27,7 +27,7 @@ test("mobile registration is full-screen and keeps mutation outcomes in view", a
   assert.match(parts, /Saving check-in…/);
 });
 
-test("Housing is queue-first on mobile and room choices explain recommendation reasons", async () => {
+test("Housing is queue-first while mobile navigation separates people from rooms", async () => {
   const [housing, assignment, css] = await Promise.all([
     read("src/pages/HousingV5.jsx"),
     read("src/pages/HousingAssignmentV5.jsx"),
@@ -35,7 +35,8 @@ test("Housing is queue-first on mobile and room choices explain recommendation r
   ]);
   assert.match(housing, /Live from Registration/);
   assert.ok(housing.indexOf("housing-v5-people") < housing.indexOf("housing-v5-rooms"), "arrival work should appear before room browsing in the source order");
-  assert.match(housing, /Arrivals[\s\S]*Rooms[\s\S]*Assigned/);
+  assert.match(housing, /<span>People<\/span>[\s\S]*<span>Rooms<\/span>/);
+  assert.match(housing, /Arrivals waiting[\s\S]*Need room[\s\S]*Assigned/);
   assert.match(assignment, /sameGroup/);
   assert.match(assignment, /Keeps group together/);
   assert.match(assignment, /Nothing is saved until you confirm/);
@@ -52,7 +53,7 @@ test("mobile navigation keeps responsibility-first destinations stable", async (
   assert.match(shell, /const activeInMore=nav\.moreIds\.has\(active\) && !nav\.mobile\.some/);
 });
 
-test("new field-workflow styles load last and ship with PWA shell v33", async () => {
+test("new field-workflow styles load last and ship with the current PWA shell", async () => {
   const [main, sw, housingExport] = await Promise.all([
     read("src/main.jsx"),
     read("public/sw.js"),
@@ -61,6 +62,6 @@ test("new field-workflow styles load last and ship with PWA shell v33", async ()
   assert.ok(main.indexOf('import "./housing-operations-v5.css";') > main.indexOf('import "./housing-assignment-v4.css";'));
   assert.ok(main.indexOf('import "./housing-room-action-v8.css";') > main.indexOf('import "./housing-operations-v5.css";'));
   assert.ok(main.indexOf('import "./registration-flow-v7.css";') > main.indexOf('import "./registration-checkin-v6.css";'));
-  assert.match(sw, /fsy-kumasi-shell-v34/);
+  assert.match(sw, /fsy-kumasi-shell-v35/);
   assert.match(housingExport, /HousingV5/);
 });

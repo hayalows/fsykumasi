@@ -1,0 +1,383 @@
+/* Housing UX v13: one calm information hierarchy across phone, laptop and wide desktop. */
+.housing-v5 {
+  width: 100%;
+  max-width: 1240px;
+  min-width: 0;
+  gap: 12px;
+}
+
+.housing-v5 .page-head {
+  margin-bottom: 14px;
+}
+.housing-v5 .page-head > div { min-width: 0; }
+.housing-v5 .page-head p:last-child { max-width: 64ch; }
+
+/* The live strip communicates the handoff state. Summary numbers live in one place below it. */
+.housing-v5-live {
+  min-width: 0;
+  padding: 11px 14px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+.housing-v5-live-stats { display: none !important; }
+.housing-v5-live > div:first-child small { overflow-wrap: anywhere; }
+
+.housing-v5-metrics {
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 7px;
+}
+.housing-v5-metrics > span {
+  min-width: 0;
+  padding: 9px 11px;
+  box-shadow: none;
+}
+.housing-v5-metrics small { white-space: normal; }
+
+.housing-v5-layout,
+.housing-v5-panel,
+.housing-v5-panel-head,
+.housing-v5-person-controls,
+.housing-v5-room-controls,
+.housing-v5-person-list,
+.housing-v5-room-grid { min-width: 0; }
+
+/* A common 13-inch laptop still gets two useful panes; narrower workspaces collapse before they feel cramped. */
+.housing-v5-layout {
+  grid-template-columns: minmax(0, 1.08fr) minmax(380px, .92fr);
+  gap: 12px;
+}
+.housing-v5-panel { box-shadow: 0 6px 20px rgba(0, 81, 117, .045); }
+.housing-v5-panel-head { padding: 15px 16px 12px; }
+.housing-v5-panel-head p { max-width: 56ch; }
+
+.housing-v5-person-controls,
+.housing-v5-room-controls { padding: 11px 12px; }
+.housing-v5-room-controls {
+  grid-template-columns: minmax(0, 1fr) minmax(154px, 180px);
+}
+.housing-v5-person-controls .segmented {
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+
+.housing-v5-person-list > button { min-width: 0; }
+.housing-v5-person-list .copy,
+.housing-v5-person-list .assignment { min-width: 0; }
+.housing-v5-person-list .assignment {
+  max-width: 160px;
+}
+.housing-v5-person-list .assignment b,
+.housing-v5-person-list .assignment small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Let the grid choose the number of useful room cards instead of forcing cramped columns. */
+.housing-v5-room-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 215px), 1fr));
+  gap: 8px;
+}
+.housing-v5-room-card {
+  min-width: 0;
+  min-height: 108px;
+  align-content: start;
+}
+.housing-v5-room-card > span:first-child,
+.housing-v5-room-card .capacity { min-width: 0; }
+.housing-v5-room-card > span:first-child b {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+.housing-v5-room-card > span:first-child small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+.housing-v5-room-card .capacity {
+  min-width: 58px;
+}
+
+/* Stable form labels. The generic modal label grid must never place Optional on its own accidental row. */
+.housing-field-label {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  display: flex !important;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  color: #284954 !important;
+}
+.housing-field-label b {
+  min-width: 0;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 1.3;
+}
+.housing-field-label em {
+  flex: none;
+  color: #7a878d;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 560;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+/* Wayfinding is easier to scan vertically and leaves room for long real-world location names. */
+.housing-wayfinding-fields {
+  grid-template-columns: 1fr !important;
+  gap: 12px;
+}
+.housing-wayfinding-fields input,
+.housing-v4-modal-body input,
+.housing-v4-modal-body select,
+.housing-v4-modal-body textarea,
+.housing-v5-assignment-body input,
+.housing-v5-assignment-body select,
+.housing-v5-assignment-body textarea {
+  width: 100%;
+  min-width: 0;
+}
+
+/* One scroll surface per Housing sheet. Header and actions stay stable while only the task body scrolls. */
+.housing-v5-assignment-layer.layer-panel,
+.housing-v4-room-editor-layer.layer-panel,
+.housing-v4-room-detail-layer.layer-panel {
+  padding: 0 !important;
+  overflow: hidden !important;
+  scrollbar-gutter: auto !important;
+}
+.housing-v5-assignment-layer.layer-panel {
+  width: min(860px, calc(100vw - 40px));
+  max-width: 860px;
+  height: min(820px, calc(100dvh - 48px));
+  max-height: 90dvh;
+}
+.housing-v4-room-editor-layer.layer-panel {
+  width: min(640px, calc(100vw - 40px));
+  max-width: 640px;
+  max-height: min(760px, calc(100dvh - 48px));
+}
+.housing-v4-room-detail-layer.layer-panel {
+  width: min(720px, calc(100vw - 40px));
+  max-width: 720px;
+  max-height: min(800px, calc(100dvh - 48px));
+}
+.housing-v5-assignment-modal,
+.housing-v4-room-editor-layer .housing-v4-modal,
+.housing-v4-room-detail-layer .housing-v4-modal {
+  min-width: 0;
+  max-height: inherit;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+.housing-v4-room-detail-layer .housing-v4-modal { grid-template-rows: auto minmax(0, 1fr); }
+.housing-v5-assignment-body,
+.housing-v4-room-editor-layer .housing-v4-modal-body,
+.housing-v4-room-detail-layer .housing-v4-modal-body {
+  min-height: 0;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.housing-v4-room-editor-layer .housing-v4-modal-actions,
+.housing-v5-assignment-actions {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 4;
+}
+
+.housing-v5-room-choices {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  align-content: start;
+}
+.housing-v5-room-choice { min-width: 0; }
+.housing-v5-room-choice .room-copy b,
+.housing-v5-room-choice .room-copy small,
+.housing-v5-room-choice .room-meta small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.housing-v5-move-reason > .housing-field-label { color: #6e551e !important; }
+.housing-v5-move-reason > .housing-field-label em { color: #8b7651; }
+
+/* Keep large monitors readable instead of stretching operational rows indefinitely. */
+@media (min-width: 1600px) {
+  .housing-v5 { max-width: 1260px; }
+}
+
+/* A 1280px viewport still loses substantial width to the desktop sidebar, so collapse here. */
+@media (max-width: 1280px) {
+  .housing-v5-layout { grid-template-columns: 1fr; }
+  .housing-v5-room-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .housing-v5 {
+    gap: 9px;
+    padding-top: 22px;
+  }
+  .housing-v5 .page-head {
+    margin-bottom: 8px;
+    padding-bottom: 0;
+  }
+  .housing-v5 .page-head h1 {
+    margin-bottom: 6px;
+    font-size: clamp(30px, 9vw, 38px) !important;
+    line-height: 1.02 !important;
+  }
+  .housing-v5 .page-head > div > p:last-child {
+    max-width: 38ch;
+    font-size: 13.5px !important;
+    line-height: 1.42 !important;
+  }
+  .housing-v5-live { padding: 10px 11px; }
+  .housing-v5-live .kicker { margin-bottom: 3px; }
+
+  /* Mobile has two objects: people and rooms. Waiting/needs/assigned are states inside People. */
+  .housing-v5-mobile-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .housing-v5-desktop-status {
+    display: block !important;
+    min-width: 0;
+  }
+  .housing-v5-desktop-status .segmented {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: visible;
+  }
+  .housing-v5-desktop-status .segmented button {
+    min-width: 0;
+    min-height: 46px;
+    padding-inline: 6px;
+    white-space: normal;
+    line-height: 1.15;
+  }
+  .housing-v5-desktop-status .segmented-label { overflow-wrap: anywhere; }
+  .housing-v5-prearrival { display: none !important; }
+
+  /* Tabs already carry waiting/people counts; keep the summary focused on physical capacity. */
+  .housing-v5-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px;
+  }
+  .housing-v5-metrics > span:nth-child(1),
+  .housing-v5-metrics > span:nth-child(4) { display: none; }
+  .housing-v5-metrics > span {
+    min-height: 48px;
+    padding: 8px 10px;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+  .housing-v5-metrics small { font-size: 10px !important; }
+
+  .housing-v5-panel-head { padding: 12px 12px 10px; }
+  .housing-v5-panel-head p { font-size: 11.5px; }
+  .housing-v5-person-controls,
+  .housing-v5-room-controls { padding: 9px 10px; }
+  .housing-v5-room-controls { grid-template-columns: 1fr; }
+
+  .housing-v5-person-list .assignment { max-width: none; }
+  .housing-v5-room-grid { grid-template-columns: 1fr; }
+  .housing-v5-room-card { min-height: 92px; }
+
+  .housing-v5-assignment-layer.layer-panel,
+  .housing-v4-room-editor-layer.layer-panel,
+  .housing-v4-room-detail-layer.layer-panel {
+    width: 100% !important;
+    max-width: none !important;
+    height: calc(100dvh - max(6px, env(safe-area-inset-top))) !important;
+    max-height: calc(100dvh - max(6px, env(safe-area-inset-top))) !important;
+    margin-top: max(6px, env(safe-area-inset-top));
+    border-radius: 20px 20px 0 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .sheet-layer .housing-v5-assignment-layer.layer-panel::before,
+  .sheet-layer .housing-v4-room-editor-layer.layer-panel::before,
+  .sheet-layer .housing-v4-room-detail-layer.layer-panel::before { display: none !important; }
+
+  .housing-v5-assignment-modal,
+  .housing-v4-room-editor-layer .housing-v4-modal,
+  .housing-v4-room-detail-layer .housing-v4-modal {
+    height: 100%;
+    max-height: 100%;
+  }
+  .housing-v5-assignment-head,
+  .housing-v4-modal-head {
+    padding: 14px 14px 11px;
+  }
+  .housing-v4-room-editor-layer .housing-v4-modal-body,
+  .housing-v4-room-detail-layer .housing-v4-modal-body,
+  .housing-v5-assignment-body {
+    padding: 12px 13px;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .housing-v4-modal-actions,
+  .housing-v5-assignment-actions {
+    padding: 10px 13px calc(10px + env(safe-area-inset-bottom)) !important;
+  }
+  .housing-v4-modal-actions button,
+  .housing-v5-assignment-actions button {
+    min-height: 50px;
+  }
+
+  .housing-v4-form.two { grid-template-columns: 1fr; }
+  .housing-field-label b { font-size: 13px; }
+  .housing-field-label em { font-size: 11px; }
+  .housing-v4-modal-body input,
+  .housing-v4-modal-body select,
+  .housing-v4-modal-body textarea,
+  .housing-v5-assignment-body input,
+  .housing-v5-assignment-body select,
+  .housing-v5-assignment-body textarea { font-size: 16px; }
+
+  .housing-v5-picker-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+  .housing-v5-picker-head > button { max-width: 132px; white-space: normal; line-height: 1.15; }
+  .housing-v5-room-choices { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 430px) {
+  .housing-v5 { padding-inline: 14px; }
+  .housing-v5-mobile-tabs button { min-height: 48px; }
+  .housing-v5-desktop-status .segmented button { font-size: 10.5px; }
+  .housing-v5-person-list > button { padding-inline: 10px; }
+  .housing-v5-room-panel-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .housing-v5-add-room { min-width: 0; padding-inline: 10px; }
+}
+
+@media (max-width: 350px) {
+  .housing-v5 { padding-inline: 10px; }
+  .housing-v5-desktop-status .segmented {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .housing-v5-desktop-status .segmented button { min-height: 44px; }
+  .housing-v5-room-panel-head { grid-template-columns: 1fr; }
+  .housing-v5-room-panel-actions,
+  .housing-v5-add-room { width: 100%; }
+  .housing-v5-picker-head { grid-template-columns: 1fr; }
+  .housing-v5-picker-head > button { max-width: none; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .housing-v5-room-card,
+  .housing-v5-room-choice { transition: none !important; transform: none !important; }
+}

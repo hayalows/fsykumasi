@@ -147,7 +147,7 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
   if (!canView) return <section className="page"><PageHead title="Housing" sessionName={sessionName} description="Housing access is assigned by an FSY administrator."/><article className="panel"><Empty icon={Bed} title="Housing is not in your access" text="Ask an administrator to add the Housing team to your account if this is part of your assignment."/></article></section>;
 
   return <section className="page housing-v5">
-    <PageHead title="Housing" sessionName={sessionName} description="Assign rooms to checked-in arrivals. The queue updates automatically from Registration."/>
+    <PageHead title="Housing" sessionName={sessionName} description="Plan rooms before the conference, then place checked-in arrivals quickly as they come in."/>
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
     {saved ? <MutationFeedback>{saved}</MutationFeedback> : null}
 
@@ -159,23 +159,22 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
     {!initialLoading && incompleteRooms ? <div className="housing-location-banner"><WarningCircle/><span><b>{incompleteRooms} {incompleteRooms === 1 ? "room needs" : "rooms need"} a location</b><small>Add wayfinding before assigning anyone new to those rooms.</small></span><button type="button" className="secondary" onClick={() => { setMobileArea("rooms"); setRoomFilter("incomplete"); }}>Review rooms</button></div> : null}
 
     <div className="housing-v5-mobile-tabs" role="tablist" aria-label="Housing work">
-      <button type="button" role="tab" aria-selected={mobileArea === "queue"} className={mobileArea === "queue" ? "active" : ""} onClick={() => chooseMobileArea("queue")}><span>Arrivals</span><b>{waitingPeople.length}</b></button>
+      <button type="button" role="tab" aria-selected={mobileArea !== "rooms"} className={mobileArea !== "rooms" ? "active" : ""} onClick={() => chooseMobileArea("queue")}><span>People</span><b>{waitingPeople.length}</b></button>
       <button type="button" role="tab" aria-selected={mobileArea === "rooms"} className={mobileArea === "rooms" ? "active" : ""} onClick={() => chooseMobileArea("rooms")}><span>Rooms</span><b>{rooms.length}</b></button>
-      <button type="button" role="tab" aria-selected={mobileArea === "assigned"} className={mobileArea === "assigned" ? "active" : ""} onClick={() => chooseMobileArea("assigned")}><span>Assigned</span><b>{assignedCount}</b></button>
     </div>
 
     <div className="housing-v5-metrics" aria-label="Housing summary">
-      <span><b>{waitingPeople.length}</b><small>waiting</small></span>
-      <span><b>{openSpaces}</b><small>spaces open</small></span>
-      <span><b>{openRooms}</b><small>rooms open</small></span>
-      <span><b>{assignedCount}</b><small>assigned</small></span>
+      <span><b>{initialLoading ? "—" : waitingPeople.length}</b><small>waiting</small></span>
+      <span><b>{initialLoading ? "—" : openSpaces}</b><small>spaces open</small></span>
+      <span><b>{initialLoading ? "—" : openRooms}</b><small>rooms open</small></span>
+      <span><b>{initialLoading ? "—" : assignedCount}</b><small>assigned</small></span>
     </div>
 
     <details className="housing-v4-coverage housing-v5-coverage"><summary><span><b>Overall housing coverage</b><small>{unassignedCount.toLocaleString()} people have no room across the full roster</small></span><span>+</span></summary><div><p>This includes people who have not arrived yet and staff. During live arrival, start with the checked-in queue.</p></div></details>
 
     <div className="housing-v5-layout">
       <article className={`panel housing-v5-panel housing-v5-people${mobileArea === "rooms" ? " mobile-hidden" : ""}`}>
-        <div className="housing-v5-panel-head"><div><span className="kicker">Assignments</span><h2>{personStatus === "arrivals" ? "Arrivals waiting" : personStatus === "needs" ? "People needing rooms" : "Assigned people"}</h2><p>{personStatus === "arrivals" ? "Oldest waiting participants appear first." : personStatus === "needs" ? "Use this broader list for pre-arrival planning and staff housing." : "Review or change existing room assignments."}</p></div><UserPlus size={22}/></div>
+        <div className="housing-v5-panel-head"><div><span className="kicker">Housing work</span><h2>{personStatus === "arrivals" ? "Arrivals waiting" : personStatus === "needs" ? "People needing rooms" : "Assigned people"}</h2><p>{personStatus === "arrivals" ? "Oldest waiting participants appear first." : personStatus === "needs" ? "Use this broader list for pre-arrival planning and staff housing." : "Review or change existing room assignments."}</p></div><UserPlus size={22}/></div>
         <div className="housing-v5-person-controls">
           <SearchField value={personQuery} onChange={(value) => { setPersonQuery(value); setPersonLimit(PERSON_BATCH); }} label="Find person" placeholder={personStatus === "arrivals" ? "Search waiting arrivals" : "Search name or assignment"}/>
           <div className="housing-v5-desktop-status"><SegmentedControl label="Housing work" value={personStatus} onChange={(value) => { setPersonStatus(value); setPersonLimit(PERSON_BATCH); }} options={[{ value: "arrivals", label: "Arrivals waiting", count: waitingPeople.length }, { value: "needs", label: "Need room", count: unassignedCount }, { value: "assigned", label: "Assigned", count: assignedCount }]}/></div>
@@ -198,7 +197,7 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
       </article>
 
       <article className={`panel housing-v5-panel housing-v5-rooms${mobileArea !== "rooms" ? " mobile-hidden" : ""}`}>
-        <div className="housing-v5-panel-head housing-v5-room-panel-head"><div><span className="kicker">Rooms</span><h2>Room map</h2><p>{rooms.length ? `${rooms.length} rooms · ${openRooms} with space · ${fullRooms} full` : "Add rooms before assignments begin."}</p></div>{canManage ? <div className="housing-v5-room-panel-actions"><button type="button" className="primary housing-v5-add-room" onClick={() => setRoomOpen(true)}><Plus/>Add room</button></div> : <Buildings size={22}/>}</div>
+        <div className="housing-v5-panel-head housing-v5-room-panel-head"><div><span className="kicker">Setup</span><h2>Rooms</h2><p>{rooms.length ? `${rooms.length} rooms · ${openRooms} with space · ${fullRooms} full` : "Add rooms before assignments begin."}</p></div>{canManage ? <div className="housing-v5-room-panel-actions"><button type="button" className="primary housing-v5-add-room" onClick={() => setRoomOpen(true)}><Plus/>Add room</button></div> : <Buildings size={22}/>}</div>
         <div className="housing-v5-room-controls"><SearchField value={roomQuery} onChange={(value) => { setRoomQuery(value); setRoomLimit(ROOM_BATCH); }} label="Search rooms" placeholder="Room, building or floor"/><label><span>Availability</span><select value={roomFilter} onChange={(event) => { setRoomFilter(event.target.value); setRoomLimit(ROOM_BATCH); }}><option value="all">All rooms · {rooms.length}</option><option value="open">Spaces available · {openRooms}</option><option value="full">Full · {fullRooms}</option><option value="incomplete">Needs location · {incompleteRooms}</option></select></label></div>
         <div className="housing-v5-room-grid">
           {visibleRooms.map((room) => { const open = Math.max(0, room.capacity - room.occupancy); return <button type="button" key={room.id} className={`housing-v5-room-card${roomHasWayfinding(room) ? "" : " needs-location"}`} onClick={() => setSelectedRoom(room)}><span><b>{room.name}</b><small>{roomLocation(room)}</small></span><span className="capacity"><strong>{room.occupancy}/{room.capacity}</strong><small>{open ? `${open} open` : "Full"}</small></span><i><span style={{ width: `${Math.min(100, (room.occupancy / Math.max(1, room.capacity)) * 100)}%` }}/></i><em>{room.sex ? `${sexLabel(room.sex)} housing` : "Unrestricted"}</em></button>; })}
