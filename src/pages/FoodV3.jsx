@@ -24,14 +24,14 @@ function demoServices(date, expectedCount) { return [{ id: "demo-lunch", date, m
 function FoodSkeletonRows() { return <div className="food-roster-skeleton" aria-hidden="true">{Array.from({ length: 6 }, (_, index) => <div key={index}><i/><span><b/><small/></span></div>)}</div>; }
 function uniqueAppend(current, incoming) { const seen = new Set(current.map((row) => row.personId)); return [...current, ...incoming.filter((row) => !seen.has(row.personId))]; }
 
-export function Food({ sessionId, capabilities = [], sessionName, participants = [], live = false }) {
+export function Food({ sessionId, capabilities = [], sessionName, participants = [], live = false, initialTab = "", initialFilter = "" }) {
   const hasFoodView = hasCapability(capabilities, "food_view");
   const canViewMeals = hasFoodView || hasCapability(capabilities, "meal_attendance_view");
   const canRecordMeals = hasCapability(capabilities, "food_manage") || hasCapability(capabilities, "meal_attendance_record");
   const canManage = hasCapability(capabilities, "food_manage");
   const canViewDietary = hasFoodView;
 
-  const [tab, setTab] = useState("meals");
+  const [tab, setTab] = useState(initialTab === "dietary" || initialTab === "needs" ? "needs" : "meals");
   const [services, setServices] = useState([]);
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [progress, setProgress] = useState([]);
@@ -58,7 +58,7 @@ export function Food({ sessionId, capabilities = [], sessionName, participants =
   const [needsLoaded, setNeedsLoaded] = useState(false);
   const [needsLoading, setNeedsLoading] = useState(false);
   const [dietaryQuery, setDietaryQuery] = useState("");
-  const [dietaryFilter, setDietaryFilter] = useState("open");
+  const [dietaryFilter, setDietaryFilter] = useState(initialFilter === "all" ? "all" : initialFilter === "reviewed" ? "reviewed" : "open");
   const [dietaryLimit, setDietaryLimit] = useState(PAGE_SIZE);
   const rosterRequest = useRef(0);
   const searchRef = useRef(null);
@@ -169,6 +169,7 @@ export function Food({ sessionId, capabilities = [], sessionName, participants =
     catch (err) { setError(err.message || "Dietary needs could not load."); }
     finally { setNeedsLoading(false); }
   }, [canViewDietary, live, needsLoaded, needsLoading, sessionId]);
+  useEffect(() => { if (initialTab === "dietary" || initialTab === "needs") setTab("needs"); if (initialFilter) setDietaryFilter(initialFilter === "all" ? "all" : initialFilter === "reviewed" ? "reviewed" : "open"); }, [initialTab, initialFilter]);
   useEffect(() => { if (tab === "needs") loadNeeds(); }, [loadNeeds, tab]);
   useEffect(() => { if (!canViewDietary && tab === "needs") setTab("meals"); }, [canViewDietary, tab]);
   useEffect(() => { setDietaryLimit(PAGE_SIZE); }, [dietaryFilter, dietaryQuery]);

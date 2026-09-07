@@ -1,7 +1,7 @@
 import { HeadcountRoster } from "./pages/HeadcountRoster.jsx";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "./components/AppShell.jsx";
-import { InviteClaimScreen, LoadingScreen, PasswordRecoveryScreen, SignInScreen } from "./components/AuthGate.jsx";
+import { InviteClaimScreen, LoadingScreen, PasswordRecoveryScreen, SignInScreen, WorkspaceRecoveryScreen } from "./components/AuthGate.jsx";
 import { createDemoParticipants } from "./data/demo.js";
 import { demoSession } from "./data/session.js";
 import { isSupabaseConfigured } from "./lib/supabase.js";
@@ -34,7 +34,6 @@ import { Registration } from "./pages/Registration.jsx";
 import { People } from "./pages/People.jsx";
 import { Assignments } from "./pages/Assignments.jsx";
 import { Groups } from "./pages/Groups.jsx";
-import { Checkin } from "./pages/Checkin.jsx";
 import { Headcount } from "./pages/Headcount.jsx";
 import { Access, createInitialAccessRequests } from "./pages/Access.jsx";
 import { Profile } from "./pages/Profile.jsx";
@@ -57,7 +56,7 @@ function normalizeDemoGrouping(nextAssignment) {
 
 export function App() {
   const initialWorkspace=useMemo(()=>readWorkspaceLocation(),[]);
-  const [active,setActive]=useState(initialWorkspace.view); const [selectedPersonId,setSelectedPersonId]=useState(initialWorkspace.personId);
+  const [active,setActive]=useState(initialWorkspace.view); const [selectedPersonId,setSelectedPersonId]=useState(initialWorkspace.personId); const [workspaceContext,setWorkspaceContext]=useState(initialWorkspace);
   const [imported,setImported]=useState([]); const [assignment,setAssignment]=useState(null); const [structureSettings,setStructureSettings]=useState(DEFAULT_STRUCTURE_SETTINGS);
   const [accessRequests,setAccessRequests]=useState(createInitialAccessRequests); const [leaderInvites,setLeaderInvites]=useState([]); const [accessRoster,setAccessRoster]=useState([]); const [teamCatalog,setTeamCatalog]=useState([]);
   const [companies,setCompanies]=useState([]); const [headcount,setHeadcount]=useState({round:null,submissions:[]}); const [checkedIds,setCheckedIds]=useState([]); const [birthdays,setBirthdays]=useState([]); const [staffBirthdays,setStaffBirthdays]=useState([]);
@@ -65,53 +64,79 @@ export function App() {
   const [authSession,setAuthSession]=useState(null); const [profile,setProfile]=useState(null); const [accessState,setAccessState]=useState([]); const [sessionInfo,setSessionInfo]=useState(null);
   const [selectedSessionId,setSelectedSessionId]=useState(()=>typeof window==="undefined"?"":new URLSearchParams(window.location.search).get("session")||"");
   const selectedSessionRef=useRef(selectedSessionId); const hydrateGeneration=useRef(0);
-  const [runtimeStatus,setRuntimeStatus]=useState(isSupabaseConfigured?"loading":"demo"); const [runtimeError,setRuntimeError]=useState(""); const [lastUpdatedAt,setLastUpdatedAt]=useState("");
+  const [runtimeStatus,setRuntimeStatus]=useState(isSupabaseConfigured?"loading":"demo"); const [runtimeError,setRuntimeError]=useState(""); const [lastUpdatedAt,setLastUpdatedAt]=useState(""); const [workspaceHydrating,setWorkspaceHydrating]=useState(Boolean(isSupabaseConfigured));
   const demoParticipants=useMemo(()=>createDemoParticipants(),[]); const initialInvite=useMemo(()=>typeof window==="undefined"?"":new URLSearchParams(window.location.search).get("invite")||"",[]);
 
   useEffect(()=>{selectedSessionRef.current=selectedSessionId;},[selectedSessionId]);
   useEffect(()=>installLifecycleDiagnostics(),[]);
 
   const markUpdated=()=>setLastUpdatedAt(new Date().toISOString());
-  const navigate=useCallback((nextView,options={})=>{const view=nextView||"overview";const personId=view==="people"?(options.personId||""):"";setActive(view);setSelectedPersonId(personId);writeWorkspaceLocation(view,{personId,replace:Boolean(options.replace)});recordDiagnostic("NAVIGATE",{view});},[]);
-  useEffect(()=>{const onPopState=()=>{const next=readWorkspaceLocation();setActive(next.view);setSelectedPersonId(next.personId);recordDiagnostic("POPSTATE",{view:next.view});};window.addEventListener("popstate",onPopState);return()=>window.removeEventListener("popstate",onPopState);},[]);
+  const navigate=useCallback((nextView,options={})=>{const raw=typeof nextView==="object"&&nextView?{...nextView,...options}:{view:nextView||"overview",...options};const view=raw.view==="checkin"?"registration":raw.view||"overview";const next={...raw,view,mode:raw.view==="checkin"?"desk":raw.mode||""};const personId=view==="people"?(next.personId||next.person||""):"";setActive(view);setSelectedPersonId(personId);setWorkspaceContext({...next,personId});writeWorkspaceLocation({...next,personId},{replace:Boolean(options.replace)});recordDiagnostic("NAVIGATE",{view,mode:next.mode||"",tab:next.tab||"",filter:next.filter||""});},[]);
+  useEffect(()=>{if(initialWorkspace.legacyCheckin)writeWorkspaceLocation(initialWorkspace,{replace:true});},[]);
+  useEffect(()=>{const onPopState=()=>{const next=readWorkspaceLocation();setActive(next.view);setSelectedPersonId(next.personId);setWorkspaceContext(next);recordDiagnostic("POPSTATE",{view:next.view,mode:next.mode||"",tab:next.tab||"",filter:next.filter||""});};window.addEventListener("popstate",onPopState);return()=>window.removeEventListener("popstate",onPopState);},[]);
 
   const loadFieldData=useCallback(async(sessionId,capabilities=[])=>{
-    if(!sessionId)return;
-    const [teams,eligibility,identities,staffBdays,housing,food,wellness]=await Promise.all([
-      loadTeamCatalog(sessionId),loadParticipantEligibility(sessionId),
-      (hasCapability(capabilities,"people_lookup")||hasCapability(capabilities,"registration_view")||hasCapability(capabilities,"reports_export"))?loadOperationalIdentityMap(sessionId):Promise.resolve(new Map()),
-      loadStaffBirthdays(sessionId),hasCapability(capabilities,"housing_view")?loadHousingAssignments(sessionId):Promise.resolve([]),
-      hasCapability(capabilities,"food_view")?loadFoodNeeds(sessionId):Promise.resolve([]),
-      hasCapability(capabilities,"wellness_private")?loadWellnessEncounters(sessionId):hasCapability(capabilities,"wellness_status")?loadWellnessStatus(sessionId):Promise.resolve([]),
-    ]);
-    setTeamCatalog(teams);setEligibilityMap(eligibility);setIdentityMap(identities);setStaffBirthdays(staffBdays);setHousingAssignments(housing);setFoodNeeds(food);setWellnessEncounters(wellness);
+    if(!sessionId)return [];
+    const jobs=[
+      ["teams",()=>loadTeamCatalog(sessionId),(value)=>setTeamCatalog(value)],
+      ["eligibility",()=>loadParticipantEligibility(sessionId),(value)=>setEligibilityMap(value)],
+      ["identity",()=>(hasCapability(capabilities,"people_lookup")||hasCapability(capabilities,"registration_view")||hasCapability(capabilities,"reports_export"))?loadOperationalIdentityMap(sessionId):Promise.resolve(new Map()),(value)=>setIdentityMap(value)],
+      ["staff birthdays",()=>loadStaffBirthdays(sessionId),(value)=>setStaffBirthdays(value)],
+      ["housing",()=>hasCapability(capabilities,"housing_view")?loadHousingAssignments(sessionId):Promise.resolve([]),(value)=>setHousingAssignments(value)],
+      ["food",()=>hasCapability(capabilities,"food_view")?loadFoodNeeds(sessionId):Promise.resolve([]),(value)=>setFoodNeeds(value)],
+      ["wellness",()=>hasCapability(capabilities,"wellness_private")?loadWellnessEncounters(sessionId):hasCapability(capabilities,"wellness_status")?loadWellnessStatus(sessionId):Promise.resolve([]),(value)=>setWellnessEncounters(value)],
+    ];
+    const results=await Promise.allSettled(jobs.map(([,run])=>run()));
+    const errors=[];
+    results.forEach((result,index)=>{const[label,,apply]=jobs[index];if(result.status==="fulfilled")apply(result.value);else errors.push(`${label}: ${result.reason?.message||"could not refresh"}`);});
+    return errors;
   },[]);
+
+  const clearWorkspace=()=>{setProfile(null);setAccessState([]);setSessionInfo(null);setImported([]);setAccessRequests([]);setLeaderInvites([]);setAccessRoster([]);setTeamCatalog([]);setCompanies([]);setHeadcount({round:null,submissions:[]});setCheckedIds([]);setBirthdays([]);setStaffBirthdays([]);setEligibilityMap(new Map());setIdentityMap(new Map());setHousingAssignments([]);setFoodNeeds([]);setWellnessEncounters([]);setStructureSettings(DEFAULT_STRUCTURE_SETTINGS);setLastUpdatedAt("");};
 
   const hydrateLive=useCallback(async(sessionOverride,requestedSessionOverride="",options={})=>{
     if(!isSupabaseConfigured)return;
-    const generation=++hydrateGeneration.current; const blocking=options.blocking!==false;
-    recordDiagnostic("HYDRATE_START",{generation,reason:options.reason||"bootstrap"}); setRuntimeError("");
-    const session=sessionOverride===undefined?await getCurrentAuthSession():sessionOverride;
+    const generation=++hydrateGeneration.current;const blocking=options.blocking!==false;
+    recordDiagnostic("HYDRATE_START",{generation,reason:options.reason||"bootstrap"});setRuntimeError("");
+    let session;
+    try{session=sessionOverride===undefined?await getCurrentAuthSession():sessionOverride;}catch(error){if(generation!==hydrateGeneration.current)return;setRuntimeError(error.message||"Unable to verify your sign-in.");setRuntimeStatus("error");setWorkspaceHydrating(false);return;}
     if(generation!==hydrateGeneration.current)return;
     setAuthSession(session||null);
-    if(!session){setProfile(null);setAccessState([]);setSessionInfo(null);setImported([]);setAccessRequests([]);setLeaderInvites([]);setAccessRoster([]);setTeamCatalog([]);setCompanies([]);setHeadcount({round:null,submissions:[]});setCheckedIds([]);setBirthdays([]);setStaffBirthdays([]);setEligibilityMap(new Map());setIdentityMap(new Map());setHousingAssignments([]);setFoodNeeds([]);setWellnessEncounters([]);setStructureSettings(DEFAULT_STRUCTURE_SETTINGS);setLastUpdatedAt("");setRuntimeStatus("signed-out");recordDiagnostic("HYDRATE_DONE",{generation,status:"signed-out"});return;}
-    if(blocking)setRuntimeStatus("loading");
-    try{
-      const[nextProfile,nextAccessState]=await Promise.all([loadProfile(session.user.id),getMyAccessState()]);
-      if(generation!==hydrateGeneration.current)return;
-      setProfile(nextProfile||{user_id:session.user.id,email:session.user.email,display_name:session.user.email});setAccessState(nextAccessState);
-      const activeGrants=nextAccessState.filter((item)=>item.active&&item.role);const requestedSession=requestedSessionOverride||selectedSessionRef.current;const granted=activeGrants.find((item)=>item.session_id===requestedSession)||activeGrants.find((item)=>item.session_status!=="training")||activeGrants[0];
-      if(!granted){setSessionInfo(null);setImported([]);setAccessRoster([]);setAccessRequests([]);setLeaderInvites([]);setTeamCatalog([]);setCompanies([]);setHeadcount({round:null,submissions:[]});setCheckedIds([]);setBirthdays([]);setStaffBirthdays([]);setEligibilityMap(new Map());setIdentityMap(new Map());setStructureSettings(DEFAULT_STRUCTURE_SETTINGS);setRuntimeStatus("awaiting-access");recordDiagnostic("HYDRATE_DONE",{generation,status:"awaiting-access"});return;}
-      if(granted.session_id!==selectedSessionRef.current){selectedSessionRef.current=granted.session_id;setSelectedSessionId(granted.session_id);}const canManageAccess=canApproveAccess(granted.role,granted.capabilities||[]);
-      const[nextSession,nextParticipants,nextRequests,nextRoster,nextInvites,nextGrouping,nextChecked,nextHeadcount,nextBirthdays,nextStructureSettings]=await Promise.all([
-        loadSession(granted.session_id),loadParticipants(granted.session_id),loadAccessRequests(granted.session_id),loadAccessRosterV2(granted.session_id),canManageAccess?loadLeaderInvites(granted.session_id):Promise.resolve([]),loadGroupingPlan(granted.session_id),loadArrivedParticipantIds(granted.session_id),loadHeadcount(granted.session_id),loadSessionBirthdays(granted.session_id),loadStructureSettings(granted.session_id),
-      ]);
-      if(generation!==hydrateGeneration.current)return;
-      setSessionInfo(nextSession);setImported(nextParticipants);setAccessRequests(nextRequests);setAccessRoster(nextRoster);setLeaderInvites(nextInvites);setCompanies(nextGrouping.companies);setAssignment(nextGrouping.published?nextGrouping:null);setCheckedIds(nextChecked);setHeadcount(nextHeadcount);setBirthdays(nextBirthdays);setStructureSettings(nextStructureSettings);
-      await loadFieldData(granted.session_id,granted.capabilities||[]);
-      if(generation!==hydrateGeneration.current)return;
-      setLastUpdatedAt(new Date().toISOString());setRuntimeStatus("ready");recordDiagnostic("HYDRATE_DONE",{generation,status:"ready"});
-    }catch(error){if(generation!==hydrateGeneration.current)return;setRuntimeError(error.message||"Unable to load FSY operations data.");setRuntimeStatus("error");recordDiagnostic("HYDRATE_ERROR",{generation,status:"error",reference:friendlyRuntimeError(error).supportReference});}
+    if(!session){clearWorkspace();setWorkspaceHydrating(false);setRuntimeStatus("signed-out");recordDiagnostic("HYDRATE_DONE",{generation,status:"signed-out"});return;}
+    if(blocking)setRuntimeStatus("loading");setWorkspaceHydrating(true);
+    let nextProfile,nextAccessState;
+    try{[nextProfile,nextAccessState]=await Promise.all([loadProfile(session.user.id),getMyAccessState()]);}
+    catch(error){if(generation!==hydrateGeneration.current)return;setRuntimeError(error.message||"Your FSY workspace could not be prepared.");setRuntimeStatus("error");setWorkspaceHydrating(false);recordDiagnostic("HYDRATE_ERROR",{generation,status:"signed-in-error",reference:friendlyRuntimeError(error).supportReference});return;}
+    if(generation!==hydrateGeneration.current)return;
+    setProfile(nextProfile||{user_id:session.user.id,email:session.user.email,display_name:session.user.email});setAccessState(nextAccessState);
+    const activeGrants=nextAccessState.filter((item)=>item.active&&item.role);const requestedSession=requestedSessionOverride||selectedSessionRef.current;const granted=activeGrants.find((item)=>item.session_id===requestedSession)||activeGrants.find((item)=>item.session_status!=="training")||activeGrants[0];
+    if(!granted){setSessionInfo(null);setImported([]);setAccessRoster([]);setAccessRequests([]);setLeaderInvites([]);setTeamCatalog([]);setCompanies([]);setHeadcount({round:null,submissions:[]});setCheckedIds([]);setBirthdays([]);setStaffBirthdays([]);setEligibilityMap(new Map());setIdentityMap(new Map());setStructureSettings(DEFAULT_STRUCTURE_SETTINGS);setWorkspaceHydrating(false);setRuntimeStatus("awaiting-access");recordDiagnostic("HYDRATE_DONE",{generation,status:"awaiting-access"});return;}
+    if(granted.session_id!==selectedSessionRef.current){selectedSessionRef.current=granted.session_id;setSelectedSessionId(granted.session_id);}
+    const canManageAccess=canApproveAccess(granted.role,granted.capabilities||[]);
+    let nextSession;
+    try{nextSession=await loadSession(granted.session_id);}catch(error){if(generation!==hydrateGeneration.current)return;setRuntimeError(error.message||"The FSY session could not be loaded.");setRuntimeStatus("error");setWorkspaceHydrating(false);return;}
+    if(generation!==hydrateGeneration.current)return;
+    setSessionInfo(nextSession);setRuntimeStatus("ready");
+
+    const jobs=[
+      ["participants",()=>loadParticipants(granted.session_id),(value)=>setImported(value)],
+      ["access requests",()=>canManageAccess?loadAccessRequests(granted.session_id):Promise.resolve([]),(value)=>setAccessRequests(value)],
+      ["access roster",()=>canManageAccess?loadAccessRosterV2(granted.session_id):Promise.resolve([]),(value)=>setAccessRoster(value)],
+      ["invites",()=>canManageAccess?loadLeaderInvites(granted.session_id):Promise.resolve([]),(value)=>setLeaderInvites(value)],
+      ["grouping",()=>loadGroupingPlan(granted.session_id),(value)=>{setCompanies(value.companies||[]);setAssignment(value.published?value:null);}],
+      ["check-in",()=>loadArrivedParticipantIds(granted.session_id),(value)=>setCheckedIds(value)],
+      ["head count",()=>loadHeadcount(granted.session_id),(value)=>setHeadcount(value)],
+      ["birthdays",()=>loadSessionBirthdays(granted.session_id),(value)=>setBirthdays(value)],
+      ["structure settings",()=>loadStructureSettings(granted.session_id),(value)=>setStructureSettings(value)],
+      ["field operations",()=>loadFieldData(granted.session_id,granted.capabilities||[]),()=>{}],
+    ];
+    const results=await Promise.allSettled(jobs.map(([,run])=>run()));
+    if(generation!==hydrateGeneration.current)return;
+    const failures=[];
+    results.forEach((result,index)=>{const[label,,apply]=jobs[index];if(result.status==="fulfilled"){apply(result.value);if(label==="field operations"&&Array.isArray(result.value))failures.push(...result.value);}else failures.push(`${label}: ${result.reason?.message||"could not refresh"}`);});
+    setWorkspaceHydrating(false);setLastUpdatedAt(new Date().toISOString());
+    if(failures.length){setRuntimeError("Some live FSY information could not refresh. You can keep working with what loaded and retry.");recordDiagnostic("HYDRATE_PARTIAL",{generation,failures:failures.length});}
+    else{setRuntimeError("");recordDiagnostic("HYDRATE_DONE",{generation,status:"ready"});}
   },[loadFieldData]);
 
   useEffect(()=>{if(!isSupabaseConfigured)return undefined;let activeSubscription=true;hydrateLive(undefined,"",{reason:"initial"}).catch((error)=>{if(activeSubscription){setRuntimeError(error.message||"Unable to connect to live FSY data.");setRuntimeStatus("error");}});const unsubscribe=subscribeToAuth((event,session)=>{if(!activeSubscription)return;if(event==="PASSWORD_RECOVERY"){setAuthSession(session);setRuntimeStatus("password-recovery");return;}if(event==="TOKEN_REFRESHED"||event==="USER_UPDATED"){setAuthSession(session||null);recordDiagnostic("AUTH_MAINTENANCE",{event});return;}if(event==="INITIAL_SESSION"||event==="SIGNED_IN"){recordDiagnostic("AUTH_IGNORED",{event});return;}if(event==="SIGNED_OUT")hydrateLive(null,"",{reason:"signed-out"});});return()=>{activeSubscription=false;unsubscribe();};},[hydrateLive]);
@@ -125,10 +150,10 @@ export function App() {
   const returnToSignIn=async()=>{try{await signOutAccount();}catch{}navigate("overview",{replace:true});await hydrateLive(null,"",{reason:"recovery-return-signin"});};
 
   if(isSupabaseConfigured){
-    if(runtimeStatus==="loading")return <LoadingScreen/>;
+    if(runtimeStatus==="loading")return <LoadingScreen text={authSession?"Signed in. Preparing your FSY workspace…":"Connecting to FSY Kumasi…"}/>;
     if(runtimeStatus==="signed-out")return <SignInScreen initialInvite={initialInvite} onSignIn={async(email,password)=>hydrateLive(await signInWithPassword(email,password),"",{reason:"sign-in"})} onActivate={async(values)=>hydrateLive(await activateLeaderAccount(values),"",{reason:"activation"})} onForgot={requestPasswordReset}/>;
     if(runtimeStatus==="password-recovery")return <PasswordRecoveryScreen onUpdate={updateRecoveredPassword} onCancel={async()=>{clearRecoveryUrl();await hydrateLive(authSession,"",{reason:"recovery-cancel"});}}/>;
-    if(runtimeStatus==="error"){const friendly=friendlyRuntimeError(runtimeError);return <main className="auth-page"><section className="auth-card runtime-recovery-card"><span className="kicker">Connection recovery</span><h1>{friendly.title}</h1><p>{friendly.message}</p><div className="runtime-recovery-actions"><button className="primary full" onClick={()=>hydrateLive(authSession,"",{reason:"retry"})}>Try again</button><button className="secondary full" onClick={returnToSignIn}>Return to sign in</button></div><small>Support reference: <b>{friendly.supportReference}</b></small></section></main>;}
+    if(runtimeStatus==="error"){const friendly=friendlyRuntimeError(runtimeError);return authSession?<WorkspaceRecoveryScreen message={friendly.message} supportReference={friendly.supportReference} onRetry={()=>hydrateLive(authSession,"",{reason:"retry"})} onSignOut={returnToSignIn}/>:<main className="auth-page"><section className="auth-card runtime-recovery-card"><span className="kicker">Connection recovery</span><h1>{friendly.title}</h1><p>{friendly.message}</p><div className="runtime-recovery-actions"><button className="primary full" onClick={()=>hydrateLive(undefined,"",{reason:"retry"})}>Try again</button><button className="secondary full" onClick={returnToSignIn}>Return to sign in</button></div><small>Support reference: <b>{friendly.supportReference}</b></small></section></main>;}
     if(runtimeStatus==="awaiting-access")return <InviteClaimScreen profile={profile} onClaim={async(code)=>{await claimInviteWhileSignedIn(code);await hydrateLive(authSession,"",{reason:"invite-claim"});}} onSignOut={handleSignOut}/>;
   }
 
@@ -139,7 +164,7 @@ export function App() {
   const ownParticipants=ownCompanyIds===null?participants:participants.filter(p=>ownGroupIds.has(p.groupId));
   const ownOperationalParticipants=ownParticipants.filter(p=>isOperationalParticipant(p,structureSettings));
   const canManageAccess=!live||canApproveAccess(currentRole,currentCapabilities);const canImport=canManageAccess||hasCapability(currentCapabilities,"registration_manage");const canRecordCheckin=!live||["assistant_coordinator","coordinator","logistics_admin","session_director"].includes(currentRole)||hasCapability(currentCapabilities,"checkin_record");const canManageAttendance=!live||WHOLE_SESSION.has(currentRole)||hasCapability(currentCapabilities,"registration_manage");const activeSessions=live?accessState.filter((item)=>item.active&&item.role):[];const sessionName=sessionInfo?.name||demoSession.name;const companyOptions=live?companies:(assignment?.companies||[]).map((company,index)=>({id:company.id||`demo-company-${index+1}`,name:company.name||`Company ${String(index+1).padStart(2,"0")}`}));
-  const canOpen=(view)=>{if(["overview","profile","birthdays"].includes(view))return true;if(view==="people")return BASE_OPERATIONAL.has(currentRole)||hasCapability(currentCapabilities,"people_lookup");if(view==="groups")return BASE_OPERATIONAL.has(currentRole)||hasCapability(currentCapabilities,"groups_view");if(view==="checkin")return canRecordCheckin;if(view==="headcount")return BASE_OPERATIONAL.has(currentRole)||hasCapability(currentCapabilities,"headcount_view")||hasCapability(currentCapabilities,"headcount_record");if(view==="housing")return hasCapability(currentCapabilities,"housing_view");if(view==="wellness")return hasCapability(currentCapabilities,"wellness_private")||hasCapability(currentCapabilities,"wellness_status");if(view==="food")return hasCapability(currentCapabilities,"food_view")||hasCapability(currentCapabilities,"meal_attendance_view");if(view==="reports")return REPORT_CAPABILITIES.some((capability)=>hasCapability(currentCapabilities,capability));if(view==="registration")return WHOLE_SESSION.has(currentRole)||hasCapability(currentCapabilities,"registration_view")||hasCapability(currentCapabilities,"registration_manage");if(view==="assignments")return WHOLE_SESSION.has(currentRole)||hasCapability(currentCapabilities,"staff_manage");if(view==="access")return currentRole==="coordinator"||["logistics_admin","session_director"].includes(currentRole)||hasCapability(currentCapabilities,"access_admin");return false;};
+  const canOpen=(view)=>{if(["overview","profile","birthdays"].includes(view))return true;if(view==="people")return BASE_OPERATIONAL.has(currentRole)||hasCapability(currentCapabilities,"people_lookup");if(view==="groups")return BASE_OPERATIONAL.has(currentRole)||hasCapability(currentCapabilities,"groups_view");if(view==="headcount")return BASE_OPERATIONAL.has(currentRole)||hasCapability(currentCapabilities,"headcount_view")||hasCapability(currentCapabilities,"headcount_record");if(view==="housing")return hasCapability(currentCapabilities,"housing_view");if(view==="wellness")return hasCapability(currentCapabilities,"wellness_private")||hasCapability(currentCapabilities,"wellness_status");if(view==="food")return hasCapability(currentCapabilities,"food_view")||hasCapability(currentCapabilities,"meal_attendance_view");if(view==="reports")return currentRole==="assistant_coordinator"||REPORT_CAPABILITIES.some((capability)=>hasCapability(currentCapabilities,capability));if(view==="registration")return canRecordCheckin||WHOLE_SESSION.has(currentRole)||hasCapability(currentCapabilities,"registration_view")||hasCapability(currentCapabilities,"registration_manage");if(view==="assignments")return WHOLE_SESSION.has(currentRole)||hasCapability(currentCapabilities,"staff_manage");if(view==="access")return currentRole==="coordinator"||["logistics_admin","session_director"].includes(currentRole)||hasCapability(currentCapabilities,"access_admin");return false;};
   const effectiveActive=canOpen(active)?active:"overview";
 
   const reloadEligibility=async()=>{if(!live)return;setEligibilityMap(await loadParticipantEligibility(sessionInfo.id));markUpdated();};
@@ -163,19 +188,18 @@ export function App() {
 
   const fieldSummary={housingWaiting:operationalCheckedIds.filter(id=>!housingAssignments.some(item=>item.personType==="participant"&&item.personId===id)).length,housingUnassigned:hasCapability(currentCapabilities,"housing_view")?Math.max(0,operationalParticipants.length-housingAssignments.filter((item)=>item.personType==="participant").length):0,wellnessOpen:wellnessEncounters.filter((item)=>!item.closedAt).length,foodOpen:foodNeeds.filter((item)=>!item.acknowledged).length};
   const content=effectiveActive==="overview"?<Overview sessionId={sessionInfo?.id} currentRole={currentRole} currentUser={profile} headcount={headcount} setActive={navigate} imported={operationalParticipants} allParticipants={participants} cohort={cohort} assignment={assignment} pendingAccess={pendingAccess} birthdays={[...birthdays,...staffBirthdays]} live={live} companies={companies} checkedCount={operationalCheckedIds.length} sessionName={sessionName} capabilities={currentCapabilities} fieldSummary={fieldSummary}/>
-  :effectiveActive==="registration"?<Registration imported={participants} cohort={cohort} setImported={setImported} groups={assignment?.groups||[]} onApply={applyImport} onAdd={handleAddOnSite} onVerify={handleVerifyOnSite} onAssign={handleAssignParticipant} live={live} canManage={canImport} canAdd={!live||WHOLE_SESSION.has(currentRole)||hasCapability(currentCapabilities,"registration_manage")} canVerify={canManageAccess||hasCapability(currentCapabilities,"registration_manage")} sessionId={sessionInfo?.id} sessionName={sessionName} capabilities={currentCapabilities} onOperationalDataChanged={refreshOperationalIdentity}/>
+  :effectiveActive==="registration"?<Registration initialMode={workspaceContext.mode||"desk"} initialFilter={workspaceContext.filter||""} onNavigate={navigate} imported={participants} cohort={cohort} setImported={setImported} groups={assignment?.groups||[]} onApply={applyImport} onAdd={handleAddOnSite} onVerify={handleVerifyOnSite} onAssign={handleAssignParticipant} live={live} canManage={canImport} canAdd={!live||WHOLE_SESSION.has(currentRole)||hasCapability(currentCapabilities,"registration_manage")} canVerify={canManageAccess||hasCapability(currentCapabilities,"registration_manage")} sessionId={sessionInfo?.id} sessionName={sessionName} capabilities={currentCapabilities} onOperationalDataChanged={refreshOperationalIdentity}/>
   :effectiveActive==="people"?<People companyIds={ownCompanyIds} sessionId={sessionInfo?.id} participants={ownParticipants} cohort={summarizeCohort(ownParticipants,structureSettings)} assignment={assignment} canManage={canManageAccess} canManageAttendance={canManageAttendance} onSetAttendance={handleAttendance} structureSettings={structureSettings} selectedPersonId={selectedPersonId} onSelectPerson={(id)=>navigate("people",{personId:id})} onClearSelectedPerson={()=>navigate("people",{replace:true})} sessionName={sessionName}/>
-  :effectiveActive==="assignments"?<Assignments sessionId={sessionInfo?.id} canManage={canManageAccess||hasCapability(currentCapabilities,"staff_manage")} sessionName={sessionName}/>
-  :effectiveActive==="birthdays"?<Birthdays birthdays={birthdays} staffBirthdays={staffBirthdays} onSetAcknowledgement={handleBirthday} onSetStaffAcknowledgement={handleStaffBirthday} sessionName={sessionName}/>
+  :effectiveActive==="assignments"?<Assignments sessionId={sessionInfo?.id} canManage={canManageAccess||hasCapability(currentCapabilities,"staff_manage")} initialWorkspace={workspaceContext.tab||""} initialFilter={workspaceContext.filter||""} initialStaffId={workspaceContext.staffId||""} sessionName={sessionName}/>
+  :effectiveActive==="birthdays"?<Birthdays birthdays={birthdays} staffBirthdays={staffBirthdays} loading={workspaceHydrating} onSetAcknowledgement={handleBirthday} onSetStaffAcknowledgement={handleStaffBirthday} onOpenAssignment={(staffId)=>navigate({view:"assignments",tab:"people",staffId})} sessionName={sessionName}/>
   :effectiveActive==="groups"?<Groups companyIds={ownCompanyIds} participants={ownOperationalParticipants} assignment={assignment} onPublish={handlePublishGrouping} live={live} canManage={canManageAccess} sessionId={sessionInfo?.id} onNavigatePeople={()=>navigate("people")} onSettingsChange={setStructureSettings} sessionName={sessionName}/>
-  :effectiveActive==="checkin"?<Checkin participants={participants} cohort={cohort} checkedIds={operationalCheckedIds} onRecord={handleCheckin} onAddMissing={()=>navigate("registration")} live={live} canRecord={canRecordCheckin} groupsPublished={Boolean(assignment?.published)} structureSettings={structureSettings} sessionName={sessionName}/>
   :effectiveActive==="headcount"?(live?<HeadcountRoster sessionId={sessionInfo.id} sessionName={sessionName} currentRole={currentRole} capabilities={currentCapabilities} legacy={<Headcount live companies={companies} headcount={headcount} currentRole="committee_viewer" sessionName={sessionName}/>}/>:<Headcount live={live} companies={companies} headcount={headcount} currentRole={currentRole} onOpen={handleOpenHeadcount} onSubmit={handleHeadcountSubmit} sessionName={sessionName}/>)
-  :effectiveActive==="housing"?<Housing sessionId={sessionInfo?.id} participants={participants} capabilities={currentCapabilities} sessionName={sessionName}/>
+  :effectiveActive==="housing"?<Housing sessionId={sessionInfo?.id} participants={participants} capabilities={currentCapabilities} initialArea={workspaceContext.tab||""} initialFilter={workspaceContext.filter||""} sessionName={sessionName}/>
   :effectiveActive==="wellness"?<Wellness sessionId={sessionInfo?.id} participants={participants} capabilities={currentCapabilities} live={live} sessionName={sessionName}/>
-  :effectiveActive==="food"?<Food sessionId={sessionInfo?.id} capabilities={currentCapabilities} participants={participants} live={live} sessionName={sessionName}/>
-  :effectiveActive==="reports"?<Reports sessionId={sessionInfo?.id} sessionName={sessionName} capabilities={currentCapabilities} live={live}/>
+  :effectiveActive==="food"?<Food sessionId={sessionInfo?.id} capabilities={currentCapabilities} participants={participants} live={live} sessionName={sessionName} initialTab={workspaceContext.tab||""} initialFilter={workspaceContext.filter||""}/>
+  :effectiveActive==="reports"?<Reports sessionId={sessionInfo?.id} sessionName={sessionName} capabilities={currentCapabilities} currentRole={currentRole} live={live}/>
   :effectiveActive==="profile"?<Profile currentUser={live?profile:{user_id:"demo-fsy-kumasi-leader",display_name:"FSY Leader",email:"demo@example.org"}} currentRole={currentRole} grantedAccess={grantedAccess} companies={companyOptions} sessionInfo={sessionInfo} sessionName={sessionName} live={live} onSave={saveProfile} onChangePassword={changePassword} onSignOut={handleSignOut}/>
-  :<Access sessionId={sessionInfo?.id} onRefreshRoster={async()=>setAccessRoster(await loadAccessRosterV2(sessionInfo.id))} requests={accessRequests} setRequests={setAccessRequests} invites={leaderInvites} currentRole={currentRole} currentCapabilities={currentCapabilities} onDecision={handleAccessDecision} onCreateInvite={handleCreateInvite} onRevokeInvite={handleRevokeInvite} onCreateRecovery={handleRecoveryCode} onManageLeaderAccess={handleManageLeaderAccess} roster={live?accessRoster:undefined} companies={companyOptions} teams={teamCatalog} live={live} sessionName={sessionName}/>;
+  :<Access initialFilter={workspaceContext.filter||""} sessionId={sessionInfo?.id} onRefreshRoster={async()=>setAccessRoster(await loadAccessRosterV2(sessionInfo.id))} requests={accessRequests} setRequests={setAccessRequests} invites={leaderInvites} currentRole={currentRole} currentCapabilities={currentCapabilities} onDecision={handleAccessDecision} onCreateInvite={handleCreateInvite} onRevokeInvite={handleRevokeInvite} onCreateRecovery={handleRecoveryCode} onManageLeaderAccess={handleManageLeaderAccess} roster={live?accessRoster:undefined} companies={companyOptions} teams={teamCatalog} live={live} sessionName={sessionName}/>;
 
-  return <AppShell active={effectiveActive} setActive={navigate} attentionCount={pendingAccess} currentUser={live?profile:{user_id:"demo-fsy-kumasi-leader",display_name:"FSY Leader",email:"demo@example.org"}} currentRole={currentRole} currentCapabilities={currentCapabilities} sessionInfo={sessionInfo} sessions={activeSessions} selectedSessionId={sessionInfo?.id||selectedSessionId} onSessionChange={live?handleSessionChange:undefined} onSignOut={live?handleSignOut:undefined} syncError={live?runtimeError:""} lastUpdatedAt={lastUpdatedAt} onRefresh={()=>hydrateLive(authSession,sessionInfo?.id||"",{reason:"manual-refresh"})}>{content}</AppShell>;
+  return <AppShell active={effectiveActive} setActive={navigate} attentionCount={pendingAccess} currentUser={live?profile:{user_id:"demo-fsy-kumasi-leader",display_name:"FSY Leader",email:"demo@example.org"}} currentRole={currentRole} currentCapabilities={currentCapabilities} sessionInfo={sessionInfo} sessions={activeSessions} selectedSessionId={sessionInfo?.id||selectedSessionId} onSessionChange={live?handleSessionChange:undefined} onSignOut={live?handleSignOut:undefined} syncError={live?runtimeError:""} lastUpdatedAt={lastUpdatedAt} onRefresh={()=>hydrateLive(authSession,sessionInfo?.id||"",{reason:"manual-refresh",blocking:false})}>{content}</AppShell>;
 }

@@ -1,7 +1,7 @@
 const WHOLE_SESSION = new Set(["coordinator", "logistics_admin", "session_director"]);
 const n = (value) => Number(value || 0);
 const plural = (count, one, many = `${one}s`) => count === 1 ? one : many;
-function task(id, title, detail, action, priority, tone = "default") { return { id, title, detail, action, priority, tone }; }
+function task(destination, title, detail, action, priority, tone = "default") { const normalized = typeof destination === "string" ? { view: destination } : destination; return { id: normalized.view, destination: normalized, title, detail, action, priority, tone }; }
 
 export function buildOperationalInbox({ role, capabilities = [], summary = {} }) {
   const has = (key) => capabilities.includes(key);
@@ -26,10 +26,10 @@ export function buildOperationalInbox({ role, capabilities = [], summary = {} })
   const headcountAccess = whole || has("headcount_view") || has("headcount_record");
 
   const pendingId = n(registration.onSitePendingId);
-  if (registrationAccess && pendingId) tasks.push(task("registration", `${pendingId} on-site ${plural(pendingId,"participant")} need ${plural(pendingId,"an FSY ID","FSY IDs")}`, "Finish identity before check-in so the participant can continue through the normal arrival flow.", "Resolve registration", 100, "urgent"));
+  if (registrationAccess && pendingId) tasks.push(task({view:"registration",mode:"roster",filter:"needs_help"}, `${pendingId} on-site ${plural(pendingId,"participant")} need ${plural(pendingId,"an FSY ID","FSY IDs")}`, "Finish identity before check-in so the participant can continue through the normal arrival flow.", "Resolve registration", 100, "urgent"));
 
   const otherRegistrationAttention = Math.max(0, n(registration.attention) - pendingId);
-  if (registrationAccess && otherRegistrationAttention) tasks.push(task("registration", `${otherRegistrationAttention} registration ${plural(otherRegistrationAttention,"record")} need attention`, "Verification, eligibility or placement is stopping these participants from checking in.", "Review registration", 96, "attention"));
+  if (registrationAccess && otherRegistrationAttention) tasks.push(task({view:"registration",mode:"roster",filter:"needs_help"}, `${otherRegistrationAttention} registration ${plural(otherRegistrationAttention,"record")} need attention`, "Verification, eligibility or placement is stopping these participants from checking in.", "Review registration", 96, "attention"));
 
   const headcountOpen = Boolean(headcount.roundId) && !headcount.closesAt;
   const missing = n(headcount.missing); const unresolved = n(headcount.unresolved); const elsewhere = n(headcount.knownElsewhere || headcount.known_elsewhere);
@@ -43,19 +43,19 @@ export function buildOperationalInbox({ role, capabilities = [], summary = {} })
   if (wellnessAccess && openWellness) tasks.push(task("wellness", `${openWellness} ${plural(openWellness,"person is","people are")} at Wellness`, "Review the active queue and any follow-up that still needs attention.", "Open Wellness", 90, "urgent"));
 
   const waitingRooms = n(housing.waiting);
-  if (housingAccess && waitingRooms) tasks.push(task("housing", `${waitingRooms} checked-in ${plural(waitingRooms,"participant")} waiting for a room`, "Registration is complete for them. Housing is the next handoff.", "Assign rooms", 88, "attention"));
+  if (housingAccess && waitingRooms) tasks.push(task({view:"housing",tab:"arrivals",filter:"waiting"}, `${waitingRooms} checked-in ${plural(waitingRooms,"participant")} waiting for a room`, "Registration is complete for them. Housing is the next handoff.", "Assign rooms", 88, "attention"));
 
   const ready = n(registration.ready);
-  if (registrationAccess && ready) tasks.push(task("registration", `${ready} ${plural(ready,"participant")} ready to check in`, n(session.recentArrivals) ? `${n(session.recentArrivals)} checked in during the last 15 minutes.` : "Open the live desk and keep arrivals moving.", "Open check-in desk", 84, "positive"));
+  if (registrationAccess && ready) tasks.push(task({view:"registration",mode:"desk",filter:"ready"}, `${ready} ${plural(ready,"participant")} ready to check in`, n(session.recentArrivals) ? `${n(session.recentArrivals)} checked in during the last 15 minutes.` : "Open the live desk and keep arrivals moving.", "Open check-in desk", 84, "positive"));
 
   const uncovered = n(scope.uncoveredGroups);
-  if ((whole || role === "assistant_coordinator") && uncovered) tasks.push(task("groups", `${uncovered} counselor ${plural(uncovered,"group")} uncovered`, role === "assistant_coordinator" ? `A group${singleCompany ? ` in ${singleCompany}` : " in your companies"} does not have a counselor assigned.` : "Counselor coverage needs attention before the next participant activity.", "Review structure", 76, "attention"));
+  if ((whole || role === "assistant_coordinator") && uncovered) tasks.push(task({view:"assignments",tab:"groups",filter:"needs"}, `${uncovered} counselor ${plural(uncovered,"group")} uncovered`, role === "assistant_coordinator" ? `A group${singleCompany ? ` in ${singleCompany}` : " in your companies"} does not have a counselor assigned.` : "Counselor coverage needs attention before the next participant activity.", "Review structure", 76, "attention"));
 
   const dietaryOpen = n(food.dietaryOpen);
-  if (has("food_view") && dietaryOpen) tasks.push(task("food", `${dietaryOpen} dietary ${plural(dietaryOpen,"need")} to review`, "Only responses that appear to contain an actual dietary need are included.", "Review dietary needs", 65, "attention"));
+  if (has("food_view") && dietaryOpen) tasks.push(task({view:"food",tab:"dietary",filter:"needs"}, `${dietaryOpen} dietary ${plural(dietaryOpen,"need")} to review`, "Only responses that appear to contain an actual dietary need are included.", "Review dietary needs", 65, "attention"));
 
   const accessPending = n(access.pending);
-  if ((whole || has("access_admin")) && accessPending) tasks.push(task("access", `${accessPending} access ${plural(accessPending,"invite or request","invites or requests")} waiting`, "Finish account setup or review pending access when useful.", "Open Access", 55, "calm"));
+  if ((whole || has("access_admin")) && accessPending) tasks.push(task({view:"access",filter:"needs"}, `${accessPending} access ${plural(accessPending,"invite or request","invites or requests")} waiting`, "Finish account setup or review pending access when useful.", "Open Access", 55, "calm"));
 
   const mealRemaining = n(food.remaining);
   if (foodAccess && food.serviceStatus === "open" && mealRemaining) tasks.push(task("food", `${food.serviceLabel || "Meal service"} is in progress`, `${n(food.served).toLocaleString()} served · ${mealRemaining.toLocaleString()} remaining in your scope.`, "Continue serving", 42, "calm"));

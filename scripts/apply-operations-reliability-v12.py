@@ -511,8 +511,8 @@ replace_once(
 )
 replace_once(
     "src/lib/field-operations.js",
-    'company: row.company_name || "",\n    acknowledged:',
-    'company: row.company_name || "",\n    companyNames: row.company_names || (row.company_name ? [row.company_name] : []),\n    group: row.group_name || "",\n    acknowledged:'
+    'staffRole: row.staff_role || "counselor",\n    company: row.company_name || "",\n    acknowledged:',
+    'staffRole: row.staff_role || "counselor",\n    company: row.company_name || "",\n    companyNames: row.company_names || (row.company_name ? [row.company_name] : []),\n    group: row.group_name || "",\n    acknowledged:'
 )
 replace_once("src/pages/Birthdays.jsx", 'function BirthdayPerson({ person, busy, onUpdate }) {', 'function BirthdayPerson({ person, busy, onUpdate, onOpenAssignment }) {')
 replace_once(

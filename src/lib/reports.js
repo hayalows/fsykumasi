@@ -5,7 +5,7 @@ function client() {
   return supabase;
 }
 
-const general = (capabilities = []) => capabilities.includes("reports_export");
+const general = (capabilities = [], role = "") => capabilities.includes("reports_export") || role === "assistant_coordinator";
 const any = (capabilities = [], keys = []) => keys.some((key) => capabilities.includes(key));
 
 export const REPORT_DEFINITIONS = [
@@ -94,7 +94,7 @@ export const REPORT_DEFINITIONS = [
     title: "Housing Occupancy",
     description: "Room-by-room occupants, bed/key labels and participant check-in state.",
     category: "Daily operations",
-    available: (caps) => any(caps, ["housing_export", "reports_export"]),
+    available: (caps, role) => any(caps, ["housing_export", "reports_export"]) || role === "assistant_coordinator",
     columns: [["building","Building","text"],["room","Room","text"],["bed_key","Bed / key","text"],["person_type","Type","text"],["fsy_id","FSY ID","text"],["name","Name","text"],["sex","Sex","text"],["company","Company","text"],["counselor_group","Counselor group","text"],["checkin_status","Check-in","text"]],
   },
   {
@@ -102,7 +102,7 @@ export const REPORT_DEFINITIONS = [
     title: "Meal Attendance",
     description: "Meal-service summary plus the individual attendance trail for Food operations.",
     category: "Daily operations",
-    available: (caps) => caps.includes("food_export"),
+    available: (caps, role) => caps.includes("food_export") || role === "assistant_coordinator",
     columns: [["service_date","Date","date"],["meal","Meal","text"],["service_status","Service status","text"],["fsy_id","FSY ID","text"],["name","Name","text"],["person_type","Type","text"],["company","Company","text"],["counselor_group","Counselor group","text"],["served_at","Served at","datetime"],["recorded_by","Recorded by","text"]],
   },
   {
@@ -133,8 +133,8 @@ export const REPORT_DEFINITIONS = [
   },
 ];
 
-export function getAvailableReports(capabilities = []) {
-  return REPORT_DEFINITIONS.filter((report) => report.available(capabilities));
+export function getAvailableReports(capabilities = [], role = "") {
+  return REPORT_DEFINITIONS.filter((report) => report.available(capabilities, role));
 }
 
 export function getReportDefinition(key) {

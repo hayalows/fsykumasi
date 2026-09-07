@@ -51,5 +51,5 @@ test("Registration workspace copy stays concise and the focused flow layer loads
   const v7 = main.indexOf('import "./registration-flow-v7.css";');
   assert.ok(v6 > modal, "Registration desk refinements should load after modal and legacy workspace layers");
   assert.ok(v7 > v6, "focused mobile flow refinements should load after desk refinements");
-  assert.match(sw, /fsy-kumasi-shell-v33/);
+  assert.match(sw, /fsy-kumasi-shell-v34/);
 });

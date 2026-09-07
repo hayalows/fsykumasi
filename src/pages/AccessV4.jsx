@@ -32,12 +32,12 @@ function RequestReview({ request, onClose, onDecision }) {
 
 export function createInitialAccessRequests() { return demoAccessRequests; }
 
-export function Access({ requests = [], invites = [], currentRole = "logistics_admin", currentCapabilities = [], onDecision, onRefreshRoster, onCreateInvite, onRevokeInvite, onCreateRecovery, roster = demoUsers, teams = [], sessionId: requestedSessionId = "", live = false, sessionName }) {
+export function Access({ initialFilter = "", requests = [], invites = [], currentRole = "logistics_admin", currentCapabilities = [], onDecision, onRefreshRoster, onCreateInvite, onRevokeInvite, onCreateRecovery, roster = demoUsers, teams = [], sessionId: requestedSessionId = "", live = false, sessionName }) {
   const [sessionId, setSessionId] = useState(requestedSessionId);
   const [directory, setDirectory] = useState(live ? [] : demoDirectory());
   const [activityByUser, setActivityByUser] = useState(new Map());
   const [onlineUserIds, setOnlineUserIds] = useState(new Set());
-  const [filter, setFilter] = useState("needs");
+  const [filter, setFilter] = useState(FILTERS.some(([key]) => key === initialFilter) ? initialFilter : "needs");
   const [query, setQuery] = useState("");
   const [setupTarget, setSetupTarget] = useState(null);
   const [teamTarget, setTeamTarget] = useState(null);
@@ -66,6 +66,8 @@ export function Access({ requests = [], invites = [], currentRole = "logistics_a
 
   useEffect(() => { if (!live) return; (requestedSessionId ? Promise.resolve(requestedSessionId) : resolveCurrentAccessSessionId()).then((id) => { setSessionId(id); return refresh(id); }).catch((err) => setError(err.message || "Website access could not be loaded.")); }, [live, requestedSessionId]);
   useEffect(() => live && sessionId ? subscribeSessionPresence(sessionId, setOnlineUserIds) : undefined, [live, sessionId]);
+
+  useEffect(() => { if (FILTERS.some(([key]) => key === initialFilter)) setFilter(initialFilter); }, [initialFilter]);
 
   const counts = useMemo(() => ({ needs: directory.filter(needsSetup).length, invited: directory.filter((item) => item.accessState === "invited").length, active: directory.filter((item) => item.accessState === "active").length, disabled: directory.filter((item) => item.accessState === "disabled").length, all: directory.length }), [directory]);
   const shown = useMemo(() => { const text = query.trim().toLowerCase(); return directory.filter((item) => (filter === "all" || (filter === "needs" ? needsSetup(item) : item.accessState === filter)) && (!text || `${item.name} ${item.email} ${item.accountEmail} ${staffRoleLabel(item.operationalRole)} ${(item.companyNames || []).join(" ")}`.toLowerCase().includes(text))); }, [directory, filter, query]);

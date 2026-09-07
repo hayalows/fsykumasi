@@ -58,13 +58,13 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
     const canCheckin = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"checkin_record");
     const canRegistration = WHOLE_SESSION.has(currentRole) || has(currentCapabilities,"registration_view") || has(currentCapabilities,"registration_manage");
     const canHeadcount = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"headcount_view") || has(currentCapabilities,"headcount_record");
-    const canReports = REPORT_CAPABILITIES.some((capability) => has(currentCapabilities, capability));
+    const canReports = currentRole === "assistant_coordinator" || REPORT_CAPABILITIES.some((capability) => has(currentCapabilities, capability));
     const canHousing = has(currentCapabilities,"housing_view");
     const canWellness = has(currentCapabilities,"wellness_private") || has(currentCapabilities,"wellness_status");
     const canFood = has(currentCapabilities,"food_view") || has(currentCapabilities,"meal_attendance_view");
 
     const overview = ["overview","Overview",SquaresFour];
-    const registration = canRegistration ? ["registration","Registration & check-in",IdentificationCard] : canCheckin ? ["checkin","Check-in",CheckCircle] : null;
+    const registration = canRegistration || canCheckin ? ["registration", canRegistration ? "Registration & check-in" : "Check-in", IdentificationCard] : null;
     const headcount = canHeadcount ? ["headcount","Head count",ClipboardText] : null;
     const groups = canGroups ? ["groups", currentRole === "assistant_coordinator" ? "My company" : "Groups & companies",Buildings] : null;
     const people = canPeople ? ["people","People",UsersThree] : null;
