@@ -29,9 +29,9 @@ test("mobile registration is full-screen and keeps mutation outcomes in view", a
 
 test("Housing is queue-first while mobile navigation separates people from rooms", async () => {
   const [housing, assignment, css] = await Promise.all([
-    read("src/pages/HousingV5.jsx"),
+    read("src/pages/HousingV6.jsx"),
     read("src/pages/HousingAssignmentV5.jsx"),
-    read("src/housing-operations-v5.css"),
+    read("src/housing-ux-v14.css"),
   ]);
   assert.match(housing, /Live from Registration/);
   assert.ok(housing.indexOf("housing-v5-people") < housing.indexOf("housing-v5-rooms"), "arrival work should appear before room browsing in the source order");
@@ -40,8 +40,8 @@ test("Housing is queue-first while mobile navigation separates people from rooms
   assert.match(assignment, /sameGroup/);
   assert.match(assignment, /Keeps group together/);
   assert.match(assignment, /Nothing is saved until you confirm/);
-  assert.match(css, /\.housing-v5-mobile-tabs \{ display: grid/);
-  assert.match(css, /\.housing-v5-panel\.mobile-hidden \{ display: none; \}/);
+  assert.match(css, /\.housing-v6-workspace-switch/);
+  assert.match(css, /\.housing-v6-layout > \.mobile-hidden[\s\S]*display: none !important/);
 });
 
 test("mobile navigation keeps responsibility-first destinations stable", async () => {
@@ -62,6 +62,7 @@ test("new field-workflow styles load last and ship with the current PWA shell", 
   assert.ok(main.indexOf('import "./housing-operations-v5.css";') > main.indexOf('import "./housing-assignment-v4.css";'));
   assert.ok(main.indexOf('import "./housing-room-action-v8.css";') > main.indexOf('import "./housing-operations-v5.css";'));
   assert.ok(main.indexOf('import "./registration-flow-v7.css";') > main.indexOf('import "./registration-checkin-v6.css";'));
-  assert.match(sw, /fsy-kumasi-shell-v35/);
-  assert.match(housingExport, /HousingV5/);
+  assert.ok(main.indexOf('import "./housing-ux-v14.css";') > main.indexOf('import "./housing-ux-v13.css";'));
+  assert.match(sw, /fsy-kumasi-shell-v36/);
+  assert.match(housingExport, /HousingV6/);
 });

@@ -1,5 +1,5 @@
-const CACHE_NAME = "fsy-kumasi-shell-v35";
-// Release marker: Housing UX v13 with stable field labels, adaptive room cards, two-level mobile navigation and single-scroll sheets.
+const CACHE_NAME = "fsy-kumasi-shell-v36";
+// Release marker: Housing workflow v14 with fast People/Rooms switching, room-first assignment and sex-aware availability.
 // Production deployment marker: v33 connected leader setup, retried after quota reset.
 const CORE_ASSETS = [
   "/",

@@ -46,8 +46,8 @@ test("Overview actions carry exact destinations", () => {
   assert.match(inbox,/view:"housing",tab:"arrivals",filter:"waiting"/); assert.match(inbox,/view:"registration",mode:"desk",filter:"ready"/); assert.match(inbox,/view:"assignments",tab:"groups",filter:"needs"/); assert.match(overview,/primary\.destination/);
 });
 
-test("v34 shell and final responsive reliability CSS are wired last", () => {
-  assert.match(read("public/sw.js"),/fsy-kumasi-shell-v35/); assert.match(read("src/main.jsx"),/operations-reliability-v12\.css/);
+test("reliability safeguards remain wired under the current shell", () => {
+  assert.match(read("public/sw.js"),/fsy-kumasi-shell-v36/); assert.match(read("src/main.jsx"),/operations-reliability-v12\.css/);
 });
 
 
