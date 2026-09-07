@@ -11,13 +11,13 @@ const accessWrapper = read("src/pages/Access.jsx");
 const assignmentsPage = read("src/pages/AssignmentsV3.jsx");
 const assignmentsWrapper = read("src/pages/Assignments.jsx");
 const leaderSetup = read("src/components/LeaderSetupFlow.jsx");
-const committeeSetup = read("src/components/CommitteeAccessSetup.jsx");
 const roleTransitionSheet = read("src/components/StaffRoleTransitionSheet.jsx");
 const staffClient = read("src/lib/staff-access.js");
 const operationsClient = read("src/lib/operations.js");
 const presenceClient = read("src/lib/presence.js");
 const appShell = read("src/components/AppShell.jsx");
 const v12Styles = read("src/access-assignments-v12.css");
+const v15Styles = read("src/access-assignments-v15.css");
 const mainEntry = read("src/main.jsx");
 
  test("staff assignment remains authoritative while website identity is explicitly linked", () => {
@@ -44,24 +44,26 @@ test("Assistant Coordinator company scope is server protected and synchronized",
   assert.match(staffClient, /set_assistant_coordinator_companies/);
 });
 
-test("one leader setup flow can create responsibility, company scope and website invite without page switching", () => {
+test("one invitation flow covers leaders and committee members without changing the assignment/access boundary", () => {
+  assert.match(leaderSetup, /STAFF_ROLE_OPTIONS/);
+  assert.match(leaderSetup, /committee_viewer/);
   assert.match(leaderSetup, /createManualStaffLeader/);
   assert.match(leaderSetup, /setAssistantCoordinatorCompanies/);
   assert.match(leaderSetup, /createStaffLeaderInvite/);
-  assert.match(leaderSetup, /One connected setup/);
-  assert.match(leaderSetup, /Nothing else is needed on another page/);
-  assert.match(leaderSetup, /Assignments and Access stay synchronized/);
+  assert.match(leaderSetup, /onCreateCommitteeInvite/);
+  assert.match(leaderSetup, /Access follows responsibility/);
   assert.match(leaderSetup, /Use balanced suggestion/);
-  assert.match(leaderSetup, /Finish setup/);
+  assert.match(leaderSetup, /Nothing else is needed on another page/);
 });
 
-test("active Access uses the connected setup flow instead of routing people to Assignments", () => {
+test("active Access uses one invitation entry point and keeps responsibility visible", () => {
   assert.match(accessWrapper, /AccessV4/);
   assert.match(accessPage, /LeaderSetupFlow/);
-  assert.match(accessPage, /Add & set up leader/);
-  assert.match(accessPage, /Finish setup/);
-  assert.match(accessPage, /Give access/);
-  assert.match(accessPage, /Needs setup/);
+  assert.match(accessPage, /Invite someone/);
+  assert.match(accessPage, /Committee member/);
+  assert.match(accessPage, /committeeNames/);
+  assert.match(accessPage, /Name, email, role, company or committee/);
+  assert.match(accessPage, /Needs action/);
   assert.doesNotMatch(accessPage, /goToAssignments/);
   assert.doesNotMatch(accessPage, /Open Assignments/);
   assert.doesNotMatch(accessPage, /StaffAccessInvite/);
@@ -69,12 +71,14 @@ test("active Access uses the connected setup flow instead of routing people to A
 
 test("Access keeps secondary and destructive account actions progressive", () => {
   assert.match(accessPage, /className="staff-access-more"/);
+  assert.match(accessPage, /Edit committees/);
   assert.match(accessPage, /Committee tools/);
   assert.match(accessPage, /Recovery/);
   assert.match(accessPage, /Disable sign-in/);
   assert.match(accessPage, /ConfirmActionSheet/);
   assert.match(accessPage, /ActionToast/);
-  assert.match(accessPage, /Revoke invite/);
+  assert.match(accessPage, /Cancel invite/);
+  assert.match(accessPage, /Invite cancelled for/);
 });
 
 test("Access still shows optional sign-in recency and authenticated private presence", () => {
@@ -85,32 +89,37 @@ test("Access still shows optional sign-in recency and authenticated private pres
   assert.match(appShell, /trackSessionPresence\(sessionInfo\.id, userId\)/);
 });
 
-test("committee-only website access stays a separate narrow flow", () => {
-  assert.match(accessPage, /Committee & older accounts/);
-  assert.match(committeeSetup, /Website-only access/);
-  assert.match(committeeSetup, /role: "committee_viewer"/);
-  assert.match(committeeSetup, /does not create or change an FSY staff assignment/);
+test("committee website access is part of the main directory instead of a separate primary flow", () => {
+  assert.match(accessPage, /committeeActive/);
+  assert.match(accessPage, /committeePending/);
+  assert.match(accessPage, /allowCommittee=\{canInviteCommittee\}/);
+  assert.match(accessPage, /Edit committees/);
+  assert.doesNotMatch(accessPage, /Committee & older accounts/);
+  assert.match(accessPage, /Older & unmatched access/);
 });
 
-test("active Assignments keeps three workspaces but can finish account setup in context", () => {
+test("active Assignments keeps three workspaces and links unfinished website work to Access", () => {
   assert.match(assignmentsWrapper, /AssignmentsV3/);
   assert.match(assignmentsPage, /value: "people", label: "People"/);
   assert.match(assignmentsPage, /value: "groups", label: "Counselor groups"/);
   assert.match(assignmentsPage, /value: "companies", label: "Companies"/);
   assert.match(assignmentsPage, /LeaderSetupFlow/);
   assert.match(assignmentsPage, /Add & set up leader/);
-  assert.match(assignmentsPage, /Set up access/);
+  assert.match(assignmentsPage, /Website access/);
+  assert.match(assignmentsPage, /goToAccess/);
+  assert.match(assignmentsPage, /Open Access/);
+  assert.match(assignmentsPage, /Committee access is managed in Access/);
   assert.match(assignmentsPage, /accessStateLabel/);
-  assert.doesNotMatch(assignmentsPage, /goToAccess/);
-  assert.doesNotMatch(assignmentsPage, /Open Access/);
 });
 
 test("Assignments remains gap-first and deterministic for suggested coverage", () => {
   assert.match(assignmentsPage, /useState\("needs"\)/);
   assert.match(assignmentsPage, /Needs Counselor/);
-  assert.match(assignmentsPage, /Needs AC/);
+  assert.match(assignmentsPage, /Assistant Coordinator/);
   assert.match(assignmentsPage, /Suggest coverage/);
+  assert.match(assignmentsPage, /Review before applying/);
   assert.match(assignmentsPage, /Nothing changes until you apply it/);
+  assert.match(assignmentsPage, /suggestionRows/);
   assert.doesNotMatch(assignmentsPage, /Math\.random/);
 });
 
@@ -122,10 +131,12 @@ test("role changes remain one atomic guided transition", () => {
   assert.match(roleTransitionSheet, /Website access follows the assignment/);
 });
 
-test("v12 is loaded last and gives mobile leader setup one safe scroll surface with persistent actions", () => {
+test("v15 loads after the established mobile setup layer and keeps safe responsive actions", () => {
   const v11 = mainEntry.indexOf('import "./access-assignments-v11.css";');
   const v12 = mainEntry.indexOf('import "./access-assignments-v12.css";');
+  const v15 = mainEntry.indexOf('import "./access-assignments-v15.css";');
   assert.ok(v12 > v11);
+  assert.ok(v15 > v12);
   assert.match(v12Styles, /@media\(max-width:760px\)/);
   assert.match(v12Styles, /height:calc\(100dvh - max\(8px,env\(safe-area-inset-top\)\)\)/);
   assert.match(v12Styles, /env\(safe-area-inset-bottom\)/);
@@ -133,4 +144,7 @@ test("v12 is loaded last and gives mobile leader setup one safe scroll surface w
   assert.match(v12Styles, /min-height:48px/);
   assert.match(v12Styles, /leader-setup-footer/);
   assert.match(v12Styles, /overflow:auto/);
+  assert.match(v15Styles, /leader-setup-role-options/);
+  assert.match(v15Styles, /assignments-v15-quick/);
+  assert.match(v15Styles, /@media\(max-width:760px\)/);
 });
