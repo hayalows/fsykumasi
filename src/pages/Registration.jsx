@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Registration as RegistrationLegacy } from "./RegistrationLegacy.jsx";
+import { RegistrationFinalBaselineV21 } from "./RegistrationFinalBaselineV21.jsx";
 import { RegistrationReviewInbox } from "./RegistrationReviewInbox.jsx";
 import { IdentityFoundation } from "./RegistrationOperationsV2.jsx";
 import { RegistrationJourney } from "./RegistrationJourney.jsx";
@@ -25,7 +26,7 @@ const MODE_META = {
   setup: {
     phase: "Before session",
     title: "Prepare",
-    help: "Prepare registration data, FSY IDs and review items before the arrival queue starts.",
+    help: "Set the final roster baseline first, then build the real session structure and prepare FSY IDs.",
   },
 };
 
@@ -34,7 +35,7 @@ export function Registration(props) {
   const canUseRegistrationTools = capabilities.includes("registration_view") || capabilities.includes("registration_manage") || !live;
   const normalizedMode = canUseRegistrationTools && ["desk","roster","setup"].includes(initialMode) ? initialMode : "desk";
   const [mode, setMode] = useState(normalizedMode);
-  const [setupMode, setSetupMode] = useState("registration");
+  const [setupMode, setSetupMode] = useState("final");
   const [structureSettings, setStructureSettings] = useState(DEFAULT_STRUCTURE_SETTINGS);
   useEffect(() => { setMode(normalizedMode); }, [normalizedMode]);
   const chooseMode = (next) => { setMode(next); onNavigate?.({ view: "registration", mode: next, filter: "" }); };
@@ -59,7 +60,7 @@ export function Registration(props) {
   const cohortSummary = props.cohort;
   const modeMeta = MODE_META[mode];
 
-  return <div className="registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10">
+  return <div className="registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21">
     <section className="page registration-workspace-intro registration-workspace-intro-v5 registration-unified-intro">
       <PageHead
         title="Registration & check-in"
@@ -97,12 +98,14 @@ export function Registration(props) {
             value={setupMode}
             onChange={setSetupMode}
             options={[
+              { value: "final", label: "Final roster", id: "registration-setup-final" },
               { value: "registration", label: "Registration source", id: "registration-setup-source" },
               { value: "identity", label: "FSY IDs", id: "registration-setup-identity" },
               { value: "review", label: "Review", count: cohortSummary?.reviewExceptions || 0, id: "registration-setup-review" },
             ]}
           />
         </div>
+        {setupMode === "final" ? <RegistrationFinalBaselineV21 sessionId={sessionId} canManage={props.canManage} setImported={props.setImported} onChanged={onOperationalDataChanged} onNavigate={onNavigate}/> : null}
         {setupMode === "registration" ? <RegistrationLegacy {...props} imported={operationallyMapped} sessionName={sessionName}/> : null}
         {setupMode === "identity" ? <IdentityFoundation sessionId={sessionId} capabilities={capabilities} onChanged={onOperationalDataChanged}/> : null}
         {setupMode === "review" ? <RegistrationReviewInbox {...props} structureSettings={structureSettings} sessionName={sessionName}/> : null}
