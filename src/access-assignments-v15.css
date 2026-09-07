@@ -1,0 +1,128 @@
+/* Access + Assignments v15
+   One invitation journey, visible committee scope, transient feedback, and task-first assignment shortcuts. */
+.access-v15,.assignments-v15{max-width:1220px;margin-inline:auto}
+
+/* Access: the directory is now the single place to understand who can sign in and why. */
+.access-v15 .page-head p{max-width:700px}
+.access-v15 .access-v4-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+.access-v15 .access-v4-tools,.access-v15 .access-v4-tools>*{min-width:0}
+.access-v15 .access-v4-row{grid-template-columns:minmax(230px,1.15fr) minmax(220px,1fr) minmax(165px,.72fr) auto}
+.access-v15 .access-v4-directory-head{align-items:center}
+.access-v15 .access-v4-directory-head>p{white-space:nowrap}
+.access-v15 .access-v4-row.is-committee{background:linear-gradient(90deg,rgba(0,81,117,.024),transparent 55%)}
+.access-v15 .access-v4-row.is-committee:hover{background:linear-gradient(90deg,rgba(0,81,117,.045),rgba(0,81,117,.012) 70%)}
+.access-v15-team-chips{display:flex;gap:5px;flex-wrap:wrap;min-width:0}
+.access-v15-team-chips i{display:inline-flex;min-height:27px;align-items:center;padding:4px 8px;border:1px solid rgba(0,81,117,.11);border-radius:999px;background:rgba(0,81,117,.055);color:var(--blue-35);font-size:11px;font-style:normal;font-weight:750;line-height:1.2;overflow-wrap:anywhere}
+.access-v15 .access-v4-scope>small{color:#6b7d84}
+.access-v15 .status.neutral{border-color:#dce5e8;background:#f3f6f7;color:#53666d}
+.access-v15 .status.neutral i{background:#7d9097}
+.access-v15 .status.warn{border-color:#efd49a;background:#fff7e8;color:#7a5515}
+.access-v15 .status.warn i{background:#c0831e}
+.access-v15 .status.good{border-color:#cee3c4;background:#edf7e8;color:#356424}
+.access-v15 .status.good i{background:#5f8f42}
+.access-v15 .account-activity.waiting{white-space:normal;line-height:1.3}
+.access-v15 .staff-access-more>summary{border:1px solid transparent}
+.access-v15 .staff-access-more[open]>summary{border-color:var(--line);background:#fff}
+.access-v15-legacy{margin-top:1px}
+.access-v15-legacy>summary{min-height:58px;padding:0 16px;display:flex;align-items:center;cursor:pointer;list-style:none}
+.access-v15-legacy>summary::-webkit-details-marker{display:none}
+.access-v15-legacy>summary>span{display:grid;gap:3px}
+.access-v15-legacy>summary small{color:var(--muted);font-weight:500}
+
+/* Role selection is a recognition task, not a memorized dropdown. */
+.leader-setup-v15 .leader-setup-role-field{display:grid;gap:7px}
+.leader-setup-v15 .leader-setup-role-field>span{font-size:12px;font-weight:750}
+.leader-setup-v15 .leader-setup-role-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.leader-setup-v15 .leader-setup-role-options>button{min-width:0;min-height:72px;padding:11px 12px;border:1px solid rgba(0,0,0,.08);border-radius:13px;background:#fff;color:inherit;display:grid;grid-template-columns:minmax(0,1fr) 18px;gap:10px;align-items:center;text-align:left;cursor:pointer}
+.leader-setup-v15 .leader-setup-role-options>button:hover{border-color:rgba(0,81,117,.24);background:rgba(0,81,117,.02)}
+.leader-setup-v15 .leader-setup-role-options>button.selected{border-color:rgba(0,81,117,.45);box-shadow:inset 0 0 0 1px rgba(0,81,117,.25);background:rgba(0,81,117,.045)}
+.leader-setup-v15 .leader-setup-role-options>button>span{min-width:0;display:grid;gap:3px}
+.leader-setup-v15 .leader-setup-role-options b{font-size:12.5px;color:var(--blue-35)}
+.leader-setup-v15 .leader-setup-role-options small{font-size:10.5px;color:var(--muted);line-height:1.35;overflow-wrap:anywhere}
+.leader-setup-v15 .leader-setup-role-options i{width:16px;height:16px;border:1.5px solid #afbec3;border-radius:50%;display:grid;place-items:center}
+.leader-setup-v15 .leader-setup-role-options button.selected i{border:5px solid var(--blue-35)}
+.leader-setup-v15 .required-hint{margin-left:5px;color:#7a5515;font-size:10px;font-weight:700}
+.leader-setup-v15 .leader-setup-committee-choice{display:grid;gap:8px}
+.leader-setup-v15 .account-choice-list-v2{max-height:295px;overflow:auto;overscroll-behavior:contain;padding:1px}
+.leader-setup-v15 .account-choice-v2{background:#fff}
+.leader-setup-v15 .mutation-feedback{margin-top:-3px}
+
+/* Assignments: surface the next problem instead of making admins hunt through tabs. */
+.assignments-v15-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.assignments-v15-quick>button{min-width:0;min-height:92px;padding:12px 13px;border:1px solid var(--line);border-radius:14px;background:#fff;color:inherit;display:grid;align-content:center;gap:3px;text-align:left;cursor:pointer;transition:border-color .15s var(--fsy-ease),background-color .15s var(--fsy-ease),transform .12s var(--fsy-ease)}
+.assignments-v15-quick>button:hover{border-color:#b8d7e2;background:var(--surface-soft)}
+.assignments-v15-quick>button:active{transform:scale(.994)}
+.assignments-v15-quick>button.needs{border-color:rgba(224,165,72,.35);background:#fffdf8}
+.assignments-v15-quick>button.done{background:rgba(245,249,246,.86)}
+.assignments-v15-quick span{font-size:10px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:.06em}
+.assignments-v15-quick b{font-size:13px;color:var(--blue-35);overflow-wrap:anywhere}
+.assignments-v15-quick small{font-size:10.5px;color:var(--muted);line-height:1.35}
+.assignments-v15-suggestion{padding:0!important;overflow:hidden}
+.assignments-v15-suggestion-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:15px 17px;border-bottom:1px solid var(--line)}
+.assignments-v15-suggestion-head h3{margin:3px 0;font-size:19px}
+.assignments-v15-suggestion-head p{margin:0;color:var(--muted);font-size:12px}
+.assignments-v15-suggestion-list{display:grid}
+.assignments-v15-suggestion-list>div{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center;padding:10px 17px;border-bottom:1px solid rgba(0,0,0,.055)}
+.assignments-v15-suggestion-list>div>span{min-width:0;display:grid;gap:2px}
+.assignments-v15-suggestion-list b{font-size:12px;overflow-wrap:anywhere}
+.assignments-v15-suggestion-list small{color:var(--muted);font-size:10px}
+.assignments-v15-suggestion-list strong{color:var(--blue-25);font-size:15px}
+.assignments-v15-more-suggestions{margin:0;padding:10px 17px;color:var(--muted);font-size:11px;background:var(--surface-soft)}
+.assignments-v15-suggestion .assignment-v2-suggestion-actions{padding:12px 17px;display:flex;justify-content:flex-end}
+.assignments-v15-suggestion .assignment-v2-suggestion-actions .primary{min-height:44px}
+.assignments-v15-committee-note{color:var(--muted);font-size:11px;line-height:1.35}
+
+@media(max-width:1100px){
+ .access-v15 .access-v4-row{grid-template-columns:minmax(210px,1.1fr) minmax(190px,.9fr) auto}
+ .access-v15 .access-v4-state{grid-column:2}
+ .access-v15 .access-v4-actions{grid-column:3;grid-row:1 / span 2}
+}
+
+@media(max-width:900px){
+ .leader-setup-v15 .leader-setup-role-options{grid-template-columns:1fr}
+ .assignments-v15-quick{grid-template-columns:1fr}
+ .assignments-v15-quick>button{min-height:72px}
+ .access-v15 .access-v4-tools{grid-template-columns:1fr}
+}
+
+@media(max-width:760px){
+ .access-v15 .access-v4-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .access-v15 .access-v4-filters{margin-inline:-2px;padding-bottom:3px}
+ .access-v15 .access-v4-row{grid-template-columns:1fr;gap:10px;padding:14px}
+ .access-v15 .access-v4-row+.access-v4-row{border-top:1px solid rgba(0,0,0,.055)}
+ .access-v15 .access-v4-state,.access-v15 .access-v4-actions{grid-column:1;grid-row:auto}
+ .access-v15 .access-v4-actions{justify-content:stretch;display:grid;grid-template-columns:minmax(0,1fr) auto}
+ .access-v15 .access-v4-actions>.primary,.access-v15 .access-v4-actions>.secondary{width:100%;min-height:46px}
+ .access-v15 .access-v4-actions>.staff-access-more:only-child{grid-column:1/-1;justify-self:start}
+ .access-v15 .access-v4-person{align-items:flex-start}
+ .access-v15 .access-v4-scope{padding-left:52px;margin-top:-7px}
+ .access-v15 .access-v4-state{padding-left:52px}
+ .access-v15-team-chips{gap:4px}
+ .access-v15-team-chips i{font-size:10.5px}
+ .access-v15-legacy>summary{min-height:64px;padding:10px 13px}
+ .leader-setup-v15 .leader-setup-role-options>button{min-height:68px}
+ .leader-setup-v15 .account-choice-list-v2{max-height:36dvh}
+ .assignments-v15-suggestion-head{display:grid}
+ .assignments-v15-suggestion-head>.secondary{justify-self:start}
+ .assignments-v15-suggestion-list>div{grid-template-columns:minmax(0,1fr);gap:3px;padding:10px 13px}
+ .assignments-v15-suggestion-list strong{transform:rotate(90deg);width:fit-content;margin-block:-2px}
+ .assignments-v15-suggestion .assignment-v2-suggestion-actions{padding:11px 13px}
+ .assignments-v15-suggestion .assignment-v2-suggestion-actions .primary{width:100%;min-height:48px}
+}
+
+@media(max-width:430px){
+ .access-v15 .access-v4-summary{gap:3px;padding:3px}
+ .access-v15 .access-v4-summary button{padding-inline:7px}
+ .access-v15 .access-v4-summary b{font-size:17px}
+ .access-v15 .access-v4-summary span{font-size:10px}
+ .access-v15 .access-v4-directory-head{padding:13px}
+ .access-v15 .access-v4-row{padding:13px}
+ .access-v15 .access-v4-scope,.access-v15 .access-v4-state{padding-left:0}
+ .access-v15 .access-v4-actions{grid-template-columns:1fr}
+ .access-v15 .access-v4-actions>.staff-access-more{justify-self:start}
+ .assignments-v15-quick>button{min-height:68px;padding:10px 11px}
+}
+
+@media(prefers-reduced-motion:reduce){
+ .assignments-v15-quick>button,.leader-setup-v15 .leader-setup-role-options>button{transition:none}
+}

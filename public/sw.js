@@ -1,6 +1,6 @@
-const CACHE_NAME = "fsy-kumasi-shell-v36";
-// Release marker: Housing workflow v14 with fast People/Rooms switching, room-first assignment and sex-aware availability.
-// Production deployment marker: Housing v14 production retry on 2026-09-07 after merge.
+const CACHE_NAME = "fsy-kumasi-shell-v37";
+// Release marker: Access + Assignments v15 with one invitation flow, visible committee scope and task-first assignment setup.
+// Previous Housing workflow v14 shipped as fsy-kumasi-shell-v36 and remains part of this release.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
