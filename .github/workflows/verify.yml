@@ -20,7 +20,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npm test
+      - name: Run tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee test-output.log
+      - name: Upload test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fsy-kumasi-test-output
+          path: test-output.log
+          if-no-files-found: ignore
+          retention-days: 1
       - name: Upload verified frontend build
         uses: actions/upload-artifact@v4
         with:
