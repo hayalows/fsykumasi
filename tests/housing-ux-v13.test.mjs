@@ -57,13 +57,13 @@ test("Housing keeps wayfinding protection and room recommendation logic", () => 
   assert.match(dialogs, /locationReady/);
 });
 
-test("Housing v13 safeguards remain loaded before the v14 workflow layer", () => {
+test("Housing v13 safeguards remain loaded before later workflow layers", () => {
   const main = read("src/main.jsx");
   const sw = read("public/sw.js");
   const v13 = main.indexOf('import "./housing-ux-v13.css";');
   const v14 = main.indexOf('import "./housing-ux-v14.css";');
   assert.ok(v13 > main.indexOf('import "./operations-reliability-v12.css";'));
   assert.ok(v14 > v13, "Housing workflow v14 should refine rather than bypass the v13 safeguards");
-  assert.match(sw, /fsy-kumasi-shell-v36/);
+  assert.match(sw, /fsy-kumasi-shell-v38/);
   assert.match(sw, /Housing workflow v14/);
 });

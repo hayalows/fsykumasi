@@ -47,7 +47,7 @@ test("Overview actions carry exact destinations", () => {
 });
 
 test("reliability safeguards remain wired under the current shell", () => {
-  assert.match(read("public/sw.js"),/fsy-kumasi-shell-v36/); assert.match(read("src/main.jsx"),/operations-reliability-v12\.css/);
+  assert.match(read("public/sw.js"),/fsy-kumasi-shell-v38/); assert.match(read("src/main.jsx"),/operations-reliability-v12\.css/);
 });
 
 

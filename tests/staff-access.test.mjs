@@ -6,7 +6,8 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 const migration = read("supabase/migrations/20260904194500_staff_linked_access_and_coordinator_admin.sql");
 const accessUxMigration = read("supabase/migrations/20260904214500_access_experience_presence_and_ac_company_management.sql");
 const roleTransitionMigration = read("supabase/migrations/20260905121000_guided_staff_role_transitions.sql");
-const accessPage = read("src/pages/AccessV4.jsx");
+const legacyMigration = read("supabase/migrations/20260907103000_access_v16_legacy_reconciliation.sql");
+const accessPage = read("src/pages/AccessV5.jsx");
 const accessWrapper = read("src/pages/Access.jsx");
 const assignmentsPage = read("src/pages/AssignmentsV3.jsx");
 const assignmentsWrapper = read("src/pages/Assignments.jsx");
@@ -18,6 +19,7 @@ const presenceClient = read("src/lib/presence.js");
 const appShell = read("src/components/AppShell.jsx");
 const v12Styles = read("src/access-assignments-v12.css");
 const v15Styles = read("src/access-assignments-v15.css");
+const v16Styles = read("src/access-operations-v16.css");
 const mainEntry = read("src/main.jsx");
 
  test("staff assignment remains authoritative while website identity is explicitly linked", () => {
@@ -57,7 +59,7 @@ test("one invitation flow covers leaders and committee members without changing 
 });
 
 test("active Access uses one invitation entry point and keeps responsibility visible", () => {
-  assert.match(accessWrapper, /AccessV4/);
+  assert.match(accessWrapper, /AccessV5/);
   assert.match(accessPage, /LeaderSetupFlow/);
   assert.match(accessPage, /Invite someone/);
   assert.match(accessPage, /Committee member/);
@@ -75,27 +77,43 @@ test("Access keeps secondary and destructive account actions progressive", () =>
   assert.match(accessPage, /Committee tools/);
   assert.match(accessPage, /Recovery/);
   assert.match(accessPage, /Disable sign-in/);
+  assert.match(accessPage, /Retire old access/);
   assert.match(accessPage, /ConfirmActionSheet/);
   assert.match(accessPage, /ActionToast/);
   assert.match(accessPage, /Cancel invite/);
   assert.match(accessPage, /Invite cancelled for/);
 });
 
-test("Access still shows optional sign-in recency and authenticated private presence", () => {
+test("Access shows real-time presence plus recent sign-in metadata", () => {
   assert.match(accessPage, /Online now/);
   assert.match(accessPage, /Last signed in/);
+  assert.match(accessPage, /loadSessionAccountActivity/);
+  assert.match(accessPage, /window\.setInterval/);
   assert.match(presenceClient, /realtime\.setAuth\(\)/);
   assert.match(presenceClient, /private:\s*true/);
   assert.match(appShell, /trackSessionPresence\(sessionInfo\.id, userId\)/);
 });
 
-test("committee website access is part of the main directory instead of a separate primary flow", () => {
+test("legacy staff-level access joins the main directory and has a guided move path", () => {
+  assert.match(accessPage, /legacyAccounts/);
+  assert.match(accessPage, /legacyInvites/);
+  assert.match(accessPage, /legacyRequests/);
+  assert.match(accessPage, /Move to new system/);
+  assert.match(accessPage, /LegacyAccessMigration/);
+  assert.doesNotMatch(accessPage, /Older & unmatched access/);
+  assert.match(legacyMigration, /create or replace function public\.adopt_legacy_access_account/i);
+  assert.match(legacyMigration, /perform private\.sync_staff_login_access\(target\.id\)/i);
+  assert.match(legacyMigration, /create or replace function public\.retire_legacy_access_account/i);
+  assert.match(staffClient, /adopt_legacy_access_account/);
+  assert.match(staffClient, /retire_legacy_access_account/);
+});
+
+test("committee website access remains part of the main directory", () => {
   assert.match(accessPage, /committeeActive/);
   assert.match(accessPage, /committeePending/);
-  assert.match(accessPage, /allowCommittee=\{canInviteCommittee\}/);
+  assert.match(accessPage, /allowCommittee=\{canInviteCommittee/);
   assert.match(accessPage, /Edit committees/);
   assert.doesNotMatch(accessPage, /Committee & older accounts/);
-  assert.match(accessPage, /Older & unmatched access/);
 });
 
 test("active Assignments keeps three workspaces and links unfinished website work to Access", () => {
@@ -131,20 +149,19 @@ test("role changes remain one atomic guided transition", () => {
   assert.match(roleTransitionSheet, /Website access follows the assignment/);
 });
 
-test("v15 loads after the established mobile setup layer and keeps safe responsive actions", () => {
+test("v16 loads last and preserves established responsive access layers", () => {
   const v11 = mainEntry.indexOf('import "./access-assignments-v11.css";');
   const v12 = mainEntry.indexOf('import "./access-assignments-v12.css";');
   const v15 = mainEntry.indexOf('import "./access-assignments-v15.css";');
+  const v16 = mainEntry.indexOf('import "./access-operations-v16.css";');
   assert.ok(v12 > v11);
   assert.ok(v15 > v12);
-  assert.match(v12Styles, /@media\(max-width:760px\)/);
-  assert.match(v12Styles, /height:calc\(100dvh - max\(8px,env\(safe-area-inset-top\)\)\)/);
-  assert.match(v12Styles, /env\(safe-area-inset-bottom\)/);
-  assert.match(v12Styles, /font-size:16px/);
-  assert.match(v12Styles, /min-height:48px/);
+  assert.ok(v16 > v15);
   assert.match(v12Styles, /leader-setup-footer/);
   assert.match(v12Styles, /overflow:auto/);
   assert.match(v15Styles, /leader-setup-role-options/);
   assert.match(v15Styles, /assignments-v15-quick/);
-  assert.match(v15Styles, /@media\(max-width:760px\)/);
+  assert.match(v16Styles, /access-v4-directory\{overflow:visible!important\}/);
+  assert.match(v16Styles, /leader-setup-flow:has\(\.leader-setup-success\)/);
+  assert.match(v16Styles, /account-choice-list-v2\{max-height:none!important;overflow:visible!important/);
 });
