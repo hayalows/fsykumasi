@@ -58,10 +58,10 @@ export async function applyFinalRegistrationBaseline({ sessionId, sourceFilename
 export async function loadFinalRegistrationBaseline(sessionId) {
   const { data, error } = await client()
     .from("import_batches")
-    .select("id, source_filename, source_sha256, record_count, participant_count, staff_count, omitted_count, exception_count, status, created_at, baseline_kind")
+    .select("id, source_filename, source_sha256, record_count, participant_count, staff_count, omitted_count, exception_count, status, created_at, import_mode")
     .eq("session_id", sessionId)
     .eq("status", "applied")
-    .eq("baseline_kind", "final")
+    .eq("import_mode", "final")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
