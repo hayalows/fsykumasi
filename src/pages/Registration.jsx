@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { Registration as RegistrationLegacy } from "./RegistrationLegacy.jsx";
+import { useEffect, useState } from "react";
 import { RegistrationFinalBaselineV21 } from "./RegistrationFinalBaselineV21.jsx";
 import { RegistrationReviewInbox } from "./RegistrationReviewInbox.jsx";
 import { IdentityFoundation } from "./RegistrationOperationsV2.jsx";
 import { RegistrationJourney } from "./RegistrationJourney.jsx";
 import { loadStructureSettings, DEFAULT_STRUCTURE_SETTINGS } from "../lib/operations.js";
-import { operationalEligibility } from "../lib/registration.js";
 import { formatCount } from "../lib/cohort.js";
 import { PageHead, SegmentedControl } from "../components/UI.jsx";
 import "./registration-review.css";
@@ -52,10 +50,10 @@ export function Registration(props) {
     return () => { active = false; };
   }, [live, sessionId]);
 
-  const operationallyMapped = useMemo(() => imported.map((person) => {
-    const eligibility = operationalEligibility(person, structureSettings);
-    return eligibility.ok ? person : { ...person, status: "Not eligible" };
-  }), [imported, structureSettings]);
+  const handleFinalBaselineChanged = async () => {
+    await onOperationalDataChanged?.();
+    if (typeof window !== "undefined") window.location.reload();
+  };
 
   const cohortSummary = props.cohort;
   const modeMeta = MODE_META[mode];
@@ -99,16 +97,14 @@ export function Registration(props) {
             onChange={setSetupMode}
             options={[
               { value: "final", label: "Final roster", id: "registration-setup-final" },
-              { value: "registration", label: "Registration source", id: "registration-setup-source" },
               { value: "identity", label: "FSY IDs", id: "registration-setup-identity" },
               { value: "review", label: "Review", count: cohortSummary?.reviewExceptions || 0, id: "registration-setup-review" },
             ]}
           />
         </div>
-        {setupMode === "final" ? <RegistrationFinalBaselineV21 sessionId={sessionId} canManage={props.canManage} setImported={props.setImported} onChanged={onOperationalDataChanged} onNavigate={onNavigate}/> : null}
-        {setupMode === "registration" ? <RegistrationLegacy {...props} imported={operationallyMapped} sessionName={sessionName}/> : null}
+        {setupMode === "final" ? <RegistrationFinalBaselineV21 sessionId={sessionId} canManage={props.canManage} setImported={props.setImported} onChanged={handleFinalBaselineChanged} onNavigate={onNavigate}/> : null}
         {setupMode === "identity" ? <IdentityFoundation sessionId={sessionId} capabilities={capabilities} onChanged={onOperationalDataChanged}/> : null}
-        {setupMode === "review" ? <RegistrationReviewInbox {...props} structureSettings={structureSettings} sessionName={sessionName}/> : null}
+        {setupMode === "review" ? <RegistrationReviewInbox {...props} imported={imported} structureSettings={structureSettings} sessionName={sessionName}/> : null}
       </div> : null}
     </div>
   </div>;
