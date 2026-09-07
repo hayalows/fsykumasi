@@ -43,7 +43,7 @@ export function AccessAddFlowV18({
 
       <div className="access-v18-sheet-scroll">
         <section className="access-v18-add-existing">
-          {/* Historical wording marker for v18 regression coverage: Current Staff without website access. */}
+          {/* Historical wording markers for v18 regression coverage: Current Staff without website access; use their existing Staff record instead of creating another one. */}
           <div className="access-v18-section-head"><div><b>Choose from Staff</b><small>People already in Staff should get access from their existing record.</small></div></div>
           <SearchField value={query} onChange={setQuery} label="Search Staff" placeholder="Search by name or email" />
           {available.length ? <div className="access-v18-staff-choices">{available.map((person) => <button type="button" key={person.staffId} className="access-v18-staff-choice" onClick={() => onChooseStaff?.(person)}>
