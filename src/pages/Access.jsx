@@ -1,3 +1,4 @@
-// AccessV5 remains in the repository for historical regression coverage.
-// Access v17 reconciles Staff, existing sign-ins and pending setup records into one person-first directory.
-export { Access, createInitialAccessRequests } from "./AccessV17.jsx";
+// Historical Access implementations remain in the repository for regression coverage.
+// Access v18 keeps one person per row, reconciles existing staff-level sign-ins automatically,
+// searches current Staff before creating anyone new, and asks for identity help only on real conflicts.
+export { Access, createInitialAccessRequests } from "./AccessV18.jsx";
