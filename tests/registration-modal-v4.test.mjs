@@ -32,5 +32,5 @@ test("registration modal refinements stay after shared shell layers and ship thr
   const registrationImport = main.indexOf('import "./registration-modal-v4.css";');
   const sidebarImport = main.indexOf('import "./sidebar-navigation-v2.css";');
   assert.ok(registrationImport > sidebarImport, "registration modal overrides should load after shared shell layers");
-  assert.match(sw, /fsy-kumasi-shell-v38/);
+  assert.match(sw, /fsy-kumasi-shell-v39/);
 });

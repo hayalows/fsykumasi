@@ -62,7 +62,7 @@ test("Assignments exposes unfinished work directly and reviews exact suggested m
   assert.doesNotMatch(assignments, /No website account needed/);
 });
 
-test("v16 loads after v15 and keeps the v15 interaction language", async () => {
+test("v16 safeguards remain under the current Access release", async () => {
   const [main, v15Css, sw] = await Promise.all([read("src/main.jsx"), read("src/access-assignments-v15.css"), read("public/sw.js")]);
   const v15 = main.indexOf('import "./access-assignments-v15.css";');
   const v16 = main.indexOf('import "./access-operations-v16.css";');
@@ -71,6 +71,6 @@ test("v16 loads after v15 and keeps the v15 interaction language", async () => {
   assert.match(v15Css, /leader-setup-role-options/);
   assert.match(v15Css, /access-v15-team-chips/);
   assert.match(v15Css, /assignments-v15-quick/);
-  assert.match(sw, /fsy-kumasi-shell-v38/);
-  assert.match(sw, /Access operations v16/);
+  assert.match(sw, /fsy-kumasi-shell-v39/);
+  assert.match(sw, /Access operations v17/);
 });

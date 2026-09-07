@@ -64,6 +64,6 @@ test("Housing v13 safeguards remain loaded before later workflow layers", () => 
   const v14 = main.indexOf('import "./housing-ux-v14.css";');
   assert.ok(v13 > main.indexOf('import "./operations-reliability-v12.css";'));
   assert.ok(v14 > v13, "Housing workflow v14 should refine rather than bypass the v13 safeguards");
-  assert.match(sw, /fsy-kumasi-shell-v38/);
+  assert.match(sw, /fsy-kumasi-shell-v39/);
   assert.match(sw, /Housing workflow v14/);
 });
