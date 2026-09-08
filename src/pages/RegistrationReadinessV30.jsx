@@ -13,9 +13,9 @@ import { loadFinalRegistrationBaseline } from "../lib/final-roster.js";
 import { loadStaff } from "../lib/operations.js";
 import { registrationBlockerCount } from "../lib/registration-workflow-v30.js";
 import { staffException, staffState } from "../lib/staff-state.js";
-import { IdentityFoundationV28 } from "./RegistrationIdentityV28.jsx";
-import { RegistrationFinalBaselineV21 } from "./RegistrationFinalBaselineV21.jsx";
-import { StaffReadiness } from "./StaffReadiness.jsx";
+import { IdentityFoundationV31 as IdentityFoundationV28 } from "./RegistrationIdentityV31.jsx";
+import { RegistrationFinalBaselineV22 as RegistrationFinalBaselineV21 } from "./RegistrationFinalBaselineV22.jsx";
+import { StaffReadinessV31 as StaffReadiness } from "./StaffReadinessV31.jsx";
 import "./registration-phase2-v30.css";
 
 const TOOL_META = {
@@ -106,7 +106,7 @@ export function RegistrationReadinessV30({
   const identityReview = Number(identity?.unresolvedOrigin || 0);
   const identityStatus = checkErrors.identity ? "Could not load" : loading && !identity ? "Checking" : identityReview ? `${identityReview} origin issue${identityReview === 1 ? "" : "s"}` : Number(identity?.finalizedIds || 0) ? "Finalized" : Number(identity?.draftIds || 0) ? "Draft ready" : "Not prepared";
   const identityTone = checkErrors.identity ? "danger" : loading && !identity ? "muted" : identityReview || identityPending ? "warn" : "good";
-  const staffStatus = checkErrors.staff ? "Could not load" : loading && !staff.length ? "Checking" : staffConfirmation ? `${staffConfirmation} need confirmation` : staffAttention ? `${staffAttention} need attention` : staffCurrent.length ? "Ready" : "No Staff loaded";
+  const staffStatus = checkErrors.staff ? "Could not load" : loading && !staff.length ? "Checking" : staffConfirmation ? `${staffConfirmation} need confirmation` : staffAttention ? `${staffAttention} need review` : staffCurrent.length ? "Ready" : "No Staff loaded";
   const staffTone = checkErrors.staff ? "danger" : loading && !staff.length ? "muted" : staffConfirmation || staffAttention || !staffCurrent.length ? "warn" : "good";
   const baselineStatus = checkErrors.baseline ? "Could not load" : loading && baseline === null ? "Checking" : baseline ? "Final baseline active" : "Not finalized";
   const baselineTone = checkErrors.baseline ? "danger" : loading && baseline === null ? "muted" : baseline ? "good" : "warn";
@@ -153,49 +153,10 @@ export function RegistrationReadinessV30({
     </div>
 
     <div className="registration-readiness-grid-v30">
-      <ReadinessCard
-        icon={WarningCircle}
-        title="Participant blockers"
-        status={blockerCount ? "Needs action" : "Clear"}
-        tone={blockerCount ? "warn" : "good"}
-        value={blockerCount.toLocaleString()}
-        detail={blockerCount ? "Approval, eligibility, verification, placement, identity or follow-up is blocking normal check-in." : "No current participant is blocked from the normal Registration path."}
-        action={() => onNavigate?.({ view: "registration", mode: "roster", filter: blockerCount ? "needs_help" : "all" })}
-        actionLabel="Open Solutions"
-      />
-      <ReadinessCard
-        icon={FileText}
-        title="Final roster"
-        status={baselineStatus}
-        tone={baselineTone}
-        value={!checkErrors.baseline && baseline ? Number(baseline.recordCount || 0).toLocaleString() : undefined}
-        detail={checkErrors.baseline ? "The final-roster check did not load. Retry before treating this state as complete." : baseline ? `Active final source · ${baseline.sourceFilename}` : "The final Participant + Counselor export has not been confirmed as the active baseline."}
-        action={() => openTool("final")}
-        actionLabel="Open Final roster"
-        disabled={loading && baseline === null}
-      />
-      <ReadinessCard
-        icon={IdentificationCard}
-        title="FSY IDs"
-        status={identityStatus}
-        tone={identityTone}
-        value={!checkErrors.identity && identity ? Number(identity.finalizedIds || identity.draftIds || 0).toLocaleString() : undefined}
-        detail={checkErrors.identity ? "The participant-identity check did not load. Retry before treating this state as complete." : identityReview ? `${identityReview} origin issue${identityReview === 1 ? "" : "s"} must be resolved before finalization.` : Number(identity?.finalizedIds || 0) ? "The active participant identity set is finalized." : "Prepare IDs only after the active participant cohort and counselor groups are stable."}
-        action={() => openTool("identity")}
-        actionLabel="Open FSY IDs"
-        disabled={loading && !identity}
-      />
-      <ReadinessCard
-        icon={Users}
-        title="Staff readiness"
-        status={staffStatus}
-        tone={staffTone}
-        value={!checkErrors.staff && staffCurrent.length ? staffCurrent.length.toLocaleString() : undefined}
-        detail={checkErrors.staff ? "The Staff readiness check did not load. Retry before treating this state as complete." : staffConfirmation ? `${staffConfirmation} Staff member${staffConfirmation === 1 ? "" : "s"} still need service confirmation.` : staffAttention ? `${staffAttention} Staff member${staffAttention === 1 ? "" : "s"} have a clearance, arrival or replacement issue.` : "Source approval, service confirmation and operational readiness stay separate."}
-        action={() => openTool("staff")}
-        actionLabel="Open Staff readiness"
-        disabled={loading && !staff.length}
-      />
+      <ReadinessCard icon={WarningCircle} title="Participant blockers" status={blockerCount ? "Blocked" : "Clear"} tone={blockerCount ? "warn" : "good"} value={blockerCount.toLocaleString()} detail={blockerCount ? "Approval, eligibility, verification, placement, identity or follow-up is blocking normal check-in." : "No current participant is blocked from the normal Registration path."} action={() => onNavigate?.({ view: "registration", mode: "roster", filter: blockerCount ? "needs_help" : "all" })} actionLabel="Open Solutions" />
+      <ReadinessCard icon={FileText} title="Final roster" status={baselineStatus} tone={baselineTone} value={!checkErrors.baseline && baseline ? Number(baseline.recordCount || 0).toLocaleString() : undefined} detail={checkErrors.baseline ? "The final-roster check did not load. Retry before treating this state as complete." : baseline ? `Active final source · ${baseline.sourceFilename}` : "The final Participant + Counselor export has not been confirmed as the active baseline."} action={() => openTool("final")} actionLabel="Open Final roster" disabled={loading && baseline === null} />
+      <ReadinessCard icon={IdentificationCard} title="FSY IDs" status={identityStatus} tone={identityTone} value={!checkErrors.identity && identity ? Number(identity.finalizedIds || identity.draftIds || 0).toLocaleString() : undefined} detail={checkErrors.identity ? "The participant-identity check did not load. Retry before treating this state as complete." : identityReview ? `${identityReview} origin issue${identityReview === 1 ? "" : "s"} must be resolved before finalization.` : Number(identity?.finalizedIds || 0) ? "The active participant identity set is finalized." : "Prepare IDs only after the active participant cohort and counselor groups are stable."} action={() => openTool("identity")} actionLabel="Open FSY IDs" disabled={loading && !identity} />
+      <ReadinessCard icon={Users} title="Staff readiness" status={staffStatus} tone={staffTone} value={!checkErrors.staff && staffCurrent.length ? staffCurrent.length.toLocaleString() : undefined} detail={checkErrors.staff ? "The Staff readiness check did not load. Retry before treating this state as complete." : staffConfirmation ? `${staffConfirmation} Staff member${staffConfirmation === 1 ? "" : "s"} still need service confirmation.` : staffAttention ? `${staffAttention} Staff member${staffAttention === 1 ? "" : "s"} have a clearance, arrival or replacement issue.` : "Source approval, service confirmation and operational readiness stay separate."} action={() => openTool("staff")} actionLabel="Open Staff readiness" disabled={loading && !staff.length} />
     </div>
 
     <p className="registration-readiness-principle-v30"><CheckCircle size={18} weight="fill" /><span><b>One exception queue.</b> Participant problems are resolved in Solutions. Readiness only tells you whether the supporting setup is ready and sends you to the correct tool.</span></p>
