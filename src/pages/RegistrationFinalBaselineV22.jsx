@@ -7,7 +7,7 @@ import { MutationFeedback,Status } from "../components/UI.jsx";
 import { loadParticipants,loadSession } from "../lib/backend.js";
 import { parseFinalRosterFile,resolveFinalRosterRecords } from "../lib/final-roster-import.js";
 import { applyFinalRegistrationBaseline,loadFinalRegistrationBaseline,previewFinalRegistrationBaseline } from "../lib/final-roster.js";
-import { recoverableWriteError,useSingleFlight } from "../lib/reliable-action.js";
+import { recoverableWriteError,usePendingPageGuard,useSingleFlight } from "../lib/reliable-action.js";
 import "./registration-final-v21.css";
 
 function formatDate(value){if(!value)return"";return new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short"}).format(new Date(value));}
@@ -18,6 +18,7 @@ export function RegistrationFinalBaselineV22({sessionId,canManage=false,setImpor
  const input=useRef(null);
  const runSingleFlight=useSingleFlight();
  const[session,setSession]=useState(null),[baseline,setBaseline]=useState(null),[filename,setFilename]=useState(""),[result,setResult]=useState(null),[resolutions,setResolutions]=useState({}),[preview,setPreview]=useState(null),[confirmReset,setConfirmReset]=useState(false),[busy,setBusy]=useState(""),[message,setMessage]=useState(null);
+ usePendingPageGuard(busy==="apply");
  const refreshState=async()=>{if(!sessionId)return;const[nextSession,nextBaseline]=await Promise.all([loadSession(sessionId),loadFinalRegistrationBaseline(sessionId)]);setSession(nextSession);setBaseline(nextBaseline);};
  useEffect(()=>{refreshState().catch(error=>setMessage({tone:"error",text:error.message}));},[sessionId]);
  const conflicts=result?.identityConflicts||[];
