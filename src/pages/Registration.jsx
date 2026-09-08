@@ -52,7 +52,7 @@ export function Registration(props) {
     setMode(next);
     if (next === "desk" || next === "roster") setJourneyMode(next);
     if (next === "readiness") setReadinessVisited(true);
-    onNavigate?.({ view: "registration", mode: next, filter: next === "roster" ? initialFilter : "" });
+    onNavigate?.({ view: "registration", mode: next, filter: "" });
   };
 
   const handleFinalBaselineChanged = async () => {
