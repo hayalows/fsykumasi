@@ -1,0 +1,286 @@
+/*
+ * UX foundation v30
+ * Shared responsive, feedback and containment rules for the operations overhaul.
+ * The intent is to make existing screens safer at narrow widths before each
+ * workflow is simplified in the later phases.
+ */
+
+:root {
+  --ux-page-gutter: clamp(16px, 4vw, 58px);
+  --ux-content-max: 1320px;
+  --ux-touch-target: 44px;
+  --ux-pane-gap: clamp(12px, 2vw, 20px);
+  --ux-state-info-bg: #eef8fb;
+  --ux-state-info-border: #cbe7ef;
+  --ux-state-info-ink: #175b74;
+}
+
+/* Containment: children should shrink to the space they are given instead of
+   silently making the page or sheet wider than the viewport. */
+.page,
+.panel,
+.modal,
+.layer-panel,
+.dismissible-layer,
+.dismissible-layer .layer-panel,
+.dismissible-layer .layer-panel > *,
+.search,
+.search-field,
+.table-wrap,
+.ux-toolbar,
+.ux-list-detail,
+.ux-pane,
+.ux-summary-row {
+  min-width: 0;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+/* Shared adaptive primitives. Later phases can move screens onto these without
+   inventing a new layout system for every route. */
+.ux-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ux-toolbar > :first-child {
+  min-width: min(280px, 100%);
+  flex: 1 1 320px;
+}
+
+.ux-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-block: 1px solid var(--line);
+}
+
+.ux-summary-row > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ux-summary-row strong {
+  color: var(--blue-35);
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ux-summary-row small {
+  color: var(--muted);
+}
+
+.ux-list-detail {
+  display: grid;
+  grid-template-columns: minmax(280px, .9fr) minmax(0, 1.1fr);
+  gap: var(--ux-pane-gap);
+  align-items: start;
+}
+
+.ux-pane {
+  min-width: 0;
+}
+
+.ux-scroll-region {
+  max-width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.ux-scroll-region:focus-visible {
+  outline: 3px solid rgba(252, 180, 73, .45);
+  outline-offset: 2px;
+}
+
+/* System status is descriptive, not an action. */
+.workspace-state {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.workspace-state > i {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.workspace-state.state-ready { color: #456d2b; }
+.workspace-state.state-updating,
+.workspace-state.state-loading { color: var(--ux-state-info-ink); }
+.workspace-state.state-stale { color: #7b560c; }
+.workspace-state.state-offline { color: #687b83; }
+.workspace-state.state-failed { color: var(--danger); }
+
+.connection.updating {
+  color: var(--ux-state-info-ink);
+  border-color: var(--ux-state-info-border);
+  background: var(--ux-state-info-bg);
+}
+
+.connection.stale,
+.connection.problem {
+  color: #76520d;
+  border-color: #efd9a5;
+  background: #fffaf0;
+}
+
+.connection.offline {
+  color: #596c74;
+  border-color: #d6e0e4;
+  background: #f2f5f6;
+}
+
+/* DismissibleLayer is the shared detail/action surface. Its own content must
+   never be 100vw inside a padded backdrop. */
+.dismissible-layer {
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+.dismissible-layer .layer-panel {
+  width: min(100%, 660px);
+  max-width: calc(100vw - 2 * max(16px, env(safe-area-inset-left)));
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.dismissible-layer .layer-panel :is(form, section, article, header, footer, div, dl, label) {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.dismissible-layer .layer-panel :is(input, select, textarea) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.dismissible-layer .layer-panel :is(h1, h2, h3, p, small, dt, dd, .person-name, .person-name-static) {
+  overflow-wrap: anywhere;
+}
+
+/* Text carrying identity or operational meaning must wrap rather than vanish. */
+.person-name,
+.person-name-static,
+.identity-person-v5 b,
+.quality-person-row b,
+.groups-v2-members b {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* A compact width is a real supported layout, not a clipped desktop layout. */
+@media (max-width: 760px) {
+  .page {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 16px;
+    overflow-x: clip;
+  }
+
+  .panel,
+  .journey-card {
+    max-width: 100%;
+  }
+
+  .ux-list-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ux-toolbar {
+    align-items: stretch;
+  }
+
+  .ux-toolbar > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dismissible-layer {
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+    place-items: end center;
+  }
+
+  .dismissible-layer .layer-panel {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100dvh - max(8px, env(safe-area-inset-top)));
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .mobile-nav button,
+  .sidebar nav button,
+  .segmented button,
+  .registration-tabs button,
+  summary,
+  .search-clear,
+  .icon-button {
+    min-height: var(--ux-touch-target);
+  }
+
+  .mobile-nav button {
+    min-width: 0;
+  }
+
+  .mobile-nav button > span {
+    max-width: 100%;
+    padding-inline: 2px;
+    line-height: 1.12;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: normal;
+  }
+}
+
+@media (max-width: 360px) {
+  .page {
+    padding-inline: 14px;
+  }
+
+  .panel {
+    padding-inline: 15px;
+  }
+
+  .metrics-grid,
+  .metrics-grid.compact {
+    gap: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
