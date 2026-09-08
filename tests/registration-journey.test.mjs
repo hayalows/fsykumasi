@@ -42,7 +42,7 @@ test("Registration presents one Registration & check-in journey", async () => {
   assert.match(source, /normalizedMode === "roster" \? "roster" : "desk"/);
   assert.match(source, /if \(next === "desk" \|\| next === "roster"\) setJourneyMode\(next\)/);
   assert.match(source, /<RegistrationJourney view=\{journeyMode\}/);
-  assert.match(wrapper, /RegistrationJourneyV5/);
+  assert.match(wrapper, /RegistrationJourneyV29/);
   assert.doesNotMatch(source, /ArrivalOperations/);
 });
 
