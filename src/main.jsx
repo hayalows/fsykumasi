@@ -38,9 +38,11 @@ import "./access-operations-v16.css";
 import "./ux-foundation-v30.css";
 import "./phase3-context-v31.css";
 import "./phase4-operations-v32.css";
+import "./phase5-release-v33.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
+    <div id="route-announcer" role="status" aria-live="polite" aria-atomic="true" />
     <App />
   </React.StrictMode>,
 );
