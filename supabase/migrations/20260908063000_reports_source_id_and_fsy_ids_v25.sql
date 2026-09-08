@@ -47,7 +47,7 @@ declare
   inserted_count integer := 0;
   finalized_count integer := 0;
 begin
-  select count(*)::int, min(id)
+  select count(*)::int, (min(id::text))::uuid
     into matching_sessions, target_session
   from public.sessions
   where name = 'FSY Kumasi 2026'
