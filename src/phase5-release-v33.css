@@ -1,0 +1,156 @@
+/* Phase 5 release hardening: accessibility, narrow-screen containment and write-state clarity. */
+
+:root{
+  --phase5-focus:rgba(43,111,174,.45);
+}
+
+#route-announcer{position:fixed!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+:where(button,a,input,select,textarea,summary,[tabindex]):focus-visible{
+  outline:3px solid var(--phase5-focus);
+  outline-offset:3px;
+}
+
+:where(button,a,input,select,textarea,summary,[tabindex]):focus:not(:focus-visible){outline:none}
+
+.page-head h1:focus{outline:none}
+
+[aria-busy="true"]{cursor:progress}
+[aria-busy="true"] button:disabled{cursor:progress}
+
+.mutation-feedback{align-items:flex-start}
+.mutation-feedback>span{min-width:0;overflow-wrap:anywhere}
+
+.form-error[role="alert"],.field-error[role="alert"]{overflow-wrap:anywhere}
+.profile-form input[aria-invalid="true"]{border-color:var(--danger,#b42318);box-shadow:0 0 0 1px var(--danger,#b42318)}
+.profile-password-state{display:grid;gap:4px;margin-top:6px;color:var(--muted,#687680);font-size:.78rem;line-height:1.35}
+.profile-password-state .invalid{color:var(--danger,#b42318)}
+.profile-password-state .valid{color:#456d2b}
+.profile-password-receipt{margin-top:10px}
+
+/* Identity and staff tables remain readable when text is enlarged. */
+.identity-v31-row,.staff-readiness-v31-row,.phase4-report-table td,.phase4-report-table th{
+  line-height:1.4;
+}
+.identity-v31-row :is(b,small,span,button),.staff-readiness-v31-row :is(b,small,span,button),.phase4-report-table :is(td,th){
+  overflow-wrap:anywhere;
+}
+
+/* Consequential stages clearly expose their busy state without dimming the information needed to verify it. */
+.final-roster-v22[aria-busy="true"] .final-roster-v22-stage,
+.identity-v31[aria-busy="true"] .identity-v31-head{
+  border-color:var(--line,#dfe5e9);
+}
+.final-roster-v22[aria-busy="true"] button:disabled,
+.identity-v31[aria-busy="true"] button:disabled{opacity:.72}
+
+/* Avoid accidental horizontal page scroll at every release target. Data regions may scroll themselves. */
+html,body,#root,.app-shell,.workspace,.page{max-width:100%;}
+body{overflow-x:hidden;text-size-adjust:100%;-webkit-text-size-adjust:100%}
+.page :is(p,small,dd,dt,b,strong,h1,h2,h3,label,button){overflow-wrap:anywhere}
+
+/* 1024 and 768: preserve useful desktop/tablet density without forcing desktop minimum widths. */
+@media(max-width:1024px){
+  .phase4-report-table .report-sticky-1{min-width:170px}
+  .phase4-report-table .report-sticky-2{left:170px;min-width:110px}
+  .identity-v31-head,.staff-readiness-v31-head{gap:12px}
+}
+
+@media(max-width:768px){
+  .page{padding-inline:max(16px,env(safe-area-inset-left)) max(16px,env(safe-area-inset-right))}
+  .report-preview-shell,.identity-v31-roster,.staff-readiness-v31-list,.final-roster-v22-stage{overflow:hidden}
+  .report-library-group button,.identity-v31-summary button,.staff-readiness-v31-summary button{min-height:44px}
+  .identity-v31-row,.staff-readiness-v31-row{align-items:start}
+  .final-roster-v22-steps{overflow-x:auto;scrollbar-width:thin}
+  .final-roster-v22-steps li{min-width:56px;flex:none}
+}
+
+/* 414/390/375 phone widths: one column, no clipped operational identity, no hidden actions. */
+@media(max-width:414px){
+  .page{padding-inline:14px}
+  .panel{max-width:100%}
+  .report-library-heading,.report-preview-head,.identity-v31-head,.staff-readiness-v31-head{padding-left:15px;padding-right:15px}
+  .phase4-reports-page .report-library-group{padding-left:8px;padding-right:8px}
+  .phase4-reports-page .report-library-group button{padding:10px 11px}
+  .report-toolbar,.report-export-scope,.report-preview-foot{padding-left:15px;padding-right:15px}
+  .report-export-actions{gap:7px}
+  .report-export-actions button{min-width:0}
+  .identity-v31-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .identity-v31-actions button{width:100%;min-width:0}
+  .identity-v31-summary,.staff-readiness-v31-summary{display:grid;grid-template-columns:1fr 1fr;overflow:visible}
+  .identity-v31-summary button,.staff-readiness-v31-summary button{min-width:0;border-bottom:1px solid var(--line,#dfe5e9)}
+  .identity-v31-summary button:nth-child(2n),.staff-readiness-v31-summary button:nth-child(2n){border-right:0}
+  .identity-v31-toolbar,.staff-readiness-v31-tools{padding-left:15px;padding-right:15px}
+  .identity-v31-row,.staff-readiness-v31-row{grid-template-columns:minmax(0,1fr);gap:10px;padding:12px 15px}
+  .identity-v31-person,.staff-readiness-v31-row>div:first-child{grid-column:auto}
+  .identity-v31-row>div,.staff-readiness-v31-row>div{width:100%;min-width:0}
+  .identity-v31-badge,.staff-readiness-v31-row .text-action{min-height:44px;display:inline-flex;align-items:center}
+  .final-roster-v22-current{grid-template-columns:1fr 1fr}
+  .final-roster-v22-current p{grid-column:1/-1}
+  .final-roster-v22-source-summary{grid-template-columns:1fr 1fr}
+  .final-roster-v22-file{grid-template-columns:1fr}
+  .final-roster-v22-stage .panel-actions{display:grid;grid-template-columns:1fr;gap:10px}
+  .final-roster-v22-stage .panel-actions button{width:100%}
+  .final-roster-v21-conflict-actions{display:grid!important;grid-template-columns:1fr!important}
+  .final-roster-v21-conflict-actions button{width:100%}
+  .profile-form-actions{display:grid;grid-template-columns:1fr 1fr}
+  .profile-form-actions button,.profile-security-disclosure .profile-save{min-height:44px}
+}
+
+/* 390 and 375 need slightly tighter gutters while preserving full labels. */
+@media(max-width:390px){
+  .page{padding-inline:13px}
+  .identity-v31-summary button,.staff-readiness-v31-summary button{padding:10px 11px}
+  .identity-v31-progress>span{padding:9px 8px}
+  .identity-v31-progress small{font-size:.72rem}
+  .report-freshness>span{padding-left:13px;padding-right:13px}
+}
+
+@media(max-width:375px){
+  .page{padding-inline:12px}
+  .identity-v31-head,.staff-readiness-v31-head,.report-preview-head{padding-left:13px;padding-right:13px}
+  .identity-v31-toolbar,.staff-readiness-v31-tools{padding-left:13px;padding-right:13px}
+  .identity-v31-row,.staff-readiness-v31-row{padding-left:13px;padding-right:13px}
+  .final-roster-v22-dropzone{margin-left:13px;margin-right:13px;width:calc(100% - 26px)}
+}
+
+/* 320 is an explicit supported width, not a best-effort crop. */
+@media(max-width:320px){
+  .page{padding-inline:10px}
+  .panel{padding-left:12px;padding-right:12px}
+  .report-library,.report-preview-shell,.identity-v31-roster,.staff-readiness-v31-list,.final-roster-v22-stage{border-radius:12px}
+  .report-library-heading,.report-preview-head,.identity-v31-head,.staff-readiness-v31-head{padding-left:12px;padding-right:12px}
+  .report-toolbar,.report-export-scope,.report-preview-foot,.identity-v31-toolbar,.staff-readiness-v31-tools{padding-left:12px;padding-right:12px}
+  .report-export-actions{grid-template-columns:1fr}
+  .report-export-actions .primary{grid-column:auto}
+  .identity-v31-actions,.profile-form-actions{grid-template-columns:1fr}
+  .identity-v31-summary,.staff-readiness-v31-summary{grid-template-columns:1fr}
+  .identity-v31-summary button,.staff-readiness-v31-summary button{border-right:0}
+  .identity-v31-progress{grid-template-columns:1fr}
+  .identity-v31-progress>span{border-right:0;border-bottom:1px solid var(--line,#dfe5e9)}
+  .identity-v31-progress>span:last-child{border-bottom:0}
+  .final-roster-v22-current,.final-roster-v22-source-summary{grid-template-columns:1fr}
+  .final-roster-v22-source-summary>span{border-right:0!important}
+  .final-roster-v22-steps{justify-content:flex-start}
+  .final-roster-v22-steps li{min-width:50px;padding:8px 6px}
+  .final-roster-v22-stage>.panel-head{padding-left:12px;padding-right:12px}
+  .final-roster-v22-stage .error-list,.final-roster-v22-stage .final-roster-v21-conflict-list,.final-roster-v22-stage .final-roster-v21-reset-note,.final-roster-v22-stage .final-roster-v21-confirm{margin-left:12px;margin-right:12px}
+}
+
+@media(pointer:coarse){
+  :where(button,a,[role="button"],summary,input[type="checkbox"],input[type="radio"]){min-height:44px}
+}
+
+@media(prefers-contrast:more){
+  .panel,.status,.mutation-feedback,.report-library-group button,.identity-v31-row,.staff-readiness-v31-row{border-width:2px}
+}
+
+@media(forced-colors:active){
+  :where(button,a,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid Highlight}
+  .status i,.workspace-state>i{forced-color-adjust:auto}
+  .identity-v31-summary button[aria-pressed="true"],.staff-readiness-v31-summary button[aria-pressed="true"]{outline:2px solid Highlight;outline-offset:-2px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .action-toast,.mutation-feedback,.modal,.sheet-layer,.sidebar{animation:none!important;transition:none!important}
+}
