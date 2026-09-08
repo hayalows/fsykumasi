@@ -22,10 +22,11 @@ export function SearchField({ value = "", onChange, placeholder, label = "Search
         placeholder={placeholder}
         aria-label={label}
         autoComplete="off"
+        enterKeyHint="search"
         autoFocus={autoFocus}
         disabled={disabled}
       />
-      {hasValue ? <button type="button" className="search-clear" onClick={() => onChange?.("")} aria-label={`Clear ${label.toLowerCase()}`}><X size={18} /></button> : null}
+      {hasValue ? <button type="button" className="search-clear" disabled={disabled} onClick={() => onChange?.("")} aria-label={`Clear ${label.toLowerCase()}`}><X size={18} /></button> : null}
     </div>
   );
 }
@@ -33,9 +34,12 @@ export function SearchField({ value = "", onChange, placeholder, label = "Search
 export function SegmentedControl({ options = [], value, onChange, label, className = "" }) {
   const baseId = useId();
   const optionId = (option, index) => option.id || `${baseId}-${String(option.value).replace(/\s+/g, "-")}-${index}`;
-  const focusOption = (index) => {
-    const next = options[(index + options.length) % options.length];
-    if (next) document.getElementById(optionId(next, (index + options.length) % options.length))?.focus();
+  const chooseAndFocus = (index) => {
+    const normalized = (index + options.length) % options.length;
+    const next = options[normalized];
+    if (!next) return;
+    onChange?.(next.value);
+    window.requestAnimationFrame(() => document.getElementById(optionId(next, normalized))?.focus());
   };
   return (
     <div className={`segmented ${className}`.trim()} role="tablist" aria-label={label}>
@@ -52,8 +56,10 @@ export function SegmentedControl({ options = [], value, onChange, label, classNa
           className={selected ? "active" : ""}
           onClick={() => onChange?.(option.value)}
           onKeyDown={(event) => {
-            if (event.key === "ArrowRight" || event.key === "ArrowDown") { event.preventDefault(); focusOption(index + 1); onChange?.(options[(index + 1) % options.length].value); }
-            if (event.key === "ArrowLeft" || event.key === "ArrowUp") { event.preventDefault(); focusOption(index - 1); onChange?.(options[(index - 1 + options.length) % options.length].value); }
+            if (event.key === "ArrowRight" || event.key === "ArrowDown") { event.preventDefault(); chooseAndFocus(index + 1); }
+            if (event.key === "ArrowLeft" || event.key === "ArrowUp") { event.preventDefault(); chooseAndFocus(index - 1); }
+            if (event.key === "Home") { event.preventDefault(); chooseAndFocus(0); }
+            if (event.key === "End") { event.preventDefault(); chooseAndFocus(options.length - 1); }
           }}
         ><span className="segmented-label">{option.label}</span>{option.count === undefined ? null : <b aria-label={`${option.count.toLocaleString()} items`}>{option.count.toLocaleString()}</b>}</button>;
       })}
@@ -63,7 +69,8 @@ export function SegmentedControl({ options = [], value, onChange, label, classNa
 
 export function MutationFeedback({ tone = "success", children, className = "" }) {
   if (!children) return null;
-  return <div className={`mutation-feedback ${tone} ${className}`.trim()} role={tone === "error" ? "alert" : "status"} aria-live="polite">
+  const error = tone === "error";
+  return <div className={`mutation-feedback ${tone} ${className}`.trim()} role={error ? "alert" : "status"} aria-live={error ? "assertive" : "polite"} aria-atomic="true">
     {tone === "success" ? <CheckCircle weight="fill" aria-hidden="true" /> : null}
     <span>{children}</span>
   </div>;
@@ -76,7 +83,7 @@ export function ActionToast({ message, actionLabel = "Undo", onAction, onDismiss
     return () => window.clearTimeout(timer);
   }, [message, autoDismissMs, onDismiss]);
   if (!message) return null;
-  return <div className={`action-toast tone-${tone}`} role="status" aria-live="polite">
+  return <div className={`action-toast tone-${tone}`} role="status" aria-live="polite" aria-atomic="true">
     <span>{tone === "success" ? <CheckCircle weight="fill" aria-hidden="true" /> : <WarningCircle weight="fill" aria-hidden="true" />}</span>
     <b>{message}</b>
     {onAction ? <button type="button" disabled={busy} onClick={onAction}><ArrowCounterClockwise aria-hidden="true" />{busy ? "Working…" : actionLabel}</button> : null}
@@ -95,13 +102,13 @@ export function Metric({ label, value, note, tone = "blue" }) {
 }
 
 export function Status({ children, tone = "good" }) {
-  return <span className={`status ${tone}`}><i />{children}</span>;
+  return <span className={`status ${tone}`}><i aria-hidden="true" />{children}</span>;
 }
 
 export function Empty({ icon: Icon, title, text, action }) {
   return (
     <div className="empty">
-      {Icon ? <span className="empty-icon"><Icon size={25} /></span> : null}
+      {Icon ? <span className="empty-icon"><Icon size={25} aria-hidden="true" /></span> : null}
       <h3>{title}</h3>
       <p>{text}</p>
       {action}
@@ -110,11 +117,23 @@ export function Empty({ icon: Icon, title, text, action }) {
 }
 
 export function PageHead({ eyebrow, sessionName = demoSession.name, title, description, action }) {
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    document.title = `${title} · FSY Kumasi`;
+    const announcer = document.getElementById("route-announcer");
+    if (!announcer) return undefined;
+    announcer.textContent = "";
+    const frame = window.requestAnimationFrame(() => {
+      announcer.textContent = description ? `${title}. ${description}` : title;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [title, description]);
+
   return (
     <div className="page-head">
       <div>
         <p className="eyebrow">{eyebrow || sessionName}</p>
-        <h1>{title}</h1>
+        <h1 tabIndex={-1}>{title}</h1>
         <p>{description}</p>
       </div>
       {action}
@@ -216,7 +235,7 @@ export function DismissibleLayer({ open, onClose, title, children, className = "
 export function ConfirmActionSheet({ open, onClose, title, description, impact, confirmLabel, cancelLabel = "Cancel", onConfirm, busy = false, tone = "danger" }) {
   if (!open) return null;
   return <DismissibleLayer open onClose={() => !busy && onClose?.()} title={title} sheet className="confirm-action-layer">
-    <div className={`confirm-action-sheet tone-${tone}`}>
+    <div className={`confirm-action-sheet tone-${tone}`} aria-busy={busy}>
       <div className="confirm-action-icon"><WarningCircle weight="fill" aria-hidden="true" /></div>
       <div className="confirm-action-copy"><span className="kicker">Confirm change</span><h2>{title}</h2><p>{description}</p>{impact ? <div className="confirm-action-impact">{impact}</div> : null}</div>
       <div className="confirm-action-buttons"><button type="button" className="secondary" disabled={busy} onClick={onClose}>{cancelLabel}</button><button type="button" className={tone === "danger" ? "danger confirm-action-primary" : "primary confirm-action-primary"} disabled={busy} onClick={onConfirm}>{busy ? "Working…" : confirmLabel}</button></div>
