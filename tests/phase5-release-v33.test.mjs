@@ -108,5 +108,6 @@ test("Phase 5 release document records the full width and failure matrix",async(
   assert.match(doc,/concurrent edit/i);
   assert.match(doc,/400% browser zoom/i);
   assert.match(doc,/keyboard-only navigation/i);
+  assert.match(doc,/319 \/ 319 project tests passed/i);
   assert.match(doc,/Do not merge individual phases/i);
 });
