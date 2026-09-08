@@ -16,7 +16,7 @@ export const REPORT_DEFINITIONS = [
     category: "People & placement",
     available: general,
     columns: [
-      ["fsy_id", "FSY ID", "text"], ["source_id", "Source ID", "text"], ["full_name", "Full name", "text"],
+      ["fsy_id", "FSY ID", "text"], ["full_name", "Full name", "text"],
       ["preferred_name", "Preferred name", "text"], ["badge_name", "Badge name", "text"], ["sex", "Sex", "text"],
       ["age", "Age", "number"], ["origin", "Stake / District / Mission", "text"], ["unit", "Ward / Branch", "text"],
       ["company", "Company", "text"], ["counselor_group", "Counselor group", "text"], ["counselor", "Counselor", "text"],
@@ -79,7 +79,7 @@ export const REPORT_DEFINITIONS = [
     description: "Every day-of participant added outside the original registration import and where they stand now.",
     category: "Arrival & badges",
     available: general,
-    columns: [["created_at","Added","datetime"],["source_id","Source ID","text"],["fsy_id","FSY ID","text"],["full_name","Full name","text"],["origin","Origin","text"],["unit","Unit","text"],["verification_status","Verification","text"],["company","Company","text"],["counselor_group","Counselor group","text"],["housing_room","Housing","text"],["arrival_status","Arrival","text"],["checkin_status","Check-in","text"]],
+    columns: [["created_at","Added","datetime"],["fsy_id","FSY ID","text"],["full_name","Full name","text"],["origin","Origin","text"],["unit","Unit","text"],["verification_status","Verification","text"],["company","Company","text"],["counselor_group","Counselor group","text"],["housing_room","Housing","text"],["arrival_status","Arrival","text"],["checkin_status","Check-in","text"]],
   },
   {
     key: "replacements",
@@ -141,8 +141,14 @@ export function getReportDefinition(key) {
   return REPORT_DEFINITIONS.find((report) => report.key === key) || null;
 }
 
+function cleanUnusedSourceIds(reportKey, rows) {
+  if (!Array.isArray(rows)) return [];
+  if (!["participant_master", "onsite_registrations"].includes(reportKey)) return rows;
+  return rows.map(({ source_id: _sourceId, ...row }) => row);
+}
+
 export async function loadOperationalReport(sessionId, reportKey) {
-  const { data, error } = await client().rpc("get_operational_report", {
+  const { data, error } = await client().rpc("get_operational_report_v2", {
     p_session_id: sessionId,
     p_report_key: reportKey,
   });
@@ -154,7 +160,7 @@ export async function loadOperationalReport(sessionId, reportKey) {
     generatedAt: payload.generated_at || new Date().toISOString(),
     generatedBy: payload.generated_by || "FSY leader",
     scope: payload.scope || "FSY Kumasi session",
-    rows: Array.isArray(payload.rows) ? payload.rows : [],
+    rows: cleanUnusedSourceIds(reportKey, payload.rows),
     summary: payload.summary && typeof payload.summary === "object" ? payload.summary : {},
   };
 }
