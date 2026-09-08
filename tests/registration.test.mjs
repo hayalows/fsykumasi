@@ -45,13 +45,13 @@ test("manual staff capture requires contact and a supported staff assignment typ
   assert.ok(validateManualStaff({ ...base, operationalRole: "logistics_admin" }, true).some((item) => item.includes("staff assignment type")));
 });
 
-test("operational eligibility uses one configurable age boundary", () => {
+test("planning eligibility uses the 13 to 18 default and stays configurable", () => {
   const ready = { age: 16, isCurrent: true, registrationStatus: "approved", verificationStatus: "verified" };
   assert.equal(isOperationalParticipant(ready), true);
   assert.equal(isOperationalParticipant({ ...ready, age: 28 }), false);
   assert.equal(isOperationalParticipant({ ...ready, age: 12 }), false);
-  assert.equal(isOperationalParticipant({ ...ready, age: 20 }), true);
-  assert.equal(isOperationalParticipant({ ...ready, age: 21 }), false);
+  assert.equal(isOperationalParticipant({ ...ready, age: 18 }), true);
+  assert.equal(isOperationalParticipant({ ...ready, age: 19 }), false);
   assert.equal(isOperationalParticipant({ ...ready, age: 21 }, { participantMinAge: 13, participantMaxAge: 21 }), true);
   assert.match(operationalEligibility({ ...ready, age: 28 }).reason, /Age review/);
   assert.equal(isOperationalParticipant({ ...ready, registrationStatus: "awaiting" }), false);
