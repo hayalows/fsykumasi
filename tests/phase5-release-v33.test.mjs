@@ -10,6 +10,8 @@ test("Phase 5 uses a local single-flight guard for consequential UI writes",asyn
   assert.match(helper,/active\.current\.has\(actionKey\)/);
   assert.match(helper,/active\.current\.add\(actionKey\)/);
   assert.match(helper,/finally\s*\{\s*active\.current\.delete\(actionKey\)/);
+  assert.match(helper,/usePendingPageGuard/);
+  assert.match(helper,/beforeunload/);
   assert.match(helper,/No success is assumed until the server confirms it/);
 });
 
@@ -23,6 +25,7 @@ test("Account password submit stays disabled until the fields are valid",async()
   assert.match(profile,/aria-invalid=\{passwordMismatch\}/);
   assert.match(profile,/profile-new-password-help/);
   assert.match(profile,/useSingleFlight\(\)/);
+  assert.match(profile,/usePendingPageGuard\(busy \|\| passwordBusy\)/);
   assert.match(profile,/account-password/);
 });
 
@@ -30,6 +33,7 @@ test("FSY identity writes cannot race one another",async()=>{
   const identity=await read("src/pages/RegistrationIdentityV31.jsx");
   assert.match(identity,/useSingleFlight\(\)/);
   assert.equal((identity.match(/runSingleFlight\("identity-write"/g)||[]).length,3);
+  assert.match(identity,/usePendingPageGuard\(busy\)/);
   assert.match(identity,/aria-busy=\{busy\}/);
   assert.match(identity,/Confirm finalization/);
   assert.match(identity,/recoverableWriteError/);
@@ -39,10 +43,22 @@ test("Final roster keeps one in-flight action and explicit apply confirmation",a
   const finalRoster=await read("src/pages/RegistrationFinalBaselineV22.jsx");
   assert.match(finalRoster,/useSingleFlight\(\)/);
   assert.ok((finalRoster.match(/runSingleFlight\("final-roster-action"/g)||[]).length>=3);
+  assert.match(finalRoster,/usePendingPageGuard\(busy==="apply"\)/);
   assert.match(finalRoster,/aria-busy=\{Boolean\(busy\)\}/);
   assert.match(finalRoster,/Make this file the final registration baseline/);
   assert.match(finalRoster,/disabled=\{!confirmReset\|\|Boolean\(busy\)\}/);
   assert.match(finalRoster,/one database transaction/i);
+});
+
+test("Leadership exception decisions require complete authority details and resist double submit",async()=>{
+  const form=await read("src/components/ParticipantExceptionForm.jsx");
+  assert.match(form,/useSingleFlight\(\)/);
+  assert.match(form,/participant-exception-\$\{person\.id\}/);
+  assert.match(form,/form\.authority\.trim\(\)\.length>=3/);
+  assert.match(form,/form\.reason\.trim\(\)\.length>=5/);
+  assert.match(form,/form\.registration&&form\.guardian&&form\.leadership/);
+  assert.match(form,/disabled=\{busy\|\|!ready\}/);
+  assert.match(form,/aria-busy=\{busy\}/);
 });
 
 test("Shared UI announces routes and mutation outcomes without stealing normal focus",async()=>{
@@ -75,6 +91,12 @@ test("Phase 5 release layer loads after the earlier overhaul layers",async()=>{
   const phase5=main.indexOf("phase5-release-v33.css");
   assert.ok(phase4>=0);
   assert.ok(phase5>phase4);
+});
+
+test("Phase 5 advances the PWA shell so installed clients receive the hardening release",async()=>{
+  const sw=await read("public/sw.js");
+  assert.match(sw,/fsy-kumasi-shell-v47/);
+  assert.match(sw,/Phase 5 release hardening/);
 });
 
 test("Phase 5 release document records the full width and failure matrix",async()=>{
