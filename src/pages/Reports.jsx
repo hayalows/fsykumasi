@@ -37,7 +37,7 @@ export function Reports({sessionId,sessionName,capabilities=[],currentRole="",li
  useEffect(()=>{if(selectedKey&&available.some(item=>item.key===selectedKey))return;setSelectedKey(available[0]?.key||"");},[available,selectedKey]);
  const selected=available.find(item=>item.key===selectedKey)||null;
  const dataset=selected?datasets[selected.key]:null;
- const load=async(reportKey,force=false)=>{if(!reportKey||!live||!sessionId)return;if(!force&&datasets[reportKey])return;setLoading(reportKey);setError("");try{const next=await loadOperationalReport(sessionId,reportKey);setDatasets(current=>({...current,[reportKey]:next}));}catch(err){setError(err.message||"Unable to load this report.");}finally{setLoading("");}};
+ const load=async(reportKey,force=false)=>{if(!reportKey||!live||!sessionId)return;if(!force&&datasets[reportKey])return;setLoading(reportKey);setError("");try{const next=await loadOperationalReport(sessionId, reportKey);setDatasets(current=>({...current,[reportKey]:next}));}catch(err){setError(err.message||"Unable to load this report.");}finally{setLoading("");}};
  useEffect(()=>{if(selected?.key)load(selected.key);},[selected?.key,live,sessionId]);
  useEffect(()=>{setQuery("");setVisibleLimit(120);},[selectedKey]);
  const rows=dataset?.rows||[];
