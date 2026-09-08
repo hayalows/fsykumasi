@@ -35,6 +35,7 @@ import "./housing-ux-v13.css";
 import "./housing-ux-v14.css";
 import "./access-assignments-v15.css";
 import "./access-operations-v16.css";
+import "./ux-foundation-v30.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
