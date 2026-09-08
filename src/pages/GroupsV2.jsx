@@ -2,6 +2,7 @@ import { PersonName } from "../components/PersonPeek.jsx";
 import { buildStaffingPlan } from "../lib/staffing-planner.js";
 import { personSearchRank } from "../lib/person-search.js";
 import { canPlanStaff, staffException } from "../lib/staff-state.js";
+import { naturalCompare, sortByNatural } from "../lib/ux-foundation.js";
 import { useEffect, useMemo, useState } from "react";
 import { Buildings } from "@phosphor-icons/react/Buildings";
 import { CloudArrowUp } from "@phosphor-icons/react/CloudArrowUp";
@@ -15,12 +16,14 @@ import "./operations.css";
 
 function companyName(company){return company.displayName||company.customName||company.name||"Company";}
 function groupName(group){return group.displayName||group.customName||group.name||"Counselor group";}
+function personName(person){return person.fullName||person.name||`${person.firstName||""} ${person.lastName||""}`.trim();}
 
 function LiveGroup({group,members,staff}){
  const [open,setOpen]=useState(false);
  const counselor=staff.find(person=>person.id===group.counselorId);
  const covered=Boolean(counselor&&canPlanStaff(counselor));
  const issue=counselor?staffException(counselor):"";
+ const orderedMembers=sortByNatural(members,personName);
  return <div className="groups-v2-group">
   <button type="button" onClick={()=>setOpen(value=>!value)} aria-expanded={open}>
    <span><b>{groupName(group)}</b><small>{group.sex==="Female"?"YW":"YM"} · {group.memberCount||members.length} youth</small></span>
@@ -28,7 +31,7 @@ function LiveGroup({group,members,staff}){
   </button>
   {open?<div className="groups-v2-members">
    {counselor?<div><span><PersonName person={counselor} kind="staff" context={{label:"Counselor group",value:groupName(group)}}/>{issue?<small className="danger-text">{issue}</small>:null}</span></div>:null}
-   {members.map(person=><div key={person.id}><span className="person-avatar">{`${person.firstName?.[0]||""}${person.lastName?.[0]||""}`}</span><span><PersonName person={person} context={{label:"Counselor group",value:groupName(group)}}/><small>{[person.fsyId,person.unit].filter(Boolean).join(" · ")}</small></span></div>)}
+   {orderedMembers.map(person=><div key={person.id}><span className="person-avatar">{`${person.firstName?.[0]||""}${person.lastName?.[0]||""}`}</span><span><PersonName person={person} context={{label:"Counselor group",value:groupName(group)}}/><small>{[person.fsyId,person.unit].filter(Boolean).join(" · ")}</small></span></div>)}
   </div>:null}
  </div>;
 }
@@ -37,17 +40,18 @@ function LiveCompany({company,participantsByGroup,staff}){
  const [open,setOpen]=useState(false);
  const assistants=(company.assistantCoordinatorIds||[]).map(id=>staff.find(person=>person.id===id)).filter(Boolean);
  const activeAssistants=assistants.filter(canPlanStaff);
- const youth=company.groups.reduce((sum,group)=>sum+Number(group.memberCount||0),0);
- const staffed=company.groups.filter(group=>{const counselor=staff.find(person=>person.id===group.counselorId);return counselor&&canPlanStaff(counselor);}).length;
+ const orderedGroups=sortByNatural(company.groups||[],groupName);
+ const youth=orderedGroups.reduce((sum,group)=>sum+Number(group.memberCount||0),0);
+ const staffed=orderedGroups.filter(group=>{const counselor=staff.find(person=>person.id===group.counselorId);return counselor&&canPlanStaff(counselor);}).length;
  return <article className="groups-v2-company">
   <button type="button" className="groups-v2-company-head" onClick={()=>setOpen(value=>!value)} aria-expanded={open}>
-   <span><b>{companyName(company)}</b><small>{youth} youth · {company.groups.length} groups · {staffed}/{company.groups.length} active counselors</small></span>
+   <span><b>{companyName(company)}</b><small>{youth} youth · {orderedGroups.length} groups · {staffed}/{orderedGroups.length} active counselors</small></span>
    <span><b>{company.meetingSpot||"Meeting spot not set"}</b><small>{activeAssistants.length?activeAssistants.map(person=>person.name).join(", "):assistants.length?"Assistant Coordinator replacement needed":"Assistant Coordinator not assigned"}</small></span>
   </button>
   {open?<div className="groups-v2-company-body">
    {assistants.map(person=><span key={person.id}><PersonName person={person} kind="staff" context={{label:"Company responsibility",value:companyName(company)}}/>{staffException(person)?<small className="danger-text">{staffException(person)}</small>:null}</span>)}
    {company.scriptureReference?<p><b>Scripture</b> {company.scriptureReference}</p>:null}
-   <div>{company.groups.map(group=><LiveGroup key={group.id} group={group} members={participantsByGroup.get(group.id)||[]} staff={staff}/>)}</div>
+   <div>{orderedGroups.map(group=><LiveGroup key={group.id} group={group} members={participantsByGroup.get(group.id)||[]} staff={staff}/>)}</div>
   </div>:null}
  </article>;
 }
@@ -71,8 +75,8 @@ export function Groups({companyIds=null,participants,assignment,onPublish,live=f
  useEffect(()=>{refresh().catch(err=>setError(err.message||"Unable to load the current structure."));},[sessionId,live,assignment?.published]);
 
  const published=live?structure.published:Boolean(assignment?.published);
- const groups=(live?structure.groups:(assignment?.groups||[])).filter(group=>companyIds===null||companyIds.includes(group.companyId));
- const companies=(live?structure.companies:(assignment?.companies||[])).filter(company=>companyIds===null||companyIds.includes(company.id));
+ const groups=sortByNatural((live?structure.groups:(assignment?.groups||[])).filter(group=>companyIds===null||companyIds.includes(group.companyId)),groupName);
+ const companies=sortByNatural((live?structure.companies:(assignment?.companies||[])).filter(company=>companyIds===null||companyIds.includes(company.id)),companyName);
  const staffById=useMemo(()=>new Map(staff.map(person=>[person.id,person])),[staff]);
  const participantsByGroup=useMemo(()=>participants.reduce((map,person)=>{if(person.groupId){if(!map.has(person.groupId))map.set(person.groupId,[]);map.get(person.groupId).push(person);}return map;},new Map()),[participants]);
 
@@ -85,7 +89,7 @@ export function Groups({companyIds=null,participants,assignment,onPublish,live=f
    const assistantRanks=(company.assistantCoordinatorIds||[]).map(id=>staffById.get(id)).filter(Boolean).map(person=>personSearchRank(person,text,[companyName(company)]));
    const companyRank=personSearchRank({name:companyName(company)},text,[company.meetingSpot||"",company.scriptureReference||"",...company.groups.map(groupName)]);
    return {company,rank:Math.min(companyRank,...groupRanks,...personRanks,...assistantRanks)};
-  }).filter(item=>Number.isFinite(item.rank)).sort((a,b)=>a.rank-b.rank||companyName(a.company).localeCompare(companyName(b.company),undefined,{numeric:true})).map(item=>item.company);
+  }).filter(item=>Number.isFinite(item.rank)).sort((a,b)=>a.rank-b.rank||naturalCompare(companyName(a.company),companyName(b.company))).map(item=>item.company);
  },[companies,query,participantsByGroup,staffById]);
 
  const counselorsAssigned=groups.filter(group=>{const person=staffById.get(group.counselorId);return person&&canPlanStaff(person);}).length;
