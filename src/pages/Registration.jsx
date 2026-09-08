@@ -35,13 +35,33 @@ export function Registration(props) {
   const canUseRegistrationTools = capabilities.includes("registration_view") || capabilities.includes("registration_manage") || !live;
   const normalizedMode = canUseRegistrationTools && ["desk", "roster", "setup"].includes(initialMode) ? initialMode : "desk";
   const [mode, setMode] = useState(normalizedMode);
+  const [journeyMode, setJourneyMode] = useState(normalizedMode === "roster" ? "roster" : "desk");
   const [setupMode, setSetupMode] = useState("review");
+  const [visitedSetupModes, setVisitedSetupModes] = useState(() => new Set(normalizedMode === "setup" ? ["review"] : []));
   const [structureSettings, setStructureSettings] = useState(DEFAULT_STRUCTURE_SETTINGS);
 
-  useEffect(() => { setMode(normalizedMode); }, [normalizedMode]);
+  const rememberSetup = (next) => setVisitedSetupModes((current) => {
+    if (current.has(next)) return current;
+    const updated = new Set(current);
+    updated.add(next);
+    return updated;
+  });
+
+  useEffect(() => {
+    setMode(normalizedMode);
+    if (normalizedMode === "desk" || normalizedMode === "roster") setJourneyMode(normalizedMode);
+    if (normalizedMode === "setup") rememberSetup(setupMode);
+  }, [normalizedMode]);
+
   const chooseMode = (next) => {
     setMode(next);
+    if (next === "desk" || next === "roster") setJourneyMode(next);
+    if (next === "setup") rememberSetup(setupMode);
     onNavigate?.({ view: "registration", mode: next, filter: "" });
+  };
+  const chooseSetupMode = (next) => {
+    setSetupMode(next);
+    rememberSetup(next);
   };
 
   useEffect(() => {
@@ -65,14 +85,14 @@ export function Registration(props) {
   const modeMeta = MODE_META[mode];
   const journeyProps = {
     participants: imported,
+    initialGroups: props.groups || [],
     initialFilter,
     sessionId,
-    setImported: props.setImported,
     capabilities,
     onOperationalDataChanged,
   };
 
-  return <div className="registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28">
+  return <div className="registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28 registration-v29">
     <section className="page registration-workspace-intro registration-workspace-intro-v5 registration-unified-intro">
       <PageHead
         title="Registration & check-in"
@@ -100,15 +120,17 @@ export function Registration(props) {
     </section>
 
     <div className="registration-workspace-pane registration-workspace-pane-v5 registration-unified-pane">
-      {mode === "desk" ? <div role="tabpanel" aria-labelledby="registration-mode-desk"><RegistrationJourney view="desk" {...journeyProps} /></div> : null}
-      {mode === "roster" ? <div role="tabpanel" aria-labelledby="registration-mode-roster"><RegistrationJourney view="roster" {...journeyProps} /></div> : null}
-      {mode === "setup" ? <div role="tabpanel" aria-labelledby="registration-mode-setup" className="registration-setup-shell">
+      <div role="tabpanel" aria-labelledby={journeyMode === "desk" ? "registration-mode-desk" : "registration-mode-roster"} hidden={mode === "setup"}>
+        <RegistrationJourney view={journeyMode} {...journeyProps} />
+      </div>
+
+      {visitedSetupModes.size ? <div role="tabpanel" aria-labelledby="registration-mode-setup" className="registration-setup-shell" hidden={mode !== "setup"}>
         <div className="registration-setup-nav-wrap">
           <SegmentedControl
             className="registration-setup-tabs"
             label="Registration preparation area"
             value={setupMode}
-            onChange={setSetupMode}
+            onChange={chooseSetupMode}
             options={[
               { value: "review", label: "Preflight review", count: cohortSummary?.reviewExceptions || 0, id: "registration-setup-review" },
               { value: "identity", label: "FSY IDs", id: "registration-setup-identity" },
@@ -117,10 +139,10 @@ export function Registration(props) {
             ]}
           />
         </div>
-        {setupMode === "review" ? <RegistrationReviewInbox {...props} imported={imported} structureSettings={structureSettings} sessionName={sessionName} /> : null}
-        {setupMode === "identity" ? <IdentityFoundationV28 sessionId={sessionId} capabilities={capabilities} onChanged={onOperationalDataChanged} /> : null}
-        {setupMode === "staff" ? <StaffReadiness sessionId={sessionId} onNavigate={onNavigate} /> : null}
-        {setupMode === "final" ? <RegistrationFinalBaselineV21 sessionId={sessionId} canManage={props.canManage} setImported={props.setImported} onChanged={handleFinalBaselineChanged} onNavigate={onNavigate} /> : null}
+        {visitedSetupModes.has("review") ? <div hidden={setupMode !== "review"}><RegistrationReviewInbox {...props} imported={imported} structureSettings={structureSettings} sessionName={sessionName} /></div> : null}
+        {visitedSetupModes.has("identity") ? <div hidden={setupMode !== "identity"}><IdentityFoundationV28 sessionId={sessionId} capabilities={capabilities} onChanged={onOperationalDataChanged} /></div> : null}
+        {visitedSetupModes.has("staff") ? <div hidden={setupMode !== "staff"}><StaffReadiness sessionId={sessionId} onNavigate={onNavigate} /></div> : null}
+        {visitedSetupModes.has("final") ? <div hidden={setupMode !== "final"}><RegistrationFinalBaselineV21 sessionId={sessionId} canManage={props.canManage} setImported={props.setImported} onChanged={handleFinalBaselineChanged} onNavigate={onNavigate} /></div> : null}
       </div> : null}
     </div>
   </div>;
