@@ -42,15 +42,15 @@ export function PersonProvider({children,participants=[],assignment,sessionId,on
     ].filter(([,value])=>value!==null&&value!==undefined&&value!=='').map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>{selected.kind==='staff'&&staffException(selected.person)?<p className="notice">{staffException(selected.person)}</p>:null}{selected.context?.label&&selected.context?.value?<div className="person-peek-context"><span>{selected.context.label}</span><b>{selected.context.value}</b></div>:null}{error?<p role="alert">{error}</p>:null}<button className="secondary" disabled={selected.loading||!identity.id} onClick={()=>{const id=identity.id;close();onNavigate('people',{personId:id});}}>View full record</button></section></DismissibleLayer>:null}</PersonContext.Provider>;
 }
 
-export function PersonName({person,kind='participant',context,children,className='',showAge=true}) {
+export function PersonName({person,kind='participant',context,children,className='',showAge=true,interactive=true}) {
   const personContext=useContext(PersonContext);
   const name=children||person.fullName||person.name||person.display_name||person.full_name;
   const id=person.id||person.personId||person.person_id;
   const canonical=kind==='participant'?personContext?.participantById?.get(id):null;
-  const age=kind==='participant'?(person.age??person.turningAge??canonical?.age??canonical?.turningAge):null;
+  const age=kind==='participant'?(person.age??canonical?.age):null;
   const hasAge=showAge&&age!==null&&age!==undefined&&age!==''&&Number.isFinite(Number(age));
   const content=<>{name}{hasAge?<span className="person-age-inline" aria-label={`Age ${age}`}>· {age}</span>:null}</>;
-  if(!personContext?.open)return <span className={className}>{content}</span>;
+  if(!interactive||!personContext?.open)return <span className={`${interactive?'':'person-name-static '}${className}`.trim()}>{content}</span>;
   const activate=(event)=>{event.preventDefault();event.stopPropagation();personContext.open({...canonical,...person},kind,context);};
   return <span
     className={`person-name ${className}`}
