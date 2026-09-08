@@ -11,7 +11,7 @@ const css = await readFile(new URL("../src/pages/registration-journey-v2.css", i
 test("Registration exposes one clear three-area journey", () => {
   assert.match(registration, /Registration & check-in/);
   assert.match(registration, /value: "desk", label: "Live check-in"/);
-  assert.match(registration, /value: "roster", label: "Exceptions"/);
+  assert.match(registration, /value: "roster", label: "Solutions"/);
   assert.match(registration, /value: "setup", label: "Prepare"/);
   assert.match(registration, /registration-mode-cue-v5/);
   assert.doesNotMatch(registration, /ArrivalOperations/);
