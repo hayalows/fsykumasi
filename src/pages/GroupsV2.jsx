@@ -3,7 +3,8 @@ import { buildStaffingPlan } from "../lib/staffing-planner.js";
 import { personSearchRank } from "../lib/person-search.js";
 import { canPlanStaff, staffException } from "../lib/staff-state.js";
 import { naturalCompare, sortByNatural } from "../lib/ux-foundation.js";
-import { useEffect, useMemo, useState } from "react";
+import { readWorkspaceLocation } from "../lib/navigation.js";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Buildings } from "@phosphor-icons/react/Buildings";
 import { CloudArrowUp } from "@phosphor-icons/react/CloudArrowUp";
 import { FloppyDisk } from "@phosphor-icons/react/FloppyDisk";
@@ -18,40 +19,43 @@ function companyName(company){return company.displayName||company.customName||co
 function groupName(group){return group.displayName||group.customName||group.name||"Counselor group";}
 function personName(person){return person.fullName||person.name||`${person.firstName||""} ${person.lastName||""}`.trim();}
 
-function LiveGroup({group,members,staff}){
- const [open,setOpen]=useState(false);
+function LiveGroup({group,members,staff,focusGroupId}){
+ const [open,setOpen]=useState(group.id===focusGroupId);
  const counselor=staff.find(person=>person.id===group.counselorId);
  const covered=Boolean(counselor&&canPlanStaff(counselor));
  const issue=counselor?staffException(counselor):"";
  const orderedMembers=sortByNatural(members,personName);
- return <div className="groups-v2-group">
+ const returnTo={view:"groups",groupId:group.id,companyId:group.companyId};
+ return <div className={`groups-v2-group ${group.id===focusGroupId?"context-focus":""}`} id={`group-${group.id}`}>
   <button type="button" onClick={()=>setOpen(value=>!value)} aria-expanded={open}>
    <span><b>{groupName(group)}</b><small>{group.sex==="Female"?"YW":"YM"} · {group.memberCount||members.length} youth</small></span>
    <span><b>{covered?counselor.name:counselor?"Replacement needed":"Counselor needed"}</b><small>{open?"Hide people":issue||"Open group"}</small></span>
   </button>
   {open?<div className="groups-v2-members">
-   {counselor?<div><span><PersonName person={counselor} kind="staff" context={{label:"Counselor group",value:groupName(group)}}/>{issue?<small className="danger-text">{issue}</small>:null}</span></div>:null}
-   {orderedMembers.map(person=><div key={person.id}><span className="person-avatar">{`${person.firstName?.[0]||""}${person.lastName?.[0]||""}`}</span><span><PersonName person={person} context={{label:"Counselor group",value:groupName(group)}}/><small>{[person.fsyId,person.unit].filter(Boolean).join(" · ")}</small></span></div>)}
+   {counselor?<div><span><PersonName person={counselor} kind="staff" context={{label:"Counselor group",value:groupName(group),groupId:group.id,companyId:group.companyId,returnTo}}/>{issue?<small className="danger-text">{issue}</small>:null}</span></div>:null}
+   {orderedMembers.map(person=><div key={person.id}><span className="person-avatar">{`${person.firstName?.[0]||""}${person.lastName?.[0]||""}`}</span><span><PersonName person={person} context={{label:"Counselor group",value:groupName(group),groupId:group.id,companyId:group.companyId,returnTo}}/><small>{[person.fsyId,person.unit].filter(Boolean).join(" · ")}</small></span></div>)}
   </div>:null}
  </div>;
 }
 
-function LiveCompany({company,participantsByGroup,staff}){
- const [open,setOpen]=useState(false);
+function LiveCompany({company,participantsByGroup,staff,focusGroupId,focusCompanyId}){
+ const focused=company.id===focusCompanyId||(company.groups||[]).some(group=>group.id===focusGroupId);
+ const [open,setOpen]=useState(focused);
  const assistants=(company.assistantCoordinatorIds||[]).map(id=>staff.find(person=>person.id===id)).filter(Boolean);
  const activeAssistants=assistants.filter(canPlanStaff);
  const orderedGroups=sortByNatural(company.groups||[],groupName);
  const youth=orderedGroups.reduce((sum,group)=>sum+Number(group.memberCount||0),0);
  const staffed=orderedGroups.filter(group=>{const counselor=staff.find(person=>person.id===group.counselorId);return counselor&&canPlanStaff(counselor);}).length;
- return <article className="groups-v2-company">
+ const returnTo={view:"groups",companyId:company.id};
+ return <article className={`groups-v2-company ${focused?"context-focus":""}`} id={`company-${company.id}`}>
   <button type="button" className="groups-v2-company-head" onClick={()=>setOpen(value=>!value)} aria-expanded={open}>
    <span><b>{companyName(company)}</b><small>{youth} youth · {orderedGroups.length} groups · {staffed}/{orderedGroups.length} active counselors</small></span>
    <span><b>{company.meetingSpot||"Meeting spot not set"}</b><small>{activeAssistants.length?activeAssistants.map(person=>person.name).join(", "):assistants.length?"Assistant Coordinator replacement needed":"Assistant Coordinator not assigned"}</small></span>
   </button>
   {open?<div className="groups-v2-company-body">
-   {assistants.map(person=><span key={person.id}><PersonName person={person} kind="staff" context={{label:"Company responsibility",value:companyName(company)}}/>{staffException(person)?<small className="danger-text">{staffException(person)}</small>:null}</span>)}
+   {assistants.map(person=><span key={person.id}><PersonName person={person} kind="staff" context={{label:"Company responsibility",value:companyName(company),companyId:company.id,returnTo}}/>{staffException(person)?<small className="danger-text">{staffException(person)}</small>:null}</span>)}
    {company.scriptureReference?<p><b>Scripture</b> {company.scriptureReference}</p>:null}
-   <div>{orderedGroups.map(group=><LiveGroup key={group.id} group={group} members={participantsByGroup.get(group.id)||[]} staff={staff}/>)}</div>
+   <div>{orderedGroups.map(group=><LiveGroup key={group.id} group={group} members={participantsByGroup.get(group.id)||[]} staff={staff} focusGroupId={focusGroupId}/>)}</div>
   </div>:null}
  </article>;
 }
@@ -59,6 +63,10 @@ function LiveCompany({company,participantsByGroup,staff}){
 function DraftCompany({company}){const youth=company.groups.reduce((sum,group)=>sum+group.members.length,0);return <div className="groups-v2-draft-company"><b>{company.name}</b><span>{youth} youth · {company.groups.length} groups</span></div>;}
 
 export function Groups({companyIds=null,participants,assignment,onPublish,live=false,canManage=false,sessionId,onNavigatePeople,onSettingsChange,sessionName}){
+ const initialLocation=useMemo(()=>readWorkspaceLocation(),[]);
+ const focusGroupId=initialLocation.groupId||"";
+ const focusCompanyId=initialLocation.companyId||"";
+ const focusHandled=useRef(false);
  const [settings,setSettings]=useState(DEFAULT_STRUCTURE_SETTINGS);
  const [draftSettings,setDraftSettings]=useState(DEFAULT_STRUCTURE_SETTINGS);
  const [structure,setStructure]=useState({groups:[],companies:[],published:false});
@@ -79,6 +87,17 @@ export function Groups({companyIds=null,participants,assignment,onPublish,live=f
  const companies=sortByNatural((live?structure.companies:(assignment?.companies||[])).filter(company=>companyIds===null||companyIds.includes(company.id)),companyName);
  const staffById=useMemo(()=>new Map(staff.map(person=>[person.id,person])),[staff]);
  const participantsByGroup=useMemo(()=>participants.reduce((map,person)=>{if(person.groupId){if(!map.has(person.groupId))map.set(person.groupId,[]);map.get(person.groupId).push(person);}return map;},new Map()),[participants]);
+
+ useEffect(()=>{
+  if(focusHandled.current||(!focusGroupId&&!focusCompanyId))return;
+  const groupExists=focusGroupId&&groups.some(group=>group.id===focusGroupId);
+  const companyExists=focusCompanyId&&companies.some(company=>company.id===focusCompanyId);
+  if(!groupExists&&!companyExists)return;
+  focusHandled.current=true;
+  const targetId=groupExists?`group-${focusGroupId}`:`company-${focusCompanyId}`;
+  const timer=window.setTimeout(()=>document.getElementById(targetId)?.scrollIntoView({behavior:"smooth",block:"center"}),0);
+  return()=>window.clearTimeout(timer);
+ },[focusGroupId,focusCompanyId,groups.length,companies.length]);
 
  const filtered=useMemo(()=>{
   const text=query.trim();
@@ -113,7 +132,7 @@ export function Groups({companyIds=null,participants,assignment,onPublish,live=f
 
   {mode==="live"?<>
    <div className="groups-v2-live-summary"><span><b>{companies.length}</b><small>{companies.length===1?"company":"companies"}</small></span><span><b>{groups.length}</b><small>counselor groups</small></span><span><b>{counselorsAssigned}/{groups.length}</b><small>active counselors</small></span>{needCounselors?<span className="attention"><b>{needCounselors}</b><small>need counselor</small></span>:null}{needCompanyAC?<span className="attention"><b>{needCompanyAC}</b><small>need AC coverage</small></span>:null}</div>
-   <article className="panel groups-v2-live"><div className="groups-v2-live-head"><div><span className="kicker">Live structure</span><h2>{scoped&&companies.length===1?companyName(companies[0]):"Find a company or group"}</h2></div>{onNavigatePeople?<button type="button" className="secondary" onClick={onNavigatePeople}><UsersThree/>Find person</button>:null}</div>{companies.length>1?<SearchField value={query} onChange={setQuery} label="Search live structure" placeholder="Company, group, youth, counselor, ward or meeting spot"/>:null}<div className="groups-v2-company-list">{filtered.map(company=><LiveCompany key={company.id} company={company} participantsByGroup={participantsByGroup} staff={staff}/>)}</div>{!filtered.length?<Empty icon={Buildings} title="No company found" text="Try another company, group, person or meeting location."/>:null}</article>
+   <article className="panel groups-v2-live"><div className="groups-v2-live-head"><div><span className="kicker">Live structure</span><h2>{scoped&&companies.length===1?companyName(companies[0]):"Find a company or group"}</h2></div>{onNavigatePeople?<button type="button" className="secondary" onClick={onNavigatePeople}><UsersThree/>Find person</button>:null}</div>{companies.length>1?<SearchField value={query} onChange={setQuery} label="Search live structure" placeholder="Company, group, youth, counselor, ward or meeting spot"/>:null}<div className="groups-v2-company-list">{filtered.map(company=><LiveCompany key={company.id} company={company} participantsByGroup={participantsByGroup} staff={staff} focusGroupId={focusGroupId} focusCompanyId={focusCompanyId}/>)}</div>{!filtered.length?<Empty icon={Buildings} title="No company found" text="Try another company, group, person or meeting location."/>:null}</article>
   </>:<>
    <article className="panel groups-v2-planning-rules"><div className="panel-head"><div><span className="kicker">1 · Rules</span><h2>Choose how groups should be built</h2><p>Nothing changes in the live structure until a reviewed draft is published.</p></div></div><div className="groups-v2-rule-grid"><label>Minimum youth<input type="number" min="6" max="12" value={draftSettings.groupMinSize} onChange={event=>setDraftSettings({...draftSettings,groupMinSize:Number(event.target.value)})}/></label><label>Maximum youth<input type="number" min={draftSettings.groupMinSize} max="15" value={draftSettings.groupMaxSize} onChange={event=>setDraftSettings({...draftSettings,groupMaxSize:Number(event.target.value)})}/></label><label>Groups per company<select value={draftSettings.groupsPerCompany} onChange={event=>setDraftSettings({...draftSettings,groupsPerCompany:Number(event.target.value)})}>{[1,2,3,4,5,6].map(number=><option value={number} key={number}>{number}</option>)}</select></label><label className="toggle-setting"><input type="checkbox" checked={!draftSettings.useAgeBands} onChange={event=>setDraftSettings({...draftSettings,useAgeBands:!event.target.checked})}/><span><b>Mix ages fairly</b><small>Spread available ages across same-sex counselor groups.</small></span></label></div><details className="advanced-settings"><summary>Advanced mixing options</summary><div><label className="toggle-setting"><input type="checkbox" checked={draftSettings.avoidSameUnit} onChange={event=>setDraftSettings({...draftSettings,avoidSameUnit:event.target.checked})}/><span>Avoid repeating the same ward/branch where possible</span></label><label className="toggle-setting"><input type="checkbox" checked={draftSettings.balanceSexes} onChange={event=>setDraftSettings({...draftSettings,balanceSexes:event.target.checked})}/><span>Balance YW and YM groups inside companies</span></label></div></details><div className="panel-actions"><span>Current: {settings.groupMinSize}–{settings.groupMaxSize} youth/group · {settings.groupsPerCompany} groups/company</span><button className="primary" disabled={busy==="rules"||!participants.length} onClick={saveRules}><FloppyDisk/>{busy==="rules"?"Building…":"Save rules & build draft"}</button></div></article>
    {draft?<article className="panel groups-v2-draft"><div className="panel-head"><div><span className="kicker">2 · Review draft</span><h2>{draft.groups.length} groups · {draft.companies.length} companies</h2><p>{draft.issues.length?`${draft.issues.length} blocking conflict${draft.issues.length===1?"":"s"} must be resolved.`:"The draft passed its blocking checks. Inspect the mix before publishing."}</p></div><Status tone={draft.issues.length?"warn":"good"}>{draft.issues.length?"Needs review":"Ready"}</Status></div><div className="groups-v2-draft-list">{draft.companies.slice(0,12).map(company=><DraftCompany key={company.id} company={company}/>)}</div><div className="panel-actions"><button className="secondary" onClick={generate}><Sparkle/>Build another draft</button><button className="primary" disabled={busy==="publish"||Boolean(draft.issues.length)} onClick={publish}><CloudArrowUp/>{busy==="publish"?"Publishing…":published?"Publish as new structure":"Publish reviewed structure"}</button></div></article>:null}
