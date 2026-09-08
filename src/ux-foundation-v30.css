@@ -196,6 +196,28 @@ button {
   overflow-wrap: anywhere;
 }
 
+/* Staff readiness must not imply a green ready state while its source data is
+   still being checked. */
+.staff-readiness-loading-v30 {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.staff-readiness-loading-v30 small {
+  max-width: 42ch;
+  line-height: 1.45;
+}
+
+.staff-readiness-metrics-v28 button:disabled {
+  cursor: wait;
+  opacity: .62;
+}
+
 /* A compact width is a real supported layout, not a clipped desktop layout. */
 @media (max-width: 760px) {
   .page {
@@ -257,6 +279,22 @@ button {
     text-align: center;
     white-space: normal;
     overflow-wrap: normal;
+  }
+
+  /* Keep every live-structure metric visible. A warning must never sit just
+     outside the viewport with no scroll affordance. */
+  .groups-v2-live-summary {
+    width: 100%;
+    max-width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    overflow: visible !important;
+  }
+
+  .groups-v2-live-summary > span {
+    min-width: 0;
+    max-width: 100%;
   }
 }
 
