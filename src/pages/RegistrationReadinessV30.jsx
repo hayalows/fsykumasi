@@ -51,6 +51,7 @@ export function RegistrationReadinessV30({
   const [baseline, setBaseline] = useState(null);
   const [loading, setLoading] = useState(Boolean(live && sessionId));
   const [error, setError] = useState("");
+  const [checkErrors, setCheckErrors] = useState({});
   const blockerCount = useMemo(() => registrationBlockerCount(imported), [imported]);
   const staffCurrent = useMemo(() => currentStaff(staff), [staff]);
   const staffConfirmation = useMemo(() => staffCurrent.filter((person) => staffState(person).clearance === "confirmation_required").length, [staffCurrent]);
@@ -64,24 +65,32 @@ export function RegistrationReadinessV30({
       setBaseline(null);
       setLoading(false);
       setError("");
+      setCheckErrors({});
       return;
     }
     setLoading(true);
     setError("");
+    setCheckErrors({});
     const results = await Promise.allSettled([
       loadIdentityReadiness(sessionId),
       loadStaff(sessionId),
       loadFinalRegistrationBaseline(sessionId),
     ]);
+    const labels = ["identity", "staff", "baseline"];
+    const failures = {};
+    results.forEach((result, index) => {
+      if (result.status === "rejected") failures[labels[index]] = result.reason?.message || "Could not refresh";
+    });
     if (results[0].status === "fulfilled") setIdentity(results[0].value);
     if (results[1].status === "fulfilled") setStaff(results[1].value || []);
     if (results[2].status === "fulfilled") setBaseline(results[2].value || null);
-    const failed = results.filter((result) => result.status === "rejected");
-    if (failed.length) setError(`${failed.length} readiness check${failed.length === 1 ? "" : "s"} could not refresh.`);
+    setCheckErrors(failures);
+    const failedCount = Object.keys(failures).length;
+    if (failedCount) setError(`${failedCount} readiness check${failedCount === 1 ? "" : "s"} could not refresh. No failed check is being shown as ready.`);
     setLoading(false);
   };
 
-  useEffect(() => { reload().catch((err) => { setError(err.message || "Readiness could not load."); setLoading(false); }); }, [sessionId, live]);
+  useEffect(() => { reload().catch((err) => { setError(err.message || "Readiness could not load."); setCheckErrors({ identity: "Could not load", staff: "Could not load", baseline: "Could not load" }); setLoading(false); }); }, [sessionId, live]);
 
   const openTool = (next) => {
     setVisited((current) => {
@@ -95,22 +104,25 @@ export function RegistrationReadinessV30({
 
   const identityPending = !identity || (!Number(identity.finalizedIds || 0) && !Number(identity.draftIds || 0));
   const identityReview = Number(identity?.unresolvedOrigin || 0);
-  const identityStatus = loading && !identity ? "Checking" : identityReview ? `${identityReview} origin issue${identityReview === 1 ? "" : "s"}` : Number(identity?.finalizedIds || 0) ? "Finalized" : Number(identity?.draftIds || 0) ? "Draft ready" : "Not prepared";
-  const identityTone = loading && !identity ? "muted" : identityReview || identityPending ? "warn" : "good";
-  const staffStatus = loading && !staff.length ? "Checking" : staffConfirmation ? `${staffConfirmation} need confirmation` : staffAttention ? `${staffAttention} need attention` : staffCurrent.length ? "Ready" : "No Staff loaded";
-  const staffTone = loading && !staff.length ? "muted" : staffConfirmation || staffAttention || !staffCurrent.length ? "warn" : "good";
-  const baselineStatus = loading && baseline === null ? "Checking" : baseline ? "Final baseline active" : "Not finalized";
-  const baselineTone = loading && baseline === null ? "muted" : baseline ? "good" : "warn";
+  const identityStatus = checkErrors.identity ? "Could not load" : loading && !identity ? "Checking" : identityReview ? `${identityReview} origin issue${identityReview === 1 ? "" : "s"}` : Number(identity?.finalizedIds || 0) ? "Finalized" : Number(identity?.draftIds || 0) ? "Draft ready" : "Not prepared";
+  const identityTone = checkErrors.identity ? "danger" : loading && !identity ? "muted" : identityReview || identityPending ? "warn" : "good";
+  const staffStatus = checkErrors.staff ? "Could not load" : loading && !staff.length ? "Checking" : staffConfirmation ? `${staffConfirmation} need confirmation` : staffAttention ? `${staffAttention} need attention` : staffCurrent.length ? "Ready" : "No Staff loaded";
+  const staffTone = checkErrors.staff ? "danger" : loading && !staff.length ? "muted" : staffConfirmation || staffAttention || !staffCurrent.length ? "warn" : "good";
+  const baselineStatus = checkErrors.baseline ? "Could not load" : loading && baseline === null ? "Checking" : baseline ? "Final baseline active" : "Not finalized";
+  const baselineTone = checkErrors.baseline ? "danger" : loading && baseline === null ? "muted" : baseline ? "good" : "warn";
+  const hasCheckErrors = Object.keys(checkErrors).length > 0;
 
-  const nextStep = !baseline
-    ? { title: "Confirm the final roster", text: "Use the complete official Participant + Counselor export before treating rehearsal structure as final.", action: () => openTool("final"), label: "Open Final roster" }
-    : blockerCount
-      ? { title: `Resolve ${blockerCount.toLocaleString()} participant blocker${blockerCount === 1 ? "" : "s"}`, text: "Participant exceptions live in one place now. Work them in Solutions instead of repeating a separate preflight queue.", action: () => onNavigate?.({ view: "registration", mode: "roster", filter: "needs_help" }), label: "Open Solutions" }
-      : identityPending || identityReview
-        ? { title: "Finish participant identities", text: "Prepare and review FSY IDs after the active participant cohort and counselor groups are stable.", action: () => openTool("identity"), label: "Open FSY IDs" }
-        : staffConfirmation || staffAttention
-          ? { title: "Finish Staff readiness", text: "Source approval stays separate from service confirmation and operational assignment readiness.", action: () => openTool("staff"), label: "Open Staff readiness" }
-          : { title: "Registration readiness is clear", text: "The final roster, participant blockers, participant identities and Staff readiness do not currently show an open readiness task.", action: () => onNavigate?.({ view: "registration", mode: "desk" }), label: "Go to Live check-in" };
+  const nextStep = hasCheckErrors
+    ? { title: "Retry the readiness checks", text: "At least one supporting check did not load, so Readiness will not guess or mark it complete.", action: reload, label: "Retry checks" }
+    : !baseline
+      ? { title: "Confirm the final roster", text: "Use the complete official Participant + Counselor export before treating rehearsal structure as final.", action: () => openTool("final"), label: "Open Final roster" }
+      : blockerCount
+        ? { title: `Resolve ${blockerCount.toLocaleString()} participant blocker${blockerCount === 1 ? "" : "s"}`, text: "Participant exceptions live in one place now. Work them in Solutions instead of repeating a separate preflight queue.", action: () => onNavigate?.({ view: "registration", mode: "roster", filter: "needs_help" }), label: "Open Solutions" }
+        : identityPending || identityReview
+          ? { title: "Finish participant identities", text: "Prepare and review FSY IDs after the active participant cohort and counselor groups are stable.", action: () => openTool("identity"), label: "Open FSY IDs" }
+          : staffConfirmation || staffAttention
+            ? { title: "Finish Staff readiness", text: "Source approval stays separate from service confirmation and operational assignment readiness.", action: () => openTool("staff"), label: "Open Staff readiness" }
+            : { title: "Registration readiness is clear", text: "The final roster, participant blockers, participant identities and Staff readiness do not currently show an open readiness task.", action: () => onNavigate?.({ view: "registration", mode: "desk" }), label: "Go to Live check-in" };
 
   const toolMeta = TOOL_META[tool];
   if (tool !== "overview") {
@@ -128,7 +140,7 @@ export function RegistrationReadinessV30({
   return <section className="registration-readiness-v30" aria-busy={loading}>
     {error ? <MutationFeedback tone="error">{error} <button type="button" className="text-action" onClick={reload}>Retry</button></MutationFeedback> : null}
     <article className="panel registration-readiness-next-v30">
-      <div className="registration-readiness-next-icon-v30">{blockerCount || identityPending || identityReview || staffConfirmation || staffAttention || !baseline ? <WarningCircle size={24} /> : <CheckCircle size={24} weight="fill" />}</div>
+      <div className="registration-readiness-next-icon-v30">{hasCheckErrors || blockerCount || identityPending || identityReview || staffConfirmation || staffAttention || !baseline ? <WarningCircle size={24} /> : <CheckCircle size={24} weight="fill" />}</div>
       <div><span className="kicker">Recommended next action</span><h2>{loading ? "Checking readiness…" : nextStep.title}</h2><p>{loading ? "Reading the final roster, participant blockers, identities and Staff state without hiding the current screen." : nextStep.text}</p></div>
       <button type="button" className="primary" disabled={loading} onClick={nextStep.action}>{loading ? "Checking…" : nextStep.label}<ArrowRight /></button>
     </article>
@@ -136,7 +148,7 @@ export function RegistrationReadinessV30({
     <div className="registration-readiness-summary-v30">
       <span><b>{Number(cohort?.eligible || 0).toLocaleString()}</b><small>eligible youth</small></span>
       <span><b>{blockerCount.toLocaleString()}</b><small>participant blockers</small></span>
-      <span><b>{staffCurrent.length.toLocaleString()}</b><small>current Staff</small></span>
+      <span><b>{checkErrors.staff ? "—" : staffCurrent.length.toLocaleString()}</b><small>current Staff</small></span>
       <button type="button" className="text-action" disabled={loading} onClick={reload}><ArrowClockwise />{loading ? "Checking" : "Refresh readiness"}</button>
     </div>
 
@@ -156,8 +168,8 @@ export function RegistrationReadinessV30({
         title="Final roster"
         status={baselineStatus}
         tone={baselineTone}
-        value={baseline ? Number(baseline.recordCount || 0).toLocaleString() : undefined}
-        detail={baseline ? `Active final source · ${baseline.sourceFilename}` : "The final Participant + Counselor export has not been confirmed as the active baseline."}
+        value={!checkErrors.baseline && baseline ? Number(baseline.recordCount || 0).toLocaleString() : undefined}
+        detail={checkErrors.baseline ? "The final-roster check did not load. Retry before treating this state as complete." : baseline ? `Active final source · ${baseline.sourceFilename}` : "The final Participant + Counselor export has not been confirmed as the active baseline."}
         action={() => openTool("final")}
         actionLabel="Open Final roster"
         disabled={loading && baseline === null}
@@ -167,8 +179,8 @@ export function RegistrationReadinessV30({
         title="FSY IDs"
         status={identityStatus}
         tone={identityTone}
-        value={identity ? Number(identity.finalizedIds || identity.draftIds || 0).toLocaleString() : undefined}
-        detail={identityReview ? `${identityReview} origin issue${identityReview === 1 ? "" : "s"} must be resolved before finalization.` : Number(identity?.finalizedIds || 0) ? "The active participant identity set is finalized." : "Prepare IDs only after the active participant cohort and counselor groups are stable."}
+        value={!checkErrors.identity && identity ? Number(identity.finalizedIds || identity.draftIds || 0).toLocaleString() : undefined}
+        detail={checkErrors.identity ? "The participant-identity check did not load. Retry before treating this state as complete." : identityReview ? `${identityReview} origin issue${identityReview === 1 ? "" : "s"} must be resolved before finalization.` : Number(identity?.finalizedIds || 0) ? "The active participant identity set is finalized." : "Prepare IDs only after the active participant cohort and counselor groups are stable."}
         action={() => openTool("identity")}
         actionLabel="Open FSY IDs"
         disabled={loading && !identity}
@@ -178,8 +190,8 @@ export function RegistrationReadinessV30({
         title="Staff readiness"
         status={staffStatus}
         tone={staffTone}
-        value={staffCurrent.length ? staffCurrent.length.toLocaleString() : undefined}
-        detail={staffConfirmation ? `${staffConfirmation} Staff member${staffConfirmation === 1 ? "" : "s"} still need service confirmation.` : staffAttention ? `${staffAttention} Staff member${staffAttention === 1 ? "" : "s"} have a clearance, arrival or replacement issue.` : "Source approval, service confirmation and operational readiness stay separate."}
+        value={!checkErrors.staff && staffCurrent.length ? staffCurrent.length.toLocaleString() : undefined}
+        detail={checkErrors.staff ? "The Staff readiness check did not load. Retry before treating this state as complete." : staffConfirmation ? `${staffConfirmation} Staff member${staffConfirmation === 1 ? "" : "s"} still need service confirmation.` : staffAttention ? `${staffAttention} Staff member${staffAttention === 1 ? "" : "s"} have a clearance, arrival or replacement issue.` : "Source approval, service confirmation and operational readiness stay separate."}
         action={() => openTool("staff")}
         actionLabel="Open Staff readiness"
         disabled={loading && !staff.length}
