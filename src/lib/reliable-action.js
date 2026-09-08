@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 /**
  * Prevent the same UI action from being submitted twice before React has had
@@ -18,6 +18,22 @@ export function useSingleFlight() {
       active.current.delete(actionKey);
     }
   }, []);
+}
+
+/**
+ * Protect refresh/close while a consequential request is still in flight.
+ * In-app controls should also remain disabled while `active` is true.
+ */
+export function usePendingPageGuard(active) {
+  useEffect(() => {
+    if (!active || typeof window === "undefined") return undefined;
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [active]);
 }
 
 export function recoverableWriteError(error, fallback = "That change could not be saved.") {
