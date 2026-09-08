@@ -8,7 +8,7 @@ import { AccountAvatar } from "../components/Avatar.jsx";
 import { MutationFeedback, PageHead, Status } from "../components/UI.jsx";
 import { demoSession } from "../data/session.js";
 import { roleLabel } from "../lib/access.js";
-import { recoverableWriteError, useSingleFlight } from "../lib/reliable-action.js";
+import { recoverableWriteError, usePendingPageGuard, useSingleFlight } from "../lib/reliable-action.js";
 
 function accessScope(grantedAccess, companies, currentRole, live) {
   if (!grantedAccess) return !live && ["coordinator", "logistics_admin", "session_director"].includes(currentRole) ? "Whole session · demo" : "No active session access";
@@ -40,6 +40,7 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
   const [passwordSavedAt, setPasswordSavedAt] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
+  usePendingPageGuard(busy || passwordBusy);
   useEffect(() => { setName(displayName); }, [displayName]);
 
   const scope = useMemo(() => accessScope(grantedAccess, companies, currentRole, live), [grantedAccess, companies, currentRole, live]);
