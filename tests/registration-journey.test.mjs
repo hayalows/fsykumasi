@@ -38,8 +38,10 @@ test("Registration presents one Registration & check-in journey", async () => {
   assert.match(source, /Live check-in/);
   assert.match(source, /Solutions/);
   assert.match(source, /Prepare/);
-  assert.match(source, /<RegistrationJourney view="desk"/);
-  assert.match(source, /<RegistrationJourney view="roster"/);
+  assert.match(source, /const \[journeyMode, setJourneyMode\]/);
+  assert.match(source, /normalizedMode === "roster" \? "roster" : "desk"/);
+  assert.match(source, /if \(next === "desk" \|\| next === "roster"\) setJourneyMode\(next\)/);
+  assert.match(source, /<RegistrationJourney view=\{journeyMode\}/);
   assert.match(wrapper, /RegistrationJourneyV5/);
   assert.doesNotMatch(source, /ArrivalOperations/);
 });
