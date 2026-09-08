@@ -12,115 +12,61 @@ import { Empty, MutationFeedback, PageHead, SearchField, Status } from "../compo
 import { getAvailableReports, loadOperationalReport } from "../lib/reports.js";
 import { downloadCsv, downloadXlsx, formatReportValue, printReport } from "../lib/report-files.js";
 
-function groupedReports(reports) {
-  const groups = [];
-  for (const report of reports) {
-    let group = groups.find((item) => item.category === report.category);
-    if (!group) { group = { category: report.category, reports: [] }; groups.push(group); }
-    group.reports.push(report);
-  }
-  return groups;
-}
+const PARTICIPANT_REPORTS=new Set(["participant_master","unit_arrival","company_roster","counselor_group","badge_production","badge_exceptions","onsite_registrations"]);
+const HIDDEN_DISPLAY_COLUMNS={company_roster:new Set(["company_number","group_number"]),counselor_group:new Set(["company_number","group_number"])};
+const PERSON_KEYS=["full_name","name","original_name","replacement_name"];
+const ID_KEYS=["fsy_id","original_fsy_id","replacement_fsy_id"];
 
-function rowMatches(row, columns, query) {
-  const text = query.trim().toLowerCase();
-  if (!text) return true;
-  return matchesPersonSearch(row,text,columns.map(([key,,type])=>formatReportValue(row[key],type)));
-}
+function groupedReports(reports){const groups=[];for(const report of reports){let group=groups.find(item=>item.category===report.category);if(!group){group={category:report.category,reports:[]};groups.push(group);}group.reports.push(report);}return groups;}
+function rowMatches(row,columns,query){const text=query.trim().toLowerCase();if(!text)return true;return matchesPersonSearch(row,text,columns.map(([key,,type])=>formatReportValue(row[key],type)));}
+function summaryServices(summary={}){return Array.isArray(summary.services)?summary.services:[];}
+function isBlank(value){return value===null||value===undefined||value===""||(Array.isArray(value)&&!value.length);}
+function displayLabel(reportKey,key,label){return PARTICIPANT_REPORTS.has(reportKey)&&key==="full_name"?"Participant":label;}
+function visibleColumns(report,rows){if(!report)return[];const hidden=HIDDEN_DISPLAY_COLUMNS[report.key]||new Set();const available=report.columns.filter(([key])=>!hidden.has(key)&&(!rows.length||rows.some(row=>!isBlank(row[key]))));if(!PARTICIPANT_REPORTS.has(report.key))return available;const person=available.find(([key])=>PERSON_KEYS.includes(key));const id=available.find(([key])=>ID_KEYS.includes(key));const promoted=[person,id].filter(Boolean);return [...promoted,...available.filter(column=>!promoted.includes(column))];}
+function personCell(row,key){if(!PERSON_KEYS.includes(key))return null;const id=row.participant_id||row.staff_id||row.person_id;if(!id)return null;return <PersonName person={{...row,id,fullName:row[key],name:row[key]}} kind={row.staff_id||row.person_type==="staff"?"staff":"participant"}/>;}
 
-function summaryServices(summary = {}) {
-  return Array.isArray(summary.services) ? summary.services : [];
-}
-
-export function Reports({ sessionId, sessionName, capabilities = [], currentRole = "", live = false }) {
-  const available = useMemo(() => getAvailableReports(capabilities, currentRole), [capabilities, currentRole]);
-  const groups = useMemo(() => groupedReports(available), [available]);
-  const [selectedKey, setSelectedKey] = useState(available[0]?.key || "");
-  const [datasets, setDatasets] = useState({});
-  const [loading, setLoading] = useState("");
-  const [error, setError] = useState("");
-  const [query, setQuery] = useState("");
-  const [visibleLimit, setVisibleLimit] = useState(120);
-
-  useEffect(() => {
-    if (selectedKey && available.some((item) => item.key === selectedKey)) return;
-    setSelectedKey(available[0]?.key || "");
-  }, [available, selectedKey]);
-
-  const selected = available.find((item) => item.key === selectedKey) || null;
-  const dataset = selected ? datasets[selected.key] : null;
-
-  const load = async (reportKey, force = false) => {
-    if (!reportKey || !live || !sessionId) return;
-    if (!force && datasets[reportKey]) return;
-    setLoading(reportKey); setError("");
-    try {
-      const next = await loadOperationalReport(sessionId, reportKey);
-      setDatasets((current) => ({ ...current, [reportKey]: next }));
-    } catch (err) {
-      setError(err.message || "Unable to load this report.");
-    } finally {
-      setLoading("");
-    }
-  };
-
-  useEffect(() => { if (selected?.key) load(selected.key); }, [selected?.key, live, sessionId]);
-  useEffect(() => { setQuery(""); setVisibleLimit(120); }, [selectedKey]);
-
-  const rows = dataset?.rows || [];
-  const filteredRows = useMemo(() => selected ? rows.filter((row) => rowMatches(row, selected.columns, query)).sort((a,b)=>personSearchRank(a,query)-personSearchRank(b,query)) : [], [rows, selected, query]);
-  const previewRows = filteredRows.slice(0, visibleLimit);
-  const exportRows = query.trim() ? filteredRows : rows;
-  const services = summaryServices(dataset?.summary);
-
-  const exportMeta = dataset ? { generatedBy: dataset.generatedBy, generatedAt: dataset.generatedAt, scope: dataset.scope } : {};
-  const exportLabel = query.trim() ? `${exportRows.length} filtered` : `${rows.length}`;
-
-  if (!available.length) return <section className="page"><PageHead title="Reports" sessionName={sessionName} description="Reports appear when an administrator gives your assignment an export responsibility."/><article className="panel"><Empty icon={FileCsv} title="No report access" text="Your current role can keep working in FSY Ops, but it does not include any export permissions."/></article></section>;
-
-  return <section className="page reports-page phase3-reports-page">
-    <PageHead title="Reports" sessionName={sessionName} description="Choose the job you need to support, review the live snapshot, then export it in the format that fits the work." />
-    {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
-
-    <div className="report-centre-layout">
-      <aside className="report-library panel" aria-label="Report library">
-        <div className="report-library-heading"><span className="kicker">Report centre</span><h2>Operational reports</h2><p>Only reports allowed by your current assignment are shown.</p></div>
-        {groups.map((group) => <div className="report-library-group" key={group.category}><span>{group.category}</span>{group.reports.map((report) => <button key={report.key} type="button" className={selectedKey === report.key ? "active" : ""} onClick={() => setSelectedKey(report.key)} aria-current={selectedKey === report.key ? "true" : undefined}><span><b>{report.title}</b><small>{report.description}</small></span>{report.sensitive ? <ShieldCheck size={18} weight="fill" aria-label="Restricted report"/> : null}</button>)}</div>)}
-      </aside>
-
-      <div className="report-workspace">
-        {selected ? <article className="panel report-preview-shell">
-          <header className="report-preview-head">
-            <div><span className="kicker">{selected.category}</span><h2>{selected.title}</h2><p>{selected.description}</p></div>
-            <button type="button" className="secondary compact-button report-refresh" disabled={loading === selected.key || !live} onClick={() => load(selected.key, true)}><ArrowClockwise size={18}/>{loading === selected.key ? "Refreshing…" : "Refresh"}</button>
-          </header>
-
-          {selected.sensitive ? <div className="report-sensitive-note"><ShieldCheck weight="fill"/><div><b>Restricted operational data</b><span>This dataset is separately authorized and should only be shared with people whose assignment requires it.</span></div></div> : null}
-
-          {!live ? <div className="report-loading-state"><WarningCircle size={24}/><div><b>Live report data is unavailable in demo mode</b><span>Use the production or training workspace to exercise report exports.</span></div></div> : loading === selected.key && !dataset ? <div className="report-loading-state"><span className="report-spinner"/><div><b>Building the live snapshot</b><span>The rest of FSY Ops remains available while this report loads.</span></div></div> : dataset ? <>
-            <div className="report-scope-note"><ShieldCheck size={18}/><span><b>{dataset.scope || "Your current FSY scope"}</b><small>The server applies this scope before report rows reach this device.</small></span></div>
-            <div className="report-freshness"><span><b>{rows.length.toLocaleString()}</b><small>rows in snapshot</small></span><span><b>{formatReportValue(dataset.generatedAt, "datetime")}</b><small>generated</small></span><span><b>{dataset.generatedBy}</b><small>generated by</small></span></div>
-
-            {services.length ? <div className="report-service-summary" aria-label="Meal service summary">{services.map((service) => <div key={`${service.service_date}-${service.label}`}><span><b>{service.label}</b><small>{formatReportValue(service.service_date, "date")} · {service.status}</small></span><span><b>{Number(service.served || 0).toLocaleString()} / {Number(service.expected || 0).toLocaleString()}</b><small>served</small></span></div>)}</div> : null}
-
-            <div className="report-toolbar">
-              <SearchField value={query} onChange={(value) => { setQuery(value); setVisibleLimit(120); }} label={`Search ${selected.title}`} placeholder="Search this report"/>
-              <div className="report-export-actions" aria-label="Export report">
-                <button type="button" className="secondary" disabled={!exportRows.length} onClick={() => downloadCsv(selected.title, selected.columns, exportRows)}><FileCsv/>CSV</button>
-                <button type="button" className="secondary" disabled={!exportRows.length} onClick={() => downloadXlsx(selected.title, selected.columns, exportRows, exportMeta)}><FileXls/>Excel</button>
-                <button type="button" className="primary" disabled={!exportRows.length} onClick={() => { try { printReport({ sessionName, title: selected.title, generatedAt: dataset.generatedAt, generatedBy: dataset.generatedBy, scope: dataset.scope, columns: selected.columns, rows: exportRows }); } catch (err) { setError(err.message || "Unable to open the printable report."); } }}><Printer/>Print / PDF</button>
-              </div>
-            </div>
-            <div className="report-export-scope"><span>{query.trim() ? `Exporting ${exportLabel} rows matching this search.` : `Exports include all ${exportLabel} rows in this live snapshot.`}</span><Status tone={query.trim() ? "warn" : "good"}>{query.trim() ? "Filtered" : "Full snapshot"}</Status></div>
-
-            {filteredRows.length ? <>
-              <div className="report-table-wrap phase3-report-table"><table><thead><tr>{selected.columns.map(([key, label]) => <th key={key}>{label}</th>)}</tr></thead><tbody>{previewRows.map((row, index) => <tr key={`${selected.key}-${index}`}>{selected.columns.map(([key, label, type]) => <td key={key} data-label={label}>{key==="full_name"&&(row.participant_id||row.staff_id||row.person_id)?<PersonName person={{...row,id:row.participant_id||row.staff_id||row.person_id}} kind={row.staff_id?"staff":"participant"}/>:formatReportValue(row[key], type)}</td>)}</tr>)}</tbody></table></div>
-              <div className="report-preview-foot"><span>Showing {previewRows.length.toLocaleString()} of {filteredRows.length.toLocaleString()}{query.trim() ? " matching" : ""} rows</span>{filteredRows.length > visibleLimit ? <button type="button" className="secondary compact-button" onClick={() => setVisibleLimit((value) => value + 120)}>Show 120 more</button> : null}</div>
-            </> : <Empty icon={FileCsv} title={query.trim() ? "No rows match this search" : "No rows in this report yet"} text={query.trim() ? "Clear the search or try another name, ID, unit or status." : "The report will populate as the corresponding operational work is recorded."}/>}          
-          </> : null}
-        </article> : null}
-      </div>
-    </div>
-    <p className="report-footnote"><DownloadSimple size={16}/> CSV is the simplest raw export. Excel downloads a genuine .xlsx workbook with filters and a frozen header. Print / PDF opens a print-ready report so the browser can print or save it as PDF without losing Ghanaian names.</p>
-  </section>;
+export function Reports({sessionId,sessionName,capabilities=[],currentRole="",live=false}){
+ const available=useMemo(()=>getAvailableReports(capabilities,currentRole),[capabilities,currentRole]);
+ const groups=useMemo(()=>groupedReports(available),[available]);
+ const[selectedKey,setSelectedKey]=useState(available[0]?.key||"");
+ const[datasets,setDatasets]=useState({});
+ const[loading,setLoading]=useState("");
+ const[error,setError]=useState("");
+ const[query,setQuery]=useState("");
+ const[visibleLimit,setVisibleLimit]=useState(120);
+ useEffect(()=>{if(selectedKey&&available.some(item=>item.key===selectedKey))return;setSelectedKey(available[0]?.key||"");},[available,selectedKey]);
+ const selected=available.find(item=>item.key===selectedKey)||null;
+ const dataset=selected?datasets[selected.key]:null;
+ const load=async(reportKey,force=false)=>{if(!reportKey||!live||!sessionId)return;if(!force&&datasets[reportKey])return;setLoading(reportKey);setError("");try{const next=await loadOperationalReport(sessionId,reportKey);setDatasets(current=>({...current,[reportKey]:next}));}catch(err){setError(err.message||"Unable to load this report.");}finally{setLoading("");}};
+ useEffect(()=>{if(selected?.key)load(selected.key);},[selected?.key,live,sessionId]);
+ useEffect(()=>{setQuery("");setVisibleLimit(120);},[selectedKey]);
+ const rows=dataset?.rows||[];
+ const columns=useMemo(()=>visibleColumns(selected,rows),[selected,rows]);
+ const filteredRows=useMemo(()=>selected?rows.filter(row=>rowMatches(row,selected.columns,query)).sort((a,b)=>query.trim()?personSearchRank(a,query)-personSearchRank(b,query):0):[],[rows,selected,query]);
+ const previewRows=filteredRows.slice(0,visibleLimit);
+ const exportRows=query.trim()?filteredRows:rows;
+ const exportColumns=columns.length?columns:selected?.columns||[];
+ const services=summaryServices(dataset?.summary);
+ const exportMeta=dataset?{generatedBy:dataset.generatedBy,generatedAt:dataset.generatedAt,scope:dataset.scope}:{};
+ const exportLabel=query.trim()?`${exportRows.length} filtered`:`${rows.length}`;
+ if(!available.length)return <section className="page"><PageHead title="Reports" sessionName={sessionName} description="Reports appear when an administrator gives your assignment an export responsibility."/><article className="panel"><Empty icon={FileCsv} title="No report access" text="Your current role can keep working in FSY Ops, but it does not include any export permissions."/></article></section>;
+ return <section className="page reports-page phase3-reports-page phase4-reports-page">
+  <PageHead title="Reports" sessionName={sessionName} description="Find the participant or operational record first, review the live snapshot, then export only what is useful."/>
+  {error?<MutationFeedback tone="error">{error}</MutationFeedback>:null}
+  <div className="report-centre-layout">
+   <aside className="report-library panel" aria-label="Report library"><div className="report-library-heading"><span className="kicker">Report centre</span><h2>Operational reports</h2><p>Choose a report. On phones this list stays vertical instead of becoming a wide carousel.</p></div>{groups.map(group=><div className="report-library-group" key={group.category}><span>{group.category}</span>{group.reports.map(report=><button key={report.key} type="button" className={selectedKey===report.key?"active":""} onClick={()=>setSelectedKey(report.key)} aria-current={selectedKey===report.key?"true":undefined}><span><b>{report.title}</b><small>{report.description}</small></span>{report.sensitive?<ShieldCheck size={18} weight="fill" aria-label="Restricted report"/>:null}</button>)}</div>)}</aside>
+   <div className="report-workspace">{selected?<article className="panel report-preview-shell"><header className="report-preview-head"><div><span className="kicker">{selected.category}</span><h2>{selected.title}</h2><p>{selected.description}</p></div><button type="button" className="secondary compact-button report-refresh" disabled={loading===selected.key||!live} onClick={()=>load(selected.key,true)}><ArrowClockwise size={18}/>{loading===selected.key?"Refreshing…":"Refresh"}</button></header>
+    {selected.sensitive?<div className="report-sensitive-note"><ShieldCheck weight="fill"/><div><b>Restricted operational data</b><span>This dataset is separately authorized and should only be shared with people whose assignment requires it.</span></div></div>:null}
+    {!live?<div className="report-loading-state"><WarningCircle size={24}/><div><b>Live report data is unavailable in demo mode</b><span>Use the production or training workspace to exercise report exports.</span></div></div>:loading===selected.key&&!dataset?<div className="report-loading-state"><span className="report-spinner"/><div><b>Building the live snapshot</b><span>The rest of FSY Ops remains available while this report loads.</span></div></div>:dataset?<>
+     <div className="report-scope-note"><ShieldCheck size={18}/><span><b>{dataset.scope||"Your current FSY scope"}</b><small>The server applies this scope before report rows reach this device.</small></span></div>
+     <div className="report-freshness"><span><b>{rows.length.toLocaleString()}</b><small>rows</small></span><span><b>{formatReportValue(dataset.generatedAt,"datetime")}</b><small>generated</small></span><span><b>{dataset.generatedBy}</b><small>generated by</small></span></div>
+     {services.length?<div className="report-service-summary" aria-label="Meal service summary">{services.map(service=><div key={`${service.service_date}-${service.label}`}><span><b>{service.label}</b><small>{formatReportValue(service.service_date,"date")} · {service.status}</small></span><span><b>{Number(service.served||0).toLocaleString()} / {Number(service.expected||0).toLocaleString()}</b><small>served</small></span></div>)}</div>:null}
+     <div className="report-toolbar phase4-report-toolbar"><SearchField value={query} onChange={value=>{setQuery(value);setVisibleLimit(120);}} label={`Search ${selected.title}`} placeholder={PARTICIPANT_REPORTS.has(selected.key)?"Participant name, FSY ID, company, group, ward or stake":"Search this report"}/><div className="report-export-actions" aria-label="Export report"><button type="button" className="secondary" disabled={!exportRows.length} onClick={()=>downloadCsv(selected.title,exportColumns,exportRows)}><FileCsv/>CSV</button><button type="button" className="secondary" disabled={!exportRows.length} onClick={()=>downloadXlsx(selected.title,exportColumns,exportRows,exportMeta)}><FileXls/>Excel</button><button type="button" className="primary" disabled={!exportRows.length} onClick={()=>{try{printReport({sessionName,title:selected.title,generatedAt:dataset.generatedAt,generatedBy:dataset.generatedBy,scope:dataset.scope,columns:exportColumns,rows:exportRows});}catch(err){setError(err.message||"Unable to open the printable report.");}}}><Printer/>Print / PDF</button></div></div>
+     <div className="report-export-scope"><span>{query.trim()?`Exporting ${exportLabel} rows matching this search.`:`Exports include all ${exportLabel} rows in this live snapshot.`}{columns.length<selected.columns.length?` ${selected.columns.length-columns.length} empty or technical column${selected.columns.length-columns.length===1?" is":"s are"} hidden from this view.`:""}</span><Status tone={query.trim()?"warn":"good"}>{query.trim()?"Filtered":"Full snapshot"}</Status></div>
+     {filteredRows.length?<><div className="report-table-wrap phase3-report-table phase4-report-table"><table><thead><tr>{columns.map(([key,label],index)=><th key={key} className={PARTICIPANT_REPORTS.has(selected.key)&&index<2?`report-sticky-col report-sticky-${index+1}`:""}>{displayLabel(selected.key,key,label)}</th>)}</tr></thead><tbody>{previewRows.map((row,index)=><tr key={`${selected.key}-${index}`}>{columns.map(([key,label,type],columnIndex)=>{const person=personCell(row,key);return <td key={key} data-label={displayLabel(selected.key,key,label)} className={PARTICIPANT_REPORTS.has(selected.key)&&columnIndex<2?`report-sticky-col report-sticky-${columnIndex+1}`:""}>{person||formatReportValue(row[key],type)}</td>;})}</tr>)}</tbody></table></div><div className="report-preview-foot"><span>Showing {previewRows.length.toLocaleString()} of {filteredRows.length.toLocaleString()}{query.trim()?" matching":""} rows</span>{filteredRows.length>visibleLimit?<button type="button" className="secondary compact-button" onClick={()=>setVisibleLimit(value=>value+120)}>Show 120 more</button>:null}</div></>:<Empty icon={FileCsv} title={query.trim()?"No rows match this search":"No rows in this report yet"} text={query.trim()?"Clear the search or try another participant name, FSY ID, company, group, ward or stake.":"The report will populate as the corresponding operational work is recorded."}/>} 
+    </>:null}
+   </article>:null}</div>
+  </div>
+  <p className="report-footnote"><DownloadSimple size={16}/> CSV is the simplest raw export. Excel downloads a genuine .xlsx workbook with filters and a frozen header. Print / PDF opens a print-ready report.</p>
+ </section>;
 }
