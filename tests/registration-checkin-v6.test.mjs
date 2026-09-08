@@ -38,14 +38,14 @@ test("mobile Registration controls reflow in document flow instead of floating o
   assert.doesNotMatch(css, /iPhone|Galaxy|Samsung|Pixel/i);
 });
 
-test("Registration workspace copy stays concise and the focused flow layer loads last", async () => {
+test("Registration workspace copy stays task-first while the focused flow layers remain ordered", async () => {
   const [registration, main, sw] = await Promise.all([
     read("src/pages/Registration.jsx"),
     read("src/main.jsx"),
     read("public/sw.js"),
   ]);
-  assert.match(registration, /Search the participant\. If something blocks check-in, resolve only that issue and keep the desk moving\./);
-  assert.match(registration, /description="Normal arrivals stay fast\. Problems move to Solutions, and preparation work stays separate from the live desk\."/);
+  assert.match(registration, /Find the participant and complete normal arrivals quickly\. If something blocks check-in, send only that person to Solutions\./);
+  assert.match(registration, /description="Keep normal arrivals fast\. Resolve participant blockers in one Solutions queue, and use Readiness for the supporting setup\."/);
   const v6 = main.indexOf('import "./registration-checkin-v6.css";');
   const modal = main.indexOf('import "./registration-modal-v4.css";');
   const v7 = main.indexOf('import "./registration-flow-v7.css";');
