@@ -8,7 +8,7 @@ import { DismissibleLayer,Empty,MutationFeedback,SearchField,Status } from "../c
 import { hasCapability } from "../lib/field-operations.js";
 import { finalizeFsyIds,loadIdentityReadiness,loadIdentityRoster,loadOriginCodes,rebuildDraftFsyIds,updateBadgeName } from "../lib/identity-arrival.js";
 import { searchPeople } from "../lib/person-search.js";
-import { recoverableWriteError,useSingleFlight } from "../lib/reliable-action.js";
+import { recoverableWriteError,usePendingPageGuard,useSingleFlight } from "../lib/reliable-action.js";
 import "./registration-operations.css";
 
 const FILTERS=[{value:"all",label:"All"},{value:"active",label:"Active IDs"},{value:"ready",label:"Ready for ID"},{value:"preferred",label:"Name review"},{value:"reprint",label:"Reprint"},{value:"origin",label:"Origin issue"}];
@@ -20,6 +20,7 @@ export function IdentityFoundationV31({sessionId,capabilities=[],onChanged}){
  const canManage=hasCapability(capabilities,"identity_manage")||hasCapability(capabilities,"registration_manage");
  const runSingleFlight=useSingleFlight();
  const[readiness,setReadiness]=useState(null),[origins,setOrigins]=useState([]),[rows,setRows]=useState([]),[search,setSearch]=useState(""),[filter,setFilter]=useState("all"),[busy,setBusy]=useState(false),[message,setMessage]=useState(null),[editing,setEditing]=useState(null),[badgeName,setBadgeName]=useState(""),[confirmingFinalize,setConfirmingFinalize]=useState(false);
+ usePendingPageGuard(busy);
  const reload=async()=>{if(!sessionId)return;const[nextReadiness,nextOrigins,nextRows]=await Promise.all([loadIdentityReadiness(sessionId),loadOriginCodes(sessionId),loadIdentityRoster(sessionId)]);setReadiness(nextReadiness);setOrigins(nextOrigins);setRows(nextRows);};
  useEffect(()=>{reload().catch(error=>setMessage({tone:"error",text:error.message}));},[sessionId]);
  const counts=useMemo(()=>({all:rows.length,active:rows.filter(r=>Boolean(r.fsyId)).length,ready:rows.filter(readyForId).length,preferred:rows.filter(r=>r.nameReviewRequired).length,reprint:rows.filter(r=>r.needsReprint).length,origin:rows.filter(r=>!r.originCode&&Boolean(r.groupId)).length}),[rows]);
