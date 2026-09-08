@@ -28,12 +28,6 @@ function currentStaff(rows = []) {
   return rows.filter((person) => person.isCurrent !== false && person.registrationStatus !== "cancelled");
 }
 
-function readinessTone(kind, value) {
-  if (kind === "loading") return "muted";
-  if (kind === "error") return "danger";
-  return value ? "warn" : "good";
-}
-
 function ReadinessCard({ icon: Icon, title, status, tone = "good", value, detail, action, actionLabel, disabled = false }) {
   return <article className={`registration-readiness-card-v30 tone-${tone}`}>
     <div className="registration-readiness-card-icon-v30"><Icon size={22} weight={tone === "good" ? "fill" : "regular"} /></div>
@@ -48,7 +42,7 @@ function ReadinessCard({ icon: Icon, title, status, tone = "good", value, detail
 
 export function RegistrationReadinessV30({
   imported = [], cohort, live = false, sessionId, capabilities = [], canManage = false,
-  setImported, onChanged, onNavigate,
+  setImported, onChanged, onFinalBaselineChanged, onNavigate,
 }) {
   const [tool, setTool] = useState("overview");
   const [visited, setVisited] = useState(() => new Set());
@@ -127,7 +121,7 @@ export function RegistrationReadinessV30({
       </div>
       {visited.has("identity") ? <div hidden={tool !== "identity"}><IdentityFoundationV28 sessionId={sessionId} capabilities={capabilities} onChanged={async () => { await onChanged?.(); await reload(); }} /></div> : null}
       {visited.has("staff") ? <div hidden={tool !== "staff"}><StaffReadiness sessionId={sessionId} onNavigate={onNavigate} /></div> : null}
-      {visited.has("final") ? <div hidden={tool !== "final"}><RegistrationFinalBaselineV21 sessionId={sessionId} canManage={canManage} setImported={setImported} onChanged={async () => { await onChanged?.(); await reload(); }} onNavigate={onNavigate} /></div> : null}
+      {visited.has("final") ? <div hidden={tool !== "final"}><RegistrationFinalBaselineV21 sessionId={sessionId} canManage={canManage} setImported={setImported} onChanged={onFinalBaselineChanged || onChanged} onNavigate={onNavigate} /></div> : null}
     </section>;
   }
 
