@@ -5,15 +5,17 @@ import test from "node:test";
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("Registration v29 is the active journey and stays mounted while work-area tabs change", async () => {
-  const [entry, registration] = await Promise.all([
+  const [entry, registration, sw] = await Promise.all([
     read("src/pages/RegistrationJourney.jsx"),
     read("src/pages/Registration.jsx"),
+    read("public/sw.js"),
   ]);
   assert.match(entry, /RegistrationJourneyV29 as RegistrationJourney/);
   assert.match(registration, /<RegistrationJourney view=\{journeyMode\}/);
   assert.match(registration, /hidden=\{mode === "setup"\}/);
   assert.doesNotMatch(registration, /mode === "desk" \?[^\n]*<RegistrationJourney/);
   assert.doesNotMatch(registration, /mode === "roster" \?[^\n]*<RegistrationJourney/);
+  assert.match(sw, /fsy-kumasi-shell-v46/);
 });
 
 test("Prepare subviews are lazy once and remain warm after their first visit", async () => {
