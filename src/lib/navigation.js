@@ -21,6 +21,11 @@ function clean(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function cleanScrollY(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? Math.round(number) : null;
+}
+
 function normalizeContext(source = {}) {
   const requestedView = clean(source.view);
   return {
@@ -32,6 +37,7 @@ function normalizeContext(source = {}) {
     staffId: clean(source.staffId || source.staff),
     companyId: clean(source.companyId || source.company),
     groupId: clean(source.groupId || source.group),
+    scrollY: cleanScrollY(source.scrollY),
   };
 }
 
@@ -50,6 +56,7 @@ export function normalizeWorkspaceDestination(destination = {}) {
     companyId: clean(source.companyId || source.company),
     groupId: clean(source.groupId || source.group),
     returnTo,
+    scrollY: cleanScrollY(source.scrollY),
     legacyCheckin,
   };
 }
@@ -68,6 +75,7 @@ export function readWorkspaceLocation() {
     company: params.get("company") || "",
     group: params.get("group") || "",
     returnTo: state.returnTo || null,
+    scrollY: state.scrollY,
   });
 }
 

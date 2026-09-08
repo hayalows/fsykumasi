@@ -231,8 +231,8 @@ function VacancyOptions({ vacancies, row, busy, onChoose }) {
   return <details className="regjourney-vacancy-option"><summary><span><b>Use a confirmed vacancy instead</b><small>Optional. Use this only when a confirmed non-attendee is being replaced.</small></span><span aria-hidden="true">+</span></summary><div className="regjourney-choice-list">{compatible.map((vacancy) => <button type="button" className="regjourney-choice" key={vacancy.participantId} disabled={busy} onClick={() => onChoose(vacancy)}><span><b>{vacancy.companyName} · {vacancy.groupName}</b><small>Vacancy confirmed from {vacancy.fullName}. Their old badge stays in the audit history.</small></span><span className="regjourney-choice-end"><ArrowRight /></span></button>)}</div></details>;
 }
 
-function CompletionState({ row, assignment, onDone, containerRef }) {
-  return <div className="regjourney-completion-state regjourney-completion-state-v5" ref={containerRef}><div className="regjourney-completion-card"><CheckCircle weight="fill"/><div><span className="kicker">Check-in complete</span><h3>{row.fullName} has arrived</h3><p>{assignment ? `Housing · ${assignment.roomName}${assignment.bedLabel ? ` · Bed / key ${assignment.bedLabel}` : ""}` : "Sent automatically to Housing · Waiting for room assignment"}</p></div></div><button type="button" className="primary regjourney-next-person" onClick={onDone}>Next participant<ArrowRight /></button></div>;
+function CompletionState({ row, assignment, onDone, onUndoCheckin, containerRef }) {
+  return <div className="regjourney-completion-state regjourney-completion-state-v5" ref={containerRef}><div className="regjourney-completion-card"><CheckCircle weight="fill"/><div><span className="kicker">Check-in complete</span><h3>{row.fullName} has arrived</h3><p>{assignment ? `Housing · ${assignment.roomName}${assignment.bedLabel ? ` · Bed / key ${assignment.bedLabel}` : ""}` : "Sent automatically to Housing · Waiting for room assignment"}</p></div></div><div className="regjourney-completion-actions">{onUndoCheckin?<button type="button" className="secondary" onClick={onUndoCheckin}>Undo check-in</button>:null}<button type="button" className="primary regjourney-next-person" onClick={onDone}>Next participant<ArrowRight /></button></div></div>;
 }
 
 function StandardFacts({ row, housingText }) {
@@ -243,7 +243,7 @@ function OnsitePlacementContext({ row }) {
   return <div className="regjourney-key-context"><span><small>Participant</small><b>{String(row.sex || "").replace(/^./, (letter) => letter.toUpperCase()) || "Sex not recorded"}</b></span><span><small>Stake / district</small><b>{row.stake || "Not recorded"}</b></span><span><small>FSY ID</small><b>Created after placement</b></span></div>;
 }
 
-export function PersonJourney({ row, eligibility, identityReadiness, vacancies, groups, companies, housingAssignment, canManageRegistration, busy, error, onVerify, onAssignGroup, onUseVacancy, onCheckin, onArrivalStatus, onDone, onClose }) {
+export function PersonJourney({ row, eligibility, identityReadiness, vacancies, groups, companies, housingAssignment, canManageRegistration, busy, error, onVerify, onAssignGroup, onUseVacancy, onCheckin, onUndoCheckin, onArrivalStatus, onDone, onClose }) {
   const [noShowOpen, setNoShowOpen] = useState(false);
   const [confirmationSource, setConfirmationSource] = useState("");
   const [confirmationNote, setConfirmationNote] = useState("");
@@ -278,7 +278,7 @@ export function PersonJourney({ row, eligibility, identityReadiness, vacancies, 
     {onsite && activeStep ? <StepIndicator step={activeStep} label={activeStepLabel} /> : null}
     {!onsite ? <StandardFacts row={row} housingText={housingText} /> : needsPlacement ? <OnsitePlacementContext row={row} /> : null}
 
-    {row.checkinStatus === "arrived" ? <CompletionState row={row} assignment={housingAssignment} onDone={onDone} containerRef={completionRef} /> : null}
+    {row.checkinStatus === "arrived" ? <CompletionState row={row} assignment={housingAssignment} onDone={onDone} onUndoCheckin={onUndoCheckin} containerRef={completionRef} /> : null}
     {onsitePending && canManageRegistration ? <ApprovalStep busy={busy} error={error} onVerify={onVerify} /> : null}
 
     {!onsitePending && needsPlacement && canManageRegistration ? <div className="regjourney-resolution-section regjourney-placement-id regjourney-resolution-section-v5"><div className="regjourney-section-head"><div><h3>Choose a counselor group</h3><p>{onsite ? "The company follows the group. The FSY ID is then created automatically from the company and Stake or District." : "Groups with fewer assigned participants appear first. The company follows the group automatically."}</p></div></div><GroupPicker groups={groups} companies={companies} row={row} busy={busy} onChoose={onAssignGroup} />{finalized && onsite ? <VacancyOptions vacancies={vacancies} row={row} busy={busy} onChoose={onUseVacancy} /> : null}</div> : null}

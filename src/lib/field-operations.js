@@ -1,5 +1,5 @@
 import { loadRpcPages } from "./rpc-pages.js";
-import { dietaryNeedsReview } from "./dietary.js";
+import { dietaryDisplayValue, dietaryNeedsReview } from "./dietary.js";
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 
 function client() {
@@ -84,6 +84,28 @@ export async function setParticipantAttendanceStatus(participantId, status, note
   if (error) throw error;
 }
 
+export async function setParticipantOperationalStatus({ participantId, status, revision = 0, authority = "", reason = "" }) {
+  const { data, error } = await client().rpc("set_participant_operational_status", {
+    p_participant_id: participantId,
+    p_status: status,
+    p_revision: Number(revision),
+    p_authority: authority || "",
+    p_reason: reason || "",
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function loadParticipantOperationalStates(sessionId) {
+  const data = await loadRpcPages(client(), "get_participant_operational_states", { p_session_id: sessionId }, ["participant_id"], 1000);
+  return new Map((data || []).map((row) => [row.participant_id, {
+    operationalStatus: row.operational_status || "active",
+    operationalNote: row.operational_note || "",
+    operationalRevision: Number(row.operational_revision || 0),
+    operationalUpdatedAt: row.operational_updated_at || null,
+  }]));
+}
+
 export async function loadHousingRooms(sessionId) {
   const { data, error } = await client().rpc("get_housing_rooms", { p_session_id: sessionId });
   if (error) throw error;
@@ -159,13 +181,42 @@ export async function assignHousingPerson({ sessionId, personType, personId, roo
   return first(data);
 }
 
-export async function clearHousingAssignment({ sessionId, personType, personId }) {
-  const { error } = await client().rpc("clear_housing_assignment", {
+export async function clearHousingAssignment({ sessionId, personType, personId, assignmentId = null }) {
+  const rpcName = assignmentId ? "clear_housing_assignment_v2" : "clear_housing_assignment";
+  const args = assignmentId ? {
     p_session_id: sessionId,
     p_person_type: personType,
     p_person_id: personId,
+    p_expected_assignment_id: assignmentId,
+  } : {
+    p_session_id: sessionId,
+    p_person_type: personType,
+    p_person_id: personId,
+  };
+  const { data, error } = await client().rpc(rpcName, args);
+  if (error) throw error;
+  return data;
+}
+
+export async function restoreHousingAssignment({ sessionId, assignmentId }) {
+  const { data, error } = await client().rpc("restore_housing_assignment_v1", {
+    p_session_id: sessionId,
+    p_assignment_id: assignmentId,
   });
   if (error) throw error;
+  return data;
+}
+
+export async function cancelMealService(serviceId, reason) {
+  const { data, error } = await client().rpc("cancel_meal_service_v1", { p_service_id: serviceId, p_reason: reason });
+  if (error) throw error;
+  return data;
+}
+
+export async function cancelHeadcountRound(roundId, reason) {
+  const { data, error } = await client().rpc("cancel_headcount_round_v1", { p_round_id: roundId, p_reason: reason });
+  if (error) throw error;
+  return data;
 }
 
 export async function loadWellnessEncounters(sessionId) {
@@ -220,7 +271,7 @@ export async function loadWellnessPersonDetails(sessionId, personType, personId)
   const row = first(data) || {};
   return {
     medicalInformation: row.medical_information || "",
-    dietaryInformation: row.dietary_information || "",
+    dietaryInformation: dietaryDisplayValue(row.dietary_information),
     phone: row.phone || "",
     emergencyContactName: row.emergency_contact_name || "",
     emergencyContactPhone: row.emergency_contact_phone || "",

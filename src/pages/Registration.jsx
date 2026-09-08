@@ -69,6 +69,9 @@ export function Registration(props) {
     sessionId,
     capabilities,
     onOperationalDataChanged,
+    onCheckin: props.onCheckin,
+    onUndoCheckin: props.onUndoCheckin,
+    onSetOperationalStatus: props.onSetOperationalStatus,
   };
 
   return <div className="registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28 registration-v29 registration-workspace-v30">

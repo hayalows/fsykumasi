@@ -8,9 +8,9 @@ import { Clock } from "@phosphor-icons/react/Clock";
 import { Plus } from "@phosphor-icons/react/Plus";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
-import { Empty, MutationFeedback, PageHead, SearchField, SegmentedControl } from "../components/UI.jsx";
+import { ActionToast, Empty, MutationFeedback, PageHead, SearchField, SegmentedControl } from "../components/UI.jsx";
 import { loadStaff } from "../lib/operations.js";
-import { hasCapability, loadHousingRooms } from "../lib/field-operations.js";
+import { hasCapability, loadHousingRooms, restoreHousingAssignment } from "../lib/field-operations.js";
 import { loadHousingAssignmentsV2 } from "../lib/housing-context.js";
 import { loadHousingArrivalQueue, subscribeToHousingHandoff } from "../lib/housing-handoff.js";
 import { RoomEditor, humanizeRole, initials, roomHasWayfinding, roomLocation, sexLabel, waitLabel } from "./HousingDialogsV4.jsx";
@@ -56,6 +56,8 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
+  const [undoHousing, setUndoHousing] = useState(null);
+  const [undoHousingBusy, setUndoHousingBusy] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -219,6 +221,24 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
     setRoomLimit(ROOM_BATCH);
   };
 
+  const undoUnassignment = async () => {
+    if (!undoHousing?.assignment?.id) return;
+    setUndoHousingBusy(true);
+    setError("");
+    try {
+      await restoreHousingAssignment({ sessionId, assignmentId: undoHousing.assignment.id });
+      await reload();
+      setUndoHousing(null);
+      setSaved(`${undoHousing.assignment.name || "Person"} is back in ${undoHousing.assignment.roomName || "the previous room"}.`);
+    } catch (err) {
+      setError(err.message || "The previous room assignment could not be restored. Check the current room and person state.");
+      setUndoHousing(null);
+      await reload().catch(() => {});
+    } finally {
+      setUndoHousingBusy(false);
+    }
+  };
+
   if (!canView) return <section className="page"><PageHead title="Housing" sessionName={sessionName} description="Housing access is assigned by an FSY administrator."/><article className="panel"><Empty icon={Bed} title="Housing is not in your access" text="Ask an administrator to add the Housing team to your account if this is part of your assignment."/></article></section>;
 
   return <section className="page housing-v5 housing-v6">
@@ -320,6 +340,7 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
       onRefresh={async () => { const next = await reload(); const updated = next?.rooms.find((item) => item.id === selectedRoom.id); if (updated) setSelectedRoom(updated); }}
       onSaved={async (person) => { const next = await reload(); const updated = next?.rooms.find((item) => item.id === selectedRoom.id); if (updated) setSelectedRoom(updated); setSaved(`${person.name} assigned to ${selectedRoom.name}.`); }}
     /> : null}
-    {selected ? <AssignmentEditorV5 sessionId={sessionId} person={selected.person} rooms={rooms} assignments={assignments} currentAssignment={selected.assignment} onClose={() => setSelected(null)} onSaved={async () => { await reload(); setSaved(`${selected.person.name} housing updated.`); }}/> : null}
+    {selected ? <AssignmentEditorV5 sessionId={sessionId} person={selected.person} rooms={rooms} assignments={assignments} currentAssignment={selected.assignment} onClose={() => setSelected(null)} onSaved={async (result) => { await reload(); if (result?.type === "unassigned") { setUndoHousing({ assignment: result.assignment }); setSaved(`${selected.person.name} is no longer assigned to a room.`); } else setSaved(`${selected.person.name} housing updated.`); }}/> : null}
+    <ActionToast message={undoHousing ? `${undoHousing.assignment.name || "Person"} unassigned from ${undoHousing.assignment.roomName || "their room"}.` : ""} actionLabel="Undo" onAction={undoUnassignment} onDismiss={() => setUndoHousing(null)} busy={undoHousingBusy}/>
   </section>;
 }
