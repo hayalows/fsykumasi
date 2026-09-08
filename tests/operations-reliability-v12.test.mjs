@@ -13,7 +13,7 @@ test("legacy check-in is canonicalized into Registration desk", () => {
 test("registration never renders a confirmed empty state while loading", () => {
   const source=read("src/pages/RegistrationJourneyV5.jsx");
   assert.match(source,/initialLoading/); assert.match(source,/aria-busy=\{initialLoading\s*\|\|\s*refreshing\}/);
-  assert.match(source,/!initialLoading && !loadError && !visible.length/);
+  assert.match(source,/!initialLoading\s*&&\s*!loadError\s*&&\s*!visible\.length\s*&&\s*!searching/);
 });
 
 test("signed-in workspace errors are distinct from sign-in errors", () => {
