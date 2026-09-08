@@ -21,8 +21,9 @@ Important writes must follow these rules:
 5. Consequential actions keep explicit confirmation. Final roster apply and FSY ID finalization remain protected.
 6. Server-side validation remains authoritative. Client guards reduce accidental duplicate submissions but do not replace database/RPC checks.
 7. After success, the UI refreshes the affected state or records an explicit success receipt.
+8. Refresh/close protection is active while critical account, identity or final-roster writes are in flight.
 
-Phase 5 applies a shared single-flight guard to account security, FSY identity writes and the final-roster workflow. Existing guarded RPC and transaction behavior remains in place for day-of operational modules.
+Phase 5 applies a shared single-flight guard to account security, FSY identity writes, leadership exception decisions and the final-roster workflow. Existing guarded RPC and transaction behavior remains in place for day-of operational modules.
 
 ## Accessibility contract
 
@@ -89,12 +90,26 @@ The pull-request workflow must pass:
 4. verified frontend artifact upload;
 5. Sites worker verification.
 
-Phase 5 tests check the source-level contracts for single-flight writes, password validation, live-region feedback, responsive targets, confirmation safeguards and release-layer ordering.
+### Automated result on Phase 5 head
+
+GitHub Actions run `34267360649` passed the complete gate on the Phase 5 integration head used by PR #91:
+
+- production Vite build passed;
+- 319 / 319 project tests passed;
+- verified frontend artifact `fsy-kumasi-frontend` uploaded successfully;
+- 4 / 4 Sites worker tests passed;
+- no test was skipped, cancelled or marked todo.
+
+The generated production build still reports the existing Vite advisory that one application chunk is above 500 kB after minification. It is a performance advisory rather than a build failure. The current five-phase work deliberately did not turn that advisory into a risky late-stage code-splitting rewrite.
+
+Phase 5 tests check the source-level contracts for single-flight writes, password validation, page-exit protection, live-region feedback, responsive targets, confirmation safeguards and release-layer ordering.
 
 ## Manual/browser gate
 
-A browser pass on the integrated build should still be completed before merging to `main`, especially for 320/375/390/414 layouts, keyboard focus order and high-risk write flows. If Vercel preview generation is unavailable because of the Hobby build-rate limit, that limitation should be recorded rather than bypassed by deploying the unfinished branch to production.
+A browser pass on the integrated build should still be completed before merging to `main`, especially for 320/375/390/414 layouts, keyboard focus order and high-risk write flows. Vercel preview generation is currently blocked by the Hobby build-rate limit. That limitation is recorded rather than bypassed by deploying the unfinished branch to production.
+
+This means the Phase 5 engineering build and automated gate are complete, while the final visual/browser release check remains an explicit pre-merge gate.
 
 ## Production merge rule
 
-Do not merge individual phases. Merge the single integrated pull request only after all five phases are complete, automated verification is green, known deployment blockers are understood, and the final release review is accepted.
+Do not merge individual phases. Merge the single integrated pull request only after all five engineering phases are complete, automated verification is green, known deployment blockers are understood, and the final browser/release review is accepted.
