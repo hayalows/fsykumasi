@@ -1,3 +1,5 @@
+import { PersonName } from "../components/PersonPeek.jsx";
+import { matchesPersonSearch, personSearchRank } from "../lib/person-search.js";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowClockwise } from "@phosphor-icons/react/ArrowClockwise";
 import { DownloadSimple } from "@phosphor-icons/react/DownloadSimple";
@@ -23,7 +25,7 @@ function groupedReports(reports) {
 function rowMatches(row, columns, query) {
   const text = query.trim().toLowerCase();
   if (!text) return true;
-  return columns.some(([key, , type]) => formatReportValue(row[key], type).toLowerCase().includes(text));
+  return matchesPersonSearch(row,text,columns.map(([key,,type])=>formatReportValue(row[key],type)));
 }
 
 function summaryServices(summary = {}) {
@@ -66,7 +68,7 @@ export function Reports({ sessionId, sessionName, capabilities = [], currentRole
   useEffect(() => { setQuery(""); setVisibleLimit(120); }, [selectedKey]);
 
   const rows = dataset?.rows || [];
-  const filteredRows = useMemo(() => selected ? rows.filter((row) => rowMatches(row, selected.columns, query)) : [], [rows, selected, query]);
+  const filteredRows = useMemo(() => selected ? rows.filter((row) => rowMatches(row, selected.columns, query)).sort((a,b)=>personSearchRank(a,query)-personSearchRank(b,query)) : [], [rows, selected, query]);
   const previewRows = filteredRows.slice(0, visibleLimit);
   const exportRows = query.trim() ? filteredRows : rows;
   const services = summaryServices(dataset?.summary);
@@ -112,7 +114,7 @@ export function Reports({ sessionId, sessionName, capabilities = [], currentRole
             <div className="report-export-scope"><span>{query.trim() ? `Exporting ${exportLabel} rows matching this search.` : `Exports include all ${exportLabel} rows in this live snapshot.`}</span><Status tone={query.trim() ? "warn" : "good"}>{query.trim() ? "Filtered" : "Full snapshot"}</Status></div>
 
             {filteredRows.length ? <>
-              <div className="report-table-wrap phase3-report-table"><table><thead><tr>{selected.columns.map(([key, label]) => <th key={key}>{label}</th>)}</tr></thead><tbody>{previewRows.map((row, index) => <tr key={`${selected.key}-${index}`}>{selected.columns.map(([key, label, type]) => <td key={key} data-label={label}>{formatReportValue(row[key], type)}</td>)}</tr>)}</tbody></table></div>
+              <div className="report-table-wrap phase3-report-table"><table><thead><tr>{selected.columns.map(([key, label]) => <th key={key}>{label}</th>)}</tr></thead><tbody>{previewRows.map((row, index) => <tr key={`${selected.key}-${index}`}>{selected.columns.map(([key, label, type]) => <td key={key} data-label={label}>{key==="full_name"&&(row.participant_id||row.staff_id||row.person_id)?<PersonName person={{...row,id:row.participant_id||row.staff_id||row.person_id}} kind={row.staff_id?"staff":"participant"}/>:formatReportValue(row[key], type)}</td>)}</tr>)}</tbody></table></div>
               <div className="report-preview-foot"><span>Showing {previewRows.length.toLocaleString()} of {filteredRows.length.toLocaleString()}{query.trim() ? " matching" : ""} rows</span>{filteredRows.length > visibleLimit ? <button type="button" className="secondary compact-button" onClick={() => setVisibleLimit((value) => value + 120)}>Show 120 more</button> : null}</div>
             </> : <Empty icon={FileCsv} title={query.trim() ? "No rows match this search" : "No rows in this report yet"} text={query.trim() ? "Clear the search or try another name, ID, unit or status." : "The report will populate as the corresponding operational work is recorded."}/>}          
           </> : null}

@@ -1,3 +1,5 @@
+import { PersonName } from "../components/PersonPeek.jsx";
+import { matchesPersonSearch } from "../lib/person-search.js";
 import { useMemo, useState } from "react";
 import { ArrowCounterClockwise } from "@phosphor-icons/react/ArrowCounterClockwise";
 import { Cake } from "@phosphor-icons/react/Cake";
@@ -86,7 +88,7 @@ function BirthdayPerson({ person, busy, onUpdate, onOpenAssignment }) {
           <span className={`birthday-kind ${staff ? "staff" : "participant"}`}>{staff ? "Staff" : "Youth"}</span>
           <span className="birthday-primary-context">{primaryContext(person)}</span>
         </div>
-        <h3>{person.name}</h3>
+        <h3><PersonName person={person} kind={staff?"staff":"participant"} context={{label:"Birthday",value:person.date||person.birthday||"Celebrating during FSY"}}/></h3>
         {details.length ? <div className="birthday-context-chips" aria-label="FSY context">{details.map((item) => <span key={item}>{item}</span>)}</div> : <p className="birthday-context-fallback">FSY assignment details are not recorded yet.</p>}
       </div>
     </div>
@@ -175,7 +177,7 @@ export function Birthdays({ birthdays = [], staffBirthdays = [], onSetAcknowledg
       if (statusFilter === "pending" && person.acknowledged) return false;
       if (statusFilter === "acknowledged" && !person.acknowledged) return false;
       if (typeFilter !== "all" && person.kind !== typeFilter) return false;
-      return !text || searchText(person).includes(text);
+      return matchesPersonSearch(person,text);
     });
   }, [people, query, statusFilter, typeFilter]);
 

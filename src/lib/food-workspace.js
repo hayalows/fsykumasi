@@ -1,10 +1,25 @@
+import { searchPeople } from "./person-search.js";
 import { loadRpcPages } from "./rpc-pages.js";
 import { dietaryNeedsReview } from "./dietary.js";
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 
+const mealSearchCache = new Map();
+
 function client() {
   if (!isSupabaseConfigured || !supabase) throw new Error("Supabase is not configured for this deployment.");
   return supabase;
+}
+
+function identityScopeKey(identities = []) {
+  // The cache may survive component remounts, so bind it to the exact visible identity scope.
+  // Rows are also filtered against this scope before returning, which prevents stale broader
+  // results from leaking after an account/session/scope change.
+  if (!identities.length) return "server-scope";
+  return identities.map((person) => String(person.id || "")).filter(Boolean).sort().join("|");
+}
+
+export function clearMealSearchCache() {
+  mealSearchCache.clear();
 }
 
 export async function loadMealServicesV2(sessionId, serviceDate = null) {
@@ -33,7 +48,40 @@ export async function loadMealRosterPageV2({
   status = "remaining",
   limit = 80,
   offset = 0,
+  identities = [],
 }) {
+  if (query.trim()) {
+    // Search the entire server-authorized roster, never only a loaded page. Cache is short-lived
+    // and keyed to the exact visible participant scope so sign-out/scope changes cannot reuse a
+    // broader roster. The identity filter below is a second safety boundary.
+    const scopeKey = identityScopeKey(identities);
+    const key = JSON.stringify([serviceId, companyId, status, scopeKey]);
+    let cached = mealSearchCache.get(key);
+    if (!cached || Date.now() - cached.at > 15000) {
+      const promise = (async () => {
+        const all = [];
+        let total = Infinity;
+        for (let start = 0; start < total; start += 200) {
+          const page = await loadMealRosterPageV2({ serviceId, companyId, status, limit: 200, offset: start });
+          total = page.total;
+          all.push(...page.rows);
+          if (!page.rows.length) break;
+        }
+        return all;
+      })();
+      cached = { at: Date.now(), promise };
+      mealSearchCache.set(key, cached);
+      promise.catch(() => mealSearchCache.delete(key));
+    }
+
+    const byId = new Map(identities.map((person) => [person.id, person]));
+    const scopedRows = (await cached.promise)
+      .filter((row) => !identities.length || byId.has(row.personId))
+      .map((row) => ({ ...(byId.get(row.personId) || {}), ...row }));
+    const rows = searchPeople(scopedRows, query);
+    return { rows: rows.slice(offset, offset + limit), total: rows.length };
+  }
+
   const { data, error } = await client().rpc("get_meal_roster_page_v2", {
     p_meal_service_id: serviceId,
     p_query: query.trim() || null,
@@ -92,6 +140,7 @@ export async function setParticipantMealServedV2({ serviceId, participantId, ser
     p_served: Boolean(served),
   });
   if (error) throw error;
+  clearMealSearchCache();
   const row = Array.isArray(data) ? data[0] : data;
   return {
     id: row?.attendance_id || null,

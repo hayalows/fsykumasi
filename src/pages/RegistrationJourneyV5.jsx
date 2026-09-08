@@ -1,3 +1,4 @@
+import { PersonName } from "../components/PersonPeek.jsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight } from "@phosphor-icons/react/ArrowRight";
 import { Check } from "@phosphor-icons/react/Check";
@@ -286,10 +287,10 @@ export function RegistrationJourney({ view = "desk", initialFilter = "", session
           const problem = rowProblem(row, eligibility);
           const ready = isReady(row, eligibility);
           return <div className={`regjourney-row regjourney-row-v2${problem ? " needs-help" : ""}${ready ? " ready" : ""}${row.checkinStatus === "arrived" ? " arrived" : ""}`} key={row.participantId}>
-            <button type="button" className="regjourney-person-button" onClick={() => openPerson(row)}>
+            <div className="regjourney-person-button">
               <span className="person-avatar">{initials(row.fullName)}</span>
-              <span className="regjourney-person-copy"><b>{row.fullName}</b><small>{row.unit || "Unit not recorded"}{row.stake ? ` · ${row.stake}` : ""}</small><em>{displaySource(row)}{row.fsyId ? ` · ${row.fsyId}` : " · FSY ID pending"}</em></span>
-            </button>
+              <span className="regjourney-person-copy"><PersonName person={{...row,id:row.participantId}} context={{label:"Registration",value:problem||arrivalLabel(row)}}/><small>{row.unit || "Unit not recorded"}{row.stake ? ` · ${row.stake}` : ""}</small><em>{displaySource(row)}{row.fsyId ? ` · ${row.fsyId}` : " · FSY ID pending"}</em></span>
+            </div>
             <div className="regjourney-assignment"><span>{row.companyName || "No company"}</span><small>{row.groupName || "No counselor group"}</small>{row.checkinStatus === "arrived" ? <em className={housing ? "housing-ready" : "housing-waiting"}>{housing ? `Room ${housing.roomName}` : "Waiting for Housing"}</em> : null}</div>
             <div className="regjourney-status"><Status tone={problem ? "warn" : arrivalTone(row)}>{problem || arrivalLabel(row)}</Status></div>
             <div className="regjourney-row-action">{ready && canCheckin ? <button type="button" className="primary" disabled={busyId === row.participantId} onClick={() => checkIn(row)}>{busyId === row.participantId ? "Saving…" : "Check in"}<Check /></button> : problem && canManageRegistration ? <button type="button" className="secondary resolve" onClick={() => openPerson(row)}>Resolve<ArrowRight /></button> : <button type="button" className="secondary" onClick={() => openPerson(row)}>View</button>}</div>

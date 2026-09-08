@@ -1,3 +1,4 @@
+import { matchesPersonSearch } from "./person-search.js";
 const normalize = (value) => String(value || "").trim().toLowerCase();
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
@@ -18,7 +19,5 @@ export function uniqueUnitMatch(options, value) {
 }
 
 export function matchesRegistrationSearch(row, query, housing) {
-  const text = normalize(query);
-  return !text || [row.fullName, row.preferredName, row.fsyId, ...(row.previousFsyIds||[]), row.unit, row.stake,
-    row.companyName, row.groupName, housing?.roomName].filter(Boolean).join(" ").toLowerCase().includes(text);
+ return matchesPersonSearch(row,query,[housing?.roomName]);
 }

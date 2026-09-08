@@ -20,9 +20,8 @@ export const REPORT_DEFINITIONS = [
       ["preferred_name", "Preferred name", "text"], ["badge_name", "Badge name", "text"], ["sex", "Sex", "text"],
       ["age", "Age", "number"], ["origin", "Stake / District / Mission", "text"], ["unit", "Ward / Branch", "text"],
       ["company", "Company", "text"], ["counselor_group", "Counselor group", "text"], ["counselor", "Counselor", "text"],
-      ["registration_status", "Registration", "text"], ["verification_status", "Verification", "text"], ["arrival_status", "Arrival", "text"],
-      ["checkin_status", "Check-in", "text"], ["housing_room", "Housing room", "text"], ["source_kind", "Source", "text"],
-      ["badge_state", "Badge state", "text"], ["eligible", "Operationally eligible", "boolean"],
+      ["registration_status", "Registration", "text"], ["arrival_status", "Arrival", "text"],
+      ["checkin_status", "Check-in", "text"], ["housing_room", "Housing room", "text"], ["badge_state", "Badge state", "text"],
     ],
   },
   {

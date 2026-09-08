@@ -1,3 +1,5 @@
+import { PersonName } from "../components/PersonPeek.jsx";
+import { matchesPersonSearch } from "../lib/person-search.js";
 import { useEffect, useMemo, useState } from "react";
 import { Bed } from "@phosphor-icons/react/Bed";
 import { Buildings } from "@phosphor-icons/react/Buildings";
@@ -197,7 +199,7 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
     else base = allPeople.filter((person) => !assignedByPerson.has(`${person.kind}:${person.id}`));
     return base
       .filter((person) => personStatus === "arrivals" || personType === "all" || person.kind === personType)
-      .filter((person) => !text || `${person.name} ${person.context} ${person.group || ""} ${person.company || ""}`.toLowerCase().includes(text));
+      .filter((person) => matchesPersonSearch(person,text,[person.context]));
   }, [personStatus, waitingPeople, allPeople, assignedByPerson, personType, personQuery]);
 
   const visibleRooms = filteredRooms.slice(0, roomLimit);
@@ -257,11 +259,11 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
         <div className="housing-v5-person-list">
           {visiblePeople.map((person, index) => {
             const assignment = assignedByPerson.get(`${person.kind}:${person.id}`);
-            return <button type="button" key={`${person.kind}:${person.id}`} className={person.queue && index === 0 ? "priority" : ""} disabled={!canManage} onClick={() => canManage && setSelected({ person, assignment })}>
+            return <div key={`${person.kind}:${person.id}`} className={`housing-person-identity-row ${person.queue && index === 0 ? "priority" : ""}`}>
               <span className="person-avatar">{initials(person.name)}</span>
-              <span className="copy"><b>{person.name}</b><small>{person.context}</small>{person.queue ? <em><Clock/>{person.waitLabel}</em> : null}</span>
-              <span className="assignment">{assignment ? <><b>{assignment.roomName}</b><small>{assignment.bedLabel ? `Bed / key ${assignment.bedLabel}` : "Assigned"}</small></> : person.queue ? <><b>Assign room</b><small>{index === 0 ? "Next in queue" : "From Registration"}</small></> : <><b>Needs room</b><small>Not assigned</small></>}</span>
-            </button>;
+              <span className="copy"><PersonName person={person} kind={person.kind} context={{label:"Housing",value:assignment?.roomName||"Room not assigned"}}/><small>{person.context}</small>{person.queue ? <em><Clock/>{person.waitLabel}</em> : null}</span>
+              <button type="button" className="assignment person-name" disabled={!canManage} onClick={()=>setSelected({person,assignment})}>{assignment ? <><b>{assignment.roomName}</b><small>{assignment.bedLabel ? `Bed / key ${assignment.bedLabel}` : "Assigned"}</small></> : person.queue ? <><b>Assign room</b><small>{index === 0 ? "Next in queue" : "From Registration"}</small></> : <><b>Needs room</b><small>Not assigned</small></>}</button>
+            </div>;
           })}
           {!filteredPeople.length ? <Empty icon={CheckCircle} title={personStatus === "arrivals" ? "No arrivals are waiting" : "No people match this view"} text={personStatus === "arrivals" ? "New checked-in arrivals will appear here automatically." : "Try another search or filter."}/> : null}
         </div>
