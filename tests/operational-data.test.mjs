@@ -9,7 +9,7 @@ test('all 1,615 people remain searchable beyond the API row limit', async () => 
   assert.deepEqual(await loadRpcPages(client,'roster',{},['id']),people);
 });
 test('a failed later page never returns a misleading partial roster', async () => {
-  const client = { rpc() { return { order() { return this; }, async range(from) { return from ? {error:new Error('offline')} : {data:Array(500).fill({})}; } }; } };
+  const client = { rpc() { return { order() { return this; }, async range(from) { return from ? {error:new Error('offline')} : {data:Array(1000).fill({})}; } }; } };
   await assert.rejects(loadRpcPages(client,'roster',{},['id']), /offline/);
 });
 test('non-answers are hidden but restrictions and uncertain responses remain', () => {

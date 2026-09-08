@@ -59,8 +59,9 @@ test('Registration IA separates the live desk, Solutions and preflight work',asy
   assert.match(source,/label: "Preflight review"/);
   assert.match(source,/label: "FSY IDs"/);
   assert.match(source,/label: "Staff readiness"/);
-  assert.match(source,/<RegistrationJourney view="desk"/);
-  assert.match(source,/<RegistrationJourney view="roster"/);
+  assert.match(source,/const \[journeyMode, setJourneyMode\]/);
+  assert.match(source,/if \(next === "desk" \|\| next === "roster"\) setJourneyMode\(next\)/);
+  assert.match(source,/<RegistrationJourney view=\{journeyMode\}/);
 });
 
 test('Solutions keeps exception authority separate from source registration',async()=>{
