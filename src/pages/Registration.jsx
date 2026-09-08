@@ -1,11 +1,8 @@
-import { useEffect, useState } from "react";
-import { RegistrationFinalBaselineV21 } from "./RegistrationFinalBaselineV21.jsx";
-import { RegistrationReviewInbox } from "./RegistrationReviewInbox.jsx";
-import { IdentityFoundationV28 } from "./RegistrationIdentityV28.jsx";
+import { useEffect, useMemo, useState } from "react";
 import { RegistrationJourney } from "./RegistrationJourney.jsx";
-import { StaffReadiness } from "./StaffReadiness.jsx";
-import { loadStructureSettings, DEFAULT_STRUCTURE_SETTINGS } from "../lib/operations.js";
+import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
 import { formatCount } from "../lib/cohort.js";
+import { registrationBlockerCount } from "../lib/registration-workflow-v30.js";
 import { PageHead, SegmentedControl } from "../components/UI.jsx";
 import "./registration-review.css";
 import "./registration-v5.css";
@@ -16,65 +13,47 @@ const MODE_META = {
   desk: {
     phase: "Arrival desk",
     title: "Live check-in",
-    help: "Search the participant. If something blocks check-in, resolve only that issue and keep the desk moving. Problems continue in Solutions.",
+    help: "Find the participant and complete normal arrivals quickly. If something blocks check-in, send only that person to Solutions.",
   },
   roster: {
-    phase: "Solutions table",
-    title: "Resolve issues",
-    help: "Work only the people who cannot continue normally: approval, eligibility, placement, identity and on-site registration.",
+    phase: "Exception work",
+    title: "Solutions",
+    help: "One place for participant blockers: approval, eligibility, verification, placement, identity and arrival follow-up.",
   },
-  setup: {
-    phase: "Before session",
-    title: "Prepare",
-    help: "Review participant and Staff readiness, confirm FSY IDs, and keep the final source roster available when a new official snapshot arrives.",
+  readiness: {
+    phase: "Session readiness",
+    title: "Readiness",
+    help: "See whether the final roster, participant identities and Staff are ready. Participant exceptions stay in Solutions instead of being repeated here.",
   },
 };
+
+function normalizeRegistrationMode(initialMode, canUseRegistrationTools) {
+  if (!canUseRegistrationTools) return "desk";
+  if (initialMode === "setup") return "readiness";
+  return ["desk", "roster", "readiness"].includes(initialMode) ? initialMode : "desk";
+}
 
 export function Registration(props) {
   const { imported = [], live = false, sessionId, sessionName, capabilities = [], onOperationalDataChanged, initialMode = "desk", initialFilter = "", onNavigate } = props;
   const canUseRegistrationTools = capabilities.includes("registration_view") || capabilities.includes("registration_manage") || !live;
-  const normalizedMode = canUseRegistrationTools && ["desk", "roster", "setup"].includes(initialMode) ? initialMode : "desk";
+  const normalizedMode = normalizeRegistrationMode(initialMode, canUseRegistrationTools);
   const [mode, setMode] = useState(normalizedMode);
   const [journeyMode, setJourneyMode] = useState(normalizedMode === "roster" ? "roster" : "desk");
-  const [setupMode, setSetupMode] = useState("review");
-  const [visitedSetupModes, setVisitedSetupModes] = useState(() => new Set(normalizedMode === "setup" ? ["review"] : []));
-  const [structureSettings, setStructureSettings] = useState(DEFAULT_STRUCTURE_SETTINGS);
-
-  const rememberSetup = (next) => setVisitedSetupModes((current) => {
-    if (current.has(next)) return current;
-    const updated = new Set(current);
-    updated.add(next);
-    return updated;
-  });
+  const [readinessVisited, setReadinessVisited] = useState(normalizedMode === "readiness");
+  const solutionCount = useMemo(() => registrationBlockerCount(imported), [imported]);
 
   useEffect(() => {
     setMode(normalizedMode);
     if (normalizedMode === "desk" || normalizedMode === "roster") setJourneyMode(normalizedMode);
-    if (normalizedMode === "setup") rememberSetup(setupMode);
+    if (normalizedMode === "readiness") setReadinessVisited(true);
   }, [normalizedMode]);
 
   const chooseMode = (next) => {
     setMode(next);
     if (next === "desk" || next === "roster") setJourneyMode(next);
-    if (next === "setup") rememberSetup(setupMode);
-    onNavigate?.({ view: "registration", mode: next, filter: "" });
+    if (next === "readiness") setReadinessVisited(true);
+    onNavigate?.({ view: "registration", mode: next, filter: next === "roster" ? initialFilter : "" });
   };
-  const chooseSetupMode = (next) => {
-    setSetupMode(next);
-    rememberSetup(next);
-  };
-
-  useEffect(() => {
-    let active = true;
-    if (!live || !sessionId) {
-      setStructureSettings(DEFAULT_STRUCTURE_SETTINGS);
-      return () => { active = false; };
-    }
-    loadStructureSettings(sessionId)
-      .then((settings) => { if (active) setStructureSettings(settings); })
-      .catch(() => { if (active) setStructureSettings(DEFAULT_STRUCTURE_SETTINGS); });
-    return () => { active = false; };
-  }, [live, sessionId]);
 
   const handleFinalBaselineChanged = async () => {
     await onOperationalDataChanged?.();
@@ -92,12 +71,12 @@ export function Registration(props) {
     onOperationalDataChanged,
   };
 
-  return <div className="registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28 registration-v29">
+  return <div className="registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28 registration-v29 registration-workspace-v30">
     <section className="page registration-workspace-intro registration-workspace-intro-v5 registration-unified-intro">
       <PageHead
         title="Registration & check-in"
         sessionName={sessionName}
-        description="Normal arrivals stay fast. Problems move to Solutions, and preparation work stays separate from the live desk."
+        description="Keep normal arrivals fast. Resolve participant blockers in one Solutions queue, and use Readiness for the supporting setup."
       />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
         {canUseRegistrationTools ? <SegmentedControl
@@ -107,42 +86,36 @@ export function Registration(props) {
           onChange={chooseMode}
           options={[
             { value: "desk", label: "Live check-in", id: "registration-mode-desk" },
-            { value: "roster", label: "Solutions", count: cohortSummary?.reviewExceptions || 0, id: "registration-mode-roster" },
-            { value: "setup", label: "Prepare", count: cohortSummary?.reviewExceptions || 0, id: "registration-mode-setup" },
+            { value: "roster", label: "Solutions", count: solutionCount, id: "registration-mode-roster" },
+            { value: "readiness", label: "Readiness", id: "registration-mode-readiness" },
           ]}
         /> : null}
         <div className="registration-mode-cue-v5" role="status">
           <div><span className="kicker">{modeMeta.phase}</span><b>{modeMeta.title}</b></div>
           <p>{modeMeta.help}</p>
-          {cohortSummary ? <small><b>{formatCount(cohortSummary.eligible)} eligible youth</b><span>{formatCount(cohortSummary.records)} registration records{cohortSummary.reviewExceptions ? ` · ${formatCount(cohortSummary.reviewExceptions)} need review` : ""}</span></small> : null}
+          {cohortSummary ? <small><b>{formatCount(cohortSummary.eligible)} eligible youth</b><span>{formatCount(cohortSummary.records)} registration records{solutionCount ? ` · ${formatCount(solutionCount)} blocked` : " · no participant blockers"}</span></small> : null}
         </div>
       </div>
     </section>
 
     <div className="registration-workspace-pane registration-workspace-pane-v5 registration-unified-pane">
-      <div role="tabpanel" aria-labelledby={journeyMode === "desk" ? "registration-mode-desk" : "registration-mode-roster"} hidden={mode === "setup"}>
+      <div role="tabpanel" aria-labelledby={journeyMode === "desk" ? "registration-mode-desk" : "registration-mode-roster"} hidden={mode === "readiness"}>
         <RegistrationJourney view={journeyMode} {...journeyProps} />
       </div>
 
-      {visitedSetupModes.size ? <div role="tabpanel" aria-labelledby="registration-mode-setup" className="registration-setup-shell" hidden={mode !== "setup"}>
-        <div className="registration-setup-nav-wrap">
-          <SegmentedControl
-            className="registration-setup-tabs"
-            label="Registration preparation area"
-            value={setupMode}
-            onChange={chooseSetupMode}
-            options={[
-              { value: "review", label: "Preflight review", count: cohortSummary?.reviewExceptions || 0, id: "registration-setup-review" },
-              { value: "identity", label: "FSY IDs", id: "registration-setup-identity" },
-              { value: "staff", label: "Staff readiness", id: "registration-setup-staff" },
-              { value: "final", label: "Final roster", id: "registration-setup-final" },
-            ]}
-          />
-        </div>
-        {visitedSetupModes.has("review") ? <div hidden={setupMode !== "review"}><RegistrationReviewInbox {...props} imported={imported} structureSettings={structureSettings} sessionName={sessionName} /></div> : null}
-        {visitedSetupModes.has("identity") ? <div hidden={setupMode !== "identity"}><IdentityFoundationV28 sessionId={sessionId} capabilities={capabilities} onChanged={onOperationalDataChanged} /></div> : null}
-        {visitedSetupModes.has("staff") ? <div hidden={setupMode !== "staff"}><StaffReadiness sessionId={sessionId} onNavigate={onNavigate} /></div> : null}
-        {visitedSetupModes.has("final") ? <div hidden={setupMode !== "final"}><RegistrationFinalBaselineV21 sessionId={sessionId} canManage={props.canManage} setImported={props.setImported} onChanged={handleFinalBaselineChanged} onNavigate={onNavigate} /></div> : null}
+      {readinessVisited ? <div role="tabpanel" aria-labelledby="registration-mode-readiness" hidden={mode !== "readiness"}>
+        <RegistrationReadinessV30
+          imported={imported}
+          cohort={cohortSummary}
+          live={live}
+          sessionId={sessionId}
+          capabilities={capabilities}
+          canManage={props.canManage}
+          setImported={props.setImported}
+          onChanged={onOperationalDataChanged}
+          onFinalBaselineChanged={handleFinalBaselineChanged}
+          onNavigate={onNavigate}
+        />
       </div> : null}
     </div>
   </div>;
