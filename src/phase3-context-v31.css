@@ -1,0 +1,105 @@
+.workspace-return-strip {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--border, #d9dde3);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+}
+
+.workspace-return-strip .text-action {
+  min-height: 44px;
+  flex: 0 0 auto;
+  font-weight: 650;
+}
+
+.workspace-return-strip > span {
+  min-width: 0;
+  color: var(--muted, #667085);
+  font-size: 0.88rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.people-v31-related {
+  margin-top: 14px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--border, #d9dde3);
+  border-radius: 14px;
+  background: var(--surface-subtle, #f8fafc);
+}
+
+.people-v31-related > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.people-v31-related span,
+.people-v31-related small {
+  color: var(--muted, #667085);
+}
+
+.people-v31-related b,
+.people-v31-related small {
+  overflow-wrap: anywhere;
+}
+
+.people-v31-related .secondary {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.groups-v2-company.context-focus,
+.groups-v2-group.context-focus {
+  scroll-margin-block: 96px;
+}
+
+.groups-v2-company.context-focus > .groups-v2-company-head,
+.groups-v2-group.context-focus > button {
+  outline: 2px solid color-mix(in srgb, currentColor 20%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .workspace-return-strip {
+    width: min(100% - 24px, 1180px);
+    margin-bottom: 8px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .workspace-return-strip > span {
+    text-align: left;
+  }
+
+  .people-v31-related {
+    grid-template-columns: 1fr;
+  }
+
+  .people-v31-related .secondary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .workspace-return-strip {
+    width: calc(100% - 16px);
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .people-v31-related {
+    padding: 12px;
+    border-radius: 12px;
+  }
+}
