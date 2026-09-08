@@ -36,7 +36,7 @@ test("Registration presents one Registration & check-in journey", async () => {
   ]);
   assert.match(source, /title="Registration & check-in"/);
   assert.match(source, /Live check-in/);
-  assert.match(source, /Exceptions/);
+  assert.match(source, /Solutions/);
   assert.match(source, /Prepare/);
   assert.match(source, /<RegistrationJourney view="desk"/);
   assert.match(source, /<RegistrationJourney view="roster"/);

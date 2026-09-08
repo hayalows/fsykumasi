@@ -66,10 +66,10 @@ test("Access is person-first with a protected disable action", async () => {
   assert.match(source, /ConfirmActionSheet/);
 });
 
-test("Registration separates live arrival work from exceptions and preparation", async () => {
+test("Registration separates live arrival work from Solutions and preparation", async () => {
   const source = await read("src/pages/Registration.jsx");
   assert.match(source, /Live check-in/);
-  assert.match(source, /Exceptions & roster/);
+  assert.match(source, /Solutions table/);
   assert.match(source, /Before session/);
   assert.match(source, /Prepare/);
 });

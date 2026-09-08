@@ -19,7 +19,7 @@ test("check-in search is global and on-site creation waits for a genuine no-matc
   const source = await read("src/pages/RegistrationJourneyV5.jsx");
   assert.match(source, /view === "desk" && text\) return matchesRegistrationSearchV6/);
   assert.match(source, /Searching all participants/);
-  assert.match(source, /canManageRegistration && view !== "desk"/);
+  assert.match(source, /canManageRegistration\s*&&\s*view\s*!==\s*"desk"/);
   assert.match(source, /No participant found/);
   assert.match(source, /Add on-site participant/);
   assert.match(source, /scrollIntoView/);
@@ -45,7 +45,7 @@ test("Registration workspace copy stays concise and the focused flow layer loads
     read("public/sw.js"),
   ]);
   assert.match(registration, /Search the participant\. If something blocks check-in, resolve only that issue and keep the desk moving\./);
-  assert.match(registration, /description="Use the work area that matches what is happening now\. Arrival-day check-in stays focused on one person at a time\."/);
+  assert.match(registration, /description="Normal arrivals stay fast\. Problems move to Solutions, and preparation work stays separate from the live desk\."/);
   const v6 = main.indexOf('import "./registration-checkin-v6.css";');
   const modal = main.indexOf('import "./registration-modal-v4.css";');
   const v7 = main.indexOf('import "./registration-flow-v7.css";');

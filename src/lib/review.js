@@ -2,8 +2,8 @@ import { operationalAgeRange, operationalEligibility } from "./registration.js";
 
 export const REVIEW_QUEUE_ORDER=["awaiting","age_review","verification","unassigned","missing_unit","not_attending","omitted","cancelled"];
 export const REVIEW_QUEUE_META={
- awaiting:{label:"Awaiting approval",short:"Awaiting official registration approval",help:"Kept in the registration list, but excluded from groups, check-in and head count until a newer official export marks the person Approved."},
- age_review:{label:"Age review",short:"FSY session-date eligibility needs attention",help:"The source record is preserved. Where date of birth and session dates are available, eligibility follows the FSY year/session boundary rather than a broad planning age label."},
+ awaiting:{label:"Awaiting approval",short:"Official registration is not approved yet",help:"Keep the source status intact. A newer official export can approve the same record; if the participant arrives first, use Solutions for a Session Directing Couple decision after the required checks."},
+ age_review:{label:"Age review",short:"FSY session-date eligibility needs attention",help:"The source record is preserved. Server eligibility follows the FSY year/session boundary. Any authorized exception belongs in Solutions, not in a local age edit."},
  verification:{label:"Needs verification",short:"On-site record needs an administrator decision",help:"Verify the day-of addition before assigning a counselor group or checking the participant in."},
  unassigned:{label:"Ready but unassigned",short:"Approved and eligible, but no counselor group yet",help:"Assign a compatible counselor group before check-in. This queue excludes age-review and approval-review records."},
  missing_unit:{label:"Missing ward / branch",short:"Church unit is missing",help:"Keep the source record, correct the official data when possible, then upload the newer complete export. Do not guess a unit."},
