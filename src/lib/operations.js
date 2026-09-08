@@ -79,17 +79,22 @@ export async function saveStructureSettings(sessionId, settings) {
 }
 
 export async function loadStaff(sessionId) {
-  const [{ data: rows, error }, { data: groupRows, error: groupError }, { data: companyAssignments, error: assignmentError }] = await Promise.all([
+  const [{ data: rows, error }, { data: groupRows, error: groupError }, { data: companyAssignments, error: assignmentError }, {data: operationRows,error:operationsError}, {data:dutyRows,error:dutiesError}] = await Promise.all([
     client().from("staff")
       .select("id, full_name, first_name, last_name, preferred_name, sex, age, unit_name, stake_name, staff_role, operational_role, registration_status, is_current")
       .eq("session_id", sessionId)
       .order("full_name"),
     client().from("counselor_groups").select("id, counselor_id, company_id").eq("session_id", sessionId),
     client().from("staff_company_assignments").select("staff_id, company_id").eq("session_id", sessionId),
+    client().from("staff_operations").select("staff_id,planning_state,arrival_state,service_clearance,revision"),
+    client().from("staff_committee_duties").select("staff_id,duty"),
   ]);
   if (error) throw error;
   if (groupError) throw groupError;
   if (assignmentError) throw assignmentError;
+  if(operationsError) throw operationsError;
+  if(dutiesError) throw dutiesError;
+  const operationMap=new Map((operationRows||[]).map(row=>[row.staff_id,row]));
   const counselorGroup = new Map((groupRows || []).filter((row) => row.counselor_id).map((row) => [row.counselor_id, row.id]));
   const companiesByStaff = (companyAssignments || []).reduce((map, row) => {
     if (!map.has(row.staff_id)) map.set(row.staff_id, []);
@@ -107,6 +112,11 @@ export async function loadStaff(sessionId) {
     unit: row.unit_name,
     stake: row.stake_name,
     sourceRole: row.staff_role,
+    planningState:operationMap.get(row.id)?.planning_state,
+    arrivalState:operationMap.get(row.id)?.arrival_state,
+    serviceClearance:operationMap.get(row.id)?.service_clearance,
+    operationsRevision:operationMap.get(row.id)?.revision,
+    committeeDuties:(dutyRows||[]).filter(d=>d.staff_id===row.id).map(d=>d.duty),
     operationalRole: row.operational_role || "counselor",
     registrationStatus: row.registration_status,
     isCurrent: row.is_current,
@@ -209,13 +219,10 @@ export async function setStaffCompanyAssignment(staffId, companyId, assigned) {
 }
 
 export async function applyStaffAssignmentPlan(sessionId, suggestions) {
-  const { data, error } = await client().rpc("apply_staff_assignment_plan", {
-    p_session_id: sessionId,
-    p_counselor_assignments: (suggestions?.counselors || []).map((item) => ({ staff_id: item.staffId, group_id: item.groupId })),
-    p_assistant_assignments: (suggestions?.assistants || []).map((item) => ({ staff_id: item.staffId, company_id: item.companyId })),
-  });
-  if (error) throw error;
-  return data;
+ const {data,error}=await client().rpc("apply_staff_plan_v26",{p_session_id:sessionId,p_plan:suggestions});
+ if(error)throw error;
+ if(Number(data?.counselor_assignments)!==(suggestions.counselors||[]).length||Number(data?.assistant_coordinator_assignments)!==(suggestions.assistants||[]).length)throw new Error("Applied plan count differs; refresh coverage before continuing.");
+ return data;
 }
 
 export async function updateCompanyDetails(companyId, values) {

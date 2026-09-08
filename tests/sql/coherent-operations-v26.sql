@@ -1,0 +1,44 @@
+-- NOT RUN: user asked to skip authenticated database permission tests. Requires an explicitly authorized existing development test identity; never create one automatically.
+begin;
+do $$
+declare sid uuid:=gen_random_uuid(); actor uuid; counselor uuid:=gen_random_uuid(); reserve uuid:=gen_random_uuid(); ac uuid:=gen_random_uuid(); cid uuid:=gen_random_uuid(); gid uuid:=gen_random_uuid(); youth uuid:=gen_random_uuid(); plan jsonb; result jsonb; failed boolean;
+begin
+ select id into actor from auth.users order by created_at limit 1;
+ if actor is null then raise exception 'Test requires an existing development auth user'; end if;
+ perform set_config('request.jwt.claim.sub',actor::text,true);
+ insert into public.sessions(id,name,year,starts_on,ends_on,status) values(sid,'Synthetic v26 rollback test',2026,'2026-09-14','2026-09-19','planning');
+ insert into public.session_structure_settings(session_id,companies_per_assistant_coordinator) values(sid,2);
+ insert into public.access_assignments(session_id,user_id,role,active) values(sid,actor,'session_director',true);
+ insert into public.staff(id,session_id,full_name,staff_role,operational_role,sex,registration_status,is_current) values(counselor,sid,'Synthetic counselor','Counselor','counselor','female','approved',true),(reserve,sid,'Synthetic reserve','Counselor','counselor','female','awaiting',true),(ac,sid,'Synthetic AC','Assistant Coordinator','assistant_coordinator','male','approved',true);
+ insert into public.companies(id,session_id,name) values(cid,sid,'Synthetic company');
+ insert into public.counselor_groups(id,session_id,company_id,name,sex,state,counselor_id) values(gid,sid,cid,'Synthetic group','female','published',counselor);
+ if not private.staff_can_plan(reserve) then raise exception 'Awaiting planning rejected'; end if;
+ if (select service_clearance from public.staff_operations where staff_id=reserve)<>'confirmation_required' then raise exception 'Source awaiting was treated as cleared'; end if;
+ perform public.update_staff_operations(counselor,0,'primary','no_show','cleared','','Confirmed absent by staff',null);
+ plan:=jsonb_build_object('limit',2,'counselors',jsonb_build_array(jsonb_build_object('groupId',gid,'staffId',reserve,'previousStaffId',counselor)),'assistants',jsonb_build_array(jsonb_build_object('companyId',cid,'staffId',ac,'previousStaffIds','[]'::jsonb)));
+ result:=public.apply_staff_plan_v26(sid,plan);
+ if (result->>'counselor_assignments')::integer<>1 or (select counselor_id from public.counselor_groups where id=gid)<>reserve then raise exception 'Replacement failed'; end if;
+ if (select registration_status from public.staff where id=reserve)<>'awaiting' then raise exception 'Source approval changed'; end if;
+ failed:=false;begin perform public.apply_staff_plan_v26(sid,plan);exception when others then failed:=true;end;
+ if not failed then raise exception 'Stale plan accepted'; end if;
+ update public.access_assignments set role='coordinator' where session_id=sid and user_id=actor;
+ failed:=false;begin perform public.update_staff_operations(reserve,1,'provisional','arrived','cleared','Authority','Verified leadership decision',null);exception when others then failed:=true;end;
+ if not failed then raise exception 'Coordinator recorded director clearance'; end if;
+ update public.access_assignments set role='session_director' where session_id=sid and user_id=actor;
+ perform public.update_staff_operations(reserve,1,'primary','arrived','cleared','Session directing couple','Required confirmation recorded',array['Food','Games Night']);
+ if (select count(*) from public.staff_committee_duties where staff_id=reserve)<>2 then raise exception 'Committee duties missing'; end if;
+ failed:=false;begin perform public.update_staff_operations(reserve,1,'primary','left','cleared','','Leaving session',null);exception when others then failed:=true;end;
+ if not failed then raise exception 'Stale state update accepted'; end if;
+ insert into public.participants(id,session_id,registration_id,first_name,last_name,sex,age,unit_name,registration_status,verification_status,is_current) values(youth,sid,'SYNTHETIC-V26','Synthetic','Adult','male',20,'Test Ward','approved','verified',true);
+ insert into public.participant_private_details(participant_id,session_id,date_of_birth) values(youth,sid,'2006-09-14');
+ if private.operational_participant_is_eligible(sid,youth) then raise exception 'Adult normally eligible'; end if;
+ perform public.record_participant_exception(youth,true,'Session directing couple','Explicit authorized exception',true,true,true);
+ if not private.operational_participant_is_eligible(sid,youth) then raise exception 'Director exception not effective'; end if;
+ perform public.record_participant_exception(youth,false,'Session directing couple','Exception withdrawn',false,false,false);
+ if private.operational_participant_is_eligible(sid,youth) then raise exception 'Retired exception still eligible'; end if;
+ if not exists(select 1 from public.participants where id=youth) then raise exception 'Identity deleted'; end if;
+ perform set_config('request.jwt.claim.sub','',true);
+ failed:=false;begin perform public.apply_staff_plan_v26(sid,plan);exception when others then failed:=true;end;
+ if not failed then raise exception 'Anonymous staffing accepted'; end if;
+end $$;
+rollback;

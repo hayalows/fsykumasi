@@ -7,6 +7,7 @@ export function operationalAgeRange(settings = {}) {
 }
 
 export function operationalEligibility(person, settings = {}) {
+  if (person.serverEligibility && typeof person.serverEligibility.eligible === "boolean") return {ok:person.serverEligibility.eligible,reason:person.serverEligibility.reason||"Needs review"};
   if (person.isCurrent === false) return { ok: false, reason: "Not current" };
   if ((person.registrationStatus || "approved") === "awaiting") return { ok: false, reason: "Awaiting approval" };
   if ((person.registrationStatus || "approved") === "cancelled") return { ok: false, reason: "Cancelled" };

@@ -43,7 +43,7 @@ test("Food live service puts finding a participant before meal management and su
 
 test("People is search-first and normal records do not receive a Ready badge", async () => {
   const source = await read("src/pages/PeopleV2.jsx");
-  assert.match(source, /if\(!text\)return\[\]/);
+  assert.match(source, /if\(!query\.trim\(\)\)return \[\]/);
   assert.match(source, /Start with a name or FSY ID/);
   assert.match(source, /participant&&!eligibility\.ok/);
   assert.doesNotMatch(source, /<Status[^>]*>Ready<\/Status>/);

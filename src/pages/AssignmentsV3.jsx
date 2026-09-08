@@ -1,3 +1,10 @@
+import { OnSiteStaffSheet } from "../components/OnSiteStaffSheet.jsx";
+import { StaffOperationsSheet } from "../components/StaffOperationsSheet.jsx";
+import { saveStaffCompanyLimit } from "../lib/operational-state.js";
+import { PersonName } from "../components/PersonPeek.jsx";
+import { buildStaffingPlan as buildSuggestions } from "../lib/staffing-planner.js";
+import { canPlanStaff, staffException } from "../lib/staff-state.js";
+import { searchPeople, matchesPersonSearch } from "../lib/person-search.js";
 import { useEffect, useMemo, useState } from "react";
 import { Sparkle } from "@phosphor-icons/react/Sparkle";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
@@ -29,36 +36,6 @@ function goToAccess(filter = "all") {
   window.dispatchEvent(new Event("popstate"));
 }
 
-function buildSuggestions(staff, groups, companies, maxCompanyLoad) {
-  const freeCounselors = staff
-    .filter((person) => person.operationalRole === "counselor" && person.registrationStatus === "approved" && person.isCurrent !== false && !person.counselorGroupId)
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const counselors = [];
-  const used = new Set();
-  for (const group of groups.filter((item) => !item.counselorId).sort((a, b) => groupLabel(a).localeCompare(groupLabel(b), undefined, { numeric: true }))) {
-    const match = freeCounselors.find((person) => !used.has(person.id) && (!person.sex || person.sex === group.sex));
-    if (match) {
-      used.add(match.id);
-      counselors.push({ staffId: match.id, staffName: match.name, groupId: group.id, groupName: groupLabel(group) });
-    }
-  }
-
-  const assistants = staff
-    .filter((person) => person.operationalRole === "assistant_coordinator" && person.registrationStatus === "approved" && person.isCurrent !== false)
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const loads = new Map(assistants.map((person) => [person.id, person.companyIds?.length || 0]));
-  const assistantAssignments = [];
-  for (const company of companies.filter((item) => !item.assistantCoordinatorIds?.length).sort((a, b) => companyLabel(a).localeCompare(companyLabel(b), undefined, { numeric: true }))) {
-    const candidate = [...assistants]
-      .filter((person) => (loads.get(person.id) || 0) < maxCompanyLoad)
-      .sort((a, b) => (loads.get(a.id) || 0) - (loads.get(b.id) || 0) || a.name.localeCompare(b.name))[0];
-    if (!candidate) continue;
-    assistantAssignments.push({ staffId: candidate.id, staffName: candidate.name, companyId: company.id, companyName: companyLabel(company) });
-    loads.set(candidate.id, (loads.get(candidate.id) || 0) + 1);
-  }
-  return { counselors, assistants: assistantAssignments };
-}
-
 function AssignmentPicker({ title, description, query, setQuery, choices, emptyText, onPick, busy, onClose }) {
   return <DismissibleLayer open onClose={() => !busy && onClose()} title={title} sheet className="assignment-v2-picker-layer">
     <div className="field-sheet assignment-v2-picker">
@@ -78,7 +55,11 @@ function AssignmentPicker({ title, description, query, setQuery, choices, emptyT
   </DismissibleLayer>;
 }
 
-export function Assignments({ sessionId, canManage = false, initialWorkspace = "", initialFilter = "", initialStaffId = "", sessionName }) {
+export function Assignments({ currentRole, sessionId, canManage = false, initialWorkspace = "", initialFilter = "", initialStaffId = "", sessionName }) {
+  const [addingStaff,setAddingStaff]=useState(false);
+  const [operationsPerson,setOperationsPerson]=useState(null);
+  const [planningLimit,setPlanningLimit]=useState(4);
+  const [staffFilter,setStaffFilter]=useState("all");
   const [staff, setStaff] = useState([]);
   const [structure, setStructure] = useState({ groups: [], companies: [], published: false });
   const [settings, setSettings] = useState({ companiesPerAssistantCoordinator: 4 });
@@ -115,7 +96,7 @@ export function Assignments({ sessionId, canManage = false, initialWorkspace = "
     ]);
     setStaff(nextStaff);
     setStructure(nextStructure);
-    setSettings(nextSettings);
+    setSettings(nextSettings);setPlanningLimit(nextSettings.companiesPerAssistantCoordinator);
     setAccessStatus("loading");
     try {
       setAccessDirectory(await loadStaffAccessDirectory(sessionId));
@@ -152,11 +133,11 @@ export function Assignments({ sessionId, canManage = false, initialWorkspace = "
   const companyById = useMemo(() => new Map(companies.map((company) => [company.id, company])), [companies]);
   const accessByStaff = useMemo(() => new Map(accessDirectory.map((item) => [item.staffId, item])), [accessDirectory]);
   const maxCompanyLoad = Number(settings.companiesPerAssistantCoordinator || 4);
-  const currentStaff = staff.filter((person) => person.registrationStatus === "approved" && person.isCurrent !== false);
+  const currentStaff = staff.filter(canPlanStaff);
   const counselors = currentStaff.filter((person) => person.operationalRole === "counselor");
   const assistants = currentStaff.filter((person) => person.operationalRole === "assistant_coordinator");
-  const openGroups = groups.filter((group) => !group.counselorId);
-  const openCompanies = companies.filter((company) => !company.assistantCoordinatorIds?.length);
+  const openGroups = groups.filter((group) => !group.counselorId || !canPlanStaff(staffById.get(group.counselorId)||{isCurrent:false}));
+  const openCompanies = companies.filter((company) => !(company.assistantCoordinatorIds||[]).some(id=>canPlanStaff(staffById.get(id)||{isCurrent:false})));
   const overloadedACs = assistants.filter((person) => (person.companyIds?.length || 0) > maxCompanyLoad);
   const accountSetupNeeded = accessStatus === "ready"
     ? currentStaff.filter((person) => ACCOUNT_ROLES.has(person.operationalRole)
@@ -168,15 +149,14 @@ export function Assignments({ sessionId, canManage = false, initialWorkspace = "
 
   const filteredStaff = useMemo(() => {
     const text = query.trim().toLowerCase();
-    return staff.filter((person) => (roleFilter === "all" || person.operationalRole === roleFilter)
-      && (!text || `${person.name} ${person.unit || ""} ${person.stake || ""} ${ROLE_LABELS[person.operationalRole] || ""}`.toLowerCase().includes(text)));
-  }, [staff, query, roleFilter]);
+    return searchPeople(staff.filter((person) => (roleFilter === "all" || person.operationalRole === roleFilter)&&(staffFilter==="all"||staffFilter==="attention"&&Boolean(staffException(person))||staffFilter==="reserve"&&person.planningState==="reserve"||staffFilter===person.arrivalState)),text);
+  }, [staff, query, roleFilter,staffFilter]);
 
   const filteredGroups = useMemo(() => {
     const text = groupQuery.trim().toLowerCase();
     return groups
       .filter((group) => (groupFilter === "all" || (groupFilter === "needs" ? !group.counselorId : Boolean(group.counselorId)))
-        && (!text || `${groupLabel(group)} ${companyLabel(companyById.get(group.companyId))} ${staffById.get(group.counselorId)?.name || ""}`.toLowerCase().includes(text)))
+        && (matchesPersonSearch({name:groupLabel(group)},text,[companyLabel(companyById.get(group.companyId)),staffById.get(group.counselorId)?.name])))
       .sort((a, b) => Number(Boolean(a.counselorId)) - Number(Boolean(b.counselorId)) || groupLabel(a).localeCompare(groupLabel(b), undefined, { numeric: true }));
   }, [groups, groupQuery, groupFilter, companyById, staffById]);
 
@@ -184,7 +164,7 @@ export function Assignments({ sessionId, canManage = false, initialWorkspace = "
     const text = companyQuery.trim().toLowerCase();
     return companies
       .filter((company) => (companyFilter === "all" || (companyFilter === "needs" ? !company.assistantCoordinatorIds?.length : Boolean(company.assistantCoordinatorIds?.length)))
-        && (!text || `${companyLabel(company)} ${(company.assistantCoordinatorIds || []).map((id) => staffById.get(id)?.name || "").join(" ")}`.toLowerCase().includes(text)))
+        && (matchesPersonSearch({name:companyLabel(company)},text,(company.assistantCoordinatorIds || []).map(id=>staffById.get(id)?.name))))
       .sort((a, b) => Number(Boolean(a.assistantCoordinatorIds?.length)) - Number(Boolean(b.assistantCoordinatorIds?.length)) || companyLabel(a).localeCompare(companyLabel(b), undefined, { numeric: true }));
   }, [companies, companyQuery, companyFilter, staffById]);
 
@@ -333,7 +313,7 @@ export function Assignments({ sessionId, canManage = false, initialWorkspace = "
     const base = picker.type === "group"
       ? counselors.filter((person) => !person.counselorGroupId && (!person.sex || person.sex === picker.target.sex))
       : assistants.filter((person) => (person.companyIds?.length || 0) < maxCompanyLoad);
-    return base.filter((person) => !text || `${person.name} ${person.unit || ""} ${person.stake || ""}`.toLowerCase().includes(text));
+    return base.filter((person) => matchesPersonSearch(person,text));
   }, [picker, pickerQuery, counselors, assistants, maxCompanyLoad]);
 
   const openWorkspace = (nextWorkspace, showNeeds = true) => {
@@ -389,18 +369,19 @@ export function Assignments({ sessionId, canManage = false, initialWorkspace = "
         <button type="button" className="secondary" disabled={busy === "suggestions"} onClick={() => setSuggestions(null)}>Close</button>
       </div>
       {suggestionRows.length ? <div className="assignments-v15-suggestion-list">
-        {suggestionRows.slice(0, 12).map((item) => <div key={item.key}>
+        {suggestionRows.map((item) => <div key={item.key}>
           <span><small>{item.type}</small><b>{item.person}</b></span>
           <strong aria-hidden="true">→</strong>
           <span><small>Assign to</small><b>{item.target}</b></span>
         </div>)}
       </div> : <Empty title="Nothing safe to apply automatically" text="Assign these gaps manually so you can choose the right person with the right context." />}
       {suggestionRows.length > 12 ? <p className="assignments-v15-more-suggestions">Plus {suggestionRows.length - 12} more assignments in this plan.</p> : null}
-      <div className="assignment-v2-suggestion-actions">
+      {suggestions.exceptions?.map(item=><p className="notice" key={item.targetId}>{item.message}</p>)}<div className="assignment-v2-suggestion-actions">
         {suggestionRows.length ? <button className="primary" onClick={applySuggestions} disabled={busy === "suggestions"}>{busy === "suggestions" ? "Applying…" : `Apply ${suggestionRows.length} assignments`}</button> : null}
       </div>
     </article> : null}
 
+    <details><summary>Staffing planning limit</summary><div className="staff-planning-controls"><label>Maximum companies per Assistant Coordinator<input type="number" min="1" max="20" value={planningLimit} onChange={e=>setPlanningLimit(Number(e.target.value))}/></label><span>{assistants.length} available ACs × {planningLimit} = {assistants.length*planningLimit} company places for {companies.length} companies.</span><button className="secondary" disabled={!canManage||Boolean(busy)} onClick={async()=>{setBusy("limit");try{await saveStaffCompanyLimit(sessionId,planningLimit);await refresh();setSuggestions(null);}catch(e){setError(e.message);}finally{setBusy("");}}}>Save planning limit</button></div></details>
     <div className="assignments-v3-nav">
       <SegmentedControl label="Assignment workspaces" value={workspace} onChange={setWorkspace} options={WORKSPACES} />
       <p>{workspace === "people" ? "Change a responsibility or finish a leader's setup in context." : workspace === "groups" ? "Cover counselor groups with eligible Counselors." : "Set which Assistant Coordinator supports each company."}</p>
@@ -408,11 +389,11 @@ export function Assignments({ sessionId, canManage = false, initialWorkspace = "
 
     {workspace === "people" ? <article id="assignments-v15-workspace" className="panel assignments-v3-workspace">
       <header className="assignments-v3-section-head">
-        <div><span className="kicker">People</span><h2>Leaders & responsibilities</h2><p>Assignment is the source of truth. Website access is shown here only when it helps you finish the job.</p></div>
+        <div><span className="kicker">People</span><h2>Staff & responsibilities</h2>{canManage?<button type="button" className="secondary" onClick={()=>setAddingStaff(true)}>Add on-site Staff</button>:null}<p>Assignment is the source of truth. Website access is shown here only when it helps you finish the job.</p></div>
         <Status tone={staff.length ? "good" : "neutral"}>{staff.length} staff</Status>
       </header>
       <div className="assignments-v3-toolbar">
-        <SearchField value={query} onChange={setQuery} label="Search staff" placeholder="Name, unit or responsibility" />
+        <SearchField value={query} onChange={setQuery} label="Search staff" placeholder="Name, unit or responsibility" /><label>Staff state<select value={staffFilter} onChange={e=>setStaffFilter(e.target.value)}>{[["all","All staff"],["attention","Needs attention"],["reserve","Reserve pool"],["expected","Expected"],["arrived","Arrived"],["no_show","No-show"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
         <label>Responsibility<select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}><option value="all">All responsibilities</option>{ROLE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       </div>
       {filteredStaff.length ? <div className="assignments-v3-people">
@@ -423,8 +404,8 @@ export function Assignments({ sessionId, canManage = false, initialWorkspace = "
           const incomplete = person.operationalRole === "assistant_coordinator" && !person.companyIds?.length;
           const setupNeeded = accessStatus === "ready" && accountRole && (incomplete || !access || access.accessState === "not_enabled");
           return <div className={`assignments-v3-person-row ${setupNeeded ? "needs-setup" : ""}`} key={person.id}>
-            <div className="assignments-v3-person"><span className="person-avatar">{personInitials(person.name)}</span><span><b>{person.name}</b><small>{[person.unit, person.stake].filter(Boolean).join(" · ") || "Current staff"}</small></span></div>
-            <div className="assignments-v3-context"><small>Assignment</small><b>{personContext(person)}</b></div>
+            <div className="assignments-v3-person"><span className="person-avatar">{personInitials(person.name)}</span><span><PersonName person={person} kind="staff"/><small>{[person.unit, person.stake].filter(Boolean).join(" · ") || "Current staff"}</small></span></div>
+            <div className="assignments-v3-context"><small>Assignment</small><b>{personContext(person)}</b>{staffException(person)?<small className="danger-text">{staffException(person)}</small>:null}{person.committeeDuties?.length?<small>{person.committeeDuties.join(" · ")}</small>:null}{canManage?<button type="button" className="text-action" onClick={()=>setOperationsPerson(person)}>Arrival & service</button>:null}</div>
             <label className="assignments-v3-role"><span>Responsibility</span><select value={person.operationalRole || "other"} disabled={!canManage} onChange={(event) => { const targetRole = event.target.value; if (targetRole !== person.operationalRole) setTransitionTarget({ person, targetRole }); }}>{ROLE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <div className="assignments-v3-access">
               {committeeStaff ? <>
@@ -461,7 +442,7 @@ export function Assignments({ sessionId, canManage = false, initialWorkspace = "
           const counselor = staffById.get(group.counselorId);
           return <div className={`assignments-v3-coverage-row ${counselor ? "covered" : "open"}`} key={group.id}>
             <div><b>{groupLabel(group)}</b><small>{companyLabel(companyById.get(group.companyId))} · {group.sex === "Female" ? "YW" : "YM"} · {group.memberCount} youth</small></div>
-            <div>{counselor ? <><small>Counselor</small><b>{counselor.name}</b></> : <><small>Status</small><b>Needs Counselor</b></>}</div>
+            <div>{counselor ? <><small>Counselor</small><PersonName person={counselor} kind="staff"/></> : <><small>Status</small><b>Needs Counselor</b></>}</div>
             <div>{counselor ? <button type="button" className="text-action danger-text" disabled={!canManage} onClick={() => setRemoveGroup({ group, counselor })}>Remove</button> : <button type="button" className="primary" disabled={!canManage} onClick={() => openPicker("group", group)}>Assign Counselor</button>}</div>
           </div>;
         })}
@@ -484,7 +465,7 @@ export function Assignments({ sessionId, canManage = false, initialWorkspace = "
           const assistant = staffById.get(company.assistantCoordinatorIds?.[0]);
           return <div className={`assignments-v3-coverage-row ${assistant ? "covered" : "open"}`} key={company.id}>
             <div><b>{companyLabel(company)}</b><small>{company.groups?.length || 0} counselor groups{company.meetingSpot ? ` · ${company.meetingSpot}` : ""}</small></div>
-            <div>{assistant ? <><small>Assistant Coordinator · {assistant.companyIds?.length || 0}/{maxCompanyLoad} companies</small><b>{assistant.name}</b></> : <><small>Status</small><b>Needs Assistant Coordinator</b></>}</div>
+            <div>{assistant ? <><small>Assistant Coordinator · {assistant.companyIds?.length || 0}/{maxCompanyLoad} companies</small><PersonName person={assistant} kind="staff"/></> : <><small>Status</small><b>Needs Assistant Coordinator</b></>}</div>
             <div>{assistant ? <button type="button" className="text-action danger-text" disabled={!canManage} onClick={() => setRemoveCompany({ company, assistant })}>Remove</button> : <button type="button" className="primary" disabled={!canManage} onClick={() => openPicker("company", company)}>Assign AC</button>}</div>
           </div>;
         })}
@@ -492,6 +473,8 @@ export function Assignments({ sessionId, canManage = false, initialWorkspace = "
       {visibleCompanies < filteredCompanies.length ? <button type="button" className="secondary assignment-v2-show-more" onClick={() => setVisibleCompanies((value) => value + 24)}>Show 24 more companies</button> : null}
     </article> : null}
 
+    {addingStaff?<OnSiteStaffSheet staff={staff} sessionId={sessionId} onClose={()=>setAddingStaff(false)} onSaved={async()=>{await refresh();setNotice("Staff added. Open Arrival & service to confirm duties and clearance.");}}/>:null}
+    {operationsPerson?<StaffOperationsSheet person={operationsPerson} currentRole={currentRole} assignment={personContext(operationsPerson)} onClose={()=>setOperationsPerson(null)} onSaved={async()=>{await refresh();setSuggestions(null);setNotice("Staff state saved.");}}/>:null}
     {setupTarget ? <LeaderSetupFlow sessionId={sessionId} person={setupTarget.newLeader ? null : setupTarget} onClose={() => setSetupTarget(null)} onComplete={async (person) => { await refresh(); setNotice(`${person.name}'s leader setup is complete.`); }} /> : null}
     {transitionTarget ? <StaffRoleTransitionSheet person={transitionTarget.person} targetRole={transitionTarget.targetRole} staff={staff} groups={groups} companies={companies} maxCompanyLoad={maxCompanyLoad} access={accessByStaff.get(transitionTarget.person.id)} onClose={() => setTransitionTarget(null)} onConfirm={changeRole} /> : null}
     {picker ? <AssignmentPicker title={picker.type === "group" ? `Assign ${groupLabel(picker.target)}` : `Assign ${companyLabel(picker.target)}`} description={picker.type === "group" ? "Choose an available same-sex Counselor. The assignment saves when you choose." : `Choose an Assistant Coordinator below the ${maxCompanyLoad}-company limit.`} query={pickerQuery} setQuery={setPickerQuery} choices={pickerChoices} emptyText={picker.type === "group" ? "No eligible available Counselor matches this group." : "No Assistant Coordinator currently has room for another company."} busy={busy} onClose={() => setPicker(null)} onPick={(person) => picker.type === "group" ? assignGroup(picker.target, person) : assignCompany(picker.target, person)} /> : null}

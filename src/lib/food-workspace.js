@@ -1,3 +1,5 @@
+import { searchPeople } from "./person-search.js";
+const mealSearchCache=new Map();
 import { loadRpcPages } from "./rpc-pages.js";
 import { dietaryNeedsReview } from "./dietary.js";
 import { isSupabaseConfigured, supabase } from "./supabase.js";
@@ -33,7 +35,21 @@ export async function loadMealRosterPageV2({
   status = "remaining",
   limit = 80,
   offset = 0,
+  identities = [],
 }) {
+  if(query.trim()) {
+    // Search the entire server-authorized roster, never only a loaded page.
+    const key=JSON.stringify([serviceId,companyId,status]);
+    let cached=mealSearchCache.get(key);
+    if(!cached||Date.now()-cached.at>15000){
+      const promise=(async()=>{const all=[];let total=Infinity;
+        for(let start=0;start<total;start+=200){const page=await loadMealRosterPageV2({serviceId,companyId,status,limit:200,offset:start});total=page.total;all.push(...page.rows);if(!page.rows.length)break;}return all;})();
+      cached={at:Date.now(),promise};mealSearchCache.set(key,cached);promise.catch(()=>mealSearchCache.delete(key));
+    }
+    const byId=new Map(identities.map(p=>[p.id,p]));
+    const rows=searchPeople((await cached.promise).map(row=>({...byId.get(row.personId),...row})),query);
+    return {rows:rows.slice(offset,offset+limit),total:rows.length};
+  }
   const { data, error } = await client().rpc("get_meal_roster_page_v2", {
     p_meal_service_id: serviceId,
     p_query: query.trim() || null,
@@ -92,6 +108,7 @@ export async function setParticipantMealServedV2({ serviceId, participantId, ser
     p_served: Boolean(served),
   });
   if (error) throw error;
+  mealSearchCache.clear();
   const row = Array.isArray(data) ? data[0] : data;
   return {
     id: row?.attendance_id || null,
