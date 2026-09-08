@@ -92,7 +92,7 @@ The pull-request workflow must pass:
 
 ### Automated result on Phase 5 head
 
-GitHub Actions run `34267360649` passed the complete gate on the Phase 5 integration head used by PR #91:
+GitHub Actions run `34267602409` passed the complete gate on commit `09aff1ef9165faba7ee5c930e1c7f9ccf81d0333`, the final Phase 5 engineering head before PR metadata-only updates:
 
 - production Vite build passed;
 - 319 / 319 project tests passed;
