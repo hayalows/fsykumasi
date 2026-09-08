@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("Registration v29 is the active journey and stays mounted while work-area tabs change", async () => {
+test("Registration v29 stays mounted while Live check-in and Solutions switch around Readiness", async () => {
   const [entry, registration, sw] = await Promise.all([
     read("src/pages/RegistrationJourney.jsx"),
     read("src/pages/Registration.jsx"),
@@ -12,20 +12,26 @@ test("Registration v29 is the active journey and stays mounted while work-area t
   ]);
   assert.match(entry, /RegistrationJourneyV29 as RegistrationJourney/);
   assert.match(registration, /<RegistrationJourney view=\{journeyMode\}/);
-  assert.match(registration, /hidden=\{mode === "setup"\}/);
+  assert.match(registration, /hidden=\{mode === "readiness"\}/);
   assert.doesNotMatch(registration, /mode === "desk" \?[^\n]*<RegistrationJourney/);
   assert.doesNotMatch(registration, /mode === "roster" \?[^\n]*<RegistrationJourney/);
   assert.match(sw, /fsy-kumasi-shell-v46/);
 });
 
-test("Prepare subviews are lazy once and remain warm after their first visit", async () => {
-  const source = await read("src/pages/Registration.jsx");
-  assert.match(source, /visitedSetupModes/);
-  assert.match(source, /rememberSetup/);
-  assert.match(source, /visitedSetupModes\.has\("identity"\)/);
-  assert.match(source, /hidden=\{setupMode !== "identity"\}/);
-  assert.match(source, /hidden=\{setupMode !== "staff"\}/);
-  assert.match(source, /hidden=\{setupMode !== "final"\}/);
+test("Readiness mounts lazily and its heavy tools remain warm after first visit", async () => {
+  const [registration, readiness] = await Promise.all([
+    read("src/pages/Registration.jsx"),
+    read("src/pages/RegistrationReadinessV30.jsx"),
+  ]);
+  assert.match(registration, /readinessVisited/);
+  assert.match(registration, /setReadinessVisited\(true\)/);
+  assert.match(registration, /hidden=\{mode !== "readiness"\}/);
+  assert.match(readiness, /visited\.has\("identity"\)/);
+  assert.match(readiness, /hidden=\{tool !== "identity"\}/);
+  assert.match(readiness, /visited\.has\("staff"\)/);
+  assert.match(readiness, /hidden=\{tool !== "staff"\}/);
+  assert.match(readiness, /visited\.has\("final"\)/);
+  assert.match(readiness, /hidden=\{tool !== "final"\}/);
 });
 
 test("live Registration starts from one paged workspace read instead of seven eager data loads", async () => {
