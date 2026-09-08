@@ -1,1 +1,1 @@
-export { Wellness } from "./WellnessV2.jsx";
+export { Wellness } from "./WellnessV3.jsx";
