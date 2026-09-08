@@ -1,4 +1,6 @@
-const CACHE_NAME = "fsy-kumasi-shell-v46";
+const CACHE_NAME = "fsy-kumasi-shell-v47";
+// Phase 5 release hardening adds single-flight protection for consequential UI writes,
+// explicit account validation, route/mutation announcements and the final responsive/accessibility layer.
 // Registration performance v29 keeps the live desk warm across tabs, consolidates the roster read,
 // and avoids full-workspace refreshes after routine check-in.
 // Coherent operations v26 adds shared person search and contextual lookup, deterministic staffing,
@@ -10,11 +12,10 @@ const CACHE_NAME = "fsy-kumasi-shell-v46";
 // Access operations v20 remains intact; Access identity and permission behavior remains on v19.
 // Historical Access operations v19 used email-first identity reconciliation with automatic staff backfill.
 // Historical Access operations v18 and Access operations v17 remain covered by regressions.
-// Historical shell markers: fsy-kumasi-shell-v45, fsy-kumasi-shell-v44, fsy-kumasi-shell-v43,
-// fsy-kumasi-shell-v42, fsy-kumasi-shell-v41, fsy-kumasi-shell-v40, fsy-kumasi-shell-v39,
-// fsy-kumasi-shell-v38, fsy-kumasi-shell-v37 and fsy-kumasi-shell-v36.
+// Historical shell markers: fsy-kumasi-shell-v46, fsy-kumasi-shell-v45, fsy-kumasi-shell-v44,
+// fsy-kumasi-shell-v43, fsy-kumasi-shell-v42, fsy-kumasi-shell-v41, fsy-kumasi-shell-v40,
+// fsy-kumasi-shell-v39, fsy-kumasi-shell-v38, fsy-kumasi-shell-v37 and fsy-kumasi-shell-v36.
 // Access + Assignments v15 and Housing workflow v14 remain part of this release.
-// Production redeploy trigger: 2026-09-08. No application or data behavior change.
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
