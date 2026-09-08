@@ -47,7 +47,7 @@ function AssignmentPicker({ title, description, query, setQuery, choices, emptyT
       <div className="assignment-v2-picker-list">
         {choices.length ? choices.map((person) => <button type="button" key={person.id} className="assignment-v2-picker-row" disabled={busy} onClick={() => onPick(person)}>
           <span className="person-avatar">{personInitials(person.name)}</span>
-          <span><b>{person.name}</b><small>{[person.unit, person.stake].filter(Boolean).join(" · ") || ROLE_LABELS[person.operationalRole]}</small></span>
+          <span><b>{person.name}</b><small>{[person.unit, person.stake, staffException(person)].filter(Boolean).join(" · ") || ROLE_LABELS[person.operationalRole]}</small></span>
           <strong>{busy === person.id ? "Assigning…" : "Choose"}</strong>
         </button>) : <Empty title="No available person found" text={emptyText} />}
       </div>
@@ -123,7 +123,7 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
     if (initialWorkspace === "companies" && initialFilter) setCompanyFilter(initialFilter === "all" ? "all" : "needs");
   }, [initialWorkspace, initialFilter]);
 
-  useEffect(() => setVisibleStaff(30), [query, roleFilter]);
+  useEffect(() => setVisibleStaff(30), [query, roleFilter, staffFilter]);
   useEffect(() => setVisibleGroups(24), [groupQuery, groupFilter]);
   useEffect(() => setVisibleCompanies(24), [companyQuery, companyFilter]);
 
@@ -136,8 +136,10 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
   const currentStaff = staff.filter(canPlanStaff);
   const counselors = currentStaff.filter((person) => person.operationalRole === "counselor");
   const assistants = currentStaff.filter((person) => person.operationalRole === "assistant_coordinator");
-  const openGroups = groups.filter((group) => !group.counselorId || !canPlanStaff(staffById.get(group.counselorId)||{isCurrent:false}));
-  const openCompanies = companies.filter((company) => !(company.assistantCoordinatorIds||[]).some(id=>canPlanStaff(staffById.get(id)||{isCurrent:false})));
+  const groupCovered = (group) => Boolean(group.counselorId && canPlanStaff(staffById.get(group.counselorId) || { isCurrent: false }));
+  const companyCovered = (company) => Boolean((company.assistantCoordinatorIds || []).some((id) => canPlanStaff(staffById.get(id) || { isCurrent: false })));
+  const openGroups = groups.filter((group) => !groupCovered(group));
+  const openCompanies = companies.filter((company) => !companyCovered(company));
   const overloadedACs = assistants.filter((person) => (person.companyIds?.length || 0) > maxCompanyLoad);
   const accountSetupNeeded = accessStatus === "ready"
     ? currentStaff.filter((person) => ACCOUNT_ROLES.has(person.operationalRole)
@@ -155,17 +157,23 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
   const filteredGroups = useMemo(() => {
     const text = groupQuery.trim().toLowerCase();
     return groups
-      .filter((group) => (groupFilter === "all" || (groupFilter === "needs" ? !group.counselorId : Boolean(group.counselorId)))
-        && (matchesPersonSearch({name:groupLabel(group)},text,[companyLabel(companyById.get(group.companyId)),staffById.get(group.counselorId)?.name])))
-      .sort((a, b) => Number(Boolean(a.counselorId)) - Number(Boolean(b.counselorId)) || groupLabel(a).localeCompare(groupLabel(b), undefined, { numeric: true }));
+      .filter((group) => {
+        const covered = groupCovered(group);
+        return (groupFilter === "all" || (groupFilter === "needs" ? !covered : covered))
+          && matchesPersonSearch({name:groupLabel(group)},text,[companyLabel(companyById.get(group.companyId)),staffById.get(group.counselorId)?.name]);
+      })
+      .sort((a, b) => Number(groupCovered(a)) - Number(groupCovered(b)) || groupLabel(a).localeCompare(groupLabel(b), undefined, { numeric: true }));
   }, [groups, groupQuery, groupFilter, companyById, staffById]);
 
   const filteredCompanies = useMemo(() => {
     const text = companyQuery.trim().toLowerCase();
     return companies
-      .filter((company) => (companyFilter === "all" || (companyFilter === "needs" ? !company.assistantCoordinatorIds?.length : Boolean(company.assistantCoordinatorIds?.length)))
-        && (matchesPersonSearch({name:companyLabel(company)},text,(company.assistantCoordinatorIds || []).map(id=>staffById.get(id)?.name))))
-      .sort((a, b) => Number(Boolean(a.assistantCoordinatorIds?.length)) - Number(Boolean(b.assistantCoordinatorIds?.length)) || companyLabel(a).localeCompare(companyLabel(b), undefined, { numeric: true }));
+      .filter((company) => {
+        const covered = companyCovered(company);
+        return (companyFilter === "all" || (companyFilter === "needs" ? !covered : covered))
+          && matchesPersonSearch({name:companyLabel(company)},text,(company.assistantCoordinatorIds || []).map(id=>staffById.get(id)?.name));
+      })
+      .sort((a, b) => Number(companyCovered(a)) - Number(companyCovered(b)) || companyLabel(a).localeCompare(companyLabel(b), undefined, { numeric: true }));
   }, [companies, companyQuery, companyFilter, staffById]);
 
   useEffect(() => {
@@ -282,8 +290,8 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
 
   const previewSuggestions = () => setSuggestions(buildSuggestions(staff, groups, companies, maxCompanyLoad));
   const suggestionRows = useMemo(() => suggestions ? [
-    ...(suggestions.counselors || []).map((item) => ({ key: `group:${item.groupId}`, type: "Counselor", person: item.staffName, target: item.groupName })),
-    ...(suggestions.assistants || []).map((item) => ({ key: `company:${item.companyId}`, type: "Assistant Coordinator", person: item.staffName, target: item.companyName })),
+    ...(suggestions.counselors || []).map((item) => ({ key: `group:${item.groupId}`, type: "Counselor", person: item.staffName, target: item.groupName, needsConfirmation: item.needsConfirmation })),
+    ...(suggestions.assistants || []).map((item) => ({ key: `company:${item.companyId}`, type: "Assistant Coordinator", person: item.staffName, target: item.companyName, needsConfirmation: item.needsConfirmation })),
   ] : [], [suggestions]);
 
   const applySuggestions = async () => {
@@ -311,7 +319,7 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
     if (!picker) return [];
     const text = pickerQuery.trim().toLowerCase();
     const base = picker.type === "group"
-      ? counselors.filter((person) => !person.counselorGroupId && (!person.sex || person.sex === picker.target.sex))
+      ? counselors.filter((person) => !person.counselorGroupId && person.sex && person.sex === picker.target.sex)
       : assistants.filter((person) => (person.companyIds?.length || 0) < maxCompanyLoad);
     return base.filter((person) => matchesPersonSearch(person,text));
   }, [picker, pickerQuery, counselors, assistants, maxCompanyLoad]);
@@ -370,13 +378,12 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
       </div>
       {suggestionRows.length ? <div className="assignments-v15-suggestion-list">
         {suggestionRows.map((item) => <div key={item.key}>
-          <span><small>{item.type}</small><b>{item.person}</b></span>
+          <span><small>{item.type}</small><b>{item.person}</b>{item.needsConfirmation ? <small className="danger-text">Needs confirmation before service</small> : null}</span>
           <strong aria-hidden="true">→</strong>
           <span><small>Assign to</small><b>{item.target}</b></span>
         </div>)}
       </div> : <Empty title="Nothing safe to apply automatically" text="Assign these gaps manually so you can choose the right person with the right context." />}
-      {suggestionRows.length > 12 ? <p className="assignments-v15-more-suggestions">Plus {suggestionRows.length - 12} more assignments in this plan.</p> : null}
-      {suggestions.exceptions?.map(item=><p className="notice" key={item.targetId}>{item.message}</p>)}<div className="assignment-v2-suggestion-actions">
+      {suggestions.exceptions?.map(item=><p className="notice" key={`${item.type}-${item.targetId}`}>{item.message}</p>)}<div className="assignment-v2-suggestion-actions">
         {suggestionRows.length ? <button className="primary" onClick={applySuggestions} disabled={busy === "suggestions"}>{busy === "suggestions" ? "Applying…" : `Apply ${suggestionRows.length} assignments`}</button> : null}
       </div>
     </article> : null}
@@ -430,46 +437,50 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
 
     {workspace === "groups" ? <article id="assignments-v15-workspace" className="panel assignments-v3-workspace">
       <header className="assignments-v3-section-head">
-        <div><span className="kicker">Counselor groups</span><h2>{openGroups.length ? `${openGroups.length} need a Counselor` : "Counselor groups are covered"}</h2><p>Open groups stay first so gaps are easy to finish.</p></div>
+        <div><span className="kicker">Counselor groups</span><h2>{openGroups.length ? `${openGroups.length} need a Counselor` : "Counselor groups are covered"}</h2><p>Groups with an absent, excluded or uncleared Counselor are treated as gaps until resolved.</p></div>
         <Status tone={openGroups.length ? "warn" : "good"}>{groups.length - openGroups.length}/{groups.length} covered</Status>
       </header>
       <div className="assignments-v3-toolbar">
         <SearchField value={groupQuery} onChange={setGroupQuery} label="Search counselor groups" placeholder="Group, company or Counselor" />
-        <label>Show<select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)}><option value="needs">Needs Counselor</option><option value="assigned">Assigned</option><option value="all">All groups</option></select></label>
+        <label>Show<select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)}><option value="needs">Needs Counselor</option><option value="assigned">Covered</option><option value="all">All groups</option></select></label>
       </div>
       {filteredGroups.length ? <div className="assignments-v3-coverage">
         {filteredGroups.slice(0, visibleGroups).map((group) => {
           const counselor = staffById.get(group.counselorId);
-          return <div className={`assignments-v3-coverage-row ${counselor ? "covered" : "open"}`} key={group.id}>
+          const covered = groupCovered(group);
+          return <div className={`assignments-v3-coverage-row ${covered ? "covered" : "open"}`} key={group.id}>
             <div><b>{groupLabel(group)}</b><small>{companyLabel(companyById.get(group.companyId))} · {group.sex === "Female" ? "YW" : "YM"} · {group.memberCount} youth</small></div>
-            <div>{counselor ? <><small>Counselor</small><PersonName person={counselor} kind="staff"/></> : <><small>Status</small><b>Needs Counselor</b></>}</div>
-            <div>{counselor ? <button type="button" className="text-action danger-text" disabled={!canManage} onClick={() => setRemoveGroup({ group, counselor })}>Remove</button> : <button type="button" className="primary" disabled={!canManage} onClick={() => openPicker("group", group)}>Assign Counselor</button>}</div>
+            <div>{counselor ? <><small>{covered ? "Counselor" : "Assigned Counselor · replacement needed"}</small><PersonName person={counselor} kind="staff"/>{!covered?<small className="danger-text">{staffException(counselor)||"Not available for planning"}</small>:null}</> : <><small>Status</small><b>Needs Counselor</b></>}</div>
+            <div>{counselor ? <button type="button" className="text-action danger-text" disabled={!canManage} onClick={() => setRemoveGroup({ group, counselor })}>{covered ? "Remove" : "Clear unavailable assignment"}</button> : <button type="button" className="primary" disabled={!canManage} onClick={() => openPicker("group", group)}>Assign Counselor</button>}</div>
           </div>;
         })}
-      </div> : <Empty title={groupFilter === "needs" ? "No counselor gaps" : "No groups found"} text={groupFilter === "needs" ? "Every counselor group currently has a Counselor." : "Change the filter or search."} />}
+      </div> : <Empty title={groupFilter === "needs" ? "No counselor gaps" : "No groups found"} text={groupFilter === "needs" ? "Every counselor group currently has planning coverage." : "Change the filter or search."} />}
       {visibleGroups < filteredGroups.length ? <button type="button" className="secondary assignment-v2-show-more" onClick={() => setVisibleGroups((value) => value + 24)}>Show 24 more groups</button> : null}
     </article> : null}
 
     {workspace === "companies" ? <article id="assignments-v15-workspace" className="panel assignments-v3-workspace">
       <header className="assignments-v3-section-head">
-        <div><span className="kicker">Companies</span><h2>{openCompanies.length ? `${openCompanies.length} need an Assistant Coordinator` : "Companies are covered"}</h2><p>Company assignment stays authoritative and linked website scope follows it automatically.</p></div>
+        <div><span className="kicker">Companies</span><h2>{openCompanies.length ? `${openCompanies.length} need an Assistant Coordinator` : "Companies are covered"}</h2><p>An unavailable or no-show AC does not count as current company coverage.</p></div>
         <Status tone={openCompanies.length ? "warn" : "good"}>{companies.length - openCompanies.length}/{companies.length} covered</Status>
       </header>
       <div className="assignments-v3-toolbar">
         <SearchField value={companyQuery} onChange={setCompanyQuery} label="Search companies" placeholder="Company or Assistant Coordinator" />
-        <label>Show<select value={companyFilter} onChange={(event) => setCompanyFilter(event.target.value)}><option value="needs">Needs AC</option><option value="assigned">Assigned</option><option value="all">All companies</option></select></label>
+        <label>Show<select value={companyFilter} onChange={(event) => setCompanyFilter(event.target.value)}><option value="needs">Needs AC</option><option value="assigned">Covered</option><option value="all">All companies</option></select></label>
       </div>
       {overloadedACs.length ? <div className="notice compact-notice"><WarningCircle /><div><b>{overloadedACs.length} Assistant Coordinator{overloadedACs.length === 1 ? " is" : "s are"} above the {maxCompanyLoad}-company limit</b><p>Move company coverage before relying on the assignment.</p></div></div> : null}
       {filteredCompanies.length ? <div className="assignments-v3-coverage">
         {filteredCompanies.slice(0, visibleCompanies).map((company) => {
-          const assistant = staffById.get(company.assistantCoordinatorIds?.[0]);
-          return <div className={`assignments-v3-coverage-row ${assistant ? "covered" : "open"}`} key={company.id}>
+          const assignedAssistants=(company.assistantCoordinatorIds||[]).map(id=>staffById.get(id)).filter(Boolean);
+          const activeAssistant=assignedAssistants.find(canPlanStaff);
+          const assistant=activeAssistant||assignedAssistants[0]||null;
+          const covered=Boolean(activeAssistant);
+          return <div className={`assignments-v3-coverage-row ${covered ? "covered" : "open"}`} key={company.id}>
             <div><b>{companyLabel(company)}</b><small>{company.groups?.length || 0} counselor groups{company.meetingSpot ? ` · ${company.meetingSpot}` : ""}</small></div>
-            <div>{assistant ? <><small>Assistant Coordinator · {assistant.companyIds?.length || 0}/{maxCompanyLoad} companies</small><PersonName person={assistant} kind="staff"/></> : <><small>Status</small><b>Needs Assistant Coordinator</b></>}</div>
-            <div>{assistant ? <button type="button" className="text-action danger-text" disabled={!canManage} onClick={() => setRemoveCompany({ company, assistant })}>Remove</button> : <button type="button" className="primary" disabled={!canManage} onClick={() => openPicker("company", company)}>Assign AC</button>}</div>
+            <div>{assistant ? <><small>{covered ? `Assistant Coordinator · ${assistant.companyIds?.length || 0}/${maxCompanyLoad} companies` : "Assigned AC · replacement needed"}</small><PersonName person={assistant} kind="staff"/>{!covered?<small className="danger-text">{staffException(assistant)||"Not available for planning"}</small>:null}</> : <><small>Status</small><b>Needs Assistant Coordinator</b></>}</div>
+            <div>{assistant ? <button type="button" className="text-action danger-text" disabled={!canManage} onClick={() => setRemoveCompany({ company, assistant })}>{covered ? "Remove" : "Clear unavailable assignment"}</button> : <button type="button" className="primary" disabled={!canManage} onClick={() => openPicker("company", company)}>Assign AC</button>}</div>
           </div>;
         })}
-      </div> : <Empty title={companyFilter === "needs" ? "No company gaps" : "No companies found"} text={companyFilter === "needs" ? "Every company currently has an Assistant Coordinator." : "Change the filter or search."} />}
+      </div> : <Empty title={companyFilter === "needs" ? "No company gaps" : "No companies found"} text={companyFilter === "needs" ? "Every company currently has planning coverage." : "Change the filter or search."} />}
       {visibleCompanies < filteredCompanies.length ? <button type="button" className="secondary assignment-v2-show-more" onClick={() => setVisibleCompanies((value) => value + 24)}>Show 24 more companies</button> : null}
     </article> : null}
 
@@ -477,7 +488,7 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
     {operationsPerson?<StaffOperationsSheet person={operationsPerson} currentRole={currentRole} assignment={personContext(operationsPerson)} onClose={()=>setOperationsPerson(null)} onSaved={async()=>{await refresh();setSuggestions(null);setNotice("Staff state saved.");}}/>:null}
     {setupTarget ? <LeaderSetupFlow sessionId={sessionId} person={setupTarget.newLeader ? null : setupTarget} onClose={() => setSetupTarget(null)} onComplete={async (person) => { await refresh(); setNotice(`${person.name}'s leader setup is complete.`); }} /> : null}
     {transitionTarget ? <StaffRoleTransitionSheet person={transitionTarget.person} targetRole={transitionTarget.targetRole} staff={staff} groups={groups} companies={companies} maxCompanyLoad={maxCompanyLoad} access={accessByStaff.get(transitionTarget.person.id)} onClose={() => setTransitionTarget(null)} onConfirm={changeRole} /> : null}
-    {picker ? <AssignmentPicker title={picker.type === "group" ? `Assign ${groupLabel(picker.target)}` : `Assign ${companyLabel(picker.target)}`} description={picker.type === "group" ? "Choose an available same-sex Counselor. The assignment saves when you choose." : `Choose an Assistant Coordinator below the ${maxCompanyLoad}-company limit.`} query={pickerQuery} setQuery={setPickerQuery} choices={pickerChoices} emptyText={picker.type === "group" ? "No eligible available Counselor matches this group." : "No Assistant Coordinator currently has room for another company."} busy={busy} onClose={() => setPicker(null)} onPick={(person) => picker.type === "group" ? assignGroup(picker.target, person) : assignCompany(picker.target, person)} /> : null}
+    {picker ? <AssignmentPicker title={picker.type === "group" ? `Assign ${groupLabel(picker.target)}` : `Assign ${companyLabel(picker.target)}`} description={picker.type === "group" ? "Choose an available same-sex Counselor. The assignment saves when you choose." : `Choose an Assistant Coordinator below the ${maxCompanyLoad}-company limit.`} query={pickerQuery} setQuery={setPickerQuery} choices={pickerChoices} emptyText={picker.type === "group" ? "No eligible available same-sex Counselor matches this group." : "No Assistant Coordinator currently has room for another company."} busy={busy} onClose={() => setPicker(null)} onPick={(person) => picker.type === "group" ? assignGroup(picker.target, person) : assignCompany(picker.target, person)} /> : null}
     {removeGroup ? <ConfirmActionSheet open title={`Remove ${removeGroup.counselor.name} from ${groupLabel(removeGroup.group)}?`} description="Their staff responsibility stays Counselor." impact="This counselor group will return to Needs Counselor until someone else is assigned." confirmLabel="Remove Counselor" cancelLabel="Keep assignment" busy={busy === removeGroup.group.id} onClose={() => setRemoveGroup(null)} onConfirm={() => unassignGroup(removeGroup.group)} /> : null}
     {removeCompany ? <ConfirmActionSheet open title={`Remove ${removeCompany.assistant.name} from ${companyLabel(removeCompany.company)}?`} description="Their Assistant Coordinator responsibility stays unchanged." impact="This company will return to Needs AC. Linked website scope updates automatically." confirmLabel="Remove from company" cancelLabel="Keep assignment" busy={busy === removeCompany.company.id} onClose={() => setRemoveCompany(null)} onConfirm={() => unassignCompany(removeCompany.company, removeCompany.assistant)} /> : null}
     <ActionToast message={notice} onDismiss={() => setNotice("")} />
