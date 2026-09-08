@@ -37,13 +37,19 @@ test("Registration presents one Registration & check-in journey", async () => {
   assert.match(source, /title="Registration & check-in"/);
   assert.match(source, /Live check-in/);
   assert.match(source, /Solutions/);
-  assert.match(source, /Prepare/);
+  assert.match(source, /Readiness/);
   assert.match(source, /const \[journeyMode, setJourneyMode\]/);
   assert.match(source, /normalizedMode === "roster" \? "roster" : "desk"/);
   assert.match(source, /if \(next === "desk" \|\| next === "roster"\) setJourneyMode\(next\)/);
   assert.match(source, /<RegistrationJourney view=\{journeyMode\}/);
   assert.match(wrapper, /RegistrationJourneyV29/);
   assert.doesNotMatch(source, /ArrivalOperations/);
+  assert.doesNotMatch(source, /RegistrationReviewInbox/);
+});
+
+test("legacy setup links open the new Readiness area", async () => {
+  const source = await read("src/pages/Registration.jsx");
+  assert.match(source, /initialMode === "setup"\) return "readiness"/);
 });
 
 test("day-one journey resolves participants and hands Housing off after check-in", async () => {
