@@ -16,12 +16,12 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Use the supplied official 2026 `Walk with Me` identifier asset where it adds context (sign-in, navigation identity, and theme banner). Preserve its artwork and colours, use approved quiet backgrounds, never add effects to the identifier, and keep the operations product name visually separate so the app does not imply it is an official Church registration system.
 - Version 0.0/0.1 uses a full-scale synthetic rehearsal of roughly 1,640 youth plus YSA planning counts. Real participant files must enter through the authenticated CSV/XLSX import workflow, not through chat or source control.
 - Counselor records and assignments are managed in the system, but counselors do not receive accounts in this version.
-- Assistant coordinators see their assigned scope. Coordinators have whole-session operational visibility. Logistical administrators and session directing couples also have whole-session visibility.
-- Only logistical administrators and session directing couples may approve or reject access requests for lower roles. Coordinators may see the access state but do not approve access.
+- Assistant coordinators see their assigned scope. Coordinators, logistical administrators, session directing couples, and FSY area advisory couples have full operational visibility; the area advisory couple is labelled as whole-program scope.
+- Coordinators, logistical administrators, session directing couples, and FSY area advisory couples may approve or reject access requests for lower roles and manage the approved operational exceptions.
 - Authentication is password-first for daily use. Leaders sign in with their own email and password rather than repeated magic-link emails.
 - New accounts are created from administrator-issued, one-time invitations. The inviter chooses the person's name, email, role and scope before activation. Shared session access codes are deprecated for new onboarding.
 - One-time invite and administrator-assisted recovery codes must be short-lived, tied to the intended email, stored only as cryptographic hashes, and shared directly rather than in group chats.
-- Logistical administrators and session directing couples can issue or revoke leader invitations and recovery codes. Coordinators cannot manage access.
+- Coordinators, logistical administrators, session directing couples, and FSY area advisory couples can issue or revoke leader invitations and recovery codes.
 - Same ward, branch, or unit is prohibited within one counselor group but allowed within a company. Proposed groups target 8–10 participants.
 - The visual identity must not imitate the Church logo or present the app as an official Church product.
 
@@ -36,9 +36,9 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 ## Coherent operations checkpoint decisions
 
 - Read docs/HANDOFF-2026-09-08-COHERENT-OPERATIONS.md before continuing this unfinished branch.
-- For the September 2026 pre-session finalization, Session Directing Couples and Logistical Administrators may record Staff service confirmation and participant final-roster decisions. Preserve existing website Access authority separately.
-- A youth who is 18 when the September 2026 session starts remains eligible by age for this local session; age 19 or older at session start still requires an explicit final-roster decision.
-- Final-roster actions change local operational state and keep imported/source registration and identity history intact.
+- For the September 2026 pre-session finalization, Coordinators, Logistical Administrators, Session Directing Couples, and FSY Area Advisory Couples may record Staff service confirmation and participant final-roster decisions. Preserve imported/source registration and identity history.
+- The operational participant window is age 12 through 19 at session start. Verified records with approved or awaiting source approval may be admitted through the local clearance workflow. Age 20 and above is excluded from the participant roster without deleting the source record.
+- Newly admitted 12–13-year-olds and locally cleared awaiting records receive an isolated supplemental company/group, counselor and assistant-coordinator coverage, and an FSY ID. Existing published companies, groups, and IDs are not rebuilt.
 - Committee Staff should display one direct responsibility label such as `Materials committee` rather than a generic `Committee member` label plus a second visible label.
 - Preserve source approval statuses, published companies/groups and finalized FSY IDs; no new Housing allocation UI in this scope.
 - User approved existing development database testing but explicitly asked to skip authenticated database permission tests. Do not create synthetic auth identities automatically.

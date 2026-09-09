@@ -11,8 +11,8 @@ import { roleLabel } from "../lib/access.js";
 import { recoverableWriteError, usePendingPageGuard, useSingleFlight } from "../lib/reliable-action.js";
 
 function accessScope(grantedAccess, companies, currentRole, live) {
-  if (!grantedAccess) return !live && ["coordinator", "logistics_admin", "session_director"].includes(currentRole) ? "Whole session · demo" : "No active session access";
-  if (["coordinator", "logistics_admin", "session_director"].includes(grantedAccess.role)) return "Whole session";
+  if (!grantedAccess) return !live && ["coordinator", "logistics_admin", "session_director", "area_advisory_couple"].includes(currentRole) ? (currentRole === "area_advisory_couple" ? "Whole FSY program · demo" : "Whole session · demo") : "No active session access";
+  if (["coordinator", "logistics_admin", "session_director", "area_advisory_couple"].includes(grantedAccess.role)) return grantedAccess.role === "area_advisory_couple" ? "Whole FSY program" : "Whole session";
   if (grantedAccess.role === "assistant_coordinator") {
     const names = (grantedAccess.company_ids || []).map((id) => companies.find((company) => company.id === id)?.name).filter(Boolean);
     return names.length ? names.join(", ") : `${(grantedAccess.company_ids || []).length} assigned companies`;

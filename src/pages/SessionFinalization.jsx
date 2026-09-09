@@ -109,7 +109,7 @@ export function SessionFinalization({ sessionId, onChanged, onNavigate }) {
       </div>
     </> : <>
       <div className="session-finalization-strip" aria-label="Final roster changes">
-        <Fact value={n(preview?.participants_to_include)} label="Participants to include" detail={`${n(preview?.female_to_include)} Young Women · ${n(preview?.male_to_include)} Young Men`} />
+        <Fact value={n(preview?.participants_to_include)} label="Participants to include" detail={`${n(preview?.participants_awaiting_to_allow)} awaiting · ${n(preview?.participants_12_13_to_allow)} age 12–13 · ${n(preview?.participants_19_to_allow)} age 19`} />
         <Fact value={n(preview?.participants_20_plus_to_remove)} label="Age 20+ leaving youth roster" detail="They remain in source history" />
         <Fact value={n(preview?.staff_awaiting_to_clear)} label="Staff to clear" detail="Awaiting source approval, usable for planning" />
         <Fact value={n(newGroups)} label="New counselor groups" detail={`${n(preview?.new_companies)} new companies · existing placements stay put`} />
@@ -118,7 +118,7 @@ export function SessionFinalization({ sessionId, onChanged, onNavigate }) {
       <div className="session-finalization-sections">
         <section>
           <div className="session-finalization-icon"><Users size={22} /></div>
-          <div><h3>Participants</h3><p>The remaining awaiting-approval and local age cases under 20 become active participants. People aged 20+ leave the active participant roster without deleting their source registration.</p></div>
+          <div><h3>Participants</h3><p>Verified participants aged 12–19 and verified registrations awaiting approval become active participants under the approved session policy. People aged 20+ leave the active participant roster without deleting their source registration.</p></div>
         </section>
         <section>
           <div className="session-finalization-icon"><ShieldCheck size={22} /></div>
@@ -126,7 +126,7 @@ export function SessionFinalization({ sessionId, onChanged, onNavigate }) {
         </section>
         <section>
           <div className="session-finalization-icon"><CheckCircle size={22} /></div>
-          <div><h3>Groups & companies</h3><p>The published structure is treated as the baseline. Existing participants are never redistributed. The system fills {n(preview?.existing_groups_needing_counselor)} existing counselor gaps first, then creates the supplemental groups and companies.</p></div>
+          <div><h3>Groups & companies</h3><p>The published structure is treated as the baseline. Existing participants are never redistributed. The system fills {n(preview?.existing_groups_needing_counselor)} existing counselor gaps first, then creates isolated supplemental groups and companies for the new policy cohorts.</p></div>
         </section>
       </div>
 

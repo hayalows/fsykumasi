@@ -9,7 +9,7 @@ function first(value) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export const ACCOUNT_ROLES = new Set(["assistant_coordinator", "coordinator", "logistics_admin", "session_director"]);
+export const ACCOUNT_ROLES = new Set(["assistant_coordinator", "coordinator", "logistics_admin", "session_director", "area_advisory_couple"]);
 
 export function staffRoleLabel(role) {
   return ({
@@ -17,6 +17,7 @@ export function staffRoleLabel(role) {
     coordinator: "Coordinator",
     logistics_admin: "Logistical administrator",
     session_director: "Session directing couple",
+    area_advisory_couple: "FSY area advisory couple",
   })[role] || role || "FSY leader";
 }
 
@@ -27,7 +28,7 @@ export function staffScopeLabel(person) {
     const count = person.companyIds?.length || 0;
     return count ? `${count} assigned companies` : "No companies assigned yet";
   }
-  return "Whole session";
+  return person?.operationalRole === "area_advisory_couple" ? "Whole FSY program" : "Whole session";
 }
 
 export function accessStateLabel(state) {

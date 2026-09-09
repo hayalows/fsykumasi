@@ -30,7 +30,7 @@ language sql
 stable
 security definer
 set search_path=''
-as $$$
+as $$
   select exists (
     select 1
     from public.access_assignments aa
@@ -111,7 +111,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=''
-as $$$
+as $$
 begin
   if exists(select 1 from public.session_roster_freezes f where f.session_id=new.session_id) then
     raise exception 'The final session roster is frozen. Add new arrivals through on-site registration instead of importing another roster.';
@@ -131,7 +131,7 @@ language plpgsql
 stable
 security definer
 set search_path=''
-as $$$
+as $$
 declare
   s public.sessions%rowtype;
   include_total int:=0;
@@ -366,7 +366,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path=''
-as $$$
+as $$
 declare
   s public.sessions%rowtype;
   existing_final public.session_roster_finalizations%rowtype;

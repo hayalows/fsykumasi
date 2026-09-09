@@ -23,6 +23,7 @@ const STAFF_ROLE_OPTIONS = [
   { value: "coordinator", label: "Coordinator", description: "Whole-session responsibility and access." },
   { value: "logistics_admin", label: "Logistical administrator", description: "Whole-session operational responsibility and access." },
   { value: "session_director", label: "Session directing couple", description: "Whole-session directing responsibility and access." },
+  { value: "area_advisory_couple", label: "FSY area advisory couple", description: "Whole-program reporting, operational oversight and access." },
 ];
 const COMMITTEE_ROLE = { value: "committee_viewer", label: "Committee member", description: "Sees only the committee tools selected for them." };
 

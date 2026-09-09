@@ -36,7 +36,7 @@ test("private registration fields use separate RLS-protected tables", () => {
 
 test("assistant coordinators can record check-in only through their scoped companies", () => {
   assert.match(scopedCheckinMigration, /private\.can_access_company\(p_session_id, g\.company_id\)/);
-  assert.match(app, /\["assistant_coordinator",\s*"coordinator",\s*"logistics_admin",\s*"session_director"\]\.includes\(currentRole\)/);
+  assert.match(app, /\["assistant_coordinator",\s*"coordinator",\s*"logistics_admin",\s*"session_director",\s*"area_advisory_couple"\]\.includes\(currentRole\)/);
 });
 
 test("planning sessions stay structurally editable while active operations remain protected", () => {

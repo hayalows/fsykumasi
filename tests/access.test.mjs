@@ -10,6 +10,7 @@ test("full session administrators can manage website access", () => {
   assert.equal(canApproveAccess("coordinator"), true);
   assert.equal(canApproveAccess("logistics_admin"), true);
   assert.equal(canApproveAccess("session_director"), true);
+  assert.equal(canApproveAccess("area_advisory_couple"), true);
   assert.equal(canApproveAccess("assistant_coordinator"), false);
 });
 

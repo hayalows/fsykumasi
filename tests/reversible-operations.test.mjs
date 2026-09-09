@@ -59,7 +59,7 @@ test("field pages surface the new authorized correction flows with history-prese
 test("meal voiding is leadership-only in both the UI and the guarded RPC", async () => {
   const food = await read("src/pages/FoodV3.jsx");
   const sql = await read("supabase/migrations/20260908211057_reversible_operations_v1.sql");
-  assert.match(food, /const canVoid = \["coordinator", "logistics_admin", "session_director"\]/);
+  assert.match(food, /const canVoid = \["coordinator", "logistics_admin", "session_director", "area_advisory_couple"\]/);
   assert.match(food, /canVoid&&selectedService\.status!==['"]void['"]/);
   assert.match(food, /!selectedService \|\| !canVoid \|\| voidReason\.trim\(\)\.length < 5/);
   assert.match(sql, /cancel_meal_service_v1[\s\S]*?has_session_role\(target\.session_id, array\['coordinator','logistics_admin','session_director'\]/);

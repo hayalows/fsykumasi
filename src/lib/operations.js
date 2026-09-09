@@ -12,8 +12,8 @@ export const DEFAULT_STRUCTURE_SETTINGS = {
   useAgeBands: false,
   avoidSameUnit: true,
   balanceSexes: true,
-  participantMinAge: 13,
-  participantMaxAge: 20,
+  participantMinAge: 12,
+  participantMaxAge: 19,
   companiesPerAssistantCoordinator: 4,
 };
 

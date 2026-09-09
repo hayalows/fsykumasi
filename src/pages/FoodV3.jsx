@@ -31,7 +31,7 @@ export function Food({ sessionId, currentRole = "", capabilities = [], sessionNa
   const canViewMeals = hasFoodView || hasCapability(capabilities, "meal_attendance_view");
   const canRecordMeals = hasCapability(capabilities, "food_manage") || hasCapability(capabilities, "meal_attendance_record");
   const canManage = hasCapability(capabilities, "food_manage");
-  const canVoid = ["coordinator", "logistics_admin", "session_director"].includes(currentRole);
+  const canVoid = ["coordinator", "logistics_admin", "session_director", "area_advisory_couple"].includes(currentRole);
   const canViewDietary = hasFoodView;
 
   const [tab, setTab] = useState(initialTab === "dietary" || initialTab === "needs" ? "needs" : "meals");

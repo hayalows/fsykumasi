@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const migration = fs.readFileSync('supabase/migrations/20260909143500_session_finalization_v1.sql', 'utf8');
 const authority = fs.readFileSync('supabase/migrations/20260909145000_final_roster_authority_v1.sql', 'utf8');
+const policyV2 = fs.readFileSync('supabase/migrations/20260909184719_final_roster_policy_v2.sql', 'utf8');
 const registration = fs.readFileSync('src/pages/Registration.jsx', 'utf8');
 const finalization = fs.readFileSync('src/pages/SessionFinalization.jsx', 'utf8');
 const staffState = fs.readFileSync('src/lib/staff-state.js', 'utf8');
@@ -26,10 +27,9 @@ test('finalization supports whole-session pre-session leaders', () => {
   }
   assert.match(migration, /role::text in \('logistics_admin','session_director'\)/);
   assert.match(authority, /array\['logistics_admin','session_director'\]/);
-  assert.match(resolution, /\["session_director", "logistics_admin"\]/);
-  assert.match(staffSheet, /\['logistics_admin','session_director'\]/);
-  assert.doesNotMatch(migration, /role::text in \('logistics_admin','coordinator','session_director'\)/);
-  assert.doesNotMatch(authority, /array\['logistics_admin','coordinator','session_director'\]/);
+  assert.match(resolution, /\["session_director", "logistics_admin", "coordinator", "area_advisory_couple"\]/);
+  assert.match(staffSheet, /\['session_director','logistics_admin','coordinator','area_advisory_couple'\]/);
+  assert.match(policyV2, /array\['coordinator','logistics_admin','session_director','area_advisory_couple'\]/);
 });
 
 test('supplemental structure never republishes the baseline', () => {
@@ -66,4 +66,14 @@ test('committee staff use a direct responsibility label', () => {
   assert.match(staffState, /staffResponsibilityLabel/);
   assert.match(staffState, /return `\$\{clean\.charAt\(0\)\.toUpperCase\(\)\}\$\{clean\.slice\(1\)\} committee`/);
   assert.match(staffSheet, /staffResponsibilityLabel/);
+});
+
+test('v2 roster policy allows 12–13 and awaiting participants while hiding 20+', () => {
+  assert.match(policyV2, /between 12 and 19/);
+  assert.match(policyV2, /p\.registration_status in \('approved','awaiting'\)/);
+  assert.match(policyV2, /session_participant_age\(target_session,p\.id\)>=20 then false/);
+  assert.match(policyV2, /get_participant_roster_v2/);
+  assert.match(policyV2, /participant_operation_decisions/);
+  assert.match(policyV2, /finalization_cohort/);
+  assert.match(policyV2, /source registration retained/);
 });
