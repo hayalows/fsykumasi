@@ -24,6 +24,7 @@ const WORKSPACES = [{ value: "people", label: "People" }, { value: "groups", lab
 function companyLabel(company) { return company?.displayName || company?.name || "Company"; }
 function groupLabel(group) { return group?.displayName || group?.name || "Counselor group"; }
 function personInitials(name = "FSY") { return name.split(/\s+/).filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase(); }
+function groupSexKey(group) { const value=String(group?.sex||"").toLowerCase(); return value.includes("female") ? "female" : value.includes("male") ? "male" : ""; }
 
 function goToAccess(filter = "all") {
   if (typeof window === "undefined") return;
@@ -71,6 +72,7 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
   const [roleFilter, setRoleFilter] = useState("all");
   const [groupQuery, setGroupQuery] = useState("");
   const [groupFilter, setGroupFilter] = useState(initialWorkspace === "groups" && initialFilter === "all" ? "all" : "needs");
+  const [groupSexFilter, setGroupSexFilter] = useState("all");
   const [companyQuery, setCompanyQuery] = useState("");
   const [companyFilter, setCompanyFilter] = useState("needs");
   const [visibleStaff, setVisibleStaff] = useState(30);
@@ -130,7 +132,7 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
   }, [initialWorkspace, initialFilter]);
 
   useEffect(() => setVisibleStaff(30), [query, roleFilter, staffFilter]);
-  useEffect(() => setVisibleGroups(24), [groupQuery, groupFilter]);
+  useEffect(() => setVisibleGroups(24), [groupQuery, groupFilter, groupSexFilter]);
   useEffect(() => setVisibleCompanies(24), [companyQuery, companyFilter]);
 
   const groups = structure.groups || [];
@@ -165,11 +167,12 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
     return groups
       .filter((group) => {
         const covered = groupCovered(group);
-        return (groupFilter === "all" || (groupFilter === "needs" ? !covered : covered))
+        const sexMatches = groupSexFilter === "all" || groupSexKey(group) === groupSexFilter;
+        return sexMatches && (groupFilter === "all" || (groupFilter === "needs" ? !covered : covered))
           && matchesPersonSearch({name:groupLabel(group)},text,[companyLabel(companyById.get(group.companyId)),staffById.get(group.counselorId)?.name]);
       })
       .sort((a, b) => Number(groupCovered(a)) - Number(groupCovered(b)) || groupLabel(a).localeCompare(groupLabel(b), undefined, { numeric: true }));
-  }, [groups, groupQuery, groupFilter, companyById, staffById]);
+  }, [groups, groupQuery, groupFilter, groupSexFilter, companyById, staffById]);
 
   const filteredCompanies = useMemo(() => {
     const text = companyQuery.trim().toLowerCase();
@@ -421,19 +424,7 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
             <div className="assignments-v3-context"><small>Assignment</small><b>{personContext(person)}</b>{staffException(person)?<small className="danger-text">{staffException(person)}</small>:null}{person.committeeDuties?.length?<small>{person.committeeDuties.join(" · ")}</small>:null}{canManage?<button type="button" className="text-action" onClick={()=>setOperationsPerson(person)}>Staff status</button>:null}</div>
             <label className="assignments-v3-role"><span>Responsibility</span><select value={person.operationalRole || "other"} disabled={!canManage} onChange={(event) => { const targetRole = event.target.value; if (targetRole !== person.operationalRole) setTransitionTarget({ person, targetRole }); }}>{ROLE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <div className="assignments-v3-access">
-              {committeeStaff ? <>
-                <small>Website</small>
-                <span className="assignments-v15-committee-note">Committee access is managed in Access</span>
-                <button type="button" className="text-action" onClick={() => goToAccess("all")}>Open Access</button>
-              </> : accountRole ? accessStatus === "unavailable" ? <>
-                <small>Website</small>
-                <Status tone="neutral">Status unavailable</Status>
-                <button type="button" className="text-action" onClick={() => goToAccess("all")}>Open Access</button>
-              </> : <>
-                <small>Website</small>
-                <Status tone={access?.accessState === "active" ? "good" : access?.accessState === "invited" ? "warn" : "neutral"}>{accessStatus === "loading" ? "Checking…" : incomplete ? "Setup incomplete" : accessStateLabel(access?.accessState || "not_enabled")}</Status>
-                {canManage && accessStatus === "ready" && (setupNeeded || access?.accessState === "invited") ? <button type="button" className="text-action" onClick={() => setSetupTarget(setupPerson(person))}>{incomplete ? "Finish setup" : access?.accessState === "invited" ? "New setup link" : "Set up access"}</button> : null}
-              </> : <small className="assignments-v3-no-access">Website access is not part of this responsibility</small>}
+              {committeeStaff ? <><small>Website</small><span className="assignments-v15-committee-note">Committee access is managed in Access</span><button type="button" className="text-action" onClick={() => goToAccess("all")}>Open Access</button></> : accountRole ? accessStatus === "unavailable" ? <><small>Website</small><Status tone="neutral">Status unavailable</Status><button type="button" className="text-action" onClick={() => goToAccess("all")}>Open Access</button></> : <><small>Website</small><Status tone={access?.accessState === "active" ? "good" : access?.accessState === "invited" ? "warn" : "neutral"}>{accessStatus === "loading" ? "Checking…" : incomplete ? "Setup incomplete" : accessStateLabel(access?.accessState || "not_enabled")}</Status>{canManage && accessStatus === "ready" && (setupNeeded || access?.accessState === "invited") ? <button type="button" className="text-action" onClick={() => setSetupTarget(setupPerson(person))}>{incomplete ? "Finish setup" : access?.accessState === "invited" ? "New setup link" : "Set up access"}</button> : null}</> : <small className="assignments-v3-no-access">Website access is not part of this responsibility</small>}
             </div>
           </div>;
         })}
@@ -446,21 +437,22 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
         <div><span className="kicker">Counselor groups</span><h2>{demoMode ? "Counselor groups are not simulated" : openGroups.length ? `${openGroups.length} need a Counselor` : "Counselor groups are covered"}</h2><p>Groups with an absent, excluded or uncleared Counselor are treated as gaps until resolved.</p></div>
         <Status tone={demoMode ? "muted" : openGroups.length ? "warn" : "good"}>{demoMode ? "Demo only" : `${groups.length - openGroups.length}/${groups.length} covered`}</Status>
       </header>
-      <div className="assignments-v3-toolbar">
+      <div className="assignments-v3-toolbar assignments-v37-group-toolbar">
         <SearchField value={groupQuery} onChange={setGroupQuery} label="Search counselor groups" placeholder="Group, company or Counselor" />
-        <label>Show<select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)}><option value="needs">Needs Counselor</option><option value="assigned">Covered</option><option value="all">All groups</option></select></label>
+        <label>Status<select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)}><option value="needs">Needs Counselor</option><option value="assigned">Covered</option><option value="all">All groups</option></select></label>
+        <label>Group type<select value={groupSexFilter} onChange={(event) => setGroupSexFilter(event.target.value)}><option value="all">Young Women & Young Men</option><option value="female">Young Women</option><option value="male">Young Men</option></select></label>
       </div>
       {filteredGroups.length ? <div className="assignments-v3-coverage">
         {filteredGroups.slice(0, visibleGroups).map((group) => {
           const counselor = staffById.get(group.counselorId);
           const covered = groupCovered(group);
           return <div className={`assignments-v3-coverage-row ${covered ? "covered" : "open"}`} key={group.id}>
-            <div><b>{groupLabel(group)}</b><small>{companyLabel(companyById.get(group.companyId))} · {group.sex === "Female" ? "YW" : "YM"} · {group.memberCount} youth</small></div>
+            <div><b>{groupLabel(group)}</b><small>{companyLabel(companyById.get(group.companyId))} · {groupSexKey(group) === "female" ? "YW" : "YM"} · {group.memberCount} youth</small></div>
             <div>{counselor ? <><small>{covered ? "Counselor" : "Assigned Counselor · replacement needed"}</small><PersonName person={counselor} kind="staff"/>{!covered?<small className="danger-text">{staffException(counselor)||"Not available for planning"}</small>:null}</> : <><small>Status</small><b>Needs Counselor</b></>}</div>
             <div>{counselor ? <button type="button" className="text-action danger-text" disabled={!canManage} onClick={() => setRemoveGroup({ group, counselor })}>{covered ? "Remove" : "Clear unavailable assignment"}</button> : <button type="button" className="primary" disabled={!canManage} onClick={() => openPicker("group", group)}>Assign Counselor</button>}</div>
           </div>;
         })}
-      </div> : <Empty title={demoMode ? "Counselor groups are not seeded" : groupFilter === "needs" ? "No counselor gaps" : "No groups found"} text={demoMode ? "Sign in to review the live grouping structure and counselor coverage." : groupFilter === "needs" ? "Every counselor group currently has planning coverage." : "Change the filter or search."} />}
+      </div> : <Empty title={demoMode ? "Counselor groups are not seeded" : groupFilter === "needs" ? "No counselor gaps in this view" : "No groups found"} text={demoMode ? "Sign in to review the live grouping structure and counselor coverage." : "Change the status, group type, or search."} />}
       {visibleGroups < filteredGroups.length ? <button type="button" className="secondary assignment-v2-show-more" onClick={() => setVisibleGroups((value) => value + 24)}>Show 24 more groups</button> : null}
     </article> : null}
 
@@ -481,7 +473,7 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
           const assistant=activeAssistant||assignedAssistants[0]||null;
           const covered=Boolean(activeAssistant);
           return <div className={`assignments-v3-coverage-row ${covered ? "covered" : "open"}`} key={company.id}>
-            <div><b>{companyLabel(company)}</b><small>{company.groups?.length || 0} counselor groups{company.meetingSpot ? ` · ${company.meetingSpot}` : ""}</small></div>
+            <div><b>{companyLabel(company)}</b><small>{company.groups?.length || 0} counselor groups</small></div>
             <div>{assistant ? <><small>{covered ? `Assistant Coordinator · ${assistant.companyIds?.length || 0}/${maxCompanyLoad} companies` : "Assigned AC · replacement needed"}</small><PersonName person={assistant} kind="staff"/>{!covered?<small className="danger-text">{staffException(assistant)||"Not available for planning"}</small>:null}</> : <><small>Status</small><b>Needs Assistant Coordinator</b></>}</div>
             <div>{assistant ? <button type="button" className="text-action danger-text" disabled={!canManage} onClick={() => setRemoveCompany({ company, assistant })}>{covered ? "Remove" : "Clear unavailable assignment"}</button> : <button type="button" className="primary" disabled={!canManage} onClick={() => openPicker("company", company)}>Assign AC</button>}</div>
           </div>;
