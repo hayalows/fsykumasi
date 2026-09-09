@@ -32,7 +32,7 @@ export function RegistrationLeadershipResolution({ sessionId, row, eligibility, 
   }, [relevant, sessionId]);
 
   if (!relevant) return null;
-  const canFinalize = role === "session_director" || role === "logistics_admin";
+  const canFinalize = ["session_director", "logistics_admin", "coordinator"].includes(role);
 
   return <section className="registration-leadership-resolution">
     <div className="registration-leadership-resolution-head">
@@ -43,10 +43,10 @@ export function RegistrationLeadershipResolution({ sessionId, row, eligibility, 
       </div>
     </div>
     {loadingRole ? <p>Checking final roster access…</p> : canFinalize ? <>
-      <p>Record the local session decision after the required registration, guardian and leadership checks are confirmed. The imported registration record stays unchanged.</p>
+      <p>Record the local session decision after the required checks are confirmed. The imported registration record stays unchanged.</p>
       <ParticipantExceptionForm person={{...row,id:row.participantId||row.id}} onSaved={onResolved} />
     </> : <>
-      <p>This record needs a final session decision before normal check-in. A Session Directing Couple or Logistical Administrator can record it.</p>
+      <p>This record needs a final session decision before normal check-in. A whole-session leader can record it.</p>
       <span className="registration-resolution-source-note">The source registration status is not changed locally.</span>
     </>}
   </section>;
