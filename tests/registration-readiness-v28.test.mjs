@@ -72,12 +72,12 @@ test('Registration IA separates Live check-in, one Solutions queue and supportin
   assert.match(source,/<RegistrationJourney view=\{journeyMode\}/);
 });
 
-test('Solutions keeps exception authority separate from source registration',async()=>{
+test('Solutions keeps final-roster authority separate from source registration',async()=>{
   const source=await read('src/components/RegistrationLeadershipResolution.jsx');
-  assert.match(source,/role === "session_director"/);
+  assert.match(source,/\["session_director", "logistics_admin", "coordinator"\]\.includes\(role\)/);
   assert.match(source,/ParticipantExceptionForm/);
-  assert.match(source,/source registration stays unchanged/i);
-  assert.match(source,/Do not change the official registration status locally/);
+  assert.match(source,/imported registration record stays unchanged/i);
+  assert.match(source,/source registration status is not changed locally/i);
 });
 
 test('identity and staff readiness distinguish different kinds of attention',async()=>{
