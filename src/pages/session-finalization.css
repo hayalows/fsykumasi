@@ -1,3 +1,360 @@
-.session-finalization{display:grid;gap:24px;max-width:1180px;margin:0 auto;padding:4px 0 48px}.session-finalization-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding:8px 0 22px;border-bottom:1px solid var(--border-default,var(--line))}.session-finalization-head h2{margin:5px 0 8px;font-size:clamp(1.55rem,2vw,2.1rem);letter-spacing:-.025em}.session-finalization-head p{max-width:760px;margin:0;color:var(--text-secondary,var(--muted));line-height:1.58}.session-finalization-strip,.session-finalization-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-block:1px solid var(--border-default,var(--line));background:var(--surface,var(--paper));}.session-finalization-facts{grid-template-columns:repeat(3,minmax(0,1fr))}.session-finalization-fact{min-width:0;padding:18px 20px}.session-finalization-fact+.session-finalization-fact{border-left:1px solid var(--border-default,var(--line))}.session-finalization-fact strong{display:block;font-size:1.65rem;letter-spacing:-.035em;line-height:1.1}.session-finalization-fact span{display:block;margin-top:7px;font-weight:700}.session-finalization-fact small{display:block;margin-top:4px;color:var(--text-secondary,var(--muted));line-height:1.35}.session-finalization-sections{display:grid;border-top:1px solid var(--border-default,var(--line))}.session-finalization-sections>section{display:grid;grid-template-columns:42px minmax(0,1fr);gap:15px;padding:21px 0;border-bottom:1px solid var(--border-default,var(--line))}.session-finalization-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:var(--surface-subtle,#f5f7f6);color:var(--action-primary,var(--accent))}.session-finalization-sections h3{margin:0 0 6px;font-size:1rem}.session-finalization-sections p{margin:0;color:var(--text-primary,var(--ink));line-height:1.55}.session-finalization-sections small{display:block;margin-top:7px;color:var(--text-secondary,var(--muted))}.session-finalization-guard{padding:16px 18px;border-left:3px solid var(--action-primary,var(--accent));background:var(--surface-subtle,#f5f7f6)}.session-finalization-guard b{display:block;margin-bottom:4px}.session-finalization-guard p{margin:0;color:var(--text-secondary,var(--muted));line-height:1.5}.session-finalization-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:2px}.session-finalization-result{display:flex;align-items:center;gap:13px;padding:17px 0;border-block:1px solid var(--border-default,var(--line));color:var(--status-success,var(--good))}.session-finalization-result div{display:grid;gap:2px}.session-finalization-result b{font-size:1.12rem;color:var(--text-primary,var(--ink))}.session-finalization-result span{color:var(--text-secondary,var(--muted))}.session-finalization-loading{padding:32px 0}.session-finalization-loading p{color:var(--text-secondary,var(--muted));margin:8px 0 0}.session-finalization .mutation-feedback svg{flex:0 0 auto}
-@media(max-width:860px){.session-finalization-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.session-finalization-strip .session-finalization-fact:nth-child(3){border-left:0;border-top:1px solid var(--border-default,var(--line))}.session-finalization-strip .session-finalization-fact:nth-child(4){border-top:1px solid var(--border-default,var(--line))}.session-finalization-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.session-finalization-facts .session-finalization-fact:nth-child(odd):not(:first-child){border-left:0}.session-finalization-facts .session-finalization-fact:nth-child(n+3){border-top:1px solid var(--border-default,var(--line))}}
-@media(max-width:560px){.session-finalization{gap:19px;padding-bottom:calc(84px + env(safe-area-inset-bottom))}.session-finalization-head{display:grid;gap:13px}.session-finalization-head .status{justify-self:start}.session-finalization-strip,.session-finalization-facts{grid-template-columns:1fr}.session-finalization-fact+.session-finalization-fact,.session-finalization-strip .session-finalization-fact:nth-child(3),.session-finalization-strip .session-finalization-fact:nth-child(4),.session-finalization-facts .session-finalization-fact:nth-child(n+3){border-left:0;border-top:1px solid var(--border-default,var(--line))}.session-finalization-fact{padding:15px 4px}.session-finalization-strip,.session-finalization-facts{background:transparent}.session-finalization-sections>section{grid-template-columns:36px minmax(0,1fr);gap:12px}.session-finalization-icon{width:34px;height:34px}.session-finalization-actions{display:grid;grid-template-columns:1fr}.session-finalization-actions button{width:100%;justify-content:center}}
+/* Final-roster closeout. Keep the task compact, readable and recoverable. */
+.session-finalization {
+  width: min(calc(100% - (var(--fsy-page-gutter, 24px) * 2)), 1280px);
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 0 64px;
+  display: grid;
+  gap: 20px;
+}
+
+.session-finalization-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid var(--border-default, var(--line));
+}
+
+.session-finalization-head > div:first-child {
+  min-width: 0;
+}
+
+.session-finalization-head h2,
+.session-finalization-recovery-card h2 {
+  margin: 5px 0 7px;
+  color: var(--text-primary, var(--ink));
+  font-size: clamp(1.5rem, 1.8vw, 1.95rem);
+  line-height: 1.08;
+  letter-spacing: -.03em;
+}
+
+.session-finalization-head p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--text-secondary, var(--muted));
+  line-height: 1.52;
+}
+
+.session-finalization-head .status {
+  flex: none;
+  margin-top: 2px;
+}
+
+.session-finalization-strip,
+.session-finalization-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--border-default, var(--line));
+  border-radius: 14px;
+  background: var(--surface, var(--paper));
+}
+
+.session-finalization-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.session-finalization-fact {
+  min-width: 0;
+  padding: 17px 18px;
+}
+
+.session-finalization-fact + .session-finalization-fact {
+  border-left: 1px solid var(--border-default, var(--line));
+}
+
+.session-finalization-fact strong {
+  display: block;
+  color: var(--text-primary, var(--ink));
+  font-size: clamp(1.35rem, 1.6vw, 1.65rem);
+  line-height: 1.05;
+  letter-spacing: -.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-finalization-fact span {
+  display: block;
+  margin-top: 6px;
+  font-weight: 700;
+}
+
+.session-finalization-fact small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-secondary, var(--muted));
+  line-height: 1.35;
+}
+
+.session-finalization-sections {
+  display: grid;
+  border-top: 1px solid var(--border-default, var(--line));
+}
+
+.session-finalization-sections > section {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border-default, var(--line));
+}
+
+.session-finalization-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--surface-subtle, #f5f7f6);
+  color: var(--action-primary, var(--accent));
+}
+
+.session-finalization-sections h3 {
+  margin: 0 0 5px;
+  font-size: 1rem;
+}
+
+.session-finalization-sections p {
+  max-width: 88ch;
+  margin: 0;
+  color: var(--text-secondary, var(--muted));
+  line-height: 1.5;
+}
+
+.session-finalization-guard {
+  padding: 15px 17px;
+  border: 1px solid var(--border-default, var(--line));
+  border-left: 3px solid var(--action-primary, var(--accent));
+  border-radius: 10px;
+  background: var(--surface-subtle, #f5f7f6);
+}
+
+.session-finalization-guard b {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.session-finalization-guard p {
+  max-width: 90ch;
+  margin: 0;
+  color: var(--text-secondary, var(--muted));
+  line-height: 1.48;
+}
+
+.session-finalization-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+
+.session-finalization-result {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px 0;
+  border-block: 1px solid var(--border-default, var(--line));
+  color: var(--status-success, var(--good));
+}
+
+.session-finalization-result div {
+  display: grid;
+  gap: 2px;
+}
+
+.session-finalization-result b {
+  font-size: 1.08rem;
+  color: var(--text-primary, var(--ink));
+}
+
+.session-finalization-result span {
+  color: var(--text-secondary, var(--muted));
+}
+
+.session-finalization-loading {
+  min-height: 108px;
+  display: grid;
+  align-content: center;
+  gap: 7px;
+}
+
+.session-finalization-loading p {
+  margin: 0;
+  color: var(--text-secondary, var(--muted));
+}
+
+.session-finalization .mutation-feedback svg {
+  flex: 0 0 auto;
+}
+
+/* A failed preview is its own state. Never pair an unavailable preview with a
+   misleading Ready badge or raw database text. */
+.session-finalization-recovery {
+  padding-top: 24px;
+}
+
+.session-finalization-recovery-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--status-warning, #a86b13) 34%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--status-warning, #a86b13) 7%, white);
+}
+
+.session-finalization-recovery-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--status-warning, #9a6616);
+  background: color-mix(in srgb, var(--status-warning, #a86b13) 12%, white);
+}
+
+.session-finalization-recovery-copy {
+  min-width: 0;
+}
+
+.session-finalization-recovery-copy p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--text-secondary, var(--muted));
+  line-height: 1.5;
+}
+
+.session-finalization-recovery-copy small {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-tertiary, var(--muted));
+}
+
+.session-finalization-inline-issue {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--status-warning, #a86b13) 28%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--status-warning, #a86b13) 6%, white);
+  color: var(--status-warning, #8a5d17);
+}
+
+.session-finalization-inline-issue > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.session-finalization-inline-issue b {
+  color: var(--text-primary, var(--ink));
+}
+
+.session-finalization-inline-issue span,
+.session-finalization-inline-issue small {
+  color: var(--text-secondary, var(--muted));
+}
+
+@media (max-width: 860px) {
+  .session-finalization {
+    width: min(calc(100% - 32px), 1280px);
+  }
+
+  .session-finalization-strip,
+  .session-finalization-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .session-finalization-strip .session-finalization-fact:nth-child(3),
+  .session-finalization-facts .session-finalization-fact:nth-child(odd):not(:first-child) {
+    border-left: 0;
+  }
+
+  .session-finalization-strip .session-finalization-fact:nth-child(n+3),
+  .session-finalization-facts .session-finalization-fact:nth-child(n+3) {
+    border-top: 1px solid var(--border-default, var(--line));
+  }
+
+  .session-finalization-recovery-card,
+  .session-finalization-inline-issue {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .session-finalization-recovery-card > button,
+  .session-finalization-inline-issue > button {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 560px) {
+  .session-finalization {
+    width: min(calc(100% - 28px), 1280px);
+    gap: 17px;
+    padding-top: 18px;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .session-finalization-head {
+    display: grid;
+    gap: 12px;
+  }
+
+  .session-finalization-head .status {
+    justify-self: start;
+  }
+
+  .session-finalization-strip,
+  .session-finalization-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .session-finalization-fact + .session-finalization-fact,
+  .session-finalization-strip .session-finalization-fact:nth-child(3),
+  .session-finalization-facts .session-finalization-fact:nth-child(odd):not(:first-child) {
+    border-left: 0;
+    border-top: 1px solid var(--border-default, var(--line));
+  }
+
+  .session-finalization-fact {
+    padding: 14px 15px;
+  }
+
+  .session-finalization-sections > section {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 11px;
+  }
+
+  .session-finalization-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .session-finalization-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .session-finalization-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .session-finalization-recovery-card,
+  .session-finalization-inline-issue {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .session-finalization-recovery-card > button,
+  .session-finalization-inline-issue > button {
+    grid-column: 1;
+    width: 100%;
+    justify-content: center;
+  }
+}
