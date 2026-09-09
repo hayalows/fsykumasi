@@ -5,37 +5,42 @@ import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { ShieldCheck } from "@phosphor-icons/react/ShieldCheck";
 import { Users } from "@phosphor-icons/react/Users";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
-import { MutationFeedback, Status } from "../components/UI.jsx";
+import { ConfirmActionSheet, MutationFeedback, Status } from "../components/UI.jsx";
 import { finalizeSessionRoster, loadSessionFinalizationPreview } from "../lib/session-finalization.js";
 import "./session-finalization.css";
 
 function n(value) { return Number(value || 0).toLocaleString(); }
 
-function Fact({ value, label, detail, tone = "" }) {
-  return <div className={`session-finalization-fact ${tone ? `tone-${tone}` : ""}`}>
+function Fact({ value, label, detail }) {
+  return <div className="session-finalization-fact">
     <strong>{value}</strong>
     <span>{label}</span>
     {detail ? <small>{detail}</small> : null}
   </div>;
 }
 
-export function SessionFinalization({ sessionId, sessionName, onChanged, onNavigate }) {
+export function SessionFinalization({ sessionId, onChanged, onNavigate }) {
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(sessionId));
   const [applying, setApplying] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
+  const [accessDenied, setAccessDenied] = useState(false);
 
   const reload = useCallback(async () => {
     if (!sessionId) return;
     setLoading(true);
     setError("");
+    setAccessDenied(false);
     try {
       const next = await loadSessionFinalizationPreview(sessionId);
       setPreview(next);
-      if (next?.alreadyApplied && next?.appliedSummary) setResult(next.appliedSummary);
+      if (next?.already_finalized && next?.final_summary) setResult(next.final_summary);
     } catch (err) {
-      setError(err.message || "Final roster preparation could not load.");
+      const message = err.message || "Final roster preparation could not load.";
+      if (/final roster access required/i.test(message)) setAccessDenied(true);
+      else setError(message);
     } finally {
       setLoading(false);
     }
@@ -44,12 +49,13 @@ export function SessionFinalization({ sessionId, sessionName, onChanged, onNavig
   useEffect(() => { reload(); }, [reload]);
 
   const apply = async () => {
-    if (!sessionId || applying || preview?.participant20PlusWithActivity) return;
+    if (!sessionId || applying || !preview?.safe_to_apply) return;
     setApplying(true);
     setError("");
     try {
       const next = await finalizeSessionRoster(sessionId);
       setResult(next);
+      setConfirming(false);
       await onChanged?.();
       await reload();
     } catch (err) {
@@ -59,13 +65,15 @@ export function SessionFinalization({ sessionId, sessionName, onChanged, onNavig
     }
   };
 
-  const applied = Boolean(result || preview?.alreadyApplied);
-  const summary = result || preview?.appliedSummary || {};
-  const blocked = Number(preview?.participant20PlusWithActivity || 0) > 0;
-
+  if (accessDenied) return null;
   if (loading && !preview) return <section className="session-finalization" aria-busy="true">
-    <div className="session-finalization-loading" role="status"><span className="workspace-state state-loading"><i />Preparing the final roster</span><p>Checking participant decisions, Staff readiness and current group coverage.</p></div>
+    <div className="session-finalization-loading" role="status"><span className="workspace-state state-loading"><i />Checking the final roster</span><p>Reading participant decisions, Staff readiness and current coverage.</p></div>
   </section>;
+
+  const applied = Boolean(result || preview?.already_finalized);
+  const summary = result || preview?.final_summary || {};
+  const blocked = !preview?.safe_to_apply;
+  const newGroups = Number(preview?.new_female_groups || 0) + Number(preview?.new_male_groups || 0);
 
   return <section className="session-finalization" aria-busy={applying}>
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
@@ -73,68 +81,79 @@ export function SessionFinalization({ sessionId, sessionName, onChanged, onNavig
     <header className="session-finalization-head">
       <div>
         <span className="kicker">Pre-session closeout</span>
-        <h2>{applied ? "The working rosters are finalized" : "Finalize the working rosters"}</h2>
+        <h2>{applied ? "Final roster is ready" : "Finish the roster once"}</h2>
         <p>{applied
-          ? "The source registration records are still intact. The app is now using the Kumasi session decisions for participant and Staff operations."
-          : "Apply the local session decisions once, keep the existing 44-company structure untouched, and add only the people who still need placement."}</p>
+          ? "The working participant and Staff rosters are settled. Source registration history is still preserved, and any new arrival from now on should be handled on site."
+          : "Keep every existing participant placement where it is, apply the Kumasi session decisions, fill the remaining counselor gaps, and add only the extra groups and companies needed for the new participants."}</p>
       </div>
-      <Status tone={applied ? "good" : blocked ? "danger" : "warn"}>{applied ? "Finalized" : blocked ? "Needs review" : "Ready to apply"}</Status>
+      <Status tone={applied ? "good" : blocked ? "danger" : "warn"}>{applied ? "Final" : blocked ? "Review needed" : "Ready"}</Status>
     </header>
 
     {applied ? <>
       <div className="session-finalization-result" role="status">
         <CheckCircle size={26} weight="fill" />
-        <div><b>{n(summary.activeParticipants)} active participants</b><span>{n(summary.activeStaff)} active Staff · {summary.newCompany || "No new company needed"}</span></div>
+        <div><b>No participant eligibility decisions remain open</b><span>Existing placements moved: {n(summary.existing_placements_moved)}</span></div>
       </div>
-      <div className="session-finalization-facts" aria-label="Finalization result">
-        <Fact value={n(summary.includedParticipants)} label="Participants added" detail="Local session exceptions" />
-        <Fact value={n(summary.excluded20Plus)} label="20+ removed from youth roster" detail="Source records preserved" />
-        <Fact value={n(summary.staffCleared)} label="Staff cleared for planning" detail="Source approval remains unchanged" />
-        <Fact value={n(summary.newGroups)} label="New counselor groups" detail="Existing groups were not rebalanced" />
-        <Fact value={n(summary.counselorsAssigned)} label="Counselor assignments added" />
-        <Fact value={n(summary.assistantAssignmentsAdded)} label="Company coverage added" />
+      <div className="session-finalization-facts" aria-label="Final roster result">
+        <Fact value={n(summary.participants_included)} label="Participants included" detail="Local session decisions" />
+        <Fact value={n(summary.participants_20_plus_removed)} label="20+ removed from youth roster" detail="Source records retained" />
+        <Fact value={n(summary.staff_cleared)} label="Staff cleared for planning" detail="Source approval retained" />
+        <Fact value={n(summary.new_groups)} label="New counselor groups" detail={`${n(summary.new_companies)} new companies`} />
+        <Fact value={n(summary.counselors_assigned)} label="Counselor gaps filled" />
+        <Fact value={n(summary.fsy_ids_issued)} label="Supplemental FSY IDs" detail={Number(summary.unknown_origin_ids || 0) ? `${n(summary.unknown_origin_ids)} use UNK origin` : "All origin codes available"} />
       </div>
-      {Number(summary.supplementalIdsMissingOrigin || 0) ? <MutationFeedback tone="warning">{n(summary.supplementalIdsMissingOrigin)} participant is on the final roster but still needs origin details before an FSY ID can be issued.</MutationFeedback> : null}
       <div className="session-finalization-actions">
-        <button type="button" className="primary" onClick={() => onNavigate?.({ view: "reports" })}>Open reports<ArrowRight /></button>
-        <button type="button" className="secondary" onClick={() => onNavigate?.({ view: "assignments", tab: "groups" })}>Review Staff coverage</button>
+        <button type="button" className="primary" onClick={() => onNavigate?.({ view: "reports" })}>Open final roster report<ArrowRight /></button>
+        <button type="button" className="secondary" onClick={() => onNavigate?.({ view: "assignments", tab: "groups", filter: "all" })}>Review Staff coverage</button>
         <button type="button" className="text-action" onClick={reload}><ArrowClockwise />Refresh</button>
       </div>
     </> : <>
-      <div className="session-finalization-strip" aria-label="Planned roster changes">
-        <Fact value={n(preview?.projectedActiveParticipants)} label="Final active participants" detail={`${n(preview?.participantEligibleNow)} already ready + ${n(preview?.participantToInclude)} local inclusions`} />
-        <Fact value={n(preview?.participant20Plus)} label="Age 20+ leaving youth roster" detail="They can be registered on site as Staff if needed" />
-        <Fact value={n(preview?.staffAwaiting)} label="Awaiting Staff to clear" detail="Their source approval value stays unchanged" />
-        <Fact value={n(preview?.suggestedNewGroups)} label="New groups" detail="Only the supplemental cohort is placed" />
+      <div className="session-finalization-strip" aria-label="Final roster changes">
+        <Fact value={n(preview?.participants_to_include)} label="Participants to include" detail={`${n(preview?.female_to_include)} Young Women · ${n(preview?.male_to_include)} Young Men`} />
+        <Fact value={n(preview?.participants_20_plus_to_remove)} label="Age 20+ leaving youth roster" detail="They remain in source history" />
+        <Fact value={n(preview?.staff_awaiting_to_clear)} label="Staff to clear" detail="Awaiting source approval, usable for planning" />
+        <Fact value={n(newGroups)} label="New counselor groups" detail={`${n(preview?.new_companies)} new companies · existing placements stay put`} />
       </div>
 
       <div className="session-finalization-sections">
         <section>
           <div className="session-finalization-icon"><Users size={22} /></div>
-          <div><h3>Participants</h3><p><b>{n(preview?.participantToInclude)}</b> current participants will be included by the Kumasi session decision. That includes the awaiting-approval and age-exception cases under 20. <b>{n(preview?.participant20Plus)}</b> people aged 20+ leave the active youth roster.</p><small>{n(preview?.femaleToInclude)} Young Women · {n(preview?.maleToInclude)} Young Men</small></div>
+          <div><h3>Participants</h3><p>The remaining awaiting-approval and local age cases under 20 become active participants. People aged 20+ leave the active participant roster without deleting their source registration.</p></div>
         </section>
         <section>
           <div className="session-finalization-icon"><ShieldCheck size={22} /></div>
-          <div><h3>Staff</h3><p><b>{n(preview?.staffAwaiting)}</b> current Staff with source approval still awaiting will be cleared for local planning. Existing source values are retained for reference.</p><small>Cancelled, no-show and left Staff remain unavailable.</small></div>
+          <div><h3>Staff</h3><p>Current Staff who are still awaiting source approval become available for local planning. Cancelled, no-show, left and explicitly excluded Staff remain unavailable.</p></div>
         </section>
         <section>
           <div className="session-finalization-icon"><CheckCircle size={22} /></div>
-          <div><h3>Groups & companies</h3><p>The existing participant placements stay where they are. The supplemental cohort gets new counselor groups and a new company only where needed. Existing uncovered groups are filled from available same-sex counselors.</p><small>{n(preview?.groupsWithoutCounselor)} existing group gaps · {n(preview?.companiesWithoutAssistantCoordinator)} companies currently need Assistant Coordinator coverage</small></div>
+          <div><h3>Groups & companies</h3><p>The published structure is treated as the baseline. Existing participants are never redistributed. The system fills {n(preview?.existing_groups_needing_counselor)} existing counselor gaps first, then creates the supplemental groups and companies.</p></div>
         </section>
       </div>
 
-      {Number(preview?.missingOriginForNewIds || 0) ? <MutationFeedback tone="warning">{n(preview?.missingOriginForNewIds)} incoming participant is missing origin information. They can still be placed, but their FSY ID will remain for follow-up.</MutationFeedback> : null}
-      {blocked ? <MutationFeedback tone="error"><WarningCircle /> {n(preview?.participant20PlusWithActivity)} participant aged 20+ already has a live group, check-in, Housing or badge record. The batch is blocked so those records are not changed automatically.</MutationFeedback> : null}
+      {Number(preview?.exclusion_conflicts || 0) ? <MutationFeedback tone="error"><WarningCircle /> {n(preview?.exclusion_conflicts)} person aged 20+ already has live placement, check-in, Housing or badge work. The batch will not touch them automatically.</MutationFeedback> : null}
+      {!Number(preview?.exclusion_conflicts || 0) && blocked ? <MutationFeedback tone="error">The available counselor or Assistant Coordinator pool is not large enough for this batch. Review Staff coverage first.</MutationFeedback> : null}
 
       <div className="session-finalization-guard">
-        <b>What this does not change</b>
-        <p>It does not rewrite source approval, date of birth, existing participant groups, existing company membership or valid Staff assignments.</p>
+        <b>After this is applied</b>
+        <p>The final source import is frozen. New participants or Staff are handled through the on-site registration flows. Existing participant groups, companies and finalized IDs are preserved.</p>
       </div>
 
       <div className="session-finalization-actions">
-        <button type="button" className="primary" disabled={applying || blocked || !preview || preview?.status !== "planning"} onClick={apply}>{applying ? "Finalizing…" : "Finalize roster & Staff"}</button>
+        <button type="button" className="primary" disabled={applying || blocked || !preview} onClick={() => setConfirming(true)}>{applying ? "Finalizing…" : "Finalize participant & Staff rosters"}</button>
         <button type="button" className="secondary" disabled={applying} onClick={reload}><ArrowClockwise />Refresh preview</button>
       </div>
     </>}
+
+    <ConfirmActionSheet
+      open={confirming}
+      onClose={() => setConfirming(false)}
+      title="Finalize the pre-session rosters?"
+      description="This applies the local participant and Staff decisions, appends the supplemental structure and freezes further source imports. Existing participant placements are not moved."
+      impact={<div><b>{n(preview?.participants_to_include)} participants included</b><br />{n(preview?.participants_20_plus_to_remove)} age 20+ removed from the active youth roster<br />{n(newGroups)} new groups · {n(preview?.new_companies)} new companies</div>}
+      confirmLabel="Finalize rosters"
+      tone="warn"
+      busy={applying}
+      onConfirm={apply}
+    />
   </section>;
 }
