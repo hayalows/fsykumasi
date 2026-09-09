@@ -88,6 +88,7 @@
 .regjourney-placement-confirm.ready b { color: var(--flow-ink); }
 .regjourney-placement-confirm button { min-height: 46px; white-space: nowrap; }
 .regjourney-placement-feedback { margin: 0 !important; }
+.regjourney-placement-feedback .regjourney-placement-retry { margin: 3px 0 0 6px !important; min-height: 34px; vertical-align: middle; }
 .regjourney-placement-confirm button[aria-busy="true"] { cursor: progress; }
 
 .regjourney-ready-panel-v5 { scroll-margin-top: 18px; }
