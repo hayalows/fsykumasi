@@ -100,6 +100,9 @@ test("registration capability holders receive lifecycle reads while assistant sc
   const checkin = sql.slice(sql.indexOf("-- Keep the server permission boundary aligned"), sql.indexOf("create or replace function public.set_participant_operational_status"));
   assert.match(checkin, /checkin_record/);
   assert.match(checkin, /not private\.has_session_role\(p_session_id, array\['assistant_coordinator'\]/);
+  const undo = sql.slice(sql.indexOf("create or replace function public.undo_participant_checkin"), sql.indexOf("-- Room edits cannot reduce capacity"));
+  assert.match(undo, /checkin_record/);
+  assert.match(undo, /not private\.has_session_role\(p_session_id, array\['assistant_coordinator'\]/);
 });
 
 test("operational pages keep explicit date and void/read-only states", async () => {

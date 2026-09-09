@@ -410,8 +410,13 @@ begin
     private.has_session_role(p_session_id, array['coordinator','logistics_admin','session_director']::public.app_role[])
     or (
       private.has_capability(p_session_id, 'checkin_record')
-      and participant_company is not null
-      and private.can_access_company(p_session_id, participant_company)
+      and (
+        not private.has_session_role(p_session_id, array['assistant_coordinator']::public.app_role[])
+        or (
+          participant_company is not null
+          and private.can_access_company(p_session_id, participant_company)
+        )
+      )
     )
   ) then raise exception 'Your account cannot undo check-in for this participant'; end if;
 
