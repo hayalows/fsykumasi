@@ -6,16 +6,13 @@ function client() {
 }
 
 export async function loadSessionFinalizationPreview(sessionId) {
-  const { data, error } = await client().rpc("get_session_finalization_preview", { p_session_id: sessionId });
+  const { data, error } = await client().rpc("get_session_finalization_preview_v1", { p_session_id: sessionId });
   if (error) throw error;
-  return data || null;
+  return data || {};
 }
 
-export async function finalizeSessionRoster(sessionId, note = "Kumasi 2026 pre-session final roster") {
-  const { data, error } = await client().rpc("apply_session_finalization_v1", {
-    p_session_id: sessionId,
-    p_note: note,
-  });
+export async function finalizeSessionRoster(sessionId) {
+  const { data, error } = await client().rpc("apply_session_finalization_v1", { p_session_id: sessionId });
   if (error) throw error;
-  return data || null;
+  return data || {};
 }
