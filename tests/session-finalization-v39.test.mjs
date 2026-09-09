@@ -88,7 +88,8 @@ test('final-roster settings columns are qualified in both deployed functions', (
   assert.match(settingsHotfix, /apply_session_finalization_v2/);
   assert.match(settingsHotfix, /ss\.groups_per_company/);
   assert.match(reliability, /groups_per_company:=greatest\(coalesce\(groups_per_company,2\),1\)/g);
-  assert.match(reliability, /Expected broken preview settings normalization was not found/);
+  assert.match(reliability, /Final-roster preview settings normalization is neither repaired nor repairable/);
+  assert.match(reliability, /if replaced <> body then/);
 });
 
 test('registration actions keep the user informed while saving', () => {
