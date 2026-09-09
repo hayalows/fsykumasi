@@ -1,0 +1,311 @@
+/* Operations product pass v36
+ * Housing, Assignments, and Food are treated as task workspaces rather than dense admin pages.
+ * This layer is intentionally late in the cascade and scoped to existing route classes.
+ */
+
+/* ----------------------------- Housing ----------------------------- */
+.housing-v6{gap:16px}
+.housing-v6 .page-head{align-items:flex-start}
+.housing-v6 .housing-v5-live{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:20px;padding:16px 18px;border:1px solid #d7e5e1;border-radius:16px;background:#fbfdfc;box-shadow:0 1px 2px rgba(20,55,45,.03)}
+.housing-v6 .housing-v5-live.attention{border-color:#e6d39e;background:#fffaf0}
+.housing-v6 .housing-v5-live>div:first-child{display:grid;gap:3px;min-width:0}
+.housing-v6 .housing-v5-live>div:first-child>b{font-size:18px;color:#173f35;overflow-wrap:anywhere}
+.housing-v6 .housing-v5-live>div:first-child>small{color:#667970;line-height:1.4}
+.housing-v6 .housing-v5-live-stats{display:grid;grid-template-columns:repeat(2,minmax(92px,1fr));gap:8px}
+.housing-v6 .housing-v5-live-stats>span{display:grid;gap:2px;padding:10px 12px;border:1px solid #e0e9e5;border-radius:12px;background:#fff;text-align:center}
+.housing-v6 .housing-v5-live-stats b{font-size:22px;color:#005175;font-variant-numeric:tabular-nums}
+.housing-v6 .housing-v5-live-stats small{font-size:10px;color:#6a7b73;text-transform:uppercase;letter-spacing:.035em}
+
+.housing-v6-workspace-switch{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:5px;border:1px solid #dae6e2;border-radius:14px;background:#f5f9f7}
+.housing-v6-workspace-switch button{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px 10px;min-height:52px;padding:9px 12px;border:0!important;border-radius:10px!important;background:transparent!important;text-align:left;color:#4f665c}
+.housing-v6-workspace-switch button span{font-size:12px;font-weight:850}
+.housing-v6-workspace-switch button b{font-size:18px;color:#1d4c3e;font-variant-numeric:tabular-nums}
+.housing-v6-workspace-switch button small{grid-column:1/-1;font-size:10px;color:#718178}
+.housing-v6-workspace-switch button.active{background:#fff!important;box-shadow:0 1px 3px rgba(19,57,45,.08)!important;color:#005175}
+.housing-v6-workspace-switch button.active b{color:#005175}
+
+.housing-v6 .housing-v5-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.housing-v6 .housing-v5-metrics>span,.housing-v6 .housing-v5-metrics>button{display:grid;gap:3px;min-width:0;min-height:74px;padding:12px 14px;border:1px solid #dfe8e4;border-radius:13px;background:#fff;text-align:left}
+.housing-v6 .housing-v5-metrics>button{cursor:pointer}
+.housing-v6 .housing-v5-metrics>button:hover{border-color:#b9d5cb;background:#f8fcfa}
+.housing-v6 .housing-v5-metrics b{font-size:24px;line-height:1;color:#005175;font-variant-numeric:tabular-nums}
+.housing-v6 .housing-v5-metrics small{color:#667970;font-size:11px}
+.housing-v6 .housing-v5-coverage{margin:0;border:1px solid #e1e9e5;border-radius:12px;background:#fafcfb}
+.housing-v6 .housing-v5-coverage summary{min-height:48px;padding:9px 13px}
+
+.housing-v6-layout{display:grid!important;grid-template-columns:minmax(0,1.08fr) minmax(420px,.92fr)!important;gap:16px!important;align-items:start}
+.housing-v6 .housing-v5-panel{min-width:0;padding:0;overflow:hidden}
+.housing-v6 .housing-v5-panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding:18px 18px 14px;border-bottom:1px solid #e5ece8}
+.housing-v6 .housing-v5-panel-head h2{margin:2px 0 4px;font-size:21px;line-height:1.2}
+.housing-v6 .housing-v5-panel-head p{margin:0;color:#667970;line-height:1.42}
+.housing-v6 .housing-v5-person-controls,.housing-v6 .housing-v5-room-controls{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:10px;align-items:end;padding:14px 18px;border-bottom:1px solid #edf1ef;background:#fbfcfb}
+.housing-v6 .housing-v5-person-controls{grid-template-columns:minmax(220px,1fr) minmax(280px,auto) auto}
+.housing-v6 .housing-v5-person-list{display:grid}
+.housing-v6 .housing-person-identity-row{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(130px,170px);align-items:center;gap:12px;min-height:72px;padding:11px 18px;border-bottom:1px solid #e9eeeb;background:#fff}
+.housing-v6 .housing-person-identity-row.priority{background:#fffaf0;box-shadow:inset 3px 0 #dda62d}
+.housing-v6 .housing-person-identity-row .copy{min-width:0;display:grid;gap:3px}
+.housing-v6 .housing-person-identity-row .copy small{overflow-wrap:anywhere;color:#687a71}
+.housing-v6 .housing-person-identity-row .assignment{display:grid;gap:2px;min-height:46px;padding:8px 10px;border:1px solid #d8e5e0;border-radius:10px;background:#f8fbfa;text-align:left}
+.housing-v6 .housing-person-identity-row .assignment:not(:disabled):hover{border-color:#adcfc2;background:#f2faf6}
+.housing-v6 .housing-person-identity-row .assignment b{overflow-wrap:anywhere;color:#174c3d}
+.housing-v6 .housing-person-identity-row .assignment small{color:#6d7e76}
+.housing-v6 .housing-v5-prearrival{margin:12px 16px 16px;border:1px solid #e2e9e5;border-radius:12px;background:#fafcfb}
+
+.housing-v6 .housing-v6-availability{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:14px 18px 0}
+.housing-v6 .housing-v6-availability button{display:grid;gap:3px;min-height:70px;padding:10px 11px;border:1px solid #e0e8e4;border-radius:11px;background:#fff;text-align:left}
+.housing-v6 .housing-v6-availability button.active{border-color:#9cc8b8;background:#eef8f4;box-shadow:inset 0 0 0 1px rgba(20,112,84,.08)}
+.housing-v6 .housing-v6-availability button b{font-size:21px;color:#0b6652}
+.housing-v6 .housing-v5-room-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:0 18px 18px}
+.housing-v6 .housing-v5-room-card{min-width:0;min-height:118px;padding:13px;border:1px solid #dfe8e4;border-radius:13px;background:#fff;text-align:left}
+.housing-v6 .housing-v5-room-card:hover{border-color:#afd0c4;background:#f9fcfb}
+.housing-v6 .housing-v5-room-card.has-space{box-shadow:inset 0 3px #8dc8ae}
+.housing-v6 .housing-v5-room-card.needs-location{box-shadow:inset 0 3px #dcad48;background:#fffaf2}
+
+/* Housing assignment: direct, reversible and reachable. */
+.housing-v5-assignment-layer.layer-panel,.housing-v36-room-detail-layer.layer-panel{width:min(820px,calc(100vw - 28px));max-height:calc(100dvh - 32px);padding:0;overflow:hidden}
+.housing-v36-assignment-modal,.housing-v6-room-detail-modal{display:flex;flex-direction:column;max-height:calc(100dvh - 32px);min-height:0;background:#fff}
+.housing-v5-assignment-body,.housing-v6-room-detail-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scroll-padding-bottom:96px}
+.housing-v36-current-room{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 15px;border:1px solid #cfe0da;border-radius:13px;background:#f6fbf8}
+.housing-v36-current-room>div{display:grid;gap:2px;min-width:0}
+.housing-v36-current-room small{color:#6a7a72;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.housing-v36-current-room b{font-size:17px;color:#174d3e;overflow-wrap:anywhere}
+.housing-v36-current-room span{font-size:11px;color:#65776e;overflow-wrap:anywhere}
+.housing-v36-current-room.empty{background:#fff9ed;border-color:#ead8b2}
+.housing-v36-unassign{flex:0 0 auto;min-height:42px}
+.housing-v36-next-room{display:grid;gap:2px;padding:11px 13px;border-left:3px solid #4ea27e;background:#f5faf7}
+.housing-v36-next-room small{font-size:10px;font-weight:800;color:#698077;text-transform:uppercase}
+.housing-v36-next-room b{color:#164f3f}
+.housing-v36-picker-head{align-items:flex-end}
+.housing-v36-assignment-actions,.housing-v6-room-assign-footer{position:sticky;bottom:0;z-index:5;margin:0;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid #dee7e3;background:rgba(255,255,255,.98);box-shadow:0 -10px 24px rgba(17,55,43,.07);backdrop-filter:blur(10px)}
+.housing-v36-assignment-actions button,.housing-v6-room-assign-footer button{min-height:46px}
+.housing-v36-occupants .housing-v36-occupant-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #e8eeeb}
+.housing-v36-occupants .housing-v36-occupant-row:last-child{border-bottom:0}
+.housing-v36-occupant-copy{display:grid;gap:3px;min-width:0}
+.housing-v36-occupant-copy b,.housing-v36-occupant-copy small{overflow-wrap:anywhere}
+.housing-v36-room-unassign{min-height:40px;padding-inline:10px;white-space:nowrap}
+
+/* ---------------------------- Assignments --------------------------- */
+.assignments-v15{gap:16px}
+.assignments-v15 .assignments-v3-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px;padding:16px 18px;border:1px solid #dbe7e3;border-radius:15px;background:#fbfdfc}
+.assignments-v15 .assignments-v3-summary h2{margin:2px 0 5px;font-size:21px;line-height:1.22}
+.assignments-v15 .assignments-v3-summary p{margin:0;color:#667970;line-height:1.45}
+.assignments-v15-quick{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px!important}
+.assignments-v15-quick>button{display:grid!important;align-content:start;gap:5px;min-height:128px;padding:15px!important;border:1px solid #dfe8e4!important;border-radius:14px!important;background:#fff!important;text-align:left!important}
+.assignments-v15-quick>button.needs{border-color:#e5d2a5!important;background:#fffaf1!important;box-shadow:inset 0 3px #d9aa47}
+.assignments-v15-quick>button.done{box-shadow:inset 0 3px #88c4a8}
+.assignments-v15-quick>button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 7px 18px rgba(20,55,45,.07)}
+.assignments-v15-quick span{font-size:10px!important;font-weight:850!important;text-transform:uppercase;letter-spacing:.04em;color:#6f7f77!important}
+.assignments-v15-quick b{font-size:15px!important;line-height:1.3;color:#184d3e!important;overflow-wrap:anywhere}
+.assignments-v15-quick small{font-size:11px!important;line-height:1.4;color:#687a71!important;overflow-wrap:anywhere}
+.assignments-v15 .assignments-v3-nav{display:grid;grid-template-columns:minmax(320px,auto) minmax(0,1fr);align-items:center;gap:14px;padding:8px 10px;border:1px solid #e0e8e4;border-radius:13px;background:#f8fbfa}
+.assignments-v15 .assignments-v3-nav p{margin:0;color:#63766c;font-size:12px;line-height:1.4}
+.assignments-v15 .assignments-v3-workspace{padding:0;overflow:hidden}
+.assignments-v15 .assignments-v3-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 19px 14px;border-bottom:1px solid #e5ece8}
+.assignments-v15 .assignments-v3-section-head h2{margin:2px 0 4px;font-size:21px}
+.assignments-v15 .assignments-v3-section-head p{margin:0;color:#667970;line-height:1.42}
+.assignments-v15 .assignments-v3-toolbar{display:grid;grid-template-columns:minmax(240px,1fr) auto auto;align-items:end;gap:10px;padding:13px 19px;border-bottom:1px solid #edf1ef;background:#fbfcfb}
+.assignments-v15 .assignments-v3-people{display:grid}
+.assignments-v15 .assignments-v3-person-row{display:grid;grid-template-columns:minmax(220px,1.12fr) minmax(210px,1fr) minmax(170px,.72fr) minmax(150px,.65fr);align-items:center;gap:14px;min-height:88px;padding:12px 19px;border-bottom:1px solid #e9eeeb;background:#fff}
+.assignments-v15 .assignments-v3-person-row.needs-setup{background:#fffaf2;box-shadow:inset 3px 0 #d9aa47}
+.assignments-v15 .assignments-v3-person,.assignments-v15 .assignments-v3-context,.assignments-v15 .assignments-v3-access{min-width:0}
+.assignments-v15 .assignments-v3-context{display:grid;gap:4px}
+.assignments-v15 .assignments-v3-context>b,.assignments-v15 .assignments-v3-context>small{overflow-wrap:anywhere}
+.assignments-v15 .assignments-v3-context>.text-action{justify-self:start;min-height:38px;margin-top:3px;padding:6px 9px;border:1px solid #d7e4df;border-radius:9px;background:#f7faf9;font-weight:800;text-decoration:none}
+.assignments-v15 .assignments-v3-context>.text-action:hover{background:#eef7f3;border-color:#b9d3c9}
+.assignments-v15 .assignments-v3-role select{min-height:44px}
+.assignments-v15 .assignments-v3-access{display:grid;gap:5px;align-content:center}
+
+/* Staff status sheet replaces ambiguous Arrival & service concepts with three explicit questions. */
+.staff-status-v36-layer.layer-panel{width:min(760px,calc(100vw - 28px));max-height:calc(100dvh - 32px);padding:0;overflow:hidden}
+.staff-status-v36{display:flex!important;flex-direction:column;gap:14px!important;width:100%;max-height:calc(100dvh - 32px);min-height:0;padding:20px 20px 0!important;overflow-y:auto!important;overscroll-behavior:contain;scroll-padding-bottom:92px}
+.staff-status-v36>header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.staff-status-v36>header>div{display:grid;gap:3px;min-width:0}
+.staff-status-v36>header h2{margin:1px 0;font-size:24px;overflow-wrap:anywhere}
+.staff-status-v36>header p{margin:0;color:#677970;overflow-wrap:anywhere}
+.staff-status-v36-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.staff-status-v36-summary>span{display:grid;gap:4px;padding:11px 12px;border:1px solid #dfe8e4;border-radius:12px;background:#f9fbfa}
+.staff-status-v36-summary small{font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.04em;color:#718178}
+.staff-status-v36-summary b{font-size:13px;line-height:1.3;color:#184c3e;overflow-wrap:anywhere}
+.staff-status-v36-source{margin:0!important;color:#63766c!important;font-size:12px!important}
+.staff-status-v36-explainer{padding:12px 13px;border-left:3px solid #5da98a;border-radius:0 10px 10px 0;background:#f3f9f6;color:#3f5e52}
+.staff-status-v36-explainer b{font-size:12px}
+.staff-status-v36-explainer p{margin:4px 0 0!important;font-size:11px!important;line-height:1.5!important;color:#5f746a!important}
+.staff-status-v36-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.staff-status-v36-fields>label{display:grid;align-content:start;gap:8px;padding:12px;border:1px solid #dfe8e4;border-radius:12px;background:#fff}
+.staff-status-v36-label{display:grid;gap:3px}
+.staff-status-v36-label>b{font-size:13px;color:#214b3d}
+.staff-status-v36-label>small{font-size:10px;line-height:1.4;color:#6e7f77;font-weight:500}
+.staff-status-v36-fields select{width:100%;min-height:44px}
+.staff-status-v36-authority{margin:0!important;padding:10px 12px!important;border-radius:10px;background:#f7f9f8}
+.staff-status-v36-details,.staff-status-v36-lifecycle{margin:0;border:1px solid #e0e8e4;border-radius:12px;background:#fafcfb}
+.staff-status-v36-details>summary,.staff-status-v36-lifecycle>summary{min-height:48px;padding:10px 12px;font-weight:800;cursor:pointer}
+.staff-status-v36-details>div,.staff-status-v36-lifecycle>div{display:grid;gap:12px;padding:0 12px 13px}
+.staff-status-v36-actions{position:sticky;bottom:0;z-index:5;display:grid;grid-template-columns:auto minmax(150px,220px);justify-content:end;gap:9px;margin:0 -20px;padding:11px 20px calc(11px + env(safe-area-inset-bottom,0px));border-top:1px solid #dfe7e3;background:rgba(255,255,255,.98);box-shadow:0 -9px 22px rgba(18,52,42,.07);backdrop-filter:blur(10px)}
+.staff-status-v36-actions button{min-height:46px}
+
+/* ------------------------------- Food ------------------------------- */
+.food-v3{gap:15px}
+.food-v3 .food-date-nav{display:grid;grid-template-columns:auto minmax(170px,220px) auto;justify-content:start;align-items:end;gap:7px;padding:7px;border:1px solid #e0e8e4;border-radius:12px;background:#f8fbfa}
+.food-v3 .food-date-nav>button{min-height:42px;padding-inline:11px}
+.food-v3 .food-date-nav label{display:grid;gap:4px;color:#5d7167;font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}
+.food-v3 .food-date-nav input{min-height:42px;padding:0 9px;border:1px solid #d7e4df;border-radius:9px;background:#fff;font:inherit}
+.food-v3 .food-workflow-tabs{max-width:520px}
+.food-v3-service{padding:0!important;overflow:hidden;border-color:#d8e6e1!important}
+.food-v3-service.live{box-shadow:inset 0 3px #72b594}
+.food-v3-command-head{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px;padding:18px 20px 15px!important;border-bottom:1px solid #e5ece8;background:#fbfdfc}
+.food-v3-command-head h2{margin:2px 0 3px!important;font-size:25px!important;line-height:1.15}
+.food-v3-command-head p{margin:0!important;color:#687a71!important}
+.food-v3-count{display:grid!important;grid-template-columns:auto auto;align-items:center;column-gap:9px;row-gap:2px;min-width:150px;text-align:right}
+.food-v3-count strong{grid-row:1/3;font-size:32px!important;line-height:1;color:#005175;font-variant-numeric:tabular-nums}
+.food-v3-count span{font-size:10px;font-weight:800;text-transform:uppercase;color:#667970}
+.food-v3-count .status{justify-self:end}
+.food-v3-serving{display:grid;gap:12px;padding:16px 20px 20px!important}
+.food-v3-search-wrap{display:grid!important;grid-template-columns:minmax(140px,.36fr) minmax(260px,1fr);align-items:end;gap:14px;padding:0!important}
+.food-v3-search-wrap h3{margin:2px 0 0!important;font-size:19px!important}
+.food-v3-filter-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(170px,240px);align-items:end;gap:10px}
+.food-v3 .food-company-filter{display:grid;gap:4px}
+.food-v3 .food-company-filter>span{font-size:10px;font-weight:850;text-transform:uppercase;color:#6f8078}
+.food-v3 .food-company-filter select{min-height:44px}
+.food-list-note{display:flex!important;align-items:center;gap:7px;padding:9px 11px!important;border:1px solid #dfe8e4;border-radius:10px;background:#f7faf8;color:#5d7167;font-size:11px}
+.food-meal-list{overflow:hidden;border:1px solid #e0e8e4;border-radius:13px;background:#fff}
+.food-meal-row{display:grid!important;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:10px;min-height:62px;padding:10px 13px!important;border-bottom:1px solid #e9eeeb;cursor:pointer;background:#fff}
+.food-meal-row:last-child{border-bottom:0}
+.food-meal-row:hover{background:#f8fbfa}
+.food-meal-row:focus-within{position:relative;z-index:1;outline:3px solid rgba(0,125,165,.18);outline-offset:-3px}
+.food-meal-row.served{background:#f5faf7;color:#4f665b}
+.food-meal-row.served .food-person>b{color:#4e675c}
+.food-check{display:grid;place-items:center;width:32px;height:32px;border:1px solid #cfe0da;border-radius:9px;background:#fff;color:#147154}
+.food-meal-row.served .food-check{border-color:#8fc6ae;background:#e9f6ef}
+.food-person{display:grid;gap:3px;min-width:0}
+.food-person small{color:#687a71;overflow-wrap:anywhere}
+.food-row-state{min-width:58px;text-align:right;font-size:11px;font-weight:750;color:#567064}
+.food-show-more{justify-self:center;min-height:44px}
+.food-v3-secondary{margin:0!important;border-top:1px solid #e2eae6;background:#fafcfb}
+.food-v3-secondary>summary{display:flex!important;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:10px 20px!important;cursor:pointer}
+.food-v3-secondary>summary>span{display:flex;align-items:center;gap:7px;font-weight:800;color:#39584c}
+.food-v3-secondary>summary>small{color:#697b72}
+.food-v3-secondary>div{display:grid;gap:13px;padding:0 20px 18px!important}
+.food-v3-management{display:flex!important;flex-wrap:wrap;gap:8px;padding-top:3px}
+.food-v3-management button{min-height:42px}
+.food-dietary-workspace{display:grid;gap:13px}
+.food-dietary-intro{padding:3px 1px}
+.food-dietary-intro h2{margin:2px 0 4px;font-size:23px}
+.food-dietary-intro p{margin:0;color:#667970;max-width:720px}
+.food-dietary-panel{padding:0!important;overflow:hidden}
+.food-dietary-tools{display:grid!important;grid-template-columns:minmax(240px,1fr) minmax(280px,auto);align-items:end;gap:10px;padding:14px 16px!important;border-bottom:1px solid #e6ece9;background:#fbfcfb}
+.food-dietary-row{display:grid!important;grid-template-columns:minmax(180px,.72fr) minmax(240px,1.35fr) minmax(130px,.55fr);align-items:center;gap:14px;min-height:78px;padding:12px 16px!important;border-bottom:1px solid #e9eeeb}
+.food-dietary-row>p{margin:0!important;line-height:1.45;overflow-wrap:anywhere}
+.food-dietary-action{display:grid!important;justify-items:end;gap:5px;text-align:right}
+.food-dietary-action button{min-height:40px}
+
+/* ----------------------------- Responsive --------------------------- */
+@media(max-width:1120px){
+  .housing-v6-layout{grid-template-columns:1fr!important}
+  .housing-v6 .housing-v5-people.mobile-hidden,.housing-v6 .housing-v5-rooms.mobile-hidden{display:none!important}
+  .assignments-v15 .assignments-v3-person-row{grid-template-columns:minmax(220px,1fr) minmax(210px,1fr) minmax(170px,.75fr)}
+  .assignments-v15 .assignments-v3-access{grid-column:2/4}
+}
+
+@media(max-width:860px){
+  .housing-v6 .housing-v5-person-controls{grid-template-columns:1fr}
+  .housing-v6 .housing-v5-desktop-status{min-width:0}
+  .housing-v6 .housing-v5-room-controls{grid-template-columns:1fr}
+  .assignments-v15-quick{grid-template-columns:1fr!important}
+  .assignments-v15-quick>button{min-height:0}
+  .assignments-v15 .assignments-v3-nav{grid-template-columns:1fr}
+  .assignments-v15 .assignments-v3-toolbar{grid-template-columns:1fr 1fr}
+  .assignments-v15 .assignments-v3-toolbar>.search{grid-column:1/-1}
+  .assignments-v15 .assignments-v3-person-row{grid-template-columns:minmax(0,1fr) minmax(180px,.8fr)}
+  .assignments-v15 .assignments-v3-role,.assignments-v15 .assignments-v3-access{grid-column:auto}
+  .staff-status-v36-fields{grid-template-columns:1fr}
+  .food-v3-search-wrap{grid-template-columns:1fr}
+  .food-v3-filter-row{grid-template-columns:1fr}
+  .food-dietary-tools{grid-template-columns:1fr}
+  .food-dietary-row{grid-template-columns:minmax(0,1fr) auto}
+  .food-dietary-row>p{grid-column:1/-1;grid-row:2}
+  .food-dietary-action{grid-column:2;grid-row:1;align-self:start}
+}
+
+@media(max-width:700px){
+  .housing-v6{gap:12px}
+  .housing-v6 .housing-v5-live{grid-template-columns:1fr;gap:11px;padding:14px}
+  .housing-v6 .housing-v5-live-stats{grid-template-columns:1fr 1fr}
+  .housing-v6-workspace-switch{position:sticky;top:0;z-index:4}
+  .housing-v6 .housing-v5-metrics{grid-template-columns:1fr 1fr}
+  .housing-v6 .housing-v5-metrics>span,.housing-v6 .housing-v5-metrics>button{min-height:66px;padding:10px 11px}
+  .housing-v6 .housing-v5-panel-head{padding:15px 14px 12px}
+  .housing-v6 .housing-v5-person-controls,.housing-v6 .housing-v5-room-controls{padding:12px 14px}
+  .housing-v6 .housing-person-identity-row{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:11px 14px}
+  .housing-v6 .housing-person-identity-row .assignment{grid-column:1/-1;margin-left:48px}
+  .housing-v6 .housing-v6-availability{grid-template-columns:1fr 1fr;padding:12px 14px 0}
+  .housing-v6 .housing-v5-room-grid{grid-template-columns:1fr;padding:0 14px 14px}
+  .housing-v5-assignment-layer.layer-panel,.housing-v36-room-detail-layer.layer-panel{width:100%;max-width:none;height:100dvh;max-height:100dvh;margin:0;border-radius:0}
+  .housing-v36-assignment-modal,.housing-v6-room-detail-modal{height:100dvh;max-height:100dvh}
+  .housing-v36-current-room{align-items:flex-start;display:grid}
+  .housing-v36-unassign{width:100%}
+  .housing-v36-occupants .housing-v36-occupant-row{grid-template-columns:auto minmax(0,1fr)}
+  .housing-v36-occupants .housing-v4-bed{grid-column:2}
+  .housing-v36-room-unassign{grid-column:1/-1;width:100%;min-height:44px}
+  .housing-v36-assignment-actions,.housing-v6-room-assign-footer{grid-template-columns:1fr!important;gap:8px;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px))}
+  .housing-v36-assignment-actions>div,.housing-v6-room-assign-footer>div{display:none}
+  .housing-v36-assignment-actions button,.housing-v6-room-assign-footer button{width:100%}
+
+  .assignments-v15 .page-head{display:grid;gap:12px}
+  .assignments-v15 .page-head .primary{width:100%}
+  .assignments-v15 .assignments-v3-summary{grid-template-columns:1fr;padding:14px}
+  .assignments-v15 .assignments-v3-summary .secondary{width:100%}
+  .assignments-v15 .assignments-v3-section-head{padding:15px 14px 12px}
+  .assignments-v15 .assignments-v3-toolbar{grid-template-columns:1fr;padding:12px 14px}
+  .assignments-v15 .assignments-v3-toolbar>.search{grid-column:auto}
+  .assignments-v15 .assignments-v3-person-row{grid-template-columns:1fr;gap:10px;padding:13px 14px}
+  .assignments-v15 .assignments-v3-context,.assignments-v15 .assignments-v3-role,.assignments-v15 .assignments-v3-access{grid-column:1}
+  .assignments-v15 .assignments-v3-context>.text-action{width:100%;justify-content:center;min-height:44px}
+  .staff-status-v36-layer.layer-panel{width:100%;max-width:none;height:100dvh;max-height:100dvh;margin:0;border-radius:0}
+  .staff-status-v36{height:100dvh;max-height:100dvh;padding:16px 15px 0!important;gap:12px!important}
+  .staff-status-v36-summary{grid-template-columns:1fr}
+  .staff-status-v36-actions{grid-template-columns:1fr 1.15fr;margin:0 -15px;padding:10px 15px calc(10px + env(safe-area-inset-bottom,0px))}
+
+  .food-v3 .page-head{display:grid;gap:12px}
+  .food-v3 .food-date-nav{grid-template-columns:1fr 1fr;gap:6px}
+  .food-v3 .food-date-nav label{grid-column:1/-1;grid-row:1}
+  .food-v3 .food-date-nav>button{width:100%}
+  .food-v3 .food-workflow-tabs{max-width:none}
+  .food-v3-command-head{grid-template-columns:1fr auto;padding:15px 14px 13px!important}
+  .food-v3-command-head h2{font-size:22px!important}
+  .food-v3-count{min-width:112px}
+  .food-v3-count strong{font-size:28px!important}
+  .food-v3-serving{padding:13px 14px 16px!important}
+  .food-meal-row{grid-template-columns:auto auto minmax(0,1fr);min-height:66px;padding:10px 11px!important}
+  .food-row-state{grid-column:3;min-width:0;text-align:left}
+  .food-v3-secondary>summary{padding:10px 14px!important}
+  .food-v3-secondary>summary>small{display:none}
+  .food-v3-secondary>div{padding:0 14px 15px!important}
+  .food-v3-management{display:grid!important;grid-template-columns:1fr}
+  .food-v3-management button{width:100%;min-height:44px}
+  .food-dietary-row{grid-template-columns:1fr;gap:8px;padding:12px 14px!important}
+  .food-dietary-row>p,.food-dietary-action{grid-column:1;grid-row:auto}
+  .food-dietary-action{justify-items:stretch;text-align:left}
+  .food-dietary-action button{width:100%;min-height:44px}
+}
+
+@media(max-width:420px){
+  .housing-v6-workspace-switch button{grid-template-columns:1fr auto;padding:8px 9px}
+  .housing-v6 .housing-v5-metrics b{font-size:21px}
+  .housing-v6 .housing-v6-availability button{min-height:64px}
+  .staff-status-v36>header h2{font-size:21px}
+  .staff-status-v36-actions{grid-template-columns:1fr}
+  .food-v3-command-head{grid-template-columns:1fr}
+  .food-v3-count{grid-template-columns:auto auto;justify-content:start;text-align:left}
+  .food-v3-count .status{justify-self:start}
+}
+
+@media(max-height:720px) and (min-width:701px){
+  .staff-status-v36{gap:10px!important;padding-top:15px!important}
+  .staff-status-v36-summary>span{padding:8px 10px}
+  .housing-v5-assignment-body,.housing-v6-room-detail-body{scroll-padding-bottom:82px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .assignments-v15-quick>button{transition:none!important;transform:none!important}
+  .housing-v5-assignment-body,.housing-v6-room-detail-body,.staff-status-v36{scroll-behavior:auto!important}
+}

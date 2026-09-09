@@ -83,8 +83,9 @@ test("Registration separates live arrivals, one Solutions queue and supporting R
 
 test("Housing unassign explains the consequence before changing the assignment", async () => {
   const source = await read("src/pages/HousingAssignmentV5.jsx");
-  assert.match(source, /Unassign from this room/);
-  assert.match(source, /They will need to be placed again/);
+  assert.match(source, />Unassign room<\/button>/);
+  assert.match(source, /They will move back to the Needs room list/);
+  assert.match(source, /without deleting the person or their Housing history/);
   assert.match(source, /ConfirmActionSheet/);
 });
 

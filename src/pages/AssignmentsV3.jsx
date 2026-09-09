@@ -341,7 +341,7 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
     <PageHead
       title="Assignments"
       sessionName={sessionName}
-      description="Set FSY responsibilities and coverage. Website access stays linked to the assignment."
+      description="Set staff responsibilities, cover counselor groups and companies, and keep each leader's status clear."
       action={canManage && !demoMode ? <button className="primary" onClick={() => setSetupTarget({ newLeader: true })}><UserPlus />Add & set up leader</button> : null}
     />
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
@@ -397,16 +397,16 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
     {demoMode ? <div className="notice compact-notice"><div><b>Live assignment planning is unavailable in rehearsal mode</b><p>Sign in to review the real Staff roster, structure, capacity settings and permission-scoped Access state.</p></div></div> : <details><summary>Staffing planning limit</summary><div className="staff-planning-controls"><label>Maximum companies per Assistant Coordinator<input type="number" min="1" max="20" value={planningLimit} onChange={e=>setPlanningLimit(Number(e.target.value))}/></label><span>{assistants.length} available ACs × {planningLimit} = {assistants.length*planningLimit} company places for {companies.length} companies.</span><button className="secondary" disabled={!canManage||Boolean(busy)} onClick={async()=>{setBusy("limit");try{await saveStaffCompanyLimit(sessionId,planningLimit);await refresh();setSuggestions(null);}catch(e){setError(e.message);}finally{setBusy("");}}}>Save planning limit</button></div></details>}
     <div className="assignments-v3-nav">
       <SegmentedControl label="Assignment workspaces" value={workspace} onChange={setWorkspace} options={WORKSPACES} />
-      <p>{workspace === "people" ? "Change a responsibility or finish a leader's setup in context." : workspace === "groups" ? "Cover counselor groups with eligible Counselors." : "Set which Assistant Coordinator supports each company."}</p>
+      <p>{workspace === "people" ? "Review responsibility, staff status, and website setup without leaving the roster." : workspace === "groups" ? "Cover counselor groups with eligible Counselors." : "Set which Assistant Coordinator supports each company."}</p>
     </div>
 
     {workspace === "people" ? <article id="assignments-v15-workspace" className="panel assignments-v3-workspace">
       <header className="assignments-v3-section-head">
-        <div><span className="kicker">People</span><h2>Staff & responsibilities</h2>{canManage && !demoMode?<button type="button" className="secondary" onClick={()=>setAddingStaff(true)}>Add on-site Staff</button>:null}<p>Assignment is the source of truth. Website access is shown here only when it helps you finish the job.</p></div>
+        <div><span className="kicker">People</span><h2>Staff & responsibilities</h2>{canManage && !demoMode?<button type="button" className="secondary" onClick={()=>setAddingStaff(true)}>Add on-site Staff</button>:null}<p>Responsibility says what they cover. Use Staff status for the staffing plan, physical presence, and Ready to serve. Website access stays separate.</p></div>
         <Status tone={demoMode ? "muted" : staff.length ? "good" : "neutral"}>{demoMode ? "Demo only" : `${staff.length} staff`}</Status>
       </header>
       <div className="assignments-v3-toolbar">
-        <SearchField value={query} onChange={setQuery} label="Search staff" placeholder="Name, unit or responsibility" /><label>Staff state<select value={staffFilter} onChange={e=>setStaffFilter(e.target.value)}>{[["all","All staff"],["attention","Needs attention"],["reserve","Reserve pool"],["expected","Expected"],["arrived","Arrived"],["no_show","No-show"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
+        <SearchField value={query} onChange={setQuery} label="Search staff" placeholder="Name, unit or responsibility" /><label>Staff state<select value={staffFilter} onChange={e=>setStaffFilter(e.target.value)}>{[["all","All staff"],["attention","Needs attention"],["reserve","Reserve pool"],["expected","Expected to arrive"],["arrived","Present"],["no_show","Did not arrive"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
         <label>Responsibility<select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}><option value="all">All responsibilities</option>{ROLE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       </div>
       {filteredStaff.length ? <div className="assignments-v3-people">
@@ -418,7 +418,7 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
           const setupNeeded = accessStatus === "ready" && accountRole && (incomplete || !access || access.accessState === "not_enabled");
           return <div className={`assignments-v3-person-row ${setupNeeded ? "needs-setup" : ""}`} key={person.id}>
             <div className="assignments-v3-person"><span className="person-avatar">{personInitials(person.name)}</span><span><PersonName person={person} kind="staff"/><small>{[person.unit, person.stake].filter(Boolean).join(" · ") || "Current staff"}</small></span></div>
-            <div className="assignments-v3-context"><small>Assignment</small><b>{personContext(person)}</b>{staffException(person)?<small className="danger-text">{staffException(person)}</small>:null}{person.committeeDuties?.length?<small>{person.committeeDuties.join(" · ")}</small>:null}{canManage?<button type="button" className="text-action" onClick={()=>setOperationsPerson(person)}>Arrival & service</button>:null}</div>
+            <div className="assignments-v3-context"><small>Assignment</small><b>{personContext(person)}</b>{staffException(person)?<small className="danger-text">{staffException(person)}</small>:null}{person.committeeDuties?.length?<small>{person.committeeDuties.join(" · ")}</small>:null}{canManage?<button type="button" className="text-action" onClick={()=>setOperationsPerson(person)}>Staff status</button>:null}</div>
             <label className="assignments-v3-role"><span>Responsibility</span><select value={person.operationalRole || "other"} disabled={!canManage} onChange={(event) => { const targetRole = event.target.value; if (targetRole !== person.operationalRole) setTransitionTarget({ person, targetRole }); }}>{ROLE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <div className="assignments-v3-access">
               {committeeStaff ? <>
@@ -490,8 +490,8 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
       {visibleCompanies < filteredCompanies.length ? <button type="button" className="secondary assignment-v2-show-more" onClick={() => setVisibleCompanies((value) => value + 24)}>Show 24 more companies</button> : null}
     </article> : null}
 
-    {addingStaff?<OnSiteStaffSheet staff={staff} sessionId={sessionId} onClose={()=>setAddingStaff(false)} onSaved={async()=>{await refresh();setNotice("Staff added. Open Arrival & service to confirm duties and clearance.");}}/>:null}
-    {operationsPerson?<StaffOperationsSheet person={operationsPerson} currentRole={currentRole} assignment={personContext(operationsPerson)} onClose={()=>setOperationsPerson(null)} onSaved={async()=>{await refresh();setSuggestions(null);setNotice("Staff state saved.");}}/>:null}
+    {addingStaff?<OnSiteStaffSheet staff={staff} sessionId={sessionId} onClose={()=>setAddingStaff(false)} onSaved={async()=>{await refresh();setNotice("Staff added. Open Staff status to record their plan, presence, and service readiness.");}}/>:null}
+    {operationsPerson?<StaffOperationsSheet person={operationsPerson} currentRole={currentRole} assignment={personContext(operationsPerson)} onClose={()=>setOperationsPerson(null)} onSaved={async()=>{await refresh();setSuggestions(null);setNotice("Staff status saved.");}}/>:null}
     {setupTarget ? <LeaderSetupFlow sessionId={sessionId} person={setupTarget.newLeader ? null : setupTarget} onClose={() => setSetupTarget(null)} onComplete={async (person) => { await refresh(); setNotice(`${person.name}'s leader setup is complete.`); }} /> : null}
     {transitionTarget ? <StaffRoleTransitionSheet person={transitionTarget.person} targetRole={transitionTarget.targetRole} staff={staff} groups={groups} companies={companies} maxCompanyLoad={maxCompanyLoad} access={accessByStaff.get(transitionTarget.person.id)} onClose={() => setTransitionTarget(null)} onConfirm={changeRole} /> : null}
     {picker ? <AssignmentPicker title={picker.type === "group" ? `Assign ${groupLabel(picker.target)}` : `Assign ${companyLabel(picker.target)}`} description={picker.type === "group" ? "Choose an available same-sex Counselor. The assignment saves when you choose." : `Choose an Assistant Coordinator below the ${maxCompanyLoad}-company limit.`} query={pickerQuery} setQuery={setPickerQuery} choices={pickerChoices} emptyText={picker.type === "group" ? "No eligible available same-sex Counselor matches this group." : "No Assistant Coordinator currently has room for another company."} busy={busy} onClose={() => setPicker(null)} onPick={(person) => picker.type === "group" ? assignGroup(picker.target, person) : assignCompany(picker.target, person)} /> : null}

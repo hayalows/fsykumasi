@@ -3,12 +3,11 @@ import { ArrowLeft } from "@phosphor-icons/react/ArrowLeft";
 import { Bed } from "@phosphor-icons/react/Bed";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { PencilSimple } from "@phosphor-icons/react/PencilSimple";
-import { Plus } from "@phosphor-icons/react/Plus";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { X } from "@phosphor-icons/react/X";
-import { DismissibleLayer, Empty, MutationFeedback, SearchField } from "../components/UI.jsx";
-import { loadHousingRooms } from "../lib/field-operations.js";
+import { ActionToast, ConfirmActionSheet, DismissibleLayer, Empty, MutationFeedback, SearchField } from "../components/UI.jsx";
+import { clearHousingAssignment, loadHousingRooms, restoreHousingAssignment } from "../lib/field-operations.js";
 import { saveHousingAssignment } from "../lib/housing-actions.js";
 import { loadHousingAssignmentsV2 } from "../lib/housing-context.js";
 import { initials, roomHasWayfinding, roomLocation, sexLabel } from "./HousingDialogsV4.jsx";
@@ -49,6 +48,9 @@ export function RoomDetailV6({
   const [bedLabel, setBedLabel] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [removeTarget, setRemoveTarget] = useState(null);
+  const [undoAssignment, setUndoAssignment] = useState(null);
+  const [undoBusy, setUndoBusy] = useState(false);
 
   const occupants = useMemo(() => assignments.filter((item) => item.roomId === room.id), [assignments, room.id]);
   const assignedKeys = useMemo(() => new Set(assignments.map((item) => `${item.personType}:${item.personId}`)), [assignments]);
@@ -126,7 +128,49 @@ export function RoomDetailV6({
     }
   };
 
-  return <DismissibleLayer open onClose={onClose} title={room.name} sheet className="housing-v4-room-detail-layer housing-v6-room-detail-layer">
+  const unassign = async () => {
+    if (!removeTarget?.id || busy) return;
+    const target = removeTarget;
+    setBusy(true);
+    setError("");
+    try {
+      await clearHousingAssignment({
+        sessionId,
+        personType: target.personType,
+        personId: target.personId,
+        assignmentId: target.id,
+      });
+      setRemoveTarget(null);
+      setUndoAssignment(target);
+      await onRefresh?.();
+    } catch (err) {
+      setError(err.message || "This room assignment could not be removed. It may have changed elsewhere. Housing has been refreshed.");
+      setRemoveTarget(null);
+      await onRefresh?.();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const undoUnassign = async () => {
+    if (!undoAssignment?.id || undoBusy) return;
+    const target = undoAssignment;
+    setUndoBusy(true);
+    setError("");
+    try {
+      await restoreHousingAssignment({ sessionId, assignmentId: target.id });
+      setUndoAssignment(null);
+      await onRefresh?.();
+    } catch (err) {
+      setUndoAssignment(null);
+      setError(err.message || "The previous room could not be restored. Review the person's current Housing state before assigning again.");
+      await onRefresh?.();
+    } finally {
+      setUndoBusy(false);
+    }
+  };
+
+  return <DismissibleLayer open onClose={onClose} title={room.name} sheet className="housing-v4-room-detail-layer housing-v6-room-detail-layer housing-v36-room-detail-layer">
     <div className="housing-v4-modal housing-v6-room-detail-modal">
       <header className="housing-v4-modal-head housing-v6-room-detail-head">
         <div>
@@ -134,7 +178,7 @@ export function RoomDetailV6({
           <h2>{room.name}</h2>
           <p>{roomLocation(room)}</p>
         </div>
-        <button type="button" data-layer-close className="icon-button" onClick={onClose} aria-label="Close"><X/></button>
+        <button type="button" data-layer-close className="icon-button" onClick={onClose} disabled={busy || undoBusy} aria-label="Close"><X/></button>
       </header>
 
       <div className="housing-v4-modal-body housing-v6-room-detail-body">
@@ -156,8 +200,8 @@ export function RoomDetailV6({
                 <button type="button" className="secondary" onClick={onEdit}><PencilSimple/>Edit room</button>
               </div> : null}
             </div>
-            <div className="housing-v4-occupants">
-              {occupants.map((item) => <div key={item.id}><span className="person-avatar">{initials(item.name)}</span><span><b>{item.name}</b><small>{item.personType === "staff" ? `Staff${item.company ? ` · ${item.company}` : ""}` : [item.fsyId, item.company, item.group].filter(Boolean).join(" · ") || "Participant"}</small><em>{item.personType === "staff" ? "Staff" : item.checkinStatus === "arrived" ? "Checked in" : "Awaiting check-in"}</em></span>{item.bedLabel ? <span className="housing-v4-bed"><small>Bed / key</small><b>{item.bedLabel}</b></span> : null}</div>)}
+            <div className="housing-v4-occupants housing-v36-occupants">
+              {occupants.map((item) => <div key={item.id} className="housing-v36-occupant-row"><span className="person-avatar">{initials(item.name)}</span><span className="housing-v36-occupant-copy"><b>{item.name}</b><small>{item.personType === "staff" ? `Staff${item.company ? ` · ${item.company}` : ""}` : [item.fsyId, item.company, item.group].filter(Boolean).join(" · ") || "Participant"}</small><em>{item.personType === "staff" ? "Staff" : item.checkinStatus === "arrived" ? "Checked in" : "Awaiting check-in"}</em></span>{item.bedLabel ? <span className="housing-v4-bed"><small>Bed / key</small><b>{item.bedLabel}</b></span> : null}{canManage ? <button type="button" className="secondary danger-text housing-v36-room-unassign" disabled={busy || undoBusy} onClick={() => setRemoveTarget(item)}>Unassign</button> : null}</div>)}
               {!occupants.length ? <Empty icon={Bed} title="No one assigned yet" text={`${room.capacity} spaces are available.`}/> : null}
             </div>
           </section>
@@ -185,7 +229,7 @@ export function RoomDetailV6({
           </div>
           {candidates.length > visibleCandidates.length ? <button type="button" className="secondary housing-v5-more" onClick={() => setCandidateLimit((value) => value + CANDIDATE_BATCH)}>Show {Math.min(CANDIDATE_BATCH, candidates.length - candidateLimit)} more</button> : null}
 
-          {selectedPerson ? <details className="housing-v4-details housing-v6-assignment-extra" open={Boolean(bedLabel)}><summary><span><b>Assignment detail</b><small>{bedLabel ? `Bed / key ${bedLabel}` : "Bed or key label, if needed"}</small></span><span>+</span></summary><div><label><span className="housing-field-label"><b>Bed / key label</b><em>Optional</em></span><input value={bedLabel} onChange={(event) => setBedLabel(event.target.value)} placeholder="e.g. Bed B or Key 203-2"/></label></div></details> : null}
+          {selectedPerson ? <details className="housing-v4-details housing-v6-assignment-extra" open={Boolean(bedLabel)}><summary><span><b>Bed / key</b><small>{bedLabel ? bedLabel : "Optional"}</small></span><span>+</span></summary><div><label><span className="housing-field-label"><b>Bed / key label</b><em>Optional</em></span><input value={bedLabel} onChange={(event) => setBedLabel(event.target.value)} placeholder="e.g. Bed B or Key 203-2"/></label></div></details> : null}
         </>}
         {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
       </div>
@@ -194,6 +238,9 @@ export function RoomDetailV6({
         <div>{selectedPerson ? <><b>{selectedPerson.name}</b><small>Assign to {room.name}</small></> : <><b>Select a person</b><small>{open} space{open === 1 ? "" : "s"} currently open</small></>}</div>
         <button type="button" className="primary" disabled={busy || !selectedPerson} onClick={assign}>{busy ? "Checking & assigning…" : selectedPerson ? `Assign to ${room.name}` : "Choose a person"}</button>
       </footer> : null}
+
+      {removeTarget ? <ConfirmActionSheet open title={`Unassign ${removeTarget.name} from ${room.name}?`} description="This ends their current room assignment without deleting the person or Housing history." impact="They will return to the Needs room list. You can undo immediately if this was accidental and the previous room is still available." confirmLabel="Unassign room" cancelLabel="Keep room" busy={busy} onClose={() => setRemoveTarget(null)} onConfirm={unassign}/> : null}
+      <ActionToast message={undoAssignment ? `${undoAssignment.name} unassigned from ${room.name}.` : ""} actionLabel="Undo" onAction={undoUnassign} onDismiss={() => setUndoAssignment(null)} busy={undoBusy}/>
     </div>
   </DismissibleLayer>;
 }
