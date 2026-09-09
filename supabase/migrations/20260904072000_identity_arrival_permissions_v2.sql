@@ -363,7 +363,7 @@ begin
         then extract(year from age(s.starts_on,d.date_of_birth))::integer
         else p.age end,
       0
-    ) between 12 and 19
+    ) < 20
   order by lower(coalesce(p.stake_name,'')),lower(coalesce(p.unit_name,'')),lower(p.last_name),lower(p.first_name),p.id;
 end;
 $$;

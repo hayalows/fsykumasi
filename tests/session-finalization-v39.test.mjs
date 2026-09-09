@@ -90,7 +90,7 @@ test('final-roster settings columns are qualified in both deployed functions', (
 
 test('active arrival roster excludes age 20+ and locally excluded source records', () => {
   assert.match(arrivalPolicy, /coalesce\(od\.cohort_state,'normal'\)<>'excluded'/);
-  assert.match(arrivalPolicy, /between 12 and 19/);
+  assert.match(arrivalPolicy, /\) < 20/);
   assert.match(arrivalPolicy, /grant execute on function public\.get_arrival_reconciliation\(uuid\) to authenticated/);
 });
 
