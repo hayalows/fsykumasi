@@ -29,6 +29,12 @@ export const ROLE_META = {
     canApproveAccess: true,
     rank: 3,
   },
+  area_advisory_couple: {
+    label: "FSY area advisory couple",
+    visibility: "Whole FSY program",
+    canApproveAccess: true,
+    rank: 4,
+  },
 };
 
 export const REQUESTABLE_ROLES = ["assistant_coordinator", "coordinator", "committee_viewer"];
@@ -46,5 +52,5 @@ export function canApproveAccess(role, capabilities = []) {
 }
 
 export function hasSessionWideVisibility(role) {
-  return ["coordinator", "logistics_admin", "session_director"].includes(role);
+  return ["coordinator", "logistics_admin", "session_director", "area_advisory_couple"].includes(role);
 }

@@ -131,7 +131,7 @@ export function rowsToParticipants(rows) {
     if (!p.firstName) errors.push({ row: p.row, field: "First name", message: "First name is required", severity: "blocking" });
     if (!p.lastName) errors.push({ row: p.row, field: "Last name", message: "Last name is required", severity: "blocking" });
     if (!p.sex) errors.push({ row: p.row, field: "Sex", message: "Sex is required for counselor-group assignment", severity: "blocking" });
-    if (!p.age || p.age < 14 || p.age > 18) errors.push({ row: p.row, field: "Age", message: "Age must be between 14 and 18", severity: "blocking" });
+    if (!p.age || p.age < 1 || p.age > 120) errors.push({ row: p.row, field: "Age", message: "Age must be between 1 and 120", severity: "blocking" });
     if (!p.unit) errors.push({ row: p.row, field: "Unit", message: "Ward, branch, or unit is required", severity: "blocking" });
     if (p.registrationId && seen.has(p.registrationId)) errors.push({ row: p.row, field: "Registration ID", message: "Duplicate registration ID", severity: "blocking" });
     if (p.registrationId) seen.add(p.registrationId);

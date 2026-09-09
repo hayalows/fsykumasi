@@ -8,6 +8,7 @@ const ROLE_LABELS = {
   coordinator: 'Coordinator',
   logistics_admin: 'Logistical administrator',
   session_director: 'Session directing couple',
+  area_advisory_couple: 'FSY area advisory couple',
   committee_member: 'Committee',
   other: 'Staff',
 };

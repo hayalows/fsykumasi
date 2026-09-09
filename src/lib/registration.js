@@ -1,4 +1,4 @@
-export const DEFAULT_OPERATIONAL_AGE_RANGE = { participantMinAge: 13, participantMaxAge: 18 };
+export const DEFAULT_OPERATIONAL_AGE_RANGE = { participantMinAge: 12, participantMaxAge: 19 };
 const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function operationalAgeRange(settings = {}) {

@@ -14,10 +14,11 @@ const ROLE_LABELS = {
   committee_member: "Committee member",
   logistics_admin: "Logistical administrator",
   session_director: "Session directing couple",
+  area_advisory_couple: "FSY area advisory couple",
   other: "Other staff",
 };
 
-const WEBSITE_ROLES = new Set(["assistant_coordinator", "coordinator", "logistics_admin", "session_director"]);
+const WEBSITE_ROLES = new Set(["assistant_coordinator", "coordinator", "logistics_admin", "session_director", "area_advisory_couple"]);
 
 function companyLabel(company) {
   return company?.displayName || company?.name || "Company";

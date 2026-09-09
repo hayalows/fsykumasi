@@ -122,22 +122,10 @@ export async function loadCompanies(sessionId) {
 
 export async function loadParticipants(sessionId) {
   const client = requireClient();
-  const pageSize = 1000;
-  const rows = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await client
-      .from("participants")
-      .select("id, registration_id, first_name, last_name, preferred_name, sex, age, unit_name, stake_name, group_id, source_kind, registration_status, verification_status, is_current, reconciliation_status, operational_status, operational_note, operational_revision, operational_updated_at")
-      .eq("session_id", sessionId)
-      .order("last_name", { ascending: true })
-      .order("id", { ascending: true })
-      .range(from, from + pageSize - 1);
-    if (error) throw error;
-    rows.push(...(data || []));
-    if (!data || data.length < pageSize) break;
-  }
-  return rows.map((row) => ({
-    id: row.id,
+  const { data: rows, error } = await client.rpc("get_participant_roster_v2", { p_session_id: sessionId });
+  if (error) throw error;
+  return (rows || []).map((row) => ({
+    id: row.participant_id,
     registrationId: row.registration_id,
     firstName: row.first_name,
     lastName: row.last_name,

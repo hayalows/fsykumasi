@@ -47,9 +47,11 @@ test('UUID-backed live participants never invent client eligibility when server 
   assert.deepEqual(operationalEligibility({...live,serverEligibility:{eligible:true,reason:'Eligible'}}),{ok:true,reason:'Eligible'});
 });
 
-test('non-live planning data keeps a narrow 13–18 preview rule',()=>{
+test('non-live planning data follows the approved 12–19 preview rule',()=>{
   assert.equal(operationalEligibility({id:'demo-16',age:16}).ok,true);
-  assert.equal(operationalEligibility({id:'demo-19',age:19}).ok,false);
+  assert.equal(operationalEligibility({id:'demo-12',age:12}).ok,true);
+  assert.equal(operationalEligibility({id:'demo-19',age:19}).ok,true);
+  assert.equal(operationalEligibility({id:'demo-20',age:20}).ok,false);
 });
 
 test('Registration IA separates Live check-in, one Final roster queue and supporting Readiness',async()=>{
@@ -74,7 +76,7 @@ test('Registration IA separates Live check-in, one Final roster queue and suppor
 
 test('Final roster keeps final-roster authority separate from source registration',async()=>{
   const source=await read('src/components/RegistrationLeadershipResolution.jsx');
-  assert.match(source,/\["session_director", "logistics_admin"\]\.includes\(role\)/);
+  assert.match(source,/\["session_director", "logistics_admin", "coordinator", "area_advisory_couple"\]\.includes\(role\)/);
   assert.match(source,/ParticipantExceptionForm/);
   assert.match(source,/imported registration record stays unchanged/i);
   assert.match(source,/source registration status is not changed locally/i);

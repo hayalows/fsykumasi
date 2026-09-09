@@ -1,4 +1,4 @@
-export const SESSION_LEADERS = new Set(['coordinator','logistics_admin','session_director']);
+export const SESSION_LEADERS = new Set(['coordinator','logistics_admin','session_director','area_advisory_couple']);
 
 export function overviewFocus({role, capabilities = [], headcount, rosterSummary, waitingRooms = 0, foodOpen = 0, wellnessOpen = 0, reviewCount = 0}) {
   const has = key => capabilities.includes(key);

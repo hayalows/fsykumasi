@@ -37,6 +37,14 @@ test("full session admins can create account-enabled leaders and the RPC returns
   assert.match(staffClient, /create_manual_staff_leader/);
 });
 
+test("area advisory couples are accepted by staff role validation and account synchronization", async () => {
+  const areaMigration = await read("supabase/migrations/20260909193000_area_advisory_staff_access.sql");
+  assert.match(areaMigration, /area_advisory_couple/);
+  assert.match(areaMigration, /staff_operational_role_check/);
+  assert.match(areaMigration, /sync_staff_login_access/);
+  assert.match(areaMigration, /create_manual_staff_leader/);
+});
+
 test("Assistant Coordinator company scope is server protected and synchronized", () => {
   assert.match(accessUxMigration, /create or replace function public\.set_assistant_coordinator_companies/);
   assert.match(accessUxMigration, /cardinality\(desired\) > max_load/i);

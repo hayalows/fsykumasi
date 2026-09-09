@@ -7,7 +7,7 @@ import { loadStaff } from "../lib/operations.js";
 import { searchPeople } from "../lib/person-search.js";
 import { staffException, staffState } from "../lib/staff-state.js";
 
-const ROLE_LABELS={counselor:"Counselor",assistant_coordinator:"Assistant coordinator",coordinator:"Coordinator",committee_member:"Committee member",logistics_admin:"Logistical administrator",session_director:"Session directing couple",other:"Other staff"};
+const ROLE_LABELS={counselor:"Counselor",assistant_coordinator:"Assistant coordinator",coordinator:"Coordinator",committee_member:"Committee member",logistics_admin:"Logistical administrator",session_director:"Session directing couple",area_advisory_couple:"FSY area advisory couple",other:"Other staff"};
 
 export function StaffReadiness({sessionId,onNavigate}){
  const[staff,setStaff]=useState([]);const[query,setQuery]=useState("");const[filter,setFilter]=useState("attention");const[loading,setLoading]=useState(true);const[error,setError]=useState("");

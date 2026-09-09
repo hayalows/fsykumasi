@@ -15,12 +15,12 @@ test("participant import blocks missing identifiers and name parts", () => {
   );
 });
 
-test("participant import blocks ages outside the supported session range", () => {
+test("participant import keeps source ages for later operational roster policy", () => {
   const result = rowsToParticipants([
     headers,
-    ["REG-1", "Ama", "Mensah", "Female", "19", "Asokwa Ward"],
+    ["REG-1", "Ama", "Mensah", "Female", "20", "Asokwa Ward"],
   ]);
-  assert.equal(result.errors.find((error) => error.field === "Age")?.severity, "blocking");
+  assert.equal(result.errors.find((error) => error.field === "Age")?.severity, undefined);
 });
 
 test("participant import blocks duplicate registration identifiers", () => {

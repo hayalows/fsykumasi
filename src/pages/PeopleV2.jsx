@@ -16,7 +16,7 @@ import { formatCount } from "../lib/cohort.js";
 import { demoSession } from "../data/session.js";
 import "./operations.css";
 
-const ROLE_LABELS={counselor:"Counselor",assistant_coordinator:"Assistant coordinator",coordinator:"Coordinator",committee_member:"Committee member",logistics_admin:"Logistical administrator",session_director:"Session directing couple",other:"Other staff"};
+const ROLE_LABELS={counselor:"Counselor",assistant_coordinator:"Assistant coordinator",coordinator:"Coordinator",committee_member:"Committee member",logistics_admin:"Logistical administrator",session_director:"Session directing couple",area_advisory_couple:"FSY area advisory couple",other:"Other staff"};
 function initials(name="FSY"){return name.split(/\s+/).filter(Boolean).map(part=>part[0]).slice(0,2).join("").toUpperCase();}
 function prettyPrivateLabel(key){return key.replace(/_/g," ").replace(/\b\w/g,letter=>letter.toUpperCase());}
 function goToWorkspace(destination){if(typeof window==="undefined")return;writeWorkspaceLocation(destination);window.dispatchEvent(new Event("popstate"));}
@@ -32,7 +32,7 @@ function PersonSheet({currentRole,onRefresh,selected,groupMap,companyMap,eligibi
  {participant&&canManageAttendance?<details className="people-operational-lifecycle"><summary>Participant lifecycle</summary><div><p>Withdrawal keeps the source registration and audit history, but removes this person from active groups, rooms, meals and head counts.</p><button type="button" className="secondary danger-subtle" disabled={attendanceBusy||person.operationalStatus==="withdrawn"} onClick={()=>onRequestWithdraw?.(person)}>Withdraw from session</button></div></details>:null}
  {!participant&&canManage?<div className="notice compact-notice"><UsersThree/><div><b>Assignments stays the source of truth</b><p>People is for finding and understanding the person. Responsibility changes stay in Assignments.</p></div></div>:null}
  {canManage&&privateDetails?<details className="private-details"><summary>Contact & registration details</summary><div>{Object.entries(privateDetails).filter(([key,value])=>value&&!["participant_id","staff_id","session_id","updated_at"].includes(key)).map(([key,value])=><div key={key}><span>{prettyPrivateLabel(key)}</span><b>{String(value)}</b></div>)}</div></details>:canManage?<p className="form-hint">No additional private fields are stored for this person.</p>:<p className="form-hint">Sensitive registration details are limited to authorized roles.</p>}
- {participant&&currentRole==="session_director"?<ParticipantExceptionForm person={person} onSaved={onRefresh}/>:null}</div></DismissibleLayer>;
+ {participant&&canManage?<ParticipantExceptionForm person={person} onSaved={onRefresh}/>:null}</div></DismissibleLayer>;
 }
 
 export function People({currentRole,onRefresh,companyIds=null,sessionId,participants=[],cohort,assignment=null,canManage=false,canManageAttendance=false,onSetAttendance,onSetOperationalStatus,structureSettings={},selectedPersonId="",onSelectPerson,onClearSelectedPerson,sessionName=demoSession.name}){
