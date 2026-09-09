@@ -23,8 +23,8 @@ const base = {
 test("Phase 2 gives each normal Registration blocker one next useful action", () => {
   const awaiting = registrationBlocker(base, { eligible: false, reason: "Registration is not approved" });
   assert.equal(awaiting.label, "Registration is not approved");
-  assert.equal(awaiting.nextAction, "Record the authorized session decision");
-  assert.equal(awaiting.authority, "Session Directing Couple");
+  assert.equal(awaiting.nextAction, "Record the final session decision");
+  assert.equal(awaiting.authority, "Session Directing Couple or Logistical Administrator");
 
   const onsite = registrationBlocker({ ...base, sourceKind: "on_site", verificationStatus: "pending" }, { eligible: true, reason: "Eligible" });
   assert.equal(onsite.label, "Needs verification");
