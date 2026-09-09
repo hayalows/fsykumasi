@@ -17,7 +17,7 @@ const staffState = fs.readFileSync('src/lib/staff-state.js', 'utf8');
 const staffSheet = fs.readFileSync('src/components/StaffOperationsSheet.jsx', 'utf8');
 const resolution = fs.readFileSync('src/components/RegistrationLeadershipResolution.jsx', 'utf8');
 
-test('finalization is additive and preserves source registration history', () => {
+test('historical finalization is additive and preserves source registration history', () => {
   assert.match(migration, /session_roster_finalizations/);
   assert.match(migration, /session_roster_freezes/);
   assert.doesNotMatch(migration, /set is_current=false,reconciliation_status='omitted'/);
@@ -38,7 +38,7 @@ test('finalization supports whole-session pre-session leaders', () => {
   assert.match(policyV2, /array\['coordinator','logistics_admin','session_director','area_advisory_couple'\]/);
 });
 
-test('supplemental structure never republishes the baseline', () => {
+test('historical supplemental structure never republishes the baseline', () => {
   assert.match(migration, /Company '\|\|\(next_company\+i\)/);
   assert.match(migration, /YW Group '\|\|\(next_yw\+i\)/);
   assert.match(migration, /YM Group '\|\|\(next_ym\+i\)/);
@@ -46,7 +46,7 @@ test('supplemental structure never republishes the baseline', () => {
   assert.match(migration, /member_count/);
 });
 
-test('staff and counselor coverage are completed inside the atomic batch', () => {
+test('historical staff and counselor coverage are completed inside the atomic batch', () => {
   assert.match(migration, /service_clearance='cleared'/);
   assert.match(migration, /tmp_open_groups/);
   assert.match(migration, /Counselor sex must match|ac\.sex='female'|ac\.sex='male'/);
@@ -54,18 +54,20 @@ test('staff and counselor coverage are completed inside the atomic batch', () =>
   assert.match(migration, /At least one published counselor group still lacks an available counselor/);
 });
 
-test('supplemental identities preserve existing IDs and tolerate one missing origin', () => {
+test('historical supplemental identities preserve existing IDs and tolerate one missing origin', () => {
   assert.match(migration, /not exists\(select 1 from public\.participant_badge_assignments/);
   assert.match(migration, /origin_code:='UNK'/);
   assert.match(migration, /Supplemental final roster · existing IDs preserved/);
 });
 
-test('Registration presents final roster as a first-class pre-session task', () => {
+test('Registration presents controlled final roster as a first-class pre-session task', () => {
   assert.match(registration, /label: "Final roster"/);
   assert.match(registration, /<SessionFinalization/);
   assert.match(finalization, /ConfirmActionSheet/);
-  assert.match(finalization, /Existing participant placements are not moved/);
-  assert.match(finalization, /on-site registration flows/);
+  assert.match(finalization, /Controlled final roster/);
+  assert.match(finalization, /Rebalance only what needs to move/);
+  assert.match(finalization, /Save current roster/);
+  assert.match(finalization, /Existing placements are treated as valuable state/);
 });
 
 test('committee staff use a direct responsibility label', () => {
@@ -74,7 +76,7 @@ test('committee staff use a direct responsibility label', () => {
   assert.match(staffSheet, /staffResponsibilityLabel/);
 });
 
-test('v2 roster policy allows 12–13 and awaiting participants while hiding 20+', () => {
+test('v2 roster policy remains in migration history while controlled v3 supersedes it for current closeout', () => {
   assert.match(policyV2, /between 12 and 19/);
   assert.match(policyV2, /p\.registration_status in \('approved','awaiting'\)/);
   assert.match(policyV2, /session_participant_age\(target_session,p\.id\)>=20 then false/);
@@ -82,9 +84,10 @@ test('v2 roster policy allows 12–13 and awaiting participants while hiding 20+
   assert.match(policyV2, /participant_operation_decisions/);
   assert.match(policyV2, /finalization_cohort/);
   assert.match(policyV2, /source registration retained/);
+  assert.match(finalization, /age 12–18/i);
 });
 
-test('final-roster settings columns are qualified in both deployed functions', () => {
+test('final-roster settings columns are qualified in both deployed historical functions', () => {
   assert.match(policyV2, /coalesce\(ss\.groups_per_company,2\)/g);
   assert.match(policyV2, /from public\.session_structure_settings ss where ss\.session_id=p_session_id/g);
   assert.match(settingsHotfix, /get_session_finalization_preview_v2/);
@@ -101,29 +104,30 @@ test('registration actions keep the user informed while saving', () => {
   assert.match(staffSheet, /staff-status-v36-action-buttons/);
 });
 
-test('active arrival roster excludes age 20+ and locally excluded source records', () => {
+test('historical arrival roster excludes age 20+ and locally excluded source records', () => {
   assert.match(arrivalPolicy, /coalesce\(od\.cohort_state,'normal'\)<>'excluded'/);
   assert.match(arrivalPolicy, /\) < 20/);
   assert.match(arrivalPolicy, /grant execute on function public\.get_arrival_reconciliation\(uuid\) to authenticated/);
 });
 
-test('finalization does not show a staffing error while its preview is unavailable', () => {
+test('controlled finalization does not show a ready state while its preview is unavailable or blocked', () => {
   assert.match(finalization, /if \(!preview && issue\) return <PreviewRecovery/);
   assert.match(finalization, /const blocked = Boolean\(preview\) && !preview\?\.safe_to_apply/);
   assert.match(finalization, /participantBlockers/);
   assert.match(finalization, /assistantShortfall/);
-  assert.match(finalization, /Ready to finalize/);
+  assert.match(finalization, /Action needed/);
+  assert.match(finalization, /Plan ready/);
 });
 
 test('final roster database timeouts are translated into a retryable staff message', () => {
   assert.match(finalizationClient, /code === "57014"/);
   assert.match(finalizationClient, /FINAL_ROSTER_TIMEOUT/);
-  assert.match(finalizationClient, /Nothing was changed\. Try the preview again\./);
+  assert.match(finalizationClient, /Nothing was changed\. Try the plan again\./);
   assert.doesNotMatch(finalization, /err\.message/);
-  assert.match(finalization, /Retry preview/);
+  assert.match(finalization, /Retry plan/);
 });
 
-test('final roster preview computes participant state once instead of nested per-person helpers', () => {
+test('historical final roster preview computes participant state once instead of nested per-person helpers', () => {
   assert.match(previewPerformance, /participant_state as materialized/);
   assert.match(previewPerformance, /evaluated as materialized/);
   assert.match(previewPerformance, /candidates as materialized/);
