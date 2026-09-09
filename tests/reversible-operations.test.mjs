@@ -116,20 +116,23 @@ test("operational pages keep explicit date and void/read-only states", async () 
   assert.match(headcount, /voided\?<div/);
 });
 
-test("Wellness keeps date navigation coherent without widening private access", async () => {
+test("Wellness keeps date review secondary without widening private access", async () => {
   const wellness = await read("src/pages/WellnessV3.jsx");
   const styles = await read("src/pages/wellness-v3.css");
   assert.match(wellness, /wellness-date-nav/);
-  assert.match(wellness, /Previous day/);
-  assert.match(wellness, /Next day/);
-  assert.match(wellness, /Return to Today/);
-  assert.match(wellness, /const\[activityDate,setActivityDate\]/);
-  assert.match(wellness, /canViewPrivate\?encounters:statusRows/);
+  assert.match(wellness, /aria-label="Previous day"/);
+  assert.match(wellness, /aria-label="Next day"/);
+  assert.match(wellness, /Back to Today/);
+  assert.match(wellness, /const \[activityDate, setActivityDate\]/);
+  assert.match(wellness, /const rows = canViewPrivate \? encounters : statusRows/);
   assert.match(wellness, /statusOnly=\{!canViewPrivate\}/);
-  assert.match(wellness, /const openLabel=historical\?"Open after this date":"At Wellness now"/);
+  assert.match(wellness, /const openLabel = historical \? "Still open after this day" : "At Wellness now"/);
   assert.match(wellness, /historical=\{!isToday\}/);
   assert.match(wellness, /loadWellnessStatus/);
-  assert.match(styles, /@media \(max-width: 520px\)/);
+  assert.ok(wellness.indexOf("At Wellness now") < wellness.indexOf("Daily record"), "current care should remain ahead of date-based review");
+  assert.match(wellness, /rows\.filter\(isFollowUpOpen\)/);
+  assert.match(styles, /@media\(max-width:700px\)/);
+  assert.match(styles, /@media\(max-width:430px\)/);
 });
 
 test("demo readiness and assignments do not masquerade as live empty states", async () => {
