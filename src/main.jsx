@@ -39,6 +39,7 @@ import "./ux-foundation-v30.css";
 import "./phase3-context-v31.css";
 import "./phase4-operations-v32.css";
 import "./phase5-release-v33.css";
+import "./pages/wellness-v35.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
