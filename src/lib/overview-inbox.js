@@ -1,4 +1,4 @@
-const WHOLE_SESSION = new Set(["coordinator", "logistics_admin", "session_director"]);
+const WHOLE_SESSION = new Set(["coordinator", "logistics_admin", "session_director", "area_advisory_couple"]);
 const n = (value) => Number(value || 0);
 const plural = (count, one, many = `${one}s`) => count === 1 ? one : many;
 function task(destination, title, detail, action, priority, tone = "default") { const normalized = typeof destination === "string" ? { view: destination } : destination; return { id: normalized.view, destination: normalized, title, detail, action, priority, tone }; }
@@ -81,6 +81,6 @@ export function buildOperationalInbox({ role, capabilities = [], summary = {} })
   else if(foodAccess){areaTitle="Food operations";areaDetail=food.serviceStatus==="open"?`${food.serviceLabel||"Meal service"} is open now.`:"Current meal and dietary work.";metrics=[{label:"Dietary review",value:dietaryOpen,attention:dietaryOpen>0},{label:"Served",value:n(food.served)},{label:"Remaining",value:mealRemaining}];}
   else if(wellnessAccess){areaTitle="Wellness";areaDetail="Only current operational status is surfaced on Overview.";metrics=[{label:"Open visits",value:openWellness,attention:openWellness>0}];}
 
-  const scopeLabel = role === "assistant_coordinator" ? (singleCompany || `${companyCount} assigned ${plural(companyCount,"company","companies")}`) : whole ? "Whole session" : "Your committee work";
+  const scopeLabel = role === "assistant_coordinator" ? (singleCompany || `${companyCount} assigned ${plural(companyCount,"company","companies")}`) : role === "area_advisory_couple" ? "Whole FSY program" : whole ? "Whole session" : "Your committee work";
   return { whole, scopeLabel, primary: tasks[0] || fallback, others: tasks.slice(1,3), taskCount: tasks.length, areaTitle, areaDetail, metrics };
 }

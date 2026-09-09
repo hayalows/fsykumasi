@@ -8,7 +8,7 @@ import "../access-operations-v20.css";
 // progressive disclosure for uncommon setup paths and mobile-safe task sheets.
 // Full-session Access administrators can add staff-level website access because the server authorizes
 // coordinator, logistical administrator and session directing couple roles through can_manage_access.
-const FULL_SESSION_ACCESS_ADMINS = new Set(["coordinator", "logistics_admin", "session_director"]);
+const FULL_SESSION_ACCESS_ADMINS = new Set(["coordinator", "logistics_admin", "session_director", "area_advisory_couple"]);
 
 export { createInitialAccessRequests };
 

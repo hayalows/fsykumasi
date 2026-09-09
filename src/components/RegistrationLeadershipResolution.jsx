@@ -7,6 +7,7 @@ const EXCEPTION_REASONS = new Set([
   "Registration is not approved",
   "Too young for this FSY year",
   "Turns 19 before or on the end of this session",
+  "Age 19 or older at session start",
 ]);
 
 export function RegistrationLeadershipResolution({ sessionId, row, eligibility, onResolved }) {
@@ -31,22 +32,22 @@ export function RegistrationLeadershipResolution({ sessionId, row, eligibility, 
   }, [relevant, sessionId]);
 
   if (!relevant) return null;
-  const director = role === "session_director";
+  const canFinalize = ["session_director", "logistics_admin", "coordinator", "area_advisory_couple"].includes(role);
 
   return <section className="registration-leadership-resolution">
     <div className="registration-leadership-resolution-head">
       <ShieldCheck size={21} weight="fill" aria-hidden="true" />
       <div>
-        <b>Solutions Table decision</b>
+        <b>Final roster decision</b>
         <span>{reason}</span>
       </div>
     </div>
-    {loadingRole ? <p>Checking who can record this decision…</p> : director ? <>
-      <p>The source registration stays unchanged. Record the authorized session decision only after the required registration, guardian and bishop/branch-president or FSY leadership checks are complete.</p>
+    {loadingRole ? <p>Checking final roster access…</p> : canFinalize ? <>
+      <p>Record the local session decision after the required checks are confirmed. The imported registration record stays unchanged.</p>
       <ParticipantExceptionForm person={{...row,id:row.participantId||row.id}} onSaved={onResolved} />
     </> : <>
-      <p>This participant cannot be cleared from the normal check-in desk. Send them to the Solutions Table. A Session Directing Couple must record the authorized participation decision after the required checks are confirmed.</p>
-      <span className="registration-resolution-source-note">Do not change the official registration status locally.</span>
+      <p>This record needs a final session decision before normal check-in. A whole-session leader can record it.</p>
+      <span className="registration-resolution-source-note">The source registration status is not changed locally.</span>
     </>}
   </section>;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { RegistrationJourney } from "./RegistrationJourney.jsx";
 import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
+import { SessionFinalization } from "./SessionFinalization.jsx";
 import { formatCount } from "../lib/cohort.js";
 import { registrationBlockerCount } from "../lib/registration-workflow-v30.js";
 import { PageHead, SegmentedControl } from "../components/UI.jsx";
@@ -13,17 +14,17 @@ const MODE_META = {
   desk: {
     phase: "Arrival desk",
     title: "Live check-in",
-    help: "Find the participant and complete normal arrivals quickly. If something blocks check-in, send only that person to Solutions.",
+    help: "Find the participant and complete normal arrivals quickly. If something needs a decision, move that person to Final roster.",
   },
   roster: {
-    phase: "Exception work",
-    title: "Solutions",
-    help: "One place for participant blockers: approval, eligibility, verification, placement, identity and arrival follow-up.",
+    phase: "Pre-session roster",
+    title: "Final roster",
+    help: "Finish the remaining participant and Staff decisions before the session, then use this same area for any person who needs an individual review.",
   },
   readiness: {
     phase: "Session readiness",
     title: "Readiness",
-    help: "See whether the final roster, participant identities and Staff are ready. Participant exceptions stay in Solutions instead of being repeated here.",
+    help: "Check participant identity, Staff coverage and the final source before the rehearsal and Day One.",
   },
 };
 
@@ -79,7 +80,7 @@ export function Registration(props) {
       <PageHead
         title="Registration & check-in"
         sessionName={sessionName}
-        description="Keep normal arrivals fast. Resolve participant blockers in one Solutions queue, and use Readiness for the supporting setup."
+        description="Settle the final participant list before the session, keep normal arrivals fast, and use Readiness for identities and Staff coverage."
       />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
         {canUseRegistrationTools ? <SegmentedControl
@@ -89,20 +90,21 @@ export function Registration(props) {
           onChange={chooseMode}
           options={[
             { value: "desk", label: "Live check-in", id: "registration-mode-desk" },
-            { value: "roster", label: "Solutions", count: solutionCount, id: "registration-mode-roster" },
+            { value: "roster", label: "Final roster", count: solutionCount, id: "registration-mode-roster" },
             { value: "readiness", label: "Readiness", id: "registration-mode-readiness" },
           ]}
         /> : null}
         <div className="registration-mode-cue-v5" role="status">
           <div><span className="kicker">{modeMeta.phase}</span><b>{modeMeta.title}</b></div>
           <p>{modeMeta.help}</p>
-          {cohortSummary ? <small><b>{formatCount(cohortSummary.eligible)} eligible youth</b><span>{formatCount(cohortSummary.records)} registration records{solutionCount ? ` · ${formatCount(solutionCount)} blocked` : " · no participant blockers"}</span></small> : null}
+          {cohortSummary ? <small><b>{formatCount(cohortSummary.eligible)} eligible youth</b><span>{formatCount(cohortSummary.records)} registration records{solutionCount ? ` · ${formatCount(solutionCount)} decisions left` : " · final participant list clear"}</span></small> : null}
         </div>
       </div>
     </section>
 
     <div className="registration-workspace-pane registration-workspace-pane-v5 registration-unified-pane">
       <div role="tabpanel" aria-labelledby={journeyMode === "desk" ? "registration-mode-desk" : "registration-mode-roster"} hidden={mode === "readiness"}>
+        {mode === "roster" && live ? <SessionFinalization sessionId={sessionId} onChanged={onOperationalDataChanged} onNavigate={onNavigate} /> : null}
         <RegistrationJourney view={journeyMode} {...journeyProps} />
       </div>
 

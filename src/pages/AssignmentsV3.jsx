@@ -17,7 +17,7 @@ import { applyStaffAssignmentPlan, assignCounselorToGroup, loadOperationalStruct
 import { ACCOUNT_ROLES, accessStateLabel, loadStaffAccessDirectory } from "../lib/staff-access.js";
 import "./assignments.css";
 
-const ROLE_LABELS = { counselor: "Counselor", assistant_coordinator: "Assistant coordinator", coordinator: "Coordinator", committee_member: "Committee member", logistics_admin: "Logistical administrator", session_director: "Session directing couple", other: "Other staff" };
+const ROLE_LABELS = { counselor: "Counselor", assistant_coordinator: "Assistant coordinator", coordinator: "Coordinator", committee_member: "Committee member", logistics_admin: "Logistical administrator", session_director: "Session directing couple", area_advisory_couple: "FSY area advisory couple", other: "Other staff" };
 const ROLE_OPTIONS = Object.entries(ROLE_LABELS);
 const WORKSPACES = [{ value: "people", label: "People" }, { value: "groups", label: "Counselor groups" }, { value: "companies", label: "Companies" }];
 

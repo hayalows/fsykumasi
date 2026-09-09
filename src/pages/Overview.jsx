@@ -10,7 +10,7 @@ import "./overview-v3.css";
 
 function demoSummary({ currentRole, companies, imported, checkedCount, fieldSummary }) {
   return {
-    wholeSession: ["coordinator", "logistics_admin", "session_director"].includes(currentRole),
+    wholeSession: ["coordinator", "logistics_admin", "session_director", "area_advisory_couple"].includes(currentRole),
     scope: { companyCount: companies.length, companyNames: companies.map((company) => company.displayName || company.name), groupCount: companies.reduce((total, company) => total + Number(company.groups?.length || 0), 0), counselorCount: companies.reduce((total, company) => total + (company.groups || []).filter((group) => group.counselorId).length, 0), uncoveredGroups: companies.reduce((total, company) => total + (company.groups || []).filter((group) => !group.counselorId).length, 0), participantCount: imported.length },
     session: { checkedIn: checkedCount, recentArrivals: 0 }, registration: { ready: 0, attention: 0, arrived: checkedCount, onSitePendingVerification: 0, onSitePendingId: 0 }, housing: { waiting: Number(fieldSummary.housingWaiting || 0), assigned: 0 }, headcount: {}, wellness: { open: Number(fieldSummary.wellnessOpen || 0) }, food: { dietaryOpen: Number(fieldSummary.foodOpen || 0), remaining: 0 }, access: { pending: 0 },
   };

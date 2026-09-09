@@ -29,8 +29,8 @@ import { workspaceDataState } from "../lib/ux-foundation.js";
 import { trackSessionPresence } from "../lib/presence.js";
 import "./session-switcher.css";
 
-const BASE_OPERATIONAL = new Set(["assistant_coordinator","coordinator","logistics_admin","session_director"]);
-const WHOLE_SESSION = new Set(["coordinator","logistics_admin","session_director"]);
+const BASE_OPERATIONAL = new Set(["assistant_coordinator","coordinator","logistics_admin","session_director","area_advisory_couple"]);
+const WHOLE_SESSION = new Set(["coordinator","logistics_admin","session_director","area_advisory_couple"]);
 const REPORT_CAPABILITIES = ["reports_export","housing_export","food_export","wellness_export","access_admin"];
 function has(caps, value) { return Array.isArray(caps) && caps.includes(value); }
 function focusableElements(container) { return [...container.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])')]; }
@@ -82,7 +82,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
     ]);
     const teamTools = uniqueItems([housing, wellness, food, reports]);
     const adminAndUtilities = [];
-    if (currentRole === "coordinator" || ["logistics_admin","session_director"].includes(currentRole) || has(currentCapabilities,"access_admin")) adminAndUtilities.push(["access","Access",Users]);
+    if (currentRole === "coordinator" || ["logistics_admin","session_director","area_advisory_couple"].includes(currentRole) || has(currentCapabilities,"access_admin")) adminAndUtilities.push(["access","Access",Users]);
     adminAndUtilities.push(["birthdays","Birthdays",Cake]);
 
     const more = [

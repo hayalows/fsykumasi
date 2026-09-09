@@ -36,7 +36,7 @@ test("Registration presents one Registration & check-in journey", async () => {
   ]);
   assert.match(source, /title="Registration & check-in"/);
   assert.match(source, /Live check-in/);
-  assert.match(source, /Solutions/);
+  assert.match(source, /Final roster/);
   assert.match(source, /Readiness/);
   assert.match(source, /const \[journeyMode, setJourneyMode\]/);
   assert.match(source, /normalizedMode === "roster" \? "roster" : "desk"/);

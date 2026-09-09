@@ -43,7 +43,7 @@ export function Headcount({ live = false, companies = [], headcount = { round: n
   const [openCompanyId, setOpenCompanyId] = useState("");
   const [visibleLimit, setVisibleLimit] = useState(20);
   const [savedNotice, setSavedNotice] = useState("");
-  const canOpen = ["coordinator", "logistics_admin", "session_director"].includes(currentRole);
+  const canOpen = ["coordinator", "logistics_admin", "session_director", "area_advisory_couple"].includes(currentRole);
   const currentRound = headcount.round || headcount.rounds?.[0] || null;
   const roundSubmissions = useMemo(() => (headcount.submissions || []).filter((item) => !currentRound || item.round_id === currentRound.id), [currentRound, headcount.submissions]);
   const scopedCompanies = useMemo(() => {

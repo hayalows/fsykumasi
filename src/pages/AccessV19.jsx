@@ -26,7 +26,7 @@ import "../access-operations-v17.css";
 import "../access-operations-v18.css";
 import "../access-operations-v19.css";
 
-const STAFF_LINKED_ROLES = new Set(["assistant_coordinator", "coordinator", "logistics_admin", "session_director"]);
+const STAFF_LINKED_ROLES = new Set(["assistant_coordinator", "coordinator", "logistics_admin", "session_director", "area_advisory_couple"]);
 const INVITE_STATES = new Set(["pending", "activating"]);
 const ROLE_FILTERS = [
   ["all", "All responsibilities"],
@@ -34,6 +34,7 @@ const ROLE_FILTERS = [
   ["coordinator", "Coordinators"],
   ["logistics_admin", "Logistical administrators"],
   ["session_director", "Session directing couple"],
+  ["area_advisory_couple", "FSY area advisory couples"],
   ["committee_viewer", "Committee members"],
 ];
 const STATUS_FILTERS = [["all", "All access states"], ["active", "Active"], ["invited", "Invite sent"], ["disabled", "Disabled"], ["online", "Online now"]];
@@ -46,7 +47,7 @@ function sourceAssignmentId(user) { return user?.id || null; }
 function sourceRole(user) { return user?.role || user?.roleKey || ""; }
 function sourceName(user) { return user?.name || user?.displayName || user?.email || "FSY leader"; }
 function displayRole(person) { return person.operationalRole === "committee_viewer" ? "Committee member" : staffRoleLabel(person.operationalRole); }
-function scopeHeading(person) { return person.operationalRole === "committee_viewer" ? "Committee" : "Assignment"; }
+function scopeHeading(person) { return person.operationalRole === "committee_viewer" ? "Committee" : person.operationalRole === "area_advisory_couple" ? "Program scope" : "Assignment"; }
 
 function demoDirectory() {
   return demoUsers.filter((user) => STAFF_LINKED_ROLES.has(user.roleKey)).map((user, index) => ({
@@ -115,7 +116,7 @@ function Scope({ person }) {
     const names = person.committeeNames || [];
     return names.length ? <span className="access-v15-team-chips">{names.map((name) => <i key={name}>{name}</i>)}</span> : <span className="company-chip-empty"><WarningCircle />Choose committee</span>;
   }
-  if (person.operationalRole !== "assistant_coordinator") return <span className="staff-access-whole-session">Whole session</span>;
+  if (person.operationalRole !== "assistant_coordinator") return <span className="staff-access-whole-session">{person.operationalRole === "area_advisory_couple" ? "Whole FSY program" : "Whole session"}</span>;
   if (person.companyNames?.length) return <span className="access-v3-scope">{person.companyNames.join(" · ")}</span>;
   if (person.companyIds?.length) return <span className="access-v3-scope">{person.companyIds.length} compan{person.companyIds.length === 1 ? "y" : "ies"}</span>;
   return <span className="company-chip-empty"><WarningCircle />Choose companies</span>;

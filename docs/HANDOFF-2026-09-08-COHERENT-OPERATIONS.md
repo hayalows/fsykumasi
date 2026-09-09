@@ -1,6 +1,6 @@
-# Coherent operations checkpoint — unfinished, do not merge yet
+# Coherent operations checkpoint — superseded by PR #99 final-roster policy work
 
-The user stopped implementation to conserve usage and explicitly requested that work be pushed and handed off. Continue from this branch, not the dirty root checkout. This checkpoint is not a completed release.
+This file records an earlier coherent-operations branch. PR #99 now supersedes its age and authority assumptions; use the current branch migrations and tests as the release source of truth.
 
 ## Checkout and release baseline
 
@@ -17,11 +17,11 @@ The user stopped implementation to conserve usage and explicitly requested that 
 ## User decisions and boundaries
 
 - The full original task asks for shared person identity/peek, one search engine, separated Staff source/planning/arrival/clearance/roles/duties, deterministic staffing, 20+ cohort exclusions with explicit exceptions, stable groups/companies/FSY IDs, actionable reports, and housing foundations only.
-- **Session Directing Couples alone record service confirmation and participant exceptions.** User explicitly selected this. Do not equate website Access administration with authority for these decisions.
+- Coordinators, Logistical Administrators, Session Directing Couples, and FSY Area Advisory Couples may record the approved operational decisions. Area Advisory Couple access is whole-program scoped.
 - User approved testing against existing development Supabase after auto-review initially rejected it.
 - User explicitly said **skip authenticated database permission tests** after a rollback-only synthetic auth identity was rejected. No auth identity was created. Do not create one or repeat the request without new user direction.
 - Preserve existing Access/authentication. Production currently permits coordinator access administration: source and DB prove this is already implemented. Older root AGENTS instructions about coordinators are stale relative to live Access; do not regress current Access as part of this task.
-- Do not rebuild published youth groups/companies or regenerate existing finalized IDs. Leave 12/13-year-old cases untouched. Do not build the new Housing allocation UI.
+- Do not rebuild published youth groups/companies or regenerate existing finalized IDs. Newly admitted 12–13-year-olds and locally cleared awaiting records use isolated supplemental groups/companies and receive new FSY IDs. Age 20+ source registrations stay preserved but are excluded from participant roster output. Do not build the new Housing allocation UI.
 - Latest user instruction overrides the original full-release objective for this session: checkpoint, push, report, stop.
 
 ## Production observations (2026-09-08, reverify before release)
@@ -34,7 +34,7 @@ The user stopped implementation to conserve usage and explicitly requested that 
 - Current Staff: 228 approved counselors, 33 awaiting counselors, 13 cancelled counselors; 20 approved ACs, 3 awaiting ACs; 2 logistical administrators, 2 session directors, 3 coordinators. Additional noncurrent staff exist.
 - 42 companies have AC coverage from 15 approved ACs; two companies have no AC.
 - One participant checked in, no room at observation time.
-- Settings show age 13–18, groups 8–10, 4 groups/company, 4 companies/AC. HOWEVER actual eligibility is DOB based: turns at least 14 in FSY year and remains younger than 19 through session end. Settings alone are not authoritative.
+- Earlier settings showed age 13–18. The current approved operational window is age 12–19 at session start; verified approved and awaiting records can be locally cleared, while age 20+ is excluded from the participant roster without source deletion.
 - All public tables had RLS enabled. Private details have separate tables and policies.
 - In-app production browser had existing login. Initial transient workspace error recovered on retry. Inspected Overview and People at mobile size. No comprehensive desktop/mobile QA performed.
 - Read local 2026 handbook and 2025/26 planning guide from Downloads. Handbook page 150 (PDF page 154) says on-site registration depends on area direction, signed guardian terms, bishop/branch president approval, payment, group and housing coordination. Existing Registration already has a three-check verification UI. Committee/program duties can coexist with counselor/AC responsibility.
@@ -46,7 +46,7 @@ The user stopped implementation to conserve usage and explicitly requested that 
 - Food query path loads all server-scoped pages for searching (rather than searching only one page), caches briefly and invalidates on a meal mutation. This needs review for auth cache invalidation and performance before release.
 - `person-identity.js`, `PersonPeek.jsx`, CSS: minimal projection, shared provider and clickable names integrated in several operational views, full-record link, reused dismissible layer. Projection does not copy contact/health fields.
 - `staff-state.js`, `staffing-planner.js`: separate states, provisional planning, reserve pool, deterministic sex-compatible replacements, preserve valid assignments, AC load constraints and exceptions. Both active staffing screens now call this planner.
-- `StaffOperationsSheet`, `OnSiteStaffSheet`, `ParticipantExceptionForm`, `operational-state.js`: drafted state and on-site workflows, director-only confirmation UI, committee duties, existing identity exception path.
+- `StaffOperationsSheet`, `OnSiteStaffSheet`, `ParticipantExceptionForm`, `operational-state.js`: staff and on-site workflows, leadership confirmation UI for the four full-access roles, committee duties, existing identity exception path.
 - `loadStaff` now loads operations and duties; `applyStaffAssignmentPlan` uses `apply_staff_plan_v26`.
 - Assignments includes arrival/service editor, staff-state filters and a visible AC load setting. People full record includes director exception disclosure.
 - Four one-off Python edit scripts are included as work provenance. **Do not rerun these on already-edited source**; they are not idempotent build scripts.

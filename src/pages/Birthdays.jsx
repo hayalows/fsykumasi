@@ -18,6 +18,7 @@ const STAFF_ROLE_LABELS = {
   committee_member: "Committee Member",
   logistics_admin: "Logistical Administrator",
   session_director: "Session Directing Couple",
+  area_advisory_couple: "FSY Area Advisory Couple",
   other: "Staff",
 };
 

@@ -47,37 +47,39 @@ test('UUID-backed live participants never invent client eligibility when server 
   assert.deepEqual(operationalEligibility({...live,serverEligibility:{eligible:true,reason:'Eligible'}}),{ok:true,reason:'Eligible'});
 });
 
-test('non-live planning data keeps a narrow 13–18 preview rule',()=>{
+test('non-live planning data follows the approved 12–19 preview rule',()=>{
   assert.equal(operationalEligibility({id:'demo-16',age:16}).ok,true);
-  assert.equal(operationalEligibility({id:'demo-19',age:19}).ok,false);
+  assert.equal(operationalEligibility({id:'demo-12',age:12}).ok,true);
+  assert.equal(operationalEligibility({id:'demo-19',age:19}).ok,true);
+  assert.equal(operationalEligibility({id:'demo-20',age:20}).ok,false);
 });
 
-test('Registration IA separates Live check-in, one Solutions queue and supporting Readiness',async()=>{
+test('Registration IA separates Live check-in, one Final roster queue and supporting Readiness',async()=>{
   const [source,readiness]=await Promise.all([
     read('src/pages/Registration.jsx'),
     read('src/pages/RegistrationReadinessV30.jsx'),
   ]);
   assert.match(source,/label: "Live check-in"/);
-  assert.match(source,/label: "Solutions"/);
+  assert.match(source,/label: "Final roster"/);
   assert.match(source,/label: "Readiness"/);
   assert.doesNotMatch(source,/Preflight review/);
   assert.match(source,/RegistrationReadinessV30/);
-  assert.match(readiness,/Participant blockers/);
-  assert.match(readiness,/Open Solutions/);
-  assert.match(readiness,/title="FSY IDs"|title=\"FSY IDs\"|title="Staff readiness"|title=\"Staff readiness\"/);
+  assert.match(readiness,/Final participant roster/);
+  assert.match(readiness,/Open Final roster/);
+  assert.match(readiness,/title="FSY IDs"|title=\"FSY IDs\"|title="Final Staff roster"|title=\"Final Staff roster\"/);
   assert.match(readiness,/Final roster/);
-  assert.match(readiness,/One exception queue/);
+  assert.match(readiness,/One final participant queue/);
   assert.match(source,/const \[journeyMode, setJourneyMode\]/);
   assert.match(source,/if \(next === "desk" \|\| next === "roster"\) setJourneyMode\(next\)/);
   assert.match(source,/<RegistrationJourney view=\{journeyMode\}/);
 });
 
-test('Solutions keeps exception authority separate from source registration',async()=>{
+test('Final roster keeps final-roster authority separate from source registration',async()=>{
   const source=await read('src/components/RegistrationLeadershipResolution.jsx');
-  assert.match(source,/role === "session_director"/);
+  assert.match(source,/\["session_director", "logistics_admin", "coordinator", "area_advisory_couple"\]\.includes\(role\)/);
   assert.match(source,/ParticipantExceptionForm/);
-  assert.match(source,/source registration stays unchanged/i);
-  assert.match(source,/Do not change the official registration status locally/);
+  assert.match(source,/imported registration record stays unchanged/i);
+  assert.match(source,/source registration status is not changed locally/i);
 });
 
 test('identity and staff readiness distinguish different kinds of attention',async()=>{

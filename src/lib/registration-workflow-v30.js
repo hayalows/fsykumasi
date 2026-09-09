@@ -1,6 +1,7 @@
 const AGE_REASONS = new Set([
   "Too young for this FSY year",
   "Turns 19 before or on the end of this session",
+  "Age 19 or older at session start",
   "Date of birth is missing",
 ]);
 
@@ -29,8 +30,8 @@ export function registrationBlocker(row = {}, eligibility) {
         key: "awaiting",
         queue: "awaiting",
         label: reason,
-        nextAction: "Record the authorized session decision",
-        authority: "Session Directing Couple",
+        nextAction: "Record the final session decision",
+        authority: "Session Directing Couple or Logistical Administrator",
       };
     }
     if (AGE_REASONS.has(reason)) {
@@ -38,8 +39,8 @@ export function registrationBlocker(row = {}, eligibility) {
         key: "age_review",
         queue: "age_review",
         label: reason,
-        nextAction: reason === "Date of birth is missing" ? "Confirm the date of birth from the source" : "Review the authorized exception path",
-        authority: reason === "Date of birth is missing" ? "Registration Committee" : "Session Directing Couple",
+        nextAction: reason === "Date of birth is missing" ? "Confirm the date of birth from the source" : "Record the final session decision",
+        authority: reason === "Date of birth is missing" ? "Registration Committee" : "Session Directing Couple or Logistical Administrator",
       };
     }
     return {

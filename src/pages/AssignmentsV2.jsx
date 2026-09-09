@@ -28,6 +28,7 @@ const ROLE_LABELS = {
   committee_member: "Committee member",
   logistics_admin: "Logistical administrator",
   session_director: "Session directing couple",
+  area_advisory_couple: "FSY area advisory couple",
   other: "Other staff",
 };
 const ROLE_OPTIONS = Object.entries(ROLE_LABELS);
