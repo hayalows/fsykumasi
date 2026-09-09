@@ -1,6 +1,6 @@
 import { searchPeople } from "./person-search.js";
 import { loadRpcPages } from "./rpc-pages.js";
-import { dietaryNeedsReview } from "./dietary.js";
+import { dietaryDisplayValue, dietaryNeedsReview } from "./dietary.js";
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 
 const mealSearchCache = new Map();
@@ -125,7 +125,7 @@ export async function loadFoodNeedsV2(sessionId) {
       personType: row.person_type,
       personId: row.person_id,
       name: row.display_name,
-      dietaryInformation: row.dietary_information || "",
+      dietaryInformation: dietaryDisplayValue(row.dietary_information),
       group: row.group_name || "",
       company: row.company_name || "",
       acknowledged: Boolean(row.acknowledged),

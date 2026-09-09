@@ -1,0 +1,50 @@
+.registration-readiness-demo-tool {
+  width: min(100%, 1320px);
+  margin: 0 auto;
+  padding: 0 clamp(22px, 4vw, 58px) 72px;
+}
+
+.registration-readiness-demo-card {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 22px;
+}
+
+.registration-readiness-demo-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  color: var(--blue-25);
+  background: #edf8fb;
+}
+
+.registration-readiness-demo-card > div:last-child {
+  display: grid;
+  gap: 10px;
+}
+
+.registration-readiness-demo-card p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.registration-readiness-demo-card strong {
+  color: var(--blue-35);
+  font-size: 14px;
+}
+
+@media (max-width: 600px) {
+  .registration-readiness-demo-tool {
+    padding: 0 16px 34px;
+  }
+
+  .registration-readiness-demo-card {
+    grid-template-columns: 1fr;
+  }
+}

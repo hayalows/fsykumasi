@@ -56,6 +56,7 @@ function AssignmentPicker({ title, description, query, setQuery, choices, emptyT
 }
 
 export function Assignments({ currentRole, sessionId, canManage = false, initialWorkspace = "", initialFilter = "", initialStaffId = "", sessionName }) {
+  const demoMode = !sessionId;
   const [addingStaff,setAddingStaff]=useState(false);
   const [operationsPerson,setOperationsPerson]=useState(null);
   const [planningLimit,setPlanningLimit]=useState(4);
@@ -111,6 +112,11 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
     let active = true;
     setInitialLoading(true);
     setError("");
+    if (!sessionId) {
+      setInitialLoading(false);
+      setAccessStatus("demo");
+      return () => { active = false; };
+    }
     refresh()
       .catch((err) => { if (active) setError(err.message || "Assignments could not be loaded."); })
       .finally(() => { if (active) setInitialLoading(false); });
@@ -336,34 +342,34 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
       title="Assignments"
       sessionName={sessionName}
       description="Set FSY responsibilities and coverage. Website access stays linked to the assignment."
-      action={canManage ? <button className="primary" onClick={() => setSetupTarget({ newLeader: true })}><UserPlus />Add & set up leader</button> : null}
+      action={canManage && !demoMode ? <button className="primary" onClick={() => setSetupTarget({ newLeader: true })}><UserPlus />Add & set up leader</button> : null}
     />
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
 
     <div className="assignments-v3-summary">
       <div>
         <span className="kicker">Session setup</span>
-        <h2>{initialLoading ? "Loading assignments…" : hasAttention ? "A few things still need attention" : "Leader setup is ready"}</h2>
-        <p>{openGroups.length} counselor groups open · {openCompanies.length} companies open · {accessStatus === "ready" ? `${accountSetupNeeded} leaders need access` : accessStatus === "loading" ? "checking website access" : "website access needs a check"}</p>
+        <h2>{initialLoading ? "Loading assignments…" : demoMode ? "Assignments are not simulated in demo mode" : hasAttention ? "A few things still need attention" : "Leader setup is ready"}</h2>
+        <p>{demoMode ? "Live Staff, counselor groups, companies and Access state appear after sign-in." : `${openGroups.length} counselor groups open · ${openCompanies.length} companies open · ${accessStatus === "ready" ? `${accountSetupNeeded} leaders need access` : accessStatus === "loading" ? "checking website access" : "website access needs a check"}`}</p>
       </div>
-      {canManage && issueCount ? <button className="secondary" type="button" onClick={previewSuggestions}><Sparkle />Suggest coverage</button> : null}
+      {canManage && !demoMode && issueCount ? <button className="secondary" type="button" onClick={previewSuggestions}><Sparkle />Suggest coverage</button> : null}
     </div>
 
     <div className="assignments-v15-quick" aria-label="Setup work">
-      <button type="button" className={openGroups.length ? "needs" : "done"} onClick={() => openWorkspace("groups", Boolean(openGroups.length))}>
+      <button type="button" className={demoMode ? "demo" : openGroups.length ? "needs" : "done"} onClick={() => openWorkspace("groups", Boolean(openGroups.length))}>
         <span>Counselor groups</span>
-        <b>{openGroups.length ? `${openGroups.length} still need a Counselor` : "All counselor groups are covered"}</b>
-        <small>{openGroups.length ? "Open the gaps first and assign eligible Counselors." : "Open all groups if you need to review coverage."}</small>
+        <b>{demoMode ? "Live structure required" : openGroups.length ? `${openGroups.length} still need a Counselor` : "All counselor groups are covered"}</b>
+        <small>{demoMode ? "No counselor groups are seeded in this rehearsal." : openGroups.length ? "Open the gaps first and assign eligible Counselors." : "Open all groups if you need to review coverage."}</small>
       </button>
-      <button type="button" className={openCompanies.length || overloadedACs.length ? "needs" : "done"} onClick={() => openWorkspace("companies", Boolean(openCompanies.length))}>
+      <button type="button" className={demoMode ? "demo" : openCompanies.length || overloadedACs.length ? "needs" : "done"} onClick={() => openWorkspace("companies", Boolean(openCompanies.length))}>
         <span>Companies</span>
-        <b>{openCompanies.length ? `${openCompanies.length} still need an Assistant Coordinator` : overloadedACs.length ? `${overloadedACs.length} Assistant Coordinator load issue${overloadedACs.length === 1 ? "" : "s"}` : "All companies are covered"}</b>
-        <small>{overloadedACs.length ? `Keep each Assistant Coordinator at or below ${maxCompanyLoad} companies.` : "Review company coverage and Assistant Coordinator load."}</small>
+        <b>{demoMode ? "Live structure required" : openCompanies.length ? `${openCompanies.length} still need an Assistant Coordinator` : overloadedACs.length ? `${overloadedACs.length} Assistant Coordinator load issue${overloadedACs.length === 1 ? "" : "s"}` : "All companies are covered"}</b>
+        <small>{demoMode ? "No companies are seeded in this rehearsal." : overloadedACs.length ? `Keep each Assistant Coordinator at or below ${maxCompanyLoad} companies.` : "Review company coverage and Assistant Coordinator load."}</small>
       </button>
-      <button type="button" className={accessStatus !== "ready" || accountSetupNeeded ? "needs" : "done"} onClick={() => goToAccess(accountSetupNeeded ? "needs" : "all")}>
+      <button type="button" disabled={demoMode} className={demoMode ? "demo" : accessStatus !== "ready" || accountSetupNeeded ? "needs" : "done"} onClick={() => goToAccess(accountSetupNeeded ? "needs" : "all")}>
         <span>Website access</span>
-        <b>{accessStatus === "loading" ? "Checking sign-in status…" : accessStatus === "unavailable" ? "Check Access" : accountSetupNeeded ? `${accountSetupNeeded} leaders still need access` : "Leader access is ready"}</b>
-        <small>{accessStatus === "unavailable" ? "Assignments loaded, but website access status did not. Open Access to check it directly." : "Invite people and manage sign-in from Access."}</small>
+        <b>{demoMode ? "Live Access state required" : accessStatus === "loading" ? "Checking sign-in status…" : accessStatus === "unavailable" ? "Check Access" : accountSetupNeeded ? `${accountSetupNeeded} leaders still need access` : "Leader access is ready"}</b>
+        <small>{demoMode ? "Access is permission-scoped and is not simulated here." : accessStatus === "unavailable" ? "Assignments loaded, but website access status did not. Open Access to check it directly." : "Invite people and manage sign-in from Access."}</small>
       </button>
     </div>
 
@@ -388,7 +394,7 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
       </div>
     </article> : null}
 
-    <details><summary>Staffing planning limit</summary><div className="staff-planning-controls"><label>Maximum companies per Assistant Coordinator<input type="number" min="1" max="20" value={planningLimit} onChange={e=>setPlanningLimit(Number(e.target.value))}/></label><span>{assistants.length} available ACs × {planningLimit} = {assistants.length*planningLimit} company places for {companies.length} companies.</span><button className="secondary" disabled={!canManage||Boolean(busy)} onClick={async()=>{setBusy("limit");try{await saveStaffCompanyLimit(sessionId,planningLimit);await refresh();setSuggestions(null);}catch(e){setError(e.message);}finally{setBusy("");}}}>Save planning limit</button></div></details>
+    {demoMode ? <div className="notice compact-notice"><div><b>Live assignment planning is unavailable in rehearsal mode</b><p>Sign in to review the real Staff roster, structure, capacity settings and permission-scoped Access state.</p></div></div> : <details><summary>Staffing planning limit</summary><div className="staff-planning-controls"><label>Maximum companies per Assistant Coordinator<input type="number" min="1" max="20" value={planningLimit} onChange={e=>setPlanningLimit(Number(e.target.value))}/></label><span>{assistants.length} available ACs × {planningLimit} = {assistants.length*planningLimit} company places for {companies.length} companies.</span><button className="secondary" disabled={!canManage||Boolean(busy)} onClick={async()=>{setBusy("limit");try{await saveStaffCompanyLimit(sessionId,planningLimit);await refresh();setSuggestions(null);}catch(e){setError(e.message);}finally{setBusy("");}}}>Save planning limit</button></div></details>}
     <div className="assignments-v3-nav">
       <SegmentedControl label="Assignment workspaces" value={workspace} onChange={setWorkspace} options={WORKSPACES} />
       <p>{workspace === "people" ? "Change a responsibility or finish a leader's setup in context." : workspace === "groups" ? "Cover counselor groups with eligible Counselors." : "Set which Assistant Coordinator supports each company."}</p>
@@ -396,8 +402,8 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
 
     {workspace === "people" ? <article id="assignments-v15-workspace" className="panel assignments-v3-workspace">
       <header className="assignments-v3-section-head">
-        <div><span className="kicker">People</span><h2>Staff & responsibilities</h2>{canManage?<button type="button" className="secondary" onClick={()=>setAddingStaff(true)}>Add on-site Staff</button>:null}<p>Assignment is the source of truth. Website access is shown here only when it helps you finish the job.</p></div>
-        <Status tone={staff.length ? "good" : "neutral"}>{staff.length} staff</Status>
+        <div><span className="kicker">People</span><h2>Staff & responsibilities</h2>{canManage && !demoMode?<button type="button" className="secondary" onClick={()=>setAddingStaff(true)}>Add on-site Staff</button>:null}<p>Assignment is the source of truth. Website access is shown here only when it helps you finish the job.</p></div>
+        <Status tone={demoMode ? "muted" : staff.length ? "good" : "neutral"}>{demoMode ? "Demo only" : `${staff.length} staff`}</Status>
       </header>
       <div className="assignments-v3-toolbar">
         <SearchField value={query} onChange={setQuery} label="Search staff" placeholder="Name, unit or responsibility" /><label>Staff state<select value={staffFilter} onChange={e=>setStaffFilter(e.target.value)}>{[["all","All staff"],["attention","Needs attention"],["reserve","Reserve pool"],["expected","Expected"],["arrived","Arrived"],["no_show","No-show"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
@@ -431,14 +437,14 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
             </div>
           </div>;
         })}
-      </div> : <Empty title="No staff found" text="Try another name, unit or responsibility." />}
+      </div> : <Empty title={demoMode ? "Staff is not seeded in demo mode" : "No staff found"} text={demoMode ? "Sign in to search the permission-scoped Staff roster and manage responsibilities." : "Try another name, unit or responsibility."} />}
       {visibleStaff < filteredStaff.length ? <button type="button" className="secondary assignment-v2-show-more" onClick={() => setVisibleStaff((value) => value + 30)}>Show 30 more</button> : null}
     </article> : null}
 
     {workspace === "groups" ? <article id="assignments-v15-workspace" className="panel assignments-v3-workspace">
       <header className="assignments-v3-section-head">
-        <div><span className="kicker">Counselor groups</span><h2>{openGroups.length ? `${openGroups.length} need a Counselor` : "Counselor groups are covered"}</h2><p>Groups with an absent, excluded or uncleared Counselor are treated as gaps until resolved.</p></div>
-        <Status tone={openGroups.length ? "warn" : "good"}>{groups.length - openGroups.length}/{groups.length} covered</Status>
+        <div><span className="kicker">Counselor groups</span><h2>{demoMode ? "Counselor groups are not simulated" : openGroups.length ? `${openGroups.length} need a Counselor` : "Counselor groups are covered"}</h2><p>Groups with an absent, excluded or uncleared Counselor are treated as gaps until resolved.</p></div>
+        <Status tone={demoMode ? "muted" : openGroups.length ? "warn" : "good"}>{demoMode ? "Demo only" : `${groups.length - openGroups.length}/${groups.length} covered`}</Status>
       </header>
       <div className="assignments-v3-toolbar">
         <SearchField value={groupQuery} onChange={setGroupQuery} label="Search counselor groups" placeholder="Group, company or Counselor" />
@@ -454,14 +460,14 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
             <div>{counselor ? <button type="button" className="text-action danger-text" disabled={!canManage} onClick={() => setRemoveGroup({ group, counselor })}>{covered ? "Remove" : "Clear unavailable assignment"}</button> : <button type="button" className="primary" disabled={!canManage} onClick={() => openPicker("group", group)}>Assign Counselor</button>}</div>
           </div>;
         })}
-      </div> : <Empty title={groupFilter === "needs" ? "No counselor gaps" : "No groups found"} text={groupFilter === "needs" ? "Every counselor group currently has planning coverage." : "Change the filter or search."} />}
+      </div> : <Empty title={demoMode ? "Counselor groups are not seeded" : groupFilter === "needs" ? "No counselor gaps" : "No groups found"} text={demoMode ? "Sign in to review the live grouping structure and counselor coverage." : groupFilter === "needs" ? "Every counselor group currently has planning coverage." : "Change the filter or search."} />}
       {visibleGroups < filteredGroups.length ? <button type="button" className="secondary assignment-v2-show-more" onClick={() => setVisibleGroups((value) => value + 24)}>Show 24 more groups</button> : null}
     </article> : null}
 
     {workspace === "companies" ? <article id="assignments-v15-workspace" className="panel assignments-v3-workspace">
       <header className="assignments-v3-section-head">
-        <div><span className="kicker">Companies</span><h2>{openCompanies.length ? `${openCompanies.length} need an Assistant Coordinator` : "Companies are covered"}</h2><p>An unavailable or no-show AC does not count as current company coverage.</p></div>
-        <Status tone={openCompanies.length ? "warn" : "good"}>{companies.length - openCompanies.length}/{companies.length} covered</Status>
+        <div><span className="kicker">Companies</span><h2>{demoMode ? "Companies are not simulated" : openCompanies.length ? `${openCompanies.length} need an Assistant Coordinator` : "Companies are covered"}</h2><p>An unavailable or no-show AC does not count as current company coverage.</p></div>
+        <Status tone={demoMode ? "muted" : openCompanies.length ? "warn" : "good"}>{demoMode ? "Demo only" : `${companies.length - openCompanies.length}/${companies.length} covered`}</Status>
       </header>
       <div className="assignments-v3-toolbar">
         <SearchField value={companyQuery} onChange={setCompanyQuery} label="Search companies" placeholder="Company or Assistant Coordinator" />
@@ -480,7 +486,7 @@ export function Assignments({ currentRole, sessionId, canManage = false, initial
             <div>{assistant ? <button type="button" className="text-action danger-text" disabled={!canManage} onClick={() => setRemoveCompany({ company, assistant })}>{covered ? "Remove" : "Clear unavailable assignment"}</button> : <button type="button" className="primary" disabled={!canManage} onClick={() => openPicker("company", company)}>Assign AC</button>}</div>
           </div>;
         })}
-      </div> : <Empty title={companyFilter === "needs" ? "No company gaps" : "No companies found"} text={companyFilter === "needs" ? "Every company currently has planning coverage." : "Change the filter or search."} />}
+      </div> : <Empty title={demoMode ? "Companies are not seeded" : companyFilter === "needs" ? "No company gaps" : "No companies found"} text={demoMode ? "Sign in to review the live company structure and Assistant Coordinator coverage." : companyFilter === "needs" ? "Every company currently has planning coverage." : "Change the filter or search."} />}
       {visibleCompanies < filteredCompanies.length ? <button type="button" className="secondary assignment-v2-show-more" onClick={() => setVisibleCompanies((value) => value + 24)}>Show 24 more companies</button> : null}
     </article> : null}
 

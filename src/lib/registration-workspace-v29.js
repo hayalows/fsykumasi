@@ -1,5 +1,6 @@
 import { loadRpcPages } from "./rpc-pages.js";
 import { isSupabaseConfigured, supabase } from "./supabase.js";
+import { loadParticipantOperationalStates } from "./field-operations.js";
 
 function client() {
   if (!isSupabaseConfigured || !supabase) throw new Error("Supabase is not configured for this deployment.");
@@ -8,13 +9,13 @@ function client() {
 
 export async function loadRegistrationWorkspaceV29(sessionId) {
   if (!sessionId) return [];
-  const rows = await loadRpcPages(
-    client(),
-    "get_registration_workspace_v29",
-    { p_session_id: sessionId },
-    ["participant_id"],
-    1000,
-  );
+  const [rows, operationalStates, checkinStates] = await Promise.all([
+    loadRpcPages(client(), "get_registration_workspace_v29", { p_session_id: sessionId }, ["participant_id"], 1000),
+    loadParticipantOperationalStates(sessionId),
+    loadRpcPages(client(), "get_participant_checkin_states", { p_session_id: sessionId }, ["participant_id"], 1000).catch(() => []),
+  ]);
+
+  const checkinByParticipant = new Map((checkinStates || []).map((row) => [row.participant_id, row]));
 
   return (rows || []).map((row) => ({
     participantId: row.participant_id,
@@ -46,5 +47,7 @@ export async function loadRegistrationWorkspaceV29(sessionId) {
     roomName: row.room_name || "",
     bedLabel: row.bed_label || "",
     housingAssignedAt: row.housing_assigned_at || null,
+    ...(operationalStates.get(row.participant_id) || { operationalStatus: "active", operationalNote: "", operationalRevision: 0, operationalUpdatedAt: null }),
+    checkinRecordedAt: checkinByParticipant.get(row.participant_id)?.recorded_at || null,
   }));
 }

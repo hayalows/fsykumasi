@@ -81,8 +81,8 @@ export function AssignmentEditorV5({ sessionId, person, rooms, assignments = [],
     setBusy(true);
     setError("");
     try {
-      await clearHousingAssignment({ sessionId, personType: person.kind, personId: person.id });
-      await onSaved();
+      const result = await clearHousingAssignment({ sessionId, personType: person.kind, personId: person.id, assignmentId: currentAssignment.id });
+      await onSaved({ type: "unassigned", assignment: { ...currentAssignment, ...result } });
       setConfirmRemove(false);
       onClose();
     } catch (err) {

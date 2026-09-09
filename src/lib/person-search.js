@@ -39,38 +39,56 @@ function tokenRank(tokens, words, fuzzy) {
 export function searchDocument(row, context = []) {
   const name = normalizeSearch(row.fullName || row.name || row.display_name || row.full_name || [row.firstName, row.lastName].filter(Boolean).join(' '));
   const preferred = normalizeSearch(row.preferredName || row.preferred_name);
+  const words = `${name} ${preferred}`.trim().split(' ').filter(Boolean);
+  const contextText = normalizeSearch([row.unit, row.unit_name, row.stake, row.stake_name, row.companyName, row.company_name, row.company, row.groupName, row.group_name, row.group, row.operationalRole, row.person_type, ...context].filter(value => typeof value === 'string').join(' '));
+  const contextWords = contextText.split(' ').filter(Boolean);
   return {
-    name, preferred, words: `${name} ${preferred}`.trim().split(' ').filter(Boolean),
+    name, preferred, words,
     ids: [row.fsyId, row.fsy_id, ...(row.previousFsyIds || [])].filter(Boolean).map(idText),
-    context: normalizeSearch([row.unit, row.unit_name, row.stake, row.stake_name, row.companyName, row.company_name, row.company, row.groupName, row.group_name, row.group, row.operationalRole, row.person_type, ...context].filter(value => typeof value === 'string').join(' ')),
+    context: contextText, contextWords, allWords: [...words, ...contextWords],
     key: String(row.id || row.personId || row.person_id || '')
   };
 }
 
-export function documentRank(doc, query, boost = 0) {
+function queryProfile(query) {
   const text = normalizeSearch(query);
+  return {
+    text,
+    compact: idText(query),
+    tokens: text.split(' '),
+    fuzzy: !/\d/.test(text),
+  };
+}
+
+function rankDocument(doc, profile, boost = 0) {
+  const { text, compact, tokens, fuzzy } = profile;
   if (!text) return 0;
-  const compact = idText(query);
   if (doc.ids.includes(compact)) return 0;
   // Queries containing digits never use typo matching, especially badge IDs.
-  const tokens = text.split(' ');
   if (text === doc.name || text === doc.preferred) return 100;
   if (doc.name.startsWith(text) || doc.preferred.startsWith(text)) return 105;
-  const nameRank = tokenRank(tokens, doc.words, !/\d/.test(text));
+  const nameRank = tokenRank(tokens, doc.words, fuzzy);
   if (Number.isFinite(nameRank)) return 110 + nameRank * 100 - Math.min(9, Math.max(0, boost));
   if (doc.ids.some(id => id.startsWith(compact))) return 400;
-  if (Number.isFinite(tokenRank(tokens, doc.context.split(' '), false))) return 600 - Math.min(9, Math.max(0, boost));
-  if (Number.isFinite(tokenRank(tokens, [...doc.words, ...doc.context.split(' ')], false))) return 700;
+  if (Number.isFinite(tokenRank(tokens, doc.contextWords, false))) return 600 - Math.min(9, Math.max(0, boost));
+  if (Number.isFinite(tokenRank(tokens, doc.allWords, false))) return 700;
   return Infinity;
+}
+
+export function documentRank(doc, query, boost = 0) {
+  return rankDocument(doc, queryProfile(query), boost);
 }
 
 export const personSearchRank = (row, query, context = []) => documentRank(searchDocument(row, context), query);
 export const matchesPersonSearch = (row, query, context = []) => Number.isFinite(personSearchRank(row, query, context));
 export function createPersonSearch(rows, contextFor = () => []) {
   const entries = rows.map(row => ({ row, doc: searchDocument(row, contextFor(row)) }));
-  return query => entries.map(entry => ({ ...entry, rank: documentRank(entry.doc, query) }))
+  return query => {
+    const profile = queryProfile(query);
+    return entries.map(entry => ({ ...entry, rank: rankDocument(entry.doc, profile) }))
     .filter(entry => Number.isFinite(entry.rank))
     .sort((a, b) => a.rank - b.rank || compare(a.doc.name, b.doc.name) || compare(a.doc.key, b.doc.key))
     .map(entry => entry.row);
+  };
 }
 export const searchPeople = (rows, query, contextFor) => createPersonSearch(rows, contextFor)(query);

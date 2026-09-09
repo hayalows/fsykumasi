@@ -127,7 +127,7 @@ export async function loadParticipants(sessionId) {
   for (let from = 0; ; from += pageSize) {
     const { data, error } = await client
       .from("participants")
-      .select("id, registration_id, first_name, last_name, preferred_name, sex, age, unit_name, stake_name, group_id, source_kind, registration_status, verification_status, is_current, reconciliation_status")
+      .select("id, registration_id, first_name, last_name, preferred_name, sex, age, unit_name, stake_name, group_id, source_kind, registration_status, verification_status, is_current, reconciliation_status, operational_status, operational_note, operational_revision, operational_updated_at")
       .eq("session_id", sessionId)
       .order("last_name", { ascending: true })
       .order("id", { ascending: true })
@@ -153,6 +153,10 @@ export async function loadParticipants(sessionId) {
     verificationStatus: row.verification_status,
     isCurrent: row.is_current,
     reconciliationStatus: row.reconciliation_status,
+    operationalStatus: row.operational_status || "active",
+    operationalNote: row.operational_note || "",
+    operationalRevision: Number(row.operational_revision || 0),
+    operationalUpdatedAt: row.operational_updated_at || null,
     status: row.registration_status === "approved" && row.verification_status === "verified" && row.is_current ? "Expected" : "Not eligible",
   }));
 }
@@ -331,6 +335,28 @@ export async function recordCheckin({ sessionId, participantId, status }) {
     p_note: null,
   });
   if (error) throw error;
+}
+
+export async function undoCheckin({ sessionId, participantId, expectedRecordedAt = null }) {
+  const client = requireClient();
+  const { data, error } = await client.rpc("undo_participant_checkin", {
+    p_session_id: sessionId,
+    p_participant_id: participantId,
+    p_expected_recorded_at: expectedRecordedAt || null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function loadCheckinState({ sessionId, participantId }) {
+  const client = requireClient();
+  const { data, error } = await client.rpc("get_participant_checkin_state", {
+    p_session_id: sessionId,
+    p_participant_id: participantId,
+  });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? { status: row.status || "expected", recordedAt: row.recorded_at || null } : null;
 }
 
 export async function publishGroupingPlan(sessionId, assignment) {

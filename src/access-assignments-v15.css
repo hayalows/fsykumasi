@@ -54,6 +54,8 @@
 .assignments-v15-quick>button:active{transform:scale(.994)}
 .assignments-v15-quick>button.needs{border-color:rgba(224,165,72,.35);background:#fffdf8}
 .assignments-v15-quick>button.done{background:rgba(245,249,246,.86)}
+.assignments-v15-quick>button.demo{background:var(--surface-soft,#f7fafb);border-color:rgba(0,81,117,.12);cursor:default}
+.assignments-v15-quick>button:disabled{cursor:not-allowed;opacity:.82}
 .assignments-v15-quick span{font-size:10px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:.06em}
 .assignments-v15-quick b{font-size:13px;color:var(--blue-35);overflow-wrap:anywhere}
 .assignments-v15-quick small{font-size:10.5px;color:var(--muted);line-height:1.35}

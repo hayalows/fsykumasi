@@ -293,6 +293,36 @@
   }
   .housing-v6-workspace-switch button {
     min-width: 0;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #667c86;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 760;
+    cursor: pointer;
+  }
+  .housing-v6-workspace-switch button.active {
+    background: #fff;
+    color: #0d607e;
+    box-shadow: 0 1px 4px rgba(15,48,60,.09);
+  }
+  .housing-v6-workspace-switch button b {
+    min-width: 20px;
+    padding: 2px 5px;
+    border-radius: 999px;
+    background: rgba(18,85,108,.08);
+    font-size: 9.5px;
+  }
+  .housing-v6-workspace-switch button.active b {
+    background: #0d607e;
+    color: #fff;
   }
   .housing-v6-workspace-switch button small {
     margin-left: 4px;
