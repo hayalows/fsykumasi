@@ -1,0 +1,267 @@
+/* Registration workspace composition.
+   The mode switch should feel like one control for one workflow, not a second
+   dashboard sitting underneath the page title. */
+
+.registration-workspace-v30 .registration-workspace-intro-v5 {
+  padding-top: 28px;
+  padding-bottom: 0 !important;
+}
+
+.registration-workspace-v30 .registration-workspace-intro-v5 .page-head {
+  max-width: 960px;
+  margin-bottom: 20px;
+}
+
+.registration-workspace-v30 .registration-workspace-intro-v5 .page-head h1 {
+  margin-bottom: 7px;
+  font-size: clamp(2.25rem, 3.2vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -.045em;
+}
+
+.registration-workspace-v30 .registration-workspace-intro-v5 .page-head > div > p:last-child {
+  max-width: 820px;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.registration-workspace-v30 .registration-workspace-navigation-v5 {
+  position: sticky;
+  top: 70px;
+  z-index: 14;
+  display: grid;
+  grid-template-columns: minmax(420px, 560px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  margin: 0;
+  min-height: 78px;
+  padding: 11px 0 12px;
+  border-top: 1px solid var(--registration-border, var(--ds-line));
+  border-bottom: 1px solid var(--registration-border, var(--ds-line));
+  background: rgba(255, 255, 255, .96);
+  box-shadow: none;
+  backdrop-filter: blur(16px) saturate(1.04);
+  -webkit-backdrop-filter: blur(16px) saturate(1.04);
+}
+
+.registration-workspace-v30 .registration-workspace-tabs-v5,
+.registration-workspace-v30 .registration-mode-switch.registration-workspace-tabs-v5 {
+  width: 100%;
+  max-width: 560px;
+  min-height: 46px;
+  margin: 0;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  overflow: hidden;
+  border: 1px solid var(--registration-border, var(--ds-line));
+  border-radius: 13px;
+  background: var(--registration-soft, var(--ds-surface-subtle));
+}
+
+.registration-workspace-v30 .registration-workspace-tabs-v5 button {
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--registration-muted, var(--ds-text-secondary));
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.registration-workspace-v30 .registration-workspace-tabs-v5 button.active {
+  background: var(--ds-surface, #fff);
+  color: var(--registration-ink, var(--ds-text-strong));
+  box-shadow: 0 1px 2px rgba(14, 72, 98, .08), 0 0 0 1px rgba(14, 72, 98, .06);
+}
+
+.registration-workspace-v30 .registration-workspace-tabs-v5 button.active::after {
+  display: none !important;
+}
+
+.registration-workspace-v30 .registration-workspace-tabs-v5 button b {
+  min-width: 21px;
+  height: 21px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  color: inherit;
+  background: rgba(14, 72, 98, .08);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.registration-workspace-v30 .registration-mode-cue-compact {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.registration-workspace-v30 .registration-mode-copy {
+  min-width: 0;
+  max-width: 610px;
+  display: grid;
+  gap: 4px;
+}
+
+.registration-workspace-v30 .registration-mode-copy .kicker {
+  margin: 0;
+  font-size: 9px;
+  letter-spacing: .1em;
+}
+
+.registration-workspace-v30 .registration-mode-copy p {
+  margin: 0;
+  color: var(--registration-muted, var(--ds-text-secondary));
+  font-size: 12px;
+  line-height: 1.42;
+}
+
+.registration-workspace-v30 .registration-mode-summary {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  white-space: nowrap;
+}
+
+.registration-workspace-v30 .registration-mode-summary > span {
+  min-height: 34px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-left: 1px solid var(--registration-border, var(--ds-line));
+  color: var(--registration-muted, var(--ds-text-secondary));
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.registration-workspace-v30 .registration-mode-summary > span:first-child {
+  border-left: 0;
+}
+
+.registration-workspace-v30 .registration-mode-summary b {
+  color: var(--registration-ink, var(--ds-text-strong));
+  font-size: inherit;
+}
+
+.registration-workspace-v30 .registration-mode-summary .needs-action b {
+  color: var(--status-warning, #8a5d17);
+}
+
+.registration-workspace-v30 .registration-mode-summary .clear b {
+  color: var(--status-success, #3f6f36);
+}
+
+/* Keep the first task close to the mode switch. */
+.registration-workspace-v30 .registration-workspace-pane-v5 {
+  border-top: 0;
+}
+
+@media (max-width: 1180px) {
+  .registration-workspace-v30 .registration-workspace-navigation-v5 {
+    grid-template-columns: minmax(360px, 500px) minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .registration-workspace-v30 .registration-mode-cue-compact {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .registration-workspace-v30 .registration-mode-summary {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 900px) {
+  .registration-workspace-v30 .registration-workspace-navigation-v5 {
+    position: static;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    min-height: 0;
+    padding: 11px 0 14px;
+  }
+
+  .registration-workspace-v30 .registration-workspace-tabs-v5,
+  .registration-workspace-v30 .registration-mode-switch.registration-workspace-tabs-v5 {
+    max-width: none;
+  }
+
+  .registration-workspace-v30 .registration-mode-cue-compact {
+    display: grid;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 760px) {
+  .registration-workspace-v30 .registration-workspace-intro-v5 {
+    padding-top: 20px;
+    padding-bottom: 0 !important;
+  }
+
+  .registration-workspace-v30 .registration-workspace-intro-v5 .page-head {
+    margin-bottom: 16px;
+  }
+
+  .registration-workspace-v30 .registration-workspace-intro-v5 .page-head h1 {
+    font-size: clamp(1.9rem, 9vw, 2.35rem);
+  }
+
+  .registration-workspace-v30 .registration-workspace-tabs-v5,
+  .registration-workspace-v30 .registration-mode-switch.registration-workspace-tabs-v5 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(max-content, 1fr));
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .registration-workspace-v30 .registration-workspace-tabs-v5 button {
+    min-width: max-content;
+    padding-inline: 10px;
+  }
+
+  .registration-workspace-v30 .registration-mode-copy p {
+    font-size: 11.5px;
+  }
+
+  .registration-workspace-v30 .registration-mode-summary {
+    max-width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .registration-workspace-v30 .registration-mode-summary::-webkit-scrollbar {
+    display: none;
+  }
+
+  .registration-workspace-v30 .registration-mode-summary > span {
+    padding-inline: 9px;
+  }
+}
+
+@media (max-width: 430px) {
+  .registration-workspace-v30 .registration-mode-copy p {
+    display: none;
+  }
+
+  .registration-workspace-v30 .registration-mode-summary > span:nth-child(2) {
+    display: none;
+  }
+}

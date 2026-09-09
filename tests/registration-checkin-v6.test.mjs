@@ -45,7 +45,7 @@ test("Registration workspace copy stays task-first while the focused flow layers
     read("public/sw.js"),
   ]);
   assert.match(registration, /Find the participant and complete normal arrivals quickly\. If something needs a decision, move that person to Final roster\./);
-  assert.match(registration, /description="Settle the final participant list before the session, keep normal arrivals fast, and use Readiness for identities and Staff coverage\."/);
+  assert.match(registration, /description="Settle the final participant list, keep arrivals fast, and check identity and Staff readiness before Day One\."/);
   const v6 = main.indexOf('import "./registration-checkin-v6.css";');
   const modal = main.indexOf('import "./registration-modal-v4.css";');
   const v7 = main.indexOf('import "./registration-flow-v7.css";');
