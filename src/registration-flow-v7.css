@@ -87,6 +87,8 @@
 .regjourney-placement-confirm.ready { border-color: #bdd9e3; background: #f4fafc; }
 .regjourney-placement-confirm.ready b { color: var(--flow-ink); }
 .regjourney-placement-confirm button { min-height: 46px; white-space: nowrap; }
+.regjourney-placement-feedback { margin: 0 !important; }
+.regjourney-placement-confirm button[aria-busy="true"] { cursor: progress; }
 
 .regjourney-ready-panel-v5 { scroll-margin-top: 18px; }
 .regjourney-ready-panel-v5 button[aria-busy="true"] { cursor: progress; }
