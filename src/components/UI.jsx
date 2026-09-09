@@ -160,8 +160,15 @@ export function DismissibleLayer({ open, onClose, title, children, className = "
   useEffect(() => {
     if (!open) return undefined;
     const previousActive = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
+    const root = document.documentElement;
+    const previousRootOverflow = root.style.overflow;
+    const previousRootOverscroll = root.style.overscrollBehavior;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyOverscroll = document.body.style.overscrollBehavior;
+    root.style.overflow = "hidden";
+    root.style.overscrollBehavior = "none";
     document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
 
     const focusInitial = () => {
       const panel = panelRef.current;
@@ -199,7 +206,10 @@ export function DismissibleLayer({ open, onClose, title, children, className = "
     return () => {
       window.cancelAnimationFrame(frame);
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
+      root.style.overflow = previousRootOverflow;
+      root.style.overscrollBehavior = previousRootOverscroll;
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.overscrollBehavior = previousBodyOverscroll;
       const restoreTarget = restoreFocusRef?.current || (previousActive && previousActive !== document.body ? previousActive : null);
       restoreTarget?.focus?.();
     };
@@ -238,7 +248,7 @@ export function ConfirmActionSheet({ open, onClose, title, description, impact, 
     <div className={`confirm-action-sheet tone-${tone}`} aria-busy={busy}>
       <div className="confirm-action-icon"><WarningCircle weight="fill" aria-hidden="true" /></div>
       <div className="confirm-action-copy"><span className="kicker">Confirm change</span><h2>{title}</h2><p>{description}</p>{impact ? <div className="confirm-action-impact">{impact}</div> : null}</div>
-      <div className="confirm-action-buttons"><button type="button" className="secondary" disabled={busy} onClick={onClose}>{cancelLabel}</button><button type="button" className={tone === "danger" ? "danger confirm-action-primary" : "primary confirm-action-primary"} disabled={busy} onClick={onConfirm}>{busy ? "Working…" : confirmLabel}</button></div>
+      <div className="confirm-action-buttons"><button type="button" className="secondary" disabled={busy} onClick={onClose}>{cancelLabel}</button><button type="button" className={tone === "danger" ? "primary danger confirm-action-primary" : "primary confirm-action-primary"} disabled={busy} onClick={onConfirm}>{busy ? "Working…" : confirmLabel}</button></div>
     </div>
   </DismissibleLayer>;
 }

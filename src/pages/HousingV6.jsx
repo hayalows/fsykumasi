@@ -13,7 +13,8 @@ import { loadStaff } from "../lib/operations.js";
 import { hasCapability, loadHousingRooms, restoreHousingAssignment } from "../lib/field-operations.js";
 import { loadHousingAssignmentsV2 } from "../lib/housing-context.js";
 import { loadHousingArrivalQueue, subscribeToHousingHandoff } from "../lib/housing-handoff.js";
-import { RoomEditor, humanizeRole, initials, roomHasWayfinding, roomLocation, sexLabel, waitLabel } from "./HousingDialogsV4.jsx";
+import { humanizeRole, initials, roomHasWayfinding, roomLocation, sexLabel, waitLabel } from "./HousingDialogsV4.jsx";
+import { RoomEditorV7 } from "./HousingRoomEditorV7.jsx";
 import { AssignmentEditorV5 } from "./HousingAssignmentV5.jsx";
 import { RoomDetailV6 } from "./HousingRoomDetailV6.jsx";
 import "./field-operations.css";
@@ -28,6 +29,14 @@ function normalizeSex(value) {
   if (["male", "m", "boy", "man"].includes(text)) return "male";
   if (["female", "f", "girl", "woman"].includes(text)) return "female";
   return "";
+}
+
+function roomHasType(room) {
+  return room?.sex === "male" || room?.sex === "female";
+}
+
+function roomReady(room) {
+  return roomHasType(room) && roomHasWayfinding(room);
 }
 
 function openSpace(room) {
@@ -154,14 +163,11 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
   const assignedPeople = allPeople.filter((person) => assignedByPerson.has(`${person.kind}:${person.id}`));
   const assignedCount = assignedPeople.length;
   const unassignedCount = Math.max(0, allPeople.length - assignedCount);
-  const totalBeds = rooms.reduce((sum, room) => sum + Number(room.capacity || 0), 0);
-  const occupied = rooms.reduce((sum, room) => sum + Number(room.occupancy || 0), 0);
-  const physicalOpenSpaces = Math.max(0, totalBeds - occupied);
-  const assignableRooms = rooms.filter((room) => roomHasWayfinding(room) && openSpace(room) > 0);
+  const assignableRooms = rooms.filter((room) => roomReady(room) && openSpace(room) > 0);
   const assignableOpenSpaces = assignableRooms.reduce((sum, room) => sum + openSpace(room), 0);
   const openRooms = assignableRooms.length;
   const fullRooms = rooms.filter((room) => Number(room.occupancy || 0) >= Number(room.capacity || 0)).length;
-  const incompleteRooms = rooms.filter((room) => !roomHasWayfinding(room)).length;
+  const incompleteRooms = rooms.filter((room) => !roomReady(room)).length;
   const oldestWaiting = waitingPeople[0]?.waitLabel || "No one waiting";
 
   const availabilityByUse = useMemo(() => {
@@ -169,16 +175,14 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
       all: { spaces: 0, rooms: 0 },
       male: { spaces: 0, rooms: 0 },
       female: { spaces: 0, rooms: 0 },
-      unrestricted: { spaces: 0, rooms: 0 },
     };
     rooms.forEach((room) => {
       const spaces = openSpace(room);
-      if (!roomHasWayfinding(room) || spaces < 1) return;
-      const key = room.sex === "male" || room.sex === "female" ? room.sex : "unrestricted";
+      if (!roomReady(room) || spaces < 1) return;
       result.all.spaces += spaces;
       result.all.rooms += 1;
-      result[key].spaces += spaces;
-      result[key].rooms += 1;
+      result[room.sex].spaces += spaces;
+      result[room.sex].rooms += 1;
     });
     return result;
   }, [rooms]);
@@ -187,17 +191,13 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
     const text = roomQuery.trim().toLowerCase();
     return rooms
       .filter((room) => {
-        if (roomFilter === "open") return roomHasWayfinding(room) && openSpace(room) > 0;
+        if (roomFilter === "open") return roomReady(room) && openSpace(room) > 0;
         if (roomFilter === "full") return Number(room.occupancy || 0) >= Number(room.capacity || 0);
-        if (roomFilter === "incomplete") return !roomHasWayfinding(room);
+        if (roomFilter === "incomplete") return !roomReady(room);
         return true;
       })
-      .filter((room) => {
-        if (roomUseFilter === "all") return true;
-        if (roomUseFilter === "unrestricted") return !room.sex;
-        return room.sex === roomUseFilter;
-      })
-      .filter((room) => !text || `${room.name} ${room.building} ${room.floor} ${room.sex || "unrestricted"}`.toLowerCase().includes(text))
+      .filter((room) => roomUseFilter === "all" || room.sex === roomUseFilter)
+      .filter((room) => !text || `${room.name} ${room.building} ${room.floor} ${room.sex || "room type missing"}`.toLowerCase().includes(text))
       .sort((a, b) => collator.compare(a.name, b.name));
   }, [rooms, roomQuery, roomFilter, roomUseFilter]);
 
@@ -259,7 +259,7 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
       <div className="housing-v5-live-stats"><span><b>{assignableOpenSpaces}</b><small>spaces ready</small></span><span><b>{openRooms}</b><small>rooms ready</small></span></div>
     </div>
 
-    {!initialLoading && incompleteRooms ? <div className="housing-location-banner"><WarningCircle/><span><b>{incompleteRooms} {incompleteRooms === 1 ? "room needs" : "rooms need"} a location</b><small>{physicalOpenSpaces > assignableOpenSpaces ? "Some physical spaces are excluded from availability until staff can find the room." : "Add wayfinding before assigning anyone new to those rooms."}</small></span><button type="button" className="secondary" onClick={() => { setWorkspace("rooms"); setRoomFilter("incomplete"); setRoomUseFilter("all"); }}>Review rooms</button></div> : null}
+    {!initialLoading && incompleteRooms ? <div className="housing-location-banner"><WarningCircle/><span><b>{incompleteRooms} {incompleteRooms === 1 ? "room needs" : "rooms need"} setup</b><small>A room needs a Male/Female type and a findable location before Housing can assign someone to it.</small></span><button type="button" className="secondary" onClick={() => { setWorkspace("rooms"); setRoomFilter("incomplete"); setRoomUseFilter("all"); }}>Review rooms</button></div> : null}
 
     <div className="housing-v5-mobile-tabs housing-v6-workspace-switch" role="tablist" aria-label="Housing workspace">
       <button type="button" role="tab" aria-selected={workspace === "people"} className={workspace === "people" ? "active" : ""} onClick={() => chooseWorkspace("people")}><span>People</span><b>{personStatus === "arrivals" ? waitingPeople.length : personStatus === "needs" ? unassignedCount : assignedCount}</b></button>
@@ -302,8 +302,8 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
       <article className={`panel housing-v5-panel housing-v5-rooms housing-v6-rooms${workspace !== "rooms" ? " mobile-hidden" : ""}`}>
         <div className="housing-v5-panel-head housing-v5-room-panel-head"><div><span className="kicker">Rooms</span><h2>Rooms & availability</h2><p>{rooms.length ? `${rooms.length} rooms · ${assignableOpenSpaces} assignable spaces · ${fullRooms} full` : "Add rooms before assignments begin."}</p></div>{canManage ? <div className="housing-v5-room-panel-actions"><button type="button" className="primary housing-v5-add-room" onClick={() => setRoomOpen(true)}><Plus/>Add room</button></div> : <Buildings size={22}/>}</div>
 
-        <div className="housing-v6-availability" aria-label="Assignable spaces by room use">
-          {[{ value: "all", label: "All open" }, { value: "male", label: "Male" }, { value: "female", label: "Female" }, { value: "unrestricted", label: "Unrestricted" }].map((option) => {
+        <div className="housing-v6-availability housing-v37-availability" aria-label="Assignable spaces by room type">
+          {[{ value: "all", label: "All open" }, { value: "male", label: "Male" }, { value: "female", label: "Female" }].map((option) => {
             const data = availabilityByUse[option.value];
             const active = roomFilter === "open" && roomUseFilter === option.value;
             return <button type="button" key={option.value} className={active ? "active" : ""} aria-pressed={active} onClick={() => focusRoomAvailability(option.value)} disabled={!data.spaces && option.value !== "all"}><span>{option.label}</span><b>{data.spaces}</b><small>{data.rooms} {data.rooms === 1 ? "room" : "rooms"}</small></button>;
@@ -312,20 +312,23 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
 
         <div className="housing-v5-room-controls housing-v6-room-controls">
           <SearchField value={roomQuery} onChange={(value) => { setRoomQuery(value); setRoomLimit(ROOM_BATCH); }} label="Search rooms" placeholder="Room, building or floor"/>
-          <label><span>Availability</span><select value={roomFilter} onChange={(event) => { setRoomFilter(event.target.value); setRoomLimit(ROOM_BATCH); }}><option value="all">All rooms · {rooms.length}</option><option value="open">Spaces available · {openRooms}</option><option value="full">Full · {fullRooms}</option><option value="incomplete">Needs location · {incompleteRooms}</option></select></label>
+          <label><span>Availability</span><select value={roomFilter} onChange={(event) => { setRoomFilter(event.target.value); setRoomLimit(ROOM_BATCH); }}><option value="all">All rooms · {rooms.length}</option><option value="open">Spaces available · {openRooms}</option><option value="full">Full · {fullRooms}</option><option value="incomplete">Needs setup · {incompleteRooms}</option></select></label>
         </div>
 
-        {roomUseFilter !== "all" ? <div className="housing-v6-filter-note"><span>Showing {roomUseFilter === "unrestricted" ? "unrestricted" : sexLabel(roomUseFilter).toLowerCase()} rooms</span><button type="button" onClick={() => { setRoomUseFilter("all"); setRoomLimit(ROOM_BATCH); }}>Clear room-use filter</button></div> : null}
+        {roomUseFilter !== "all" ? <div className="housing-v6-filter-note"><span>Showing {sexLabel(roomUseFilter).toLowerCase()} rooms</span><button type="button" onClick={() => { setRoomUseFilter("all"); setRoomLimit(ROOM_BATCH); }}>Clear room-type filter</button></div> : null}
 
         <div className="housing-v5-room-grid">
           {visibleRooms.map((room) => {
             const open = openSpace(room);
-            const assignable = roomHasWayfinding(room) && open > 0;
-            return <button type="button" key={room.id} className={`housing-v5-room-card${roomHasWayfinding(room) ? "" : " needs-location"}${assignable ? " has-space" : ""}`} onClick={() => setSelectedRoom(room)}>
+            const typeReady = roomHasType(room);
+            const locationReady = roomHasWayfinding(room);
+            const assignable = typeReady && locationReady && open > 0;
+            const setupMessage = !typeReady ? "Male/Female needed" : !locationReady ? "Location needed" : "";
+            return <button type="button" key={room.id} className={`housing-v5-room-card${roomReady(room) ? "" : " needs-location needs-setup"}${assignable ? " has-space" : ""}`} onClick={() => setSelectedRoom(room)}>
               <span><b>{room.name}</b><small>{roomLocation(room)}</small></span>
-              <span className="capacity"><strong>{room.occupancy}/{room.capacity}</strong><small>{!roomHasWayfinding(room) ? "Location needed" : open ? `${open} open` : "Full"}</small></span>
+              <span className="capacity"><strong>{room.occupancy}/{room.capacity}</strong><small>{setupMessage || (open ? `${open} open` : "Full")}</small></span>
               <i><span style={{ width: `${Math.min(100, (Number(room.occupancy || 0) / Math.max(1, Number(room.capacity || 0))) * 100)}%` }}/></i>
-              <em>{room.sex ? `${sexLabel(room.sex)} housing` : "Unrestricted"}</em>
+              <em>{typeReady ? `${sexLabel(room.sex)} housing` : "Room type not set"}</em>
             </button>;
           })}
           {!filteredRooms.length ? <Empty icon={Bed} title={rooms.length ? "No rooms match" : "No rooms yet"} text={rooms.length ? "Try another search or availability filter." : "Add the first room here, then begin assigning people."} action={canManage && !rooms.length ? <button type="button" className="primary housing-v5-empty-add-room" onClick={() => setRoomOpen(true)}><Plus/>Add first room</button> : null}/> : null}
@@ -334,8 +337,8 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
       </article>
     </div>
 
-    {roomOpen ? <RoomEditor sessionId={sessionId} onClose={() => setRoomOpen(false)} onSaved={async () => { await reload(); setSaved("Room added."); }}/> : null}
-    {editingRoom ? <RoomEditor sessionId={sessionId} room={editingRoom} onClose={() => setEditingRoom(null)} onSaved={async () => { const next = await reload(); const updated = next?.rooms.find((item) => item.id === editingRoom.id); if (updated) setSelectedRoom(updated); setSaved("Room updated."); }}/> : null}
+    {roomOpen ? <RoomEditorV7 sessionId={sessionId} onClose={() => setRoomOpen(false)} onSaved={async () => { await reload(); setSaved("Room added."); }}/> : null}
+    {editingRoom ? <RoomEditorV7 sessionId={sessionId} room={editingRoom} onClose={() => setEditingRoom(null)} onSaved={async () => { const next = await reload(); const updated = next?.rooms.find((item) => item.id === editingRoom.id); if (updated) setSelectedRoom(updated); setSaved("Room updated."); }}/> : null}
     {selectedRoom ? <RoomDetailV6
       sessionId={sessionId}
       room={selectedRoom}

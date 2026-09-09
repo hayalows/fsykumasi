@@ -19,20 +19,23 @@ test("Housing uses a fast People and Rooms workspace on constrained screens", as
   assert.match(css, /housing-v6-layout > \.mobile-hidden[\s\S]*display:\s*none/);
 });
 
-test("Rooms expose assignable availability by room use before a user opens a room", async () => {
+test("Rooms expose assignable availability by explicit room type before a user opens a room", async () => {
   const housing = await read("src/pages/HousingV6.jsx");
   assert.match(housing, /availabilityByUse/);
   assert.match(housing, /male:\s*\{ spaces: 0, rooms: 0 \}/);
   assert.match(housing, /female:\s*\{ spaces: 0, rooms: 0 \}/);
-  assert.match(housing, /unrestricted:\s*\{ spaces: 0, rooms: 0 \}/);
-  assert.match(housing, /roomHasWayfinding\(room\) && openSpace\(room\) > 0/);
-  assert.match(housing, /Assignable spaces by room use/);
+  assert.doesNotMatch(housing, /unrestricted:\s*\{ spaces: 0, rooms: 0 \}/);
+  assert.match(housing, /roomHasType\(room\)/);
+  assert.match(housing, /roomHasWayfinding\(room\)/);
+  assert.match(housing, /if \(!roomReady\(room\) \|\| spaces < 1\) return/);
+  assert.match(housing, /Assignable spaces by room type/);
 });
 
-test("room-first assignment only shows unassigned people compatible with a restricted room", async () => {
+test("room-first assignment only shows unassigned people compatible with an explicitly typed room", async () => {
   const detail = await read("src/pages/HousingRoomDetailV6.jsx");
+  assert.match(detail, /if \(!roomHasType\(room\)\) return \[\]/);
   assert.match(detail, /!assignedKeys\.has\(personKey\(person\)\)/);
-  assert.match(detail, /!room\.sex \|\| person\.sex === room\.sex/);
+  assert.match(detail, /person\.sex === room\.sex/);
   assert.match(detail, /Checked-in arrivals are ranked first/);
   assert.match(detail, /saveHousingAssignment/);
   assert.match(detail, /Assign to \{room\.name\}/);
@@ -43,7 +46,8 @@ test("room-first assignment revalidates stale room and person state before writi
   assert.match(detail, /loadHousingAssignmentsV2\(sessionId\)/);
   assert.match(detail, /loadHousingRooms\(sessionId\)/);
   assert.match(detail, /alreadyAssigned/);
-  assert.match(detail, /This room is no longer available/);
+  assert.match(detail, /selectedPerson\.sex !== latestRoom\.sex/);
+  assert.match(detail, /This room is no longer compatible or available/);
   assert.match(detail, /await onRefresh\?\.\(\)/);
 });
 
