@@ -1,0 +1,102 @@
+/* FSY Operations Design System v1 — semantic foundations.
+   Existing screens may still reference the legacy variables below; they are
+   intentionally mapped to this system so the entire product moves together. */
+:root {
+  color-scheme: light;
+
+  /* Canvas + surfaces */
+  --ds-canvas: #f6f8f7;
+  --ds-canvas-warm: #faf9f5;
+  --ds-surface: #ffffff;
+  --ds-surface-subtle: #f1f5f4;
+  --ds-surface-strong: #e8efee;
+  --ds-surface-inverse: #063c50;
+
+  /* Text */
+  --ds-text: #163944;
+  --ds-text-strong: #0c2d38;
+  --ds-text-secondary: #60757c;
+  --ds-text-tertiary: #819197;
+  --ds-text-inverse: #ffffff;
+
+  /* Brand + actions */
+  --ds-brand: #006f8d;
+  --ds-brand-strong: #005175;
+  --ds-brand-soft: #e5f3f6;
+  --ds-brand-soft-strong: #cde8ee;
+  --ds-gold: #d89525;
+  --ds-gold-soft: #fff5df;
+
+  /* Semantic states */
+  --ds-success: #3f6f36;
+  --ds-success-soft: #edf5ea;
+  --ds-warning: #8a5c12;
+  --ds-warning-soft: #fff4da;
+  --ds-danger: #9a4037;
+  --ds-danger-soft: #faeae6;
+  --ds-info: #476a86;
+  --ds-info-soft: #edf4f8;
+
+  /* Borders + elevation */
+  --ds-line: #d8e2e2;
+  --ds-line-strong: #becdce;
+  --ds-focus: rgba(213, 143, 34, .42);
+  --ds-shadow-float: 0 18px 50px rgba(10, 44, 55, .16), 0 2px 8px rgba(10, 44, 55, .08);
+  --ds-shadow-menu: 0 12px 32px rgba(10, 44, 55, .14), 0 1px 4px rgba(10, 44, 55, .08);
+
+  /* Type */
+  --ds-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ds-text-xs: 12px;
+  --ds-text-sm: 13px;
+  --ds-text-md: 15px;
+  --ds-text-lg: 16px;
+  --ds-title-sm: 20px;
+  --ds-title-md: 28px;
+  --ds-title-lg: clamp(32px, 3.2vw, 42px);
+
+  /* Spacing */
+  --ds-space-1: 4px;
+  --ds-space-2: 8px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-5: 24px;
+  --ds-space-6: 32px;
+  --ds-space-7: 40px;
+  --ds-space-8: 48px;
+  --ds-space-9: 64px;
+
+  /* Shape */
+  --ds-radius-xs: 6px;
+  --ds-radius-sm: 10px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 16px;
+  --ds-radius-xl: 20px;
+
+  /* Layout */
+  --ds-control: 44px;
+  --ds-content-max: 1220px;
+  --ds-reading-max: 72ch;
+  --ds-gutter: clamp(20px, 3.2vw, 44px);
+  --ds-sidebar: 252px;
+
+  /* Motion */
+  --ds-ease: cubic-bezier(.2, .8, .2, 1);
+  --ds-fast: 120ms;
+  --ds-normal: 180ms;
+
+  /* Legacy mappings used throughout the current app. */
+  --ink: var(--ds-text);
+  --muted: var(--ds-text-secondary);
+  --surface: var(--ds-surface);
+  --surface-soft: var(--ds-surface-subtle);
+  --line: var(--ds-line);
+  --danger: var(--ds-danger);
+  --danger-soft: var(--ds-danger-soft);
+  --shadow: 0 1px 2px rgba(10, 44, 55, .04);
+  --blue-35: var(--ds-brand-strong);
+  --blue-25: var(--ds-brand);
+  --blue-5: var(--ds-brand-soft-strong);
+  --blue-5-tint: var(--ds-brand-soft);
+  --blue-50: #063c50;
+  --green-20-tint: var(--ds-success-soft);
+}
