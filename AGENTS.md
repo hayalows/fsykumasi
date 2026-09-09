@@ -36,7 +36,9 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 ## Coherent operations checkpoint decisions
 
 - Read docs/HANDOFF-2026-09-08-COHERENT-OPERATIONS.md before continuing this unfinished branch.
-- Only Session Directing Couples record Staff service confirmation and participant age exceptions. Preserve existing website Access authority separately.
+- For the September 2026 pre-session finalization, Session Directing Couples and Logistical Administrators may record Staff service confirmation and participant final-roster decisions. Preserve existing website Access authority separately.
+- A youth who is 18 when the September 2026 session starts remains eligible by age for this local session; age 19 or older at session start still requires an explicit final-roster decision.
+- Final-roster actions change local operational state and keep imported/source registration and identity history intact.
+- Committee Staff should display one direct responsibility label such as `Materials committee` rather than a generic `Committee member` label plus a second visible label.
 - Preserve source approval statuses, published companies/groups and finalized FSY IDs; no new Housing allocation UI in this scope.
 - User approved existing development database testing but explicitly asked to skip authenticated database permission tests. Do not create synthetic auth identities automatically.
-
