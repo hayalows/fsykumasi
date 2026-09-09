@@ -1,6 +1,12 @@
 -- Reversible operational state and voidable workflow actions.
 -- This migration is additive: source registrations, identity history,
 -- attendance history and audit events remain intact.
+--
+-- NOTE: This file is retained as the complete Phase 6 migration source. The
+-- production release was applied in verified sections after a compatibility
+-- preflight because the existing eligibility projection differed only in SQL
+-- whitespace formatting. The compatibility migration immediately before this
+-- file normalizes that formatting first.
 
 alter table public.participants
   add column if not exists operational_status text not null default 'active',
@@ -65,6 +71,9 @@ begin
   end if;
   body := pg_get_functiondef('private.participant_eligibility_projection(uuid)'::regprocedure);
   original := body;
+  if position('coalesce(p.operational_status, ''active'') = ''active''' in body) > 0 then
+    return;
+  end if;
   body := replace(
     body,
     'p.attendance_status <> ''confirmed_not_attending''',
@@ -782,40 +791,45 @@ begin
   end if;
   body := pg_get_functiondef('public.get_operational_report(uuid,text)'::regprocedure);
   original := body;
-  body := replace(
-    body,
-    'where ma.session_id = p_session_id',
-    'where ma.session_id = p_session_id and ms.status <> ''void'''
-  );
-  body := replace(
-    body,
-    'from public.meal_services ms where ms.session_id = p_session_id',
-    'from public.meal_services ms where ms.session_id = p_session_id and ms.status <> ''void'''
-  );
-  body := regexp_replace(
-    body,
-    'where r[.]session_id = p_session_id[[:space:]]+and [(]not private[.]is_assistant_coordinator',
-    E'where r.session_id = p_session_id\n        and r.voided_at is null\n        and (not private.is_assistant_coordinator',
-    1
-  );
-  body := regexp_replace(
-    body,
-    'from public[.]meal_services ms[[:space:]]+where ms[.]session_id = p_session_id',
-    'from public.meal_services ms where ms.session_id = p_session_id and ms.status <> ''void''',
-    1
-  );
-  body := replace(
-    body,
-    'a.action in (''company_headcount_submitted'',',
-    'a.action in (''headcount_round_voided'',''participant_operational_status_changed'',''participant_checkin_recorded'',''participant_checkin_undone'',''staff_operational_status_changed'',''housing_room_created'',''housing_room_updated'',''housing_unassigned'',''housing_unassigned_for_participant_status'',''housing_assignment_restored'',''company_headcount_submitted'', '
-  );
-  if body = original
-     or position('r.voided_at is null' in body) = 0
+  if position('r.voided_at is null' in body) = 0 then
+    body := regexp_replace(
+      body,
+      'where r[.]session_id = p_session_id[[:space:]]+and [(]not private[.]is_assistant_coordinator',
+      E'where r.session_id = p_session_id\n        and r.voided_at is null\n        and (not private.is_assistant_coordinator',
+      1
+    );
+  end if;
+  if position('ms.status <> ''void''' in body) = 0 then
+    body := replace(
+      body,
+      'where ma.session_id = p_session_id',
+      'where ma.session_id = p_session_id and ms.status <> ''void'''
+    );
+    body := replace(
+      body,
+      'from public.meal_services ms where ms.session_id = p_session_id',
+      'from public.meal_services ms where ms.session_id = p_session_id and ms.status <> ''void'''
+    );
+    body := regexp_replace(
+      body,
+      'from public[.]meal_services ms[[:space:]]+where ms[.]session_id = p_session_id',
+      'from public.meal_services ms where ms.session_id = p_session_id and ms.status <> ''void''',
+      1
+    );
+  end if;
+  if position('headcount_round_voided' in body) = 0 then
+    body := replace(
+      body,
+      'a.action in (''company_headcount_submitted'',',
+      'a.action in (''headcount_round_voided'',''participant_operational_status_changed'',''participant_checkin_recorded'',''participant_checkin_undone'',''staff_operational_status_changed'',''housing_room_created'',''housing_room_updated'',''housing_unassigned'',''housing_unassigned_for_participant_status'',''housing_assignment_restored'',''company_headcount_submitted'', '
+    );
+  end if;
+  if position('r.voided_at is null' in body) = 0
      or position('ms.status <> ''void''' in body) = 0
      or position('headcount_round_voided' in body) = 0 then
     raise exception 'Operational report baseline drifted; void/history filters were not installed';
   end if;
-  execute body;
+  if body <> original then execute body; end if;
 end;
 $$;
 
@@ -831,6 +845,9 @@ begin
   end if;
   body := pg_get_functiondef('public.get_my_operational_overview(uuid)'::regprocedure);
   original := body;
+  if position('r.voided_at is null' in body) > 0 then
+    return;
+  end if;
   body := replace(
     body,
     'where r.session_id = p_session_id and r.roster_version >= 3',
