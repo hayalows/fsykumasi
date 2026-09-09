@@ -5,11 +5,13 @@ import { readFile } from "node:fs/promises";
 const migrationPath = new URL("../supabase/migrations/20260905143000_operational_inbox_and_onsite_identity.sql", import.meta.url);
 const partsPath = new URL("../src/pages/RegistrationJourneyPartsV4.jsx", import.meta.url);
 const journeyPath = new URL("../src/pages/RegistrationJourneyV4.jsx", import.meta.url);
+const journeyV29Path = new URL("../src/pages/RegistrationJourneyV29.jsx", import.meta.url);
 
-const [migration, parts, journey] = await Promise.all([
+const [migration, parts, journey, journeyV29] = await Promise.all([
   readFile(migrationPath, "utf8"),
   readFile(partsPath, "utf8"),
   readFile(journeyPath, "utf8"),
+  readFile(journeyV29Path, "utf8"),
 ]);
 
 test("on-site group placement issues an FSY ID in the same transaction", () => {
@@ -29,6 +31,15 @@ test("normal on-site placement is primary and confirmed vacancy is optional", ()
   assert.match(parts, /FSY ID is then created automatically/);
   assert.match(parts, /Use a confirmed vacancy instead/);
   assert.doesNotMatch(parts, /No compatible confirmed vacancy/);
+});
+
+test("placement refresh failures stay visible and recoverable in the placement step", () => {
+  assert.match(journeyV29, /onRefreshError/);
+  assert.match(journeyV29, /Placement was saved, but the roster could not refresh/);
+  assert.match(journeyV29, /onRetry=\{retryRegistrationWorkspace\}/);
+  assert.doesNotMatch(journeyV29, /void reload\(\)\.catch\(\(\)=>\{\}\)/);
+  assert.match(parts, /Retry roster/);
+  assert.match(parts, /placementRefreshFailed/);
 });
 
 test("vacancy success copy does not claim the retired participant ID transfers", () => {
