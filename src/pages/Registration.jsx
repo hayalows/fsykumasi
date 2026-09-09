@@ -15,17 +15,17 @@ const MODE_META = {
   desk: {
     phase: "Arrival desk",
     title: "Live check-in",
-    help: "Find the participant and complete normal arrivals quickly. If something needs a decision, move that person to Final roster.",
+    help: "Find the person, confirm identity, and complete the arrival.",
   },
   roster: {
-    phase: "Pre-session roster",
+    phase: "Before Day One",
     title: "Final roster",
-    help: "Finish the remaining participant and Staff decisions before the session, then use this same area for any person who needs an individual review.",
+    help: "Review the final plan, resolve only real blockers, then lock the roster.",
   },
   readiness: {
     phase: "Session readiness",
     title: "Readiness",
-    help: "Check participant identity, Staff coverage and the final source before the rehearsal and Day One.",
+    help: "Check participant identity, Staff coverage, and the final source before Day One.",
   },
 };
 
@@ -64,6 +64,7 @@ export function Registration(props) {
 
   const cohortSummary = props.cohort;
   const modeMeta = MODE_META[mode];
+  const showRecordCount = cohortSummary && Number(cohortSummary.records || 0) !== Number(cohortSummary.eligible || 0);
   const journeyProps = {
     participants: imported,
     initialGroups: props.groups || [],
@@ -81,7 +82,7 @@ export function Registration(props) {
       <PageHead
         title="Registration & check-in"
         sessionName={sessionName}
-        description="Settle the final participant list, keep arrivals fast, and check identity and Staff readiness before Day One."
+        description="Settle the roster before Day One, then keep arrivals quick and clear."
       />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
         {canUseRegistrationTools ? <SegmentedControl
@@ -95,15 +96,15 @@ export function Registration(props) {
             { value: "readiness", label: "Readiness", id: "registration-mode-readiness" },
           ]}
         /> : null}
-        <div className="registration-mode-cue-v5 registration-mode-cue-compact" role="status" aria-label={`${modeMeta.title}. ${modeMeta.help}`}>
+        <div className="registration-mode-cue-v5 registration-mode-cue-compact" data-mode={mode} role="status" aria-label={`${modeMeta.title}. ${modeMeta.help}`}>
           <div className="registration-mode-copy">
             <span className="kicker">{modeMeta.phase}</span>
             <p>{modeMeta.help}</p>
           </div>
           {cohortSummary ? <div className="registration-mode-summary" aria-label="Registration summary">
-            <span><b>{formatCount(cohortSummary.eligible)}</b> eligible youth</span>
-            <span><b>{formatCount(cohortSummary.records)}</b> records</span>
-            <span className={solutionCount ? "needs-action" : "clear"}><b>{formatCount(solutionCount)}</b> {solutionCount === 1 ? "decision" : "decisions"} left</span>
+            <span className="registration-summary-stat"><b>{formatCount(cohortSummary.eligible)}</b> eligible</span>
+            {showRecordCount ? <span className="registration-summary-stat registration-summary-records"><b>{formatCount(cohortSummary.records)}</b> records</span> : null}
+            <span className={`registration-summary-stat ${solutionCount ? "needs-action" : "clear"}`}><b>{formatCount(solutionCount)}</b> {solutionCount === 1 ? "decision" : "decisions"}</span>
           </div> : null}
         </div>
       </div>
