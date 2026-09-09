@@ -20,16 +20,20 @@ export function buildOperationalInbox({ role, capabilities = [], summary = {} })
   const singleCompany = role === "assistant_coordinator" && companyCount === 1 ? companyNames[0] || "Your company" : "";
 
   const registrationAccess = has("registration_view") || has("registration_manage") || has("checkin_record");
+  // Assistant Coordinators can record company-scoped check-in, but the overview
+  // registration totals are not guaranteed to be company-scoped. Do not turn a
+  // session-wide exception count into their primary task.
+  const registrationOverviewAccess = registrationAccess && role !== "assistant_coordinator";
   const housingAccess = has("housing_view");
   const wellnessAccess = has("wellness_private") || has("wellness_status");
   const foodAccess = has("food_view") || has("meal_attendance_view");
   const headcountAccess = whole || has("headcount_view") || has("headcount_record");
 
   const pendingId = n(registration.onSitePendingId);
-  if (registrationAccess && pendingId) tasks.push(task({view:"registration",mode:"roster",filter:"needs_help"}, `${pendingId} on-site ${plural(pendingId,"participant")} need ${plural(pendingId,"an FSY ID","FSY IDs")}`, "Finish identity before check-in so the participant can continue through the normal arrival flow.", "Resolve registration", 100, "urgent"));
+  if (registrationOverviewAccess && pendingId) tasks.push(task({view:"registration",mode:"roster",filter:"needs_help"}, `${pendingId} on-site ${plural(pendingId,"participant")} need ${plural(pendingId,"an FSY ID","FSY IDs")}`, "Finish identity before check-in so the participant can continue through the normal arrival flow.", "Resolve registration", 100, "urgent"));
 
   const otherRegistrationAttention = Math.max(0, n(registration.attention) - pendingId);
-  if (registrationAccess && otherRegistrationAttention) tasks.push(task({view:"registration",mode:"roster",filter:"needs_help"}, `${otherRegistrationAttention} registration ${plural(otherRegistrationAttention,"record")} need attention`, "Verification, eligibility or placement is stopping these participants from checking in.", "Review registration", 96, "attention"));
+  if (registrationOverviewAccess && otherRegistrationAttention) tasks.push(task({view:"registration",mode:"roster",filter:"needs_help"}, `${otherRegistrationAttention} registration ${plural(otherRegistrationAttention,"record")} need attention`, "Verification, eligibility or placement is stopping these participants from checking in.", "Review registration", 96, "attention"));
 
   const headcountOpen = Boolean(headcount.roundId) && !headcount.closesAt;
   const missing = n(headcount.missing); const unresolved = n(headcount.unresolved); const elsewhere = n(headcount.knownElsewhere || headcount.known_elsewhere);
@@ -46,7 +50,7 @@ export function buildOperationalInbox({ role, capabilities = [], summary = {} })
   if (housingAccess && waitingRooms) tasks.push(task({view:"housing",tab:"arrivals",filter:"waiting"}, `${waitingRooms} checked-in ${plural(waitingRooms,"participant")} waiting for a room`, "Registration is complete for them. Housing is the next handoff.", "Assign rooms", 88, "attention"));
 
   const ready = n(registration.ready);
-  if (registrationAccess && ready) tasks.push(task({view:"registration",mode:"desk",filter:"ready"}, `${ready} ${plural(ready,"participant")} ready to check in`, n(session.recentArrivals) ? `${n(session.recentArrivals)} checked in during the last 15 minutes.` : "Open the live desk and keep arrivals moving.", "Open check-in desk", 84, "positive"));
+  if (registrationOverviewAccess && ready) tasks.push(task({view:"registration",mode:"desk",filter:"ready"}, `${ready} ${plural(ready,"participant")} ready to check in`, n(session.recentArrivals) ? `${n(session.recentArrivals)} checked in during the last 15 minutes.` : "Open the live desk and keep arrivals moving.", "Open check-in desk", 84, "positive"));
 
   const uncovered = n(scope.uncoveredGroups);
   if ((whole || role === "assistant_coordinator") && uncovered) tasks.push(task({view:"assignments",tab:"groups",filter:"needs"}, `${uncovered} counselor ${plural(uncovered,"group")} uncovered`, role === "assistant_coordinator" ? `A group${singleCompany ? ` in ${singleCompany}` : " in your companies"} does not have a counselor assigned.` : "Counselor coverage needs attention before the next participant activity.", "Review structure", 76, "attention"));
@@ -62,7 +66,7 @@ export function buildOperationalInbox({ role, capabilities = [], summary = {} })
   tasks.sort((a,b)=>b.priority-a.priority||a.title.localeCompare(b.title));
 
   const fallback = role === "assistant_coordinator"
-    ? task("groups", singleCompany ? `${singleCompany} is ready` : "Your companies are ready", companyCount ? `Open ${singleCompany || `${companyCount} ${plural(companyCount,"company","companies")}`} whenever you need a counselor, youth or meeting location.` : "Your company assignment will appear here when it is ready.", singleCompany ? "Open my company" : "View companies", 0, "calm")
+    ? task("groups", singleCompany ? `${singleCompany} is ready` : "Your companies are ready", companyCount ? `Open ${singleCompany || `${companyCount} ${plural(companyCount,"company","companies")}`} whenever you need a counselor, group or youth.` : "Your company assignment will appear here when it is ready.", singleCompany ? "Open my company" : "View companies", 0, "calm")
     : registrationAccess ? task("registration", "Registration & check-in", "The arrival queue is clear right now. Search a participant whenever you need them.", "Open check-in desk", 0, "calm")
     : housingAccess ? task("housing", "Housing is clear", "No checked-in participant is currently waiting for a room.", "Open Housing", 0, "calm")
     : wellnessAccess ? task("wellness", "Wellness is clear", "There are no open Wellness visits right now.", "Open Wellness", 0, "calm")
@@ -72,7 +76,7 @@ export function buildOperationalInbox({ role, capabilities = [], summary = {} })
   let areaTitle="Your area",areaDetail="Only information that helps with your current responsibility is shown here.",metrics=[];
   if(role==="assistant_coordinator") { areaTitle=singleCompany||"Your companies"; areaDetail=companyNames.length?companyNames.join(" · "):"Your assigned companies and counselors."; metrics=[{label:"Companies",value:companyCount},{label:"Counselors",value:n(scope.counselorCount)},{label:"Youth",value:n(scope.participantCount)},{label:"Uncovered groups",value:uncovered,attention:uncovered>0}]; }
   else if(whole){areaTitle="Session pulse";areaDetail="A small set of live operational signals. Open a workspace only when something needs action.";metrics=[{label:"Checked in",value:n(session.checkedIn)},{label:"Companies",value:companyCount},{label:"Housing waiting",value:waitingRooms,attention:waitingRooms>0},{label:"Uncovered groups",value:uncovered,attention:uncovered>0}];}
-  else if(registrationAccess){areaTitle="Arrival desk";areaDetail="Ready people first. Exceptions stay separate so the desk can keep moving.";metrics=[{label:"Ready",value:ready},{label:"Needs attention",value:n(registration.attention),attention:n(registration.attention)>0},{label:"Checked in",value:n(registration.arrived)},{label:"Last 15 min",value:n(session.recentArrivals)}];}
+  else if(registrationOverviewAccess){areaTitle="Arrival desk";areaDetail="Ready people first. Exceptions stay separate so the desk can keep moving.";metrics=[{label:"Ready",value:ready},{label:"Needs attention",value:n(registration.attention),attention:n(registration.attention)>0},{label:"Checked in",value:n(registration.arrived)},{label:"Last 15 min",value:n(session.recentArrivals)}];}
   else if(housingAccess){areaTitle="Housing handoff";areaDetail="Checked-in arrivals appear automatically when Registration finishes its part.";metrics=[{label:"Waiting",value:waitingRooms,attention:waitingRooms>0},{label:"Assigned",value:n(housing.assigned)}];}
   else if(foodAccess){areaTitle="Food operations";areaDetail=food.serviceStatus==="open"?`${food.serviceLabel||"Meal service"} is open now.`:"Current meal and dietary work.";metrics=[{label:"Dietary review",value:dietaryOpen,attention:dietaryOpen>0},{label:"Served",value:n(food.served)},{label:"Remaining",value:mealRemaining}];}
   else if(wellnessAccess){areaTitle="Wellness";areaDetail="Only current operational status is surfaced on Overview.";metrics=[{label:"Open visits",value:openWellness,attention:openWellness>0}];}
