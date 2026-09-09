@@ -30,14 +30,79 @@ language sql
 stable
 security definer
 set search_path=''
-as $$
+as $$$
   select exists (
     select 1
     from public.access_assignments aa
     where aa.session_id=target_session
       and aa.user_id=(select auth.uid())
       and aa.active
-      and aa.role::text in ('logistics_admin','coordinator','session_director')
+      and aa.role::text in ('logistics_admin','session_director')
+  );
+$$;
+
+create or replace function private.session_finalization_auto_include(target_session uuid,target_participant uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path=''
+as $$
+  select exists (
+    select 1
+    from public.participants p
+    join public.sessions s on s.id=p.session_id
+    join private.participant_eligibility_projection(target_session) e on e.participant_id=p.id
+    left join public.participant_private_details d on d.participant_id=p.id
+    where p.id=target_participant
+      and p.session_id=target_session
+      and p.is_current
+      and coalesce(p.operational_status,'active')='active'
+      and p.attendance_status<>'confirmed_not_attending'
+      and p.registration_status<>'cancelled'
+      and d.date_of_birth is not null
+      and extract(year from age(s.starts_on,d.date_of_birth)) between 14 and 18
+      and not e.eligible
+      and (
+        e.reason='Registration is not approved'
+        or (
+          e.reason='Turns 19 before or on the end of this session'
+          and extract(year from age(s.starts_on,d.date_of_birth))=18
+        )
+      )
+  );
+$$;
+
+create or replace function private.session_finalization_include_candidate(target_session uuid,target_participant uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path=''
+as $$
+  select exists (
+    select 1
+    from public.participants p
+    left join public.participant_operation_decisions od on od.participant_id=p.id
+    where p.id=target_participant
+      and p.session_id=target_session
+      and p.is_current
+      and coalesce(p.operational_status,'active')='active'
+      and p.attendance_status<>'confirmed_not_attending'
+      and p.registration_status<>'cancelled'
+      and od.cohort_state is distinct from 'excluded'
+      and (
+        (
+          od.participant_id is null
+          and private.session_finalization_auto_include(target_session,p.id)
+        )
+        or (
+          od.cohort_state='exception'
+          and od.registration_confirmed
+          and od.guardian_confirmed
+          and od.leadership_confirmed
+        )
+      )
   );
 $$;
 
@@ -46,7 +111,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=''
-as $$
+as $$$
 begin
   if exists(select 1 from public.session_roster_freezes f where f.session_id=new.session_id) then
     raise exception 'The final session roster is frozen. Add new arrivals through on-site registration instead of importing another roster.';
@@ -66,15 +131,20 @@ language plpgsql
 stable
 security definer
 set search_path=''
-as $$
+as $$$
 declare
   s public.sessions%rowtype;
   include_total int:=0;
   include_female int:=0;
   include_male int:=0;
+  new_female_count int:=0;
+  new_male_count int:=0;
   exclude_total int:=0;
   awaiting_staff int:=0;
   open_groups int:=0;
+  open_female_groups int:=0;
+  open_male_groups int:=0;
+  remaining_blockers int:=0;
   current_participants int:=0;
   current_staff int:=0;
   existing_companies int:=0;
@@ -82,6 +152,12 @@ declare
   female_groups int:=0;
   male_groups int:=0;
   new_companies int:=0;
+  min_group_size int:=8;
+  max_group_size int:=10;
+  group_size_conflicts int:=0;
+  avoid_same_unit boolean:=true;
+  max_female_unit_size int:=0;
+  max_male_unit_size int:=0;
   available_female_counselors int:=0;
   available_male_counselors int:=0;
   available_assistants int:=0;
@@ -109,24 +185,17 @@ begin
   select count(*)::int into existing_groups from public.counselor_groups where session_id=p_session_id and state='published';
 
   with targets as (
-    select p.id,p.sex::text as sex
+    select p.id,p.sex::text as sex,p.group_id
     from public.participants p
-    join private.participant_eligibility_projection(p_session_id) e on e.participant_id=p.id
-    left join public.participant_private_details d on d.participant_id=p.id
     where p.session_id=p_session_id
-      and p.is_current
-      and coalesce(p.operational_status,'active')='active'
-      and p.attendance_status<>'confirmed_not_attending'
-      and p.registration_status<>'cancelled'
-      and d.date_of_birth is not null
-      and extract(year from age(s.starts_on,d.date_of_birth))<20
-      and not e.eligible
-      and e.reason in ('Registration is not approved','Too young for this FSY year','Turns 19 before or on the end of this session')
+      and private.session_finalization_include_candidate(p_session_id,p.id)
   )
   select count(*)::int,
          count(*) filter(where sex='female')::int,
-         count(*) filter(where sex='male')::int
-    into include_total,include_female,include_male
+         count(*) filter(where sex='male')::int,
+         count(*) filter(where sex='female' and group_id is null)::int,
+         count(*) filter(where sex='male' and group_id is null)::int
+    into include_total,include_female,include_male,new_female_count,new_male_count
   from targets;
 
   select count(*)::int into exclude_total
@@ -134,7 +203,11 @@ begin
   join public.participant_private_details d on d.participant_id=p.id
   where p.session_id=p_session_id and p.is_current
     and d.date_of_birth is not null
-    and extract(year from age(s.starts_on,d.date_of_birth))>=20;
+    and extract(year from age(s.starts_on,d.date_of_birth))>=20
+    and not exists(
+      select 1 from public.participant_operation_decisions od
+      where od.participant_id=p.id and od.cohort_state='exception'
+    );
 
   select count(*)::int into exclusion_conflicts
   from public.participants p
@@ -142,6 +215,10 @@ begin
   where p.session_id=p_session_id and p.is_current
     and d.date_of_birth is not null
     and extract(year from age(s.starts_on,d.date_of_birth))>=20
+    and not exists(
+      select 1 from public.participant_operation_decisions od
+      where od.participant_id=p.id and od.cohort_state='exception'
+    )
     and (
       p.group_id is not null
       or exists(select 1 from public.check_ins ci where ci.session_id=p_session_id and ci.participant_id=p.id)
@@ -156,13 +233,67 @@ begin
     and coalesce(o.planning_state,'reserve')<>'excluded'
     and coalesce(o.arrival_state,'expected') not in ('no_show','left');
 
-  select count(*)::int into open_groups
+  select count(*)::int,
+         count(*) filter(where g.sex::text='female')::int,
+         count(*) filter(where g.sex::text='male')::int
+    into open_groups,open_female_groups,open_male_groups
   from public.counselor_groups g
   where g.session_id=p_session_id and g.state='published'
     and (g.counselor_id is null or not private.staff_can_plan(g.counselor_id));
 
-  female_groups:=case when include_female>0 then ceil(include_female/11.0)::int else 0 end;
-  male_groups:=case when include_male>0 then ceil(include_male/11.0)::int else 0 end;
+  select coalesce(st.group_min_size,8),coalesce(st.group_max_size,10),coalesce(st.avoid_same_unit,true)
+    into min_group_size,max_group_size,avoid_same_unit
+  from public.session_structure_settings st
+  where st.session_id=p_session_id;
+  min_group_size:=coalesce(min_group_size,8);
+  max_group_size:=greatest(coalesce(max_group_size,10),1);
+  avoid_same_unit:=coalesce(avoid_same_unit,true);
+
+  select count(*)::int into remaining_blockers
+  from public.participant_eligibility_projection(p_session_id) e
+  join public.participants p on p.id=e.participant_id
+  join public.sessions sess on sess.id=p.session_id
+  left join public.participant_private_details d on d.participant_id=p.id
+  where p.session_id=p_session_id
+    and p.is_current
+    and coalesce(p.operational_status,'active')='active'
+    and p.attendance_status<>'confirmed_not_attending'
+    and p.registration_status<>'cancelled'
+    and not e.eligible
+    and not private.session_finalization_include_candidate(p_session_id,p.id)
+    and not (d.date_of_birth is not null and extract(year from age(sess.starts_on,d.date_of_birth))>=20);
+
+  select coalesce(max(unit_count),0)::int into max_female_unit_size
+  from (
+    select count(*)::int unit_count
+    from public.participants p
+    where p.session_id=p_session_id
+      and p.group_id is null
+      and p.sex::text='female'
+      and private.session_finalization_include_candidate(p_session_id,p.id)
+    group by lower(coalesce(nullif(trim(p.unit_name),''),'__unknown__'))
+  ) units;
+
+  select coalesce(max(unit_count),0)::int into max_male_unit_size
+  from (
+    select count(*)::int unit_count
+    from public.participants p
+    where p.session_id=p_session_id
+      and p.group_id is null
+      and p.sex::text='male'
+      and private.session_finalization_include_candidate(p_session_id,p.id)
+    group by lower(coalesce(nullif(trim(p.unit_name),''),'__unknown__'))
+  ) units;
+
+  female_groups:=case when new_female_count>0
+    then greatest(ceil(new_female_count/max_group_size::numeric)::int,case when avoid_same_unit then max_female_unit_size else 0 end)
+    else 0 end;
+  male_groups:=case when new_male_count>0
+    then greatest(ceil(new_male_count/max_group_size::numeric)::int,case when avoid_same_unit then max_male_unit_size else 0 end)
+    else 0 end;
+  group_size_conflicts:=
+    case when new_female_count>0 and new_female_count<female_groups*min_group_size then 1 else 0 end
+    + case when new_male_count>0 and new_male_count<male_groups*min_group_size then 1 else 0 end;
   new_companies:=greatest(female_groups,male_groups);
 
   select count(*) filter(where st.sex='female')::int,
@@ -199,22 +330,32 @@ begin
     'participants_to_include',include_total,
     'female_to_include',include_female,
     'male_to_include',include_male,
+    'new_female_participants',new_female_count,
+    'new_male_participants',new_male_count,
     'participants_20_plus_to_remove',exclude_total,
     'staff_awaiting_to_clear',awaiting_staff,
     'existing_companies',existing_companies,
     'existing_groups',existing_groups,
     'existing_groups_needing_counselor',open_groups,
+    'existing_female_groups_needing_counselor',open_female_groups,
+    'existing_male_groups_needing_counselor',open_male_groups,
     'new_female_groups',female_groups,
     'new_male_groups',male_groups,
     'new_companies',new_companies,
+    'group_max_size',max_group_size,
+    'avoid_same_unit',avoid_same_unit,
+    'group_size_conflicts',group_size_conflicts,
+    'remaining_participant_blockers',remaining_blockers,
     'available_female_counselors',available_female_counselors,
     'available_male_counselors',available_male_counselors,
     'available_assistant_coordinators',available_assistants,
     'exclusion_conflicts',exclusion_conflicts,
     'existing_placements_moved',0,
     'safe_to_apply', exclusion_conflicts=0
-      and available_female_counselors>=female_groups
-      and available_male_counselors>=male_groups+open_groups
+      and remaining_blockers=0
+      and group_size_conflicts=0
+      and available_female_counselors>=female_groups+open_female_groups
+      and available_male_counselors>=male_groups+open_male_groups
       and available_assistants>=new_companies
   );
 end;
@@ -225,7 +366,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path=''
-as $$
+as $$$
 declare
   s public.sessions%rowtype;
   existing_final public.session_roster_finalizations%rowtype;
@@ -249,6 +390,13 @@ declare
   remaining_blockers int:=0;
   eligible_without_group int:=0;
   conflict_count int:=0;
+  max_group_size int:=10;
+  min_group_size int:=8;
+  avoid_same_unit boolean:=true;
+  group_size_conflicts int:=0;
+  max_female_unit_size int:=0;
+  max_male_unit_size int:=0;
+  target_group_id uuid;
   person record;
   next_slot int;
   origin_code text;
@@ -266,21 +414,20 @@ begin
     return existing_final.summary || jsonb_build_object('already_finalized',true,'finalized_at',existing_final.finalized_at);
   end if;
 
+  select coalesce(st.group_min_size,8),coalesce(st.group_max_size,10),coalesce(st.avoid_same_unit,true)
+    into min_group_size,max_group_size,avoid_same_unit
+  from public.session_structure_settings st
+  where st.session_id=p_session_id;
+  min_group_size:=coalesce(min_group_size,8);
+  max_group_size:=greatest(coalesce(max_group_size,10),1);
+  avoid_same_unit:=coalesce(avoid_same_unit,true);
+
   create temporary table tmp_session_exceptions(id uuid primary key, sex text) on commit drop;
   insert into tmp_session_exceptions(id,sex)
   select p.id,p.sex::text
   from public.participants p
-  join private.participant_eligibility_projection(p_session_id) e on e.participant_id=p.id
-  left join public.participant_private_details d on d.participant_id=p.id
   where p.session_id=p_session_id
-    and p.is_current
-    and coalesce(p.operational_status,'active')='active'
-    and p.attendance_status<>'confirmed_not_attending'
-    and p.registration_status<>'cancelled'
-    and d.date_of_birth is not null
-    and extract(year from age(s.starts_on,d.date_of_birth))<20
-    and not e.eligible
-    and e.reason in ('Registration is not approved','Too young for this FSY year','Turns 19 before or on the end of this session');
+    and private.session_finalization_include_candidate(p_session_id,p.id);
   get diagnostics include_total=row_count;
 
   create temporary table tmp_session_excluded(id uuid primary key) on commit drop;
@@ -290,7 +437,11 @@ begin
   join public.participant_private_details d on d.participant_id=p.id
   where p.session_id=p_session_id and p.is_current
     and d.date_of_birth is not null
-    and extract(year from age(s.starts_on,d.date_of_birth))>=20;
+    and extract(year from age(s.starts_on,d.date_of_birth))>=20
+    and not exists(
+      select 1 from public.participant_operation_decisions od
+      where od.participant_id=p.id and od.cohort_state='exception'
+    );
   get diagnostics exclude_total=row_count;
 
   select count(*)::int into conflict_count
@@ -311,10 +462,8 @@ begin
     cohort_state='excluded',authority=excluded.authority,reason=excluded.reason,
     revision=public.participant_operation_decisions.revision+1,recorded_by=(select auth.uid()),recorded_at=now();
 
-  update public.participants p
-  set is_current=false,reconciliation_status='omitted',updated_at=now()
-  from tmp_session_excluded x
-  where p.id=x.id;
+  -- The excluded operation decision is the active-roster boundary. Keep the
+  -- imported participant row and its reconciliation/source state unchanged.
 
   insert into public.participant_operation_decisions(participant_id,cohort_state,registration_confirmed,guardian_confirmed,leadership_confirmed,authority,reason,revision,recorded_by,recorded_at)
   select x.id,'exception',true,true,true,'FSY Kumasi pre-session leadership decision','Included in the final Kumasi 2026 participant roster; original registration state retained',1,(select auth.uid()),now()
@@ -377,8 +526,36 @@ begin
   join public.participants p on p.id=x.id
   where p.group_id is null;
 
-  female_group_count:=case when female_count>0 then ceil(female_count/11.0)::int else 0 end;
-  male_group_count:=case when male_count>0 then ceil(male_count/11.0)::int else 0 end;
+  select coalesce(max(unit_count),0)::int into max_female_unit_size
+  from (
+    select count(*)::int unit_count
+    from tmp_session_exceptions x
+    join public.participants p on p.id=x.id
+    where p.group_id is null and p.sex::text='female'
+    group by lower(coalesce(nullif(trim(p.unit_name),''),'__unknown__'))
+  ) units;
+
+  select coalesce(max(unit_count),0)::int into max_male_unit_size
+  from (
+    select count(*)::int unit_count
+    from tmp_session_exceptions x
+    join public.participants p on p.id=x.id
+    where p.group_id is null and p.sex::text='male'
+    group by lower(coalesce(nullif(trim(p.unit_name),''),'__unknown__'))
+  ) units;
+
+  female_group_count:=case when female_count>0
+    then greatest(ceil(female_count/max_group_size::numeric)::int,case when avoid_same_unit then max_female_unit_size else 0 end)
+    else 0 end;
+  male_group_count:=case when male_count>0
+    then greatest(ceil(male_count/max_group_size::numeric)::int,case when avoid_same_unit then max_male_unit_size else 0 end)
+    else 0 end;
+  group_size_conflicts:=
+    case when female_count>0 and female_count<female_group_count*min_group_size then 1 else 0 end
+    + case when male_count>0 and male_count<male_group_count*min_group_size then 1 else 0 end;
+  if group_size_conflicts>0 then
+    raise exception 'Supplemental participant counts cannot satisfy the configured counselor-group size rules';
+  end if;
   company_count:=greatest(female_group_count,male_group_count);
 
   if (select count(*) from tmp_available_counselors where sex='female') < female_group_count then
@@ -419,7 +596,15 @@ begin
     end loop;
   end if;
 
-  create temporary table tmp_new_groups(sex text,idx int,id uuid unique,company_idx int,primary key(sex,idx)) on commit drop;
+  create temporary table tmp_new_groups(
+    sex text,
+    idx int,
+    id uuid unique,
+    company_idx int,
+    member_count int not null default 0,
+    unit_keys text[] not null default '{}'::text[],
+    primary key(sex,idx)
+  ) on commit drop;
   if female_group_count>0 then
     for i in 1..female_group_count loop
       insert into public.counselor_groups(session_id,company_id,name,sex,state,counselor_id)
@@ -446,21 +631,39 @@ begin
   end if;
   new_groups:=female_group_count+male_group_count;
 
-  with ranked as (
-    select p.id,p.sex::text as sex,
-           row_number() over(partition by p.sex order by p.age,lower(p.last_name),lower(p.first_name),p.id)::int rn,
-           count(*) over(partition by p.sex)::int total
+  for person in
+    select p.id,
+           p.sex::text as sex,
+           coalesce(nullif(lower(trim(p.unit_name)),''),'__unknown__') as unit_key,
+           count(*) over(
+             partition by p.sex,coalesce(nullif(lower(trim(p.unit_name)),''),'__unknown__')
+           )::int as unit_count
     from tmp_session_exceptions x
     join public.participants p on p.id=x.id
     where p.group_id is null
-  ), mapped as (
-    select r.id,g.id as group_id
-    from ranked r
-    join tmp_new_groups g on g.sex=r.sex
-      and g.idx=(floor((r.rn-1)::numeric * (case when r.sex='female' then female_group_count else male_group_count end)::numeric / r.total)+1)::int
-  )
-  update public.participants p set group_id=m.group_id,updated_at=now()
-  from mapped m where p.id=m.id;
+    order by p.sex,unit_count desc,unit_key,lower(p.last_name),lower(p.first_name),p.id
+  loop
+    target_group_id:=null;
+    select g.id into target_group_id
+    from tmp_new_groups g
+    where g.sex=person.sex
+      and g.member_count<max_group_size
+      and (not avoid_same_unit or not (person.unit_key=any(g.unit_keys)))
+    order by g.member_count,g.idx
+    limit 1;
+    if target_group_id is null then
+      raise exception 'Could not place every supplemental participant within the configured counselor-group rules';
+    end if;
+
+    update public.participants
+    set group_id=target_group_id,updated_at=now()
+    where id=person.id;
+
+    update tmp_new_groups
+    set member_count=member_count+1,
+        unit_keys=array_append(unit_keys,person.unit_key)
+    where id=target_group_id;
+  end loop;
 
   insert into public.staff_company_assignments(session_id,staff_id,company_id,assignment_role,assigned_by,assigned_at)
   select p_session_id,a.id,c.id,'assistant_coordinator',(select auth.uid()),now()
@@ -492,12 +695,13 @@ begin
   end loop;
 
   select count(*)::int into remaining_blockers
-  from private.participant_eligibility_projection(p_session_id) e
-  join public.participants p on p.id=e.participant_id
-  where p.session_id=p_session_id and p.is_current
+  from public.participants p
+  where p.session_id=p_session_id
+    and p.is_current
     and coalesce(p.operational_status,'active')='active'
     and p.attendance_status<>'confirmed_not_attending'
-    and not e.eligible;
+    and p.registration_status<>'cancelled'
+    and not private.operational_participant_is_eligible(p_session_id,p.id);
   if remaining_blockers>0 then raise exception '% participant eligibility blocker(s) remain after finalization',remaining_blockers; end if;
 
   select count(*)::int into eligible_without_group

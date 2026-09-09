@@ -66,19 +66,19 @@ test("Access is person-first with a protected disable action", async () => {
   assert.match(source, /ConfirmActionSheet/);
 });
 
-test("Registration separates live arrivals, one Solutions queue and supporting Readiness", async () => {
+test("Registration separates live arrivals, one Final roster queue and supporting Readiness", async () => {
   const [source, readiness, journey] = await Promise.all([
     read("src/pages/Registration.jsx"),
     read("src/pages/RegistrationReadinessV30.jsx"),
     read("src/pages/RegistrationJourneyV29.jsx"),
   ]);
   assert.match(source, /Live check-in/);
-  assert.match(source, /Solutions/);
+  assert.match(source, /Final roster/);
   assert.match(source, /Readiness/);
   assert.match(source, /RegistrationReadinessV30/);
-  assert.doesNotMatch(source, /Preflight review|Solutions table|Before session|Prepare/);
-  assert.match(journey, /One participant exception queue/);
-  assert.match(readiness, /One exception queue/);
+  assert.doesNotMatch(source, /Preflight review|Final roster table|Before session|Prepare/);
+  assert.match(journey, /One final participant queue/);
+  assert.match(readiness, /One final participant queue/);
 });
 
 test("Housing unassign explains the consequence before changing the assignment", async () => {

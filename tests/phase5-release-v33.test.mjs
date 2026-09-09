@@ -56,7 +56,7 @@ test("Leadership exception decisions require complete authority details and resi
   assert.match(form,/participant-exception-\$\{person\.id\}/);
   assert.match(form,/form\.authority\.trim\(\)\.length>=3/);
   assert.match(form,/form\.reason\.trim\(\)\.length>=5/);
-  assert.match(form,/form\.registration&&form\.guardian&&form\.leadership/);
+  assert.match(form,/registration:form\.checksConfirmed,guardian:form\.checksConfirmed,leadership:form\.checksConfirmed/);
   assert.match(form,/disabled=\{busy\|\|!ready\}/);
   assert.match(form,/aria-busy=\{busy\}/);
 });

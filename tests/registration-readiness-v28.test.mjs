@@ -52,29 +52,29 @@ test('non-live planning data keeps a narrow 13–18 preview rule',()=>{
   assert.equal(operationalEligibility({id:'demo-19',age:19}).ok,false);
 });
 
-test('Registration IA separates Live check-in, one Solutions queue and supporting Readiness',async()=>{
+test('Registration IA separates Live check-in, one Final roster queue and supporting Readiness',async()=>{
   const [source,readiness]=await Promise.all([
     read('src/pages/Registration.jsx'),
     read('src/pages/RegistrationReadinessV30.jsx'),
   ]);
   assert.match(source,/label: "Live check-in"/);
-  assert.match(source,/label: "Solutions"/);
+  assert.match(source,/label: "Final roster"/);
   assert.match(source,/label: "Readiness"/);
   assert.doesNotMatch(source,/Preflight review/);
   assert.match(source,/RegistrationReadinessV30/);
-  assert.match(readiness,/Participant blockers/);
-  assert.match(readiness,/Open Solutions/);
-  assert.match(readiness,/title="FSY IDs"|title=\"FSY IDs\"|title="Staff readiness"|title=\"Staff readiness\"/);
+  assert.match(readiness,/Final participant roster/);
+  assert.match(readiness,/Open Final roster/);
+  assert.match(readiness,/title="FSY IDs"|title=\"FSY IDs\"|title="Final Staff roster"|title=\"Final Staff roster\"/);
   assert.match(readiness,/Final roster/);
-  assert.match(readiness,/One exception queue/);
+  assert.match(readiness,/One final participant queue/);
   assert.match(source,/const \[journeyMode, setJourneyMode\]/);
   assert.match(source,/if \(next === "desk" \|\| next === "roster"\) setJourneyMode\(next\)/);
   assert.match(source,/<RegistrationJourney view=\{journeyMode\}/);
 });
 
-test('Solutions keeps final-roster authority separate from source registration',async()=>{
+test('Final roster keeps final-roster authority separate from source registration',async()=>{
   const source=await read('src/components/RegistrationLeadershipResolution.jsx');
-  assert.match(source,/\["session_director", "logistics_admin", "coordinator"\]\.includes\(role\)/);
+  assert.match(source,/\["session_director", "logistics_admin"\]\.includes\(role\)/);
   assert.match(source,/ParticipantExceptionForm/);
   assert.match(source,/imported registration record stays unchanged/i);
   assert.match(source,/source registration status is not changed locally/i);

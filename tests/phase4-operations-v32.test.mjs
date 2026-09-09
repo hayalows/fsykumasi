@@ -36,7 +36,7 @@ test("FSY IDs use one compact work surface instead of metric-card stacks",async(
 test("Staff readiness opens the exact Staff member in Assignments",async()=>{
  const staff=await read("src/pages/StaffReadinessV31.jsx");
  assert.match(staff,/staffId:person\.id/);
- assert.match(staff,/Review all in Assignments/);
+ assert.match(staff,/Review in Assignments/);
  assert.match(staff,/Staff member/);
  assert.match(staff,/Responsibility/);
  assert.match(staff,/Readiness/);
@@ -61,7 +61,7 @@ test("Readiness uses the Phase 4 tools while preserving Phase 2 component contra
  assert.match(readiness,/IdentityFoundationV31 as IdentityFoundationV28/);
  assert.match(readiness,/RegistrationFinalBaselineV22 as RegistrationFinalBaselineV21/);
  assert.match(readiness,/StaffReadinessV31 as StaffReadiness/);
- assert.match(readiness,/One exception queue/);
+ assert.match(readiness,/One final participant queue/);
 });
 
 test("Phase 4 mobile styles remove the horizontal report picker and stack operational rows",async()=>{

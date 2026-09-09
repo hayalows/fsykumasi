@@ -32,7 +32,7 @@ export function RegistrationLeadershipResolution({ sessionId, row, eligibility, 
   }, [relevant, sessionId]);
 
   if (!relevant) return null;
-  const canFinalize = ["session_director", "logistics_admin", "coordinator"].includes(role);
+  const canFinalize = ["session_director", "logistics_admin"].includes(role);
 
   return <section className="registration-leadership-resolution">
     <div className="registration-leadership-resolution-head">

@@ -20,7 +20,7 @@ begin
   select * into p from public.participants where id=p_participant_id for update;
   if p.id is null or not private.has_session_role(
     p.session_id,
-    array['logistics_admin','coordinator','session_director']::public.app_role[]
+    array['logistics_admin','session_director']::public.app_role[]
   ) then
     raise exception 'Whole-session leadership access is required to record participant final-roster decisions';
   end if;
@@ -104,7 +104,7 @@ begin
   if p_clearance is distinct from old.service_clearance then
     if not private.has_session_role(
       s.session_id,
-      array['logistics_admin','coordinator','session_director']::public.app_role[]
+      array['logistics_admin','session_director']::public.app_role[]
     ) then
       raise exception 'Whole-session leadership is required to record Ready to serve';
     end if;

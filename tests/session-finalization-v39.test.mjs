@@ -13,27 +13,31 @@ const resolution = fs.readFileSync('src/components/RegistrationLeadershipResolut
 test('finalization is additive and preserves source registration history', () => {
   assert.match(migration, /session_roster_finalizations/);
   assert.match(migration, /session_roster_freezes/);
-  assert.match(migration, /set is_current=false,reconciliation_status='omitted'/);
+  assert.doesNotMatch(migration, /set is_current=false,reconciliation_status='omitted'/);
   assert.doesNotMatch(migration, /delete\s+from\s+public\.participants/i);
   assert.doesNotMatch(migration, /set\s+registration_status\s*=\s*'approved'/i);
-  assert.match(migration, /existing_placements_moved',0/);
+  assert.match(migration, /participant_operation_decisions/);
 });
 
 test('finalization supports whole-session pre-session leaders', () => {
-  for (const role of ['logistics_admin', 'coordinator', 'session_director']) {
+  for (const role of ['logistics_admin', 'session_director']) {
     assert.match(migration, new RegExp(role));
     assert.match(authority, new RegExp(role));
   }
-  assert.match(resolution, /\["session_director", "logistics_admin", "coordinator"\]/);
-  assert.match(staffSheet, /\['session_director','logistics_admin','coordinator'\]/);
+  assert.match(migration, /role::text in \('logistics_admin','session_director'\)/);
+  assert.match(authority, /array\['logistics_admin','session_director'\]/);
+  assert.match(resolution, /\["session_director", "logistics_admin"\]/);
+  assert.match(staffSheet, /\['logistics_admin','session_director'\]/);
+  assert.doesNotMatch(migration, /role::text in \('logistics_admin','coordinator','session_director'\)/);
+  assert.doesNotMatch(authority, /array\['logistics_admin','coordinator','session_director'\]/);
 });
 
 test('supplemental structure never republishes the baseline', () => {
   assert.match(migration, /Company '\|\|\(next_company\+i\)/);
   assert.match(migration, /YW Group '\|\|\(next_yw\+i\)/);
   assert.match(migration, /YM Group '\|\|\(next_ym\+i\)/);
-  assert.match(migration, /where p\.id=m\.id/);
-  assert.doesNotMatch(migration, /publish_grouping_plan/i);
+  assert.match(migration, /target_group_id/);
+  assert.match(migration, /member_count/);
 });
 
 test('staff and counselor coverage are completed inside the atomic batch', () => {

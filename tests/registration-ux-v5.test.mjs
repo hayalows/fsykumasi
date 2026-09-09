@@ -4,18 +4,18 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("Registration exposes one clear Live check-in, Solutions and Readiness journey", async () => {
+test("Registration exposes one clear Live check-in, Final roster and Readiness journey", async () => {
   const registration = await read("src/pages/Registration.jsx");
   assert.match(registration, /Registration & check-in/);
   assert.match(registration, /value: "desk", label: "Live check-in"/);
-  assert.match(registration, /value: "roster", label: "Solutions"/);
+  assert.match(registration, /value: "roster", label: "Final roster"/);
   assert.match(registration, /value: "readiness", label: "Readiness"/);
   assert.match(registration, /registration-mode-cue-v5/);
   assert.doesNotMatch(registration, /RegistrationReviewInbox/);
   assert.doesNotMatch(registration, /ArrivalOperations/);
 });
 
-test("Check-in desk stays task first while Solutions exposes the next action", async () => {
+test("Check-in desk stays task first while Final roster exposes the next action", async () => {
   const [journey, parts] = await Promise.all([
     read("src/pages/RegistrationJourneyV29.jsx"),
     read("src/pages/RegistrationJourneyPartsV4.jsx"),
@@ -35,10 +35,10 @@ test("Readiness owns FSY IDs, Staff readiness and Final roster without duplicati
     read("src/pages/RegistrationIdentityV28.jsx"),
   ]);
   assert.match(readiness, /title="FSY IDs"/);
-  assert.match(readiness, /title="Staff readiness"/);
-  assert.match(readiness, /title="Final roster"/);
-  assert.match(readiness, /One exception queue/);
-  assert.match(readiness, /Open Solutions/);
+  assert.match(readiness, /title="Final Staff roster"/);
+  assert.match(readiness, /title="Final participant roster"/);
+  assert.match(readiness, /One final participant queue/);
+  assert.match(readiness, /Open Final roster/);
   assert.doesNotMatch(readiness, /RegistrationReviewInbox/);
   assert.match(identity, /Prepare, review, then finalize/);
   assert.match(identity, /identity-stepper-v5/);
@@ -48,7 +48,7 @@ test("Readiness owns FSY IDs, Staff readiness and Final roster without duplicati
   assert.match(identity, /identity-badge-modal-v5/);
 });
 
-test("Registration Phase 2 mobile UX supports compact tabs, readiness cards and one-column Solutions", async () => {
+test("Registration Phase 2 mobile UX supports compact tabs, readiness cards and one-column Final roster", async () => {
   const css = await read("src/pages/registration-phase2-v30.css");
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);

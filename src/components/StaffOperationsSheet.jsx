@@ -17,7 +17,7 @@ const fieldHelp={
 };
 
 export function StaffOperationsSheet({person,currentRole,onClose,onSaved,assignment}){
- const initial=staffState(person),canConfirm=['session_director','logistics_admin','coordinator'].includes(currentRole),leadership=['coordinator','logistics_admin','session_director'].includes(currentRole);
+ const initial=staffState(person),canConfirm=['session_director','logistics_admin'].includes(currentRole),leadership=['logistics_admin','session_director'].includes(currentRole);
  const initialLifecycle=person.isCurrent===false?'withdrawn':['no_show','left'].includes(initial.arrival)?initial.arrival:'active';
  const [form,setForm]=useState({...initial,authority:'',reason:'',duties:(person.committeeDuties||[]).join(', ')}),[lifecycle,setLifecycle]=useState(initialLifecycle),[lifecycleAuthority,setLifecycleAuthority]=useState(''),[lifecycleReason,setLifecycleReason]=useState(''),[busy,setBusy]=useState(false),[lifecycleBusy,setLifecycleBusy]=useState(false),[error,setError]=useState('');
  const save=async event=>{event.preventDefault();setBusy(true);setError('');try{await updateStaffOperations(person,{...form,duties:form.duties.split(',').map(s=>s.trim()).filter(Boolean)});await onSaved();onClose();}catch(e){setError(e.message||'Could not save staff status');}finally{setBusy(false);}};
