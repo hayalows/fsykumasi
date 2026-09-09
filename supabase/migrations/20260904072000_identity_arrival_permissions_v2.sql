@@ -352,7 +352,18 @@ begin
   left join public.counselor_groups g on g.id=coalesce(b.group_id,p.group_id)
   left join public.companies c on c.id=coalesce(b.company_id,g.company_id)
   left join public.check_ins ci on ci.session_id=p.session_id and ci.participant_id=p.id
+  join public.sessions s on s.id=p.session_id
+  left join public.participant_private_details d on d.participant_id=p.id
+  left join public.participant_operation_decisions od on od.participant_id=p.id
   where p.session_id=p_session_id
+    and p.is_current
+    and coalesce(od.cohort_state,'normal')<>'excluded'
+    and coalesce(
+      case when s.starts_on is not null and d.date_of_birth is not null
+        then extract(year from age(s.starts_on,d.date_of_birth))::integer
+        else p.age end,
+      0
+    ) between 12 and 19
   order by lower(coalesce(p.stake_name,'')),lower(coalesce(p.unit_name,'')),lower(p.last_name),lower(p.first_name),p.id;
 end;
 $$;

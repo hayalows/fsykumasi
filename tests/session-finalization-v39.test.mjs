@@ -5,6 +5,8 @@ import fs from 'node:fs';
 const migration = fs.readFileSync('supabase/migrations/20260909143500_session_finalization_v1.sql', 'utf8');
 const authority = fs.readFileSync('supabase/migrations/20260909145000_final_roster_authority_v1.sql', 'utf8');
 const policyV2 = fs.readFileSync('supabase/migrations/20260909184719_final_roster_policy_v2.sql', 'utf8');
+const settingsHotfix = fs.readFileSync('supabase/migrations/20260909200000_fix_final_roster_settings_reference.sql', 'utf8');
+const arrivalPolicy = fs.readFileSync('supabase/migrations/20260909200500_hide_excluded_age20_arrival_roster.sql', 'utf8');
 const registration = fs.readFileSync('src/pages/Registration.jsx', 'utf8');
 const finalization = fs.readFileSync('src/pages/SessionFinalization.jsx', 'utf8');
 const staffState = fs.readFileSync('src/lib/staff-state.js', 'utf8');
@@ -76,4 +78,24 @@ test('v2 roster policy allows 12–13 and awaiting participants while hiding 20+
   assert.match(policyV2, /participant_operation_decisions/);
   assert.match(policyV2, /finalization_cohort/);
   assert.match(policyV2, /source registration retained/);
+});
+
+test('final-roster settings columns are qualified in both deployed functions', () => {
+  assert.match(policyV2, /coalesce\(ss\.groups_per_company,2\)/g);
+  assert.match(policyV2, /from public\.session_structure_settings ss where ss\.session_id=p_session_id/g);
+  assert.match(settingsHotfix, /get_session_finalization_preview_v2/);
+  assert.match(settingsHotfix, /apply_session_finalization_v2/);
+  assert.match(settingsHotfix, /ss\.groups_per_company/);
+});
+
+test('active arrival roster excludes age 20+ and locally excluded source records', () => {
+  assert.match(arrivalPolicy, /coalesce\(od\.cohort_state,'normal'\)<>'excluded'/);
+  assert.match(arrivalPolicy, /between 12 and 19/);
+  assert.match(arrivalPolicy, /grant execute on function public\.get_arrival_reconciliation\(uuid\) to authenticated/);
+});
+
+test('finalization does not show a staffing error while its preview is unavailable', () => {
+  assert.match(finalization, /const blocked = Boolean\(preview\) && !preview\?\.safe_to_apply/);
+  assert.match(finalization, /participantBlockers/);
+  assert.match(finalization, /assistantShortfall/);
 });

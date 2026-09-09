@@ -772,10 +772,10 @@ begin
   end if;
 
   select * into final_row from public.session_roster_finalizations where session_id=p_session_id;
-  select coalesce(group_min_size,8),coalesce(group_max_size,10),
-    coalesce(groups_per_company,2),coalesce(avoid_same_unit,true)
+  select coalesce(ss.group_min_size,8),coalesce(ss.group_max_size,10),
+    coalesce(ss.groups_per_company,2),coalesce(ss.avoid_same_unit,true)
   into min_group_size,max_group_size,groups_per_company,avoid_same_unit
-  from public.session_structure_settings where session_id=p_session_id;
+  from public.session_structure_settings ss where ss.session_id=p_session_id;
   min_group_size:=greatest(coalesce(min_group_size,8),1);
   max_group_size:=greatest(coalesce(max_group_size,10),1);
   groups_per_company:=greatest(coalesce(groups_per_company,2),1);
@@ -985,10 +985,10 @@ begin
   select * into s from public.sessions where id=p_session_id for update;
   if s.id is null then raise exception 'Session not found'; end if;
 
-  select coalesce(group_min_size,8),coalesce(group_max_size,10),
-    coalesce(groups_per_company,2),coalesce(avoid_same_unit,true)
+  select coalesce(ss.group_min_size,8),coalesce(ss.group_max_size,10),
+    coalesce(ss.groups_per_company,2),coalesce(ss.avoid_same_unit,true)
   into min_group_size,max_group_size,groups_per_company,avoid_same_unit
-  from public.session_structure_settings where session_id=p_session_id;
+  from public.session_structure_settings ss where ss.session_id=p_session_id;
   min_group_size:=greatest(coalesce(min_group_size,8),1);
   max_group_size:=greatest(coalesce(max_group_size,10),1);
   groups_per_company:=greatest(coalesce(groups_per_company,2),1);
