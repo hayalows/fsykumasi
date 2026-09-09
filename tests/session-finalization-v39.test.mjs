@@ -7,6 +7,7 @@ const authority = fs.readFileSync('supabase/migrations/20260909145000_final_rost
 const policyV2 = fs.readFileSync('supabase/migrations/20260909184719_final_roster_policy_v2.sql', 'utf8');
 const settingsHotfix = fs.readFileSync('supabase/migrations/20260909200000_fix_final_roster_settings_reference.sql', 'utf8');
 const arrivalPolicy = fs.readFileSync('supabase/migrations/20260909200500_hide_excluded_age20_arrival_roster.sql', 'utf8');
+const reliability = fs.readFileSync('supabase/migrations/20260909203000_registration_checkin_reliability_v1.sql', 'utf8');
 const registration = fs.readFileSync('src/pages/Registration.jsx', 'utf8');
 const finalization = fs.readFileSync('src/pages/SessionFinalization.jsx', 'utf8');
 const staffState = fs.readFileSync('src/lib/staff-state.js', 'utf8');
@@ -30,7 +31,7 @@ test('finalization supports whole-session pre-session leaders', () => {
   assert.match(migration, /role::text in \('logistics_admin','session_director'\)/);
   assert.match(authority, /array\['logistics_admin','session_director'\]/);
   assert.match(resolution, /\["session_director", "logistics_admin", "coordinator", "area_advisory_couple"\]/);
-  assert.match(staffSheet, /\['session_director','logistics_admin','coordinator','area_advisory_couple'\]/);
+  assert.match(staffSheet, /WHOLE_SESSION_LEADERS\s*=\s*\[\s*'session_director',\s*'logistics_admin',\s*'coordinator',\s*'area_advisory_couple'\s*\]/);
   assert.match(policyV2, /array\['coordinator','logistics_admin','session_director','area_advisory_couple'\]/);
 });
 
@@ -86,6 +87,14 @@ test('final-roster settings columns are qualified in both deployed functions', (
   assert.match(settingsHotfix, /get_session_finalization_preview_v2/);
   assert.match(settingsHotfix, /apply_session_finalization_v2/);
   assert.match(settingsHotfix, /ss\.groups_per_company/);
+  assert.match(reliability, /groups_per_company:=greatest\(coalesce\(groups_per_company,2\),1\)/g);
+  assert.match(reliability, /Expected broken preview settings normalization was not found/);
+});
+
+test('registration actions keep the user informed while saving', () => {
+  assert.match(staffSheet, /onSubmit=\{save\} noValidate/);
+  assert.match(staffSheet, /type="submit"[^>]+className="primary"/);
+  assert.match(staffSheet, /staff-status-v36-action-buttons/);
 });
 
 test('active arrival roster excludes age 20+ and locally excluded source records', () => {

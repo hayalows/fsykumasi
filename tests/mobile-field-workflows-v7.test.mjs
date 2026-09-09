@@ -10,8 +10,9 @@ test("on-site registration uses compact step progress and explicit placement con
   assert.match(parts, /Step \{step\} of 4/);
   assert.match(parts, /Lowest load/);
   assert.doesNotMatch(parts, /Best fit/);
-  assert.match(parts, /Nothing is saved until you confirm below/);
-  assert.match(parts, /Place in \$\{selected\.displayName/);
+  assert.match(parts, /Choose one group, then confirm placement/);
+  assert.match(parts, /Place \$\{firstName\}/);
+  assert.match(parts, /aria-busy=\{busy\}/);
 });
 
 test("mobile registration is full-screen and keeps mutation outcomes in view", async () => {
