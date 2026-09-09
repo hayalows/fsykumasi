@@ -1,28 +1,28 @@
 /* Registration workspace composition.
-   The mode switch should feel like one control for one workflow, not a second
-   dashboard sitting underneath the page title. */
+   One page, three modes, one obvious next action. Keep the top controls compact
+   enough that the operational work starts inside the first viewport. */
 
 .registration-workspace-v30 .registration-workspace-intro-v5 {
-  padding-top: 28px;
+  padding-top: 22px;
   padding-bottom: 0 !important;
 }
 
 .registration-workspace-v30 .registration-workspace-intro-v5 .page-head {
-  max-width: 960px;
-  margin-bottom: 20px;
+  max-width: 900px;
+  margin-bottom: 14px;
 }
 
 .registration-workspace-v30 .registration-workspace-intro-v5 .page-head h1 {
-  margin-bottom: 7px;
-  font-size: clamp(2.25rem, 3.2vw, 3.25rem);
+  margin-bottom: 5px;
+  font-size: clamp(2rem, 2.75vw, 2.9rem);
   line-height: 1.02;
   letter-spacing: -.045em;
 }
 
 .registration-workspace-v30 .registration-workspace-intro-v5 .page-head > div > p:last-child {
-  max-width: 820px;
-  font-size: 1rem;
-  line-height: 1.5;
+  max-width: 720px;
+  font-size: .94rem;
+  line-height: 1.45;
 }
 
 .registration-workspace-v30 .registration-workspace-navigation-v5 {
@@ -30,15 +30,15 @@
   top: 70px;
   z-index: 14;
   display: grid;
-  grid-template-columns: minmax(420px, 560px) minmax(0, 1fr);
-  gap: 28px;
+  grid-template-columns: minmax(390px, 510px) minmax(0, 1fr);
+  gap: 22px;
   align-items: center;
   margin: 0;
-  min-height: 78px;
-  padding: 11px 0 12px;
+  min-height: 66px;
+  padding: 9px 0 10px;
   border-top: 1px solid var(--registration-border, var(--ds-line));
   border-bottom: 1px solid var(--registration-border, var(--ds-line));
-  background: rgba(255, 255, 255, .96);
+  background: rgba(255, 255, 255, .97);
   box-shadow: none;
   backdrop-filter: blur(16px) saturate(1.04);
   -webkit-backdrop-filter: blur(16px) saturate(1.04);
@@ -47,8 +47,8 @@
 .registration-workspace-v30 .registration-workspace-tabs-v5,
 .registration-workspace-v30 .registration-mode-switch.registration-workspace-tabs-v5 {
   width: 100%;
-  max-width: 560px;
-  min-height: 46px;
+  max-width: 510px;
+  min-height: 44px;
   margin: 0;
   padding: 4px;
   display: grid;
@@ -56,20 +56,20 @@
   gap: 4px;
   overflow: hidden;
   border: 1px solid var(--registration-border, var(--ds-line));
-  border-radius: 13px;
+  border-radius: 12px;
   background: var(--registration-soft, var(--ds-surface-subtle));
 }
 
 .registration-workspace-v30 .registration-workspace-tabs-v5 button {
   min-width: 0;
-  min-height: 38px;
-  padding: 0 11px;
+  min-height: 36px;
+  padding: 0 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
   color: var(--registration-muted, var(--ds-text-secondary));
   box-shadow: none;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 750;
 }
 
@@ -84,8 +84,8 @@
 }
 
 .registration-workspace-v30 .registration-workspace-tabs-v5 button b {
-  min-width: 21px;
-  height: 21px;
+  min-width: 20px;
+  height: 20px;
   padding: 0 6px;
   display: inline-grid;
   place-items: center;
@@ -98,60 +98,58 @@
 
 .registration-workspace-v30 .registration-mode-cue-compact {
   min-width: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 22px;
+  gap: 16px;
   padding: 0;
   border: 0;
-  border-radius: 0;
   background: transparent;
   box-shadow: none;
 }
 
 .registration-workspace-v30 .registration-mode-copy {
   min-width: 0;
-  max-width: 610px;
+  max-width: 390px;
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 
 .registration-workspace-v30 .registration-mode-copy .kicker {
   margin: 0;
-  font-size: 9px;
+  font-size: 8.5px;
+  line-height: 1.2;
   letter-spacing: .1em;
 }
 
 .registration-workspace-v30 .registration-mode-copy p {
   margin: 0;
   color: var(--registration-muted, var(--ds-text-secondary));
-  font-size: 12px;
-  line-height: 1.42;
+  font-size: 11.5px;
+  line-height: 1.35;
 }
 
 .registration-workspace-v30 .registration-mode-summary {
-  flex: none;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0;
+  gap: 7px;
   white-space: nowrap;
 }
 
 .registration-workspace-v30 .registration-mode-summary > span {
-  min-height: 34px;
-  padding: 0 11px;
+  min-height: 30px;
+  padding: 0 8px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border-left: 1px solid var(--registration-border, var(--ds-line));
+  border: 0;
+  border-radius: 8px;
+  background: var(--registration-soft, var(--ds-surface-subtle));
   color: var(--registration-muted, var(--ds-text-secondary));
-  font-size: 11px;
+  font-size: 10.5px;
   font-variant-numeric: tabular-nums;
-}
-
-.registration-workspace-v30 .registration-mode-summary > span:first-child {
-  border-left: 0;
 }
 
 .registration-workspace-v30 .registration-mode-summary b {
@@ -159,43 +157,103 @@
   font-size: inherit;
 }
 
+.registration-workspace-v30 .registration-mode-summary .needs-action {
+  background: color-mix(in srgb, var(--status-warning, #946315) 9%, white);
+}
+
 .registration-workspace-v30 .registration-mode-summary .needs-action b {
-  color: var(--status-warning, #8a5d17);
+  color: var(--status-warning, #805611);
+}
+
+.registration-workspace-v30 .registration-mode-summary .clear {
+  background: color-mix(in srgb, var(--status-success, #44703c) 9%, white);
 }
 
 .registration-workspace-v30 .registration-mode-summary .clear b {
   color: var(--status-success, #3f6f36);
 }
 
-/* Keep the first task close to the mode switch. */
 .registration-workspace-v30 .registration-workspace-pane-v5 {
   border-top: 0;
 }
 
-@media (max-width: 1180px) {
+/* Final roster is a workflow, not a second dashboard. Compress the participant
+   worklist heading and remove the redundant instructional strip. */
+.registration-workspace-v30.registration-mode-roster .regjourney-roster-head {
+  width: min(calc(100% - (var(--fsy-page-gutter, 24px) * 2)), 1280px);
+  max-width: 1280px;
+  margin: 8px auto 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid var(--registration-border, var(--ds-line));
+  border-radius: 12px;
+  background: var(--ds-surface, #fff);
+  box-shadow: none;
+}
+
+.registration-workspace-v30.registration-mode-roster .regjourney-roster-head .kicker {
+  display: none;
+}
+
+.registration-workspace-v30.registration-mode-roster .regjourney-roster-head h2 {
+  margin: 0 0 3px;
+  font-size: 1rem;
+  line-height: 1.25;
+  letter-spacing: -.015em;
+}
+
+.registration-workspace-v30.registration-mode-roster .regjourney-roster-head p {
+  margin: 0;
+  max-width: 760px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--registration-muted, var(--ds-text-secondary));
+}
+
+.registration-workspace-v30.registration-mode-roster .regjourney-roster-head > div:last-child {
+  flex: none;
+  min-width: 64px;
+  margin-left: auto;
+  text-align: right;
+}
+
+.registration-workspace-v30.registration-mode-roster .regjourney-roster-head > div:last-child b {
+  font-size: 1.3rem;
+}
+
+.registration-workspace-v30.registration-mode-roster .regjourney-solution-principle-v30 {
+  display: none !important;
+}
+
+.registration-workspace-v30.registration-mode-roster .regjourney-worklist {
+  margin-top: 0;
+}
+
+@media (max-width: 1240px) {
   .registration-workspace-v30 .registration-workspace-navigation-v5 {
-    grid-template-columns: minmax(360px, 500px) minmax(0, 1fr);
-    gap: 20px;
+    grid-template-columns: minmax(360px, 470px) minmax(0, 1fr);
+    gap: 16px;
   }
 
   .registration-workspace-v30 .registration-mode-cue-compact {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 7px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
   }
 
-  .registration-workspace-v30 .registration-mode-summary {
-    justify-content: flex-start;
+  .registration-workspace-v30 .registration-mode-copy p {
+    display: none;
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 980px) {
   .registration-workspace-v30 .registration-workspace-navigation-v5 {
     position: static;
     grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
+    gap: 9px;
     min-height: 0;
-    padding: 11px 0 14px;
+    padding: 9px 0 12px;
   }
 
   .registration-workspace-v30 .registration-workspace-tabs-v5,
@@ -204,28 +262,29 @@
   }
 
   .registration-workspace-v30 .registration-mode-cue-compact {
-    display: grid;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .registration-workspace-v30 .registration-mode-copy p {
+    display: block;
   }
 }
 
 @media (max-width: 760px) {
   .registration-workspace-v30 .registration-workspace-intro-v5 {
-    padding-top: 20px;
-    padding-bottom: 0 !important;
+    padding-top: 16px;
   }
 
   .registration-workspace-v30 .registration-workspace-intro-v5 .page-head {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   .registration-workspace-v30 .registration-workspace-intro-v5 .page-head h1 {
-    font-size: clamp(1.9rem, 9vw, 2.35rem);
+    font-size: clamp(1.85rem, 9vw, 2.25rem);
   }
 
   .registration-workspace-v30 .registration-workspace-tabs-v5,
   .registration-workspace-v30 .registration-mode-switch.registration-workspace-tabs-v5 {
-    display: grid;
     grid-template-columns: repeat(3, minmax(max-content, 1fr));
     overflow-x: auto;
     overscroll-behavior-inline: contain;
@@ -233,11 +292,16 @@
 
   .registration-workspace-v30 .registration-workspace-tabs-v5 button {
     min-width: max-content;
-    padding-inline: 10px;
+    padding-inline: 9px;
+  }
+
+  .registration-workspace-v30 .registration-mode-cue-compact {
+    grid-template-columns: 1fr;
+    gap: 7px;
   }
 
   .registration-workspace-v30 .registration-mode-copy p {
-    font-size: 11.5px;
+    font-size: 11px;
   }
 
   .registration-workspace-v30 .registration-mode-summary {
@@ -251,8 +315,10 @@
     display: none;
   }
 
-  .registration-workspace-v30 .registration-mode-summary > span {
-    padding-inline: 9px;
+  .registration-workspace-v30.registration-mode-roster .regjourney-roster-head {
+    width: min(calc(100% - 28px), 1280px);
+    align-items: flex-start;
+    padding: 12px 13px;
   }
 }
 
@@ -261,7 +327,12 @@
     display: none;
   }
 
-  .registration-workspace-v30 .registration-mode-summary > span:nth-child(2) {
+  .registration-workspace-v30 .registration-mode-summary > span {
+    min-height: 28px;
+    padding-inline: 7px;
+  }
+
+  .registration-workspace-v30.registration-mode-roster .regjourney-roster-head p {
     display: none;
   }
 }
