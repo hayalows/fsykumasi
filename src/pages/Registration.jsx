@@ -9,6 +9,7 @@ import "./registration-review.css";
 import "./registration-v5.css";
 import "./registration-journey.css";
 import "./registration-readiness-v28.css";
+import "./registration-workspace.css";
 
 const MODE_META = {
   desk: {
@@ -75,12 +76,12 @@ export function Registration(props) {
     onSetOperationalStatus: props.onSetOperationalStatus,
   };
 
-  return <div className="registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28 registration-v29 registration-workspace-v30">
+  return <div className={`registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28 registration-v29 registration-workspace-v30 registration-mode-${mode}`}>
     <section className="page registration-workspace-intro registration-workspace-intro-v5 registration-unified-intro">
       <PageHead
         title="Registration & check-in"
         sessionName={sessionName}
-        description="Settle the final participant list before the session, keep normal arrivals fast, and use Readiness for identities and Staff coverage."
+        description="Settle the final participant list, keep arrivals fast, and check identity and Staff readiness before Day One."
       />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
         {canUseRegistrationTools ? <SegmentedControl
@@ -94,10 +95,16 @@ export function Registration(props) {
             { value: "readiness", label: "Readiness", id: "registration-mode-readiness" },
           ]}
         /> : null}
-        <div className="registration-mode-cue-v5" role="status">
-          <div><span className="kicker">{modeMeta.phase}</span><b>{modeMeta.title}</b></div>
-          <p>{modeMeta.help}</p>
-          {cohortSummary ? <small><b>{formatCount(cohortSummary.eligible)} eligible youth</b><span>{formatCount(cohortSummary.records)} registration records{solutionCount ? ` · ${formatCount(solutionCount)} decisions left` : " · final participant list clear"}</span></small> : null}
+        <div className="registration-mode-cue-v5 registration-mode-cue-compact" role="status" aria-label={`${modeMeta.title}. ${modeMeta.help}`}>
+          <div className="registration-mode-copy">
+            <span className="kicker">{modeMeta.phase}</span>
+            <p>{modeMeta.help}</p>
+          </div>
+          {cohortSummary ? <div className="registration-mode-summary" aria-label="Registration summary">
+            <span><b>{formatCount(cohortSummary.eligible)}</b> eligible youth</span>
+            <span><b>{formatCount(cohortSummary.records)}</b> records</span>
+            <span className={solutionCount ? "needs-action" : "clear"}><b>{formatCount(solutionCount)}</b> {solutionCount === 1 ? "decision" : "decisions"} left</span>
+          </div> : null}
         </div>
       </div>
     </section>
