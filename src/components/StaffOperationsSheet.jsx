@@ -13,11 +13,11 @@ const labels={
 const fieldHelp={
  planning:'Where this person sits in the staffing plan.',
  arrival:'Whether they are physically at the FSY session.',
- clearance:'Whether session leadership has confirmed they may actively serve.'
+ clearance:'Whether whole-session leadership has confirmed they may actively serve.'
 };
 
 export function StaffOperationsSheet({person,currentRole,onClose,onSaved,assignment}){
- const initial=staffState(person),canConfirm=['session_director','logistics_admin'].includes(currentRole),leadership=['coordinator','logistics_admin','session_director'].includes(currentRole);
+ const initial=staffState(person),canConfirm=['session_director','logistics_admin','coordinator'].includes(currentRole),leadership=['coordinator','logistics_admin','session_director'].includes(currentRole);
  const initialLifecycle=person.isCurrent===false?'withdrawn':['no_show','left'].includes(initial.arrival)?initial.arrival:'active';
  const [form,setForm]=useState({...initial,authority:'',reason:'',duties:(person.committeeDuties||[]).join(', ')}),[lifecycle,setLifecycle]=useState(initialLifecycle),[lifecycleAuthority,setLifecycleAuthority]=useState(''),[lifecycleReason,setLifecycleReason]=useState(''),[busy,setBusy]=useState(false),[lifecycleBusy,setLifecycleBusy]=useState(false),[error,setError]=useState('');
  const save=async event=>{event.preventDefault();setBusy(true);setError('');try{await updateStaffOperations(person,{...form,duties:form.duties.split(',').map(s=>s.trim()).filter(Boolean)});await onSaved();onClose();}catch(e){setError(e.message||'Could not save staff status');}finally{setBusy(false);}};
@@ -37,7 +37,7 @@ export function StaffOperationsSheet({person,currentRole,onClose,onSaved,assignm
   <section className="staff-status-v36-fields" aria-label="Staff operational status">
    {[["planning","Plan",STAFF_PLANNING],["arrival","Presence",STAFF_ARRIVAL],["clearance","Ready to serve",STAFF_CLEARANCE]].map(([key,label,values])=><label key={key}><span className="staff-status-v36-label"><b>{label}</b><small>{fieldHelp[key]}</small></span><select value={form[key]} disabled={busy||(key==='clearance'&&!canConfirm)} onChange={e=>setForm({...form,[key]:e.target.value})}>{values.map(value=><option key={value} value={value}>{labels[value]||value}</option>)}</select></label>)}
   </section>
-  {!canConfirm?<p className="form-hint staff-status-v36-authority">A Session Directing Couple or Logistical Administrator records <b>Ready to serve</b>.</p>:null}
+  {!canConfirm?<p className="form-hint staff-status-v36-authority">A whole-session leader records <b>Ready to serve</b>.</p>:null}
   {form.arrival==='arrived'&&form.clearance!=='cleared'?<p className="notice">This person is physically present, but they are not yet marked Ready to serve.</p>:null}
   <details className="staff-status-v36-details"><summary>Responsibility & operational note</summary><div>
    <label>{person.operationalRole==='committee_member'?'Committee responsibility':'Committee duties'} <small>{person.operationalRole==='committee_member'?'Use a simple name such as Materials or Food. It will show as “Materials committee”.':'Separate additional duties with commas.'}</small><input value={form.duties} maxLength={500} placeholder={person.operationalRole==='committee_member'?'Materials':'Food, Games Night'} onChange={e=>setForm({...form,duties:e.target.value})}/></label>
