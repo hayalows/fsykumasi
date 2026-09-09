@@ -10,3 +10,7 @@ export const saveStaffCompanyLimit=(sessionId,limit)=>rpc('set_staff_company_lim
 export const recordParticipantException=(id,form)=>rpc('record_participant_exception',{
  p_participant_id:id,p_allow:form.allow,p_authority:form.authority,p_reason:form.reason,p_registration_confirmed:form.registration,p_guardian_confirmed:form.guardian,p_leadership_confirmed:form.leadership
 });
+export const previewSessionFinalization=(sessionId)=>rpc('preview_session_finalization_v1',{p_session_id:sessionId});
+export const applySessionFinalization=(sessionId,authority='Kumasi session leadership',reason='Pre-session local roster finalization')=>rpc('apply_session_finalization_v1',{
+ p_session_id:sessionId,p_authority:authority,p_reason:reason
+});
