@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { RegistrationJourney } from "./RegistrationJourney.jsx";
 import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
+import { RosterFinalizationPanel } from "../components/RosterFinalizationPanel.jsx";
 import { formatCount } from "../lib/cohort.js";
 import { registrationBlockerCount } from "../lib/registration-workflow-v30.js";
 import { PageHead, SegmentedControl } from "../components/UI.jsx";
@@ -18,7 +19,7 @@ const MODE_META = {
   roster: {
     phase: "Exception work",
     title: "Solutions",
-    help: "One place for participant blockers: approval, eligibility, verification, placement, identity and arrival follow-up.",
+    help: "Finish the pre-session roster here, then use this space only for genuine on-site exceptions.",
   },
   readiness: {
     phase: "Session readiness",
@@ -55,7 +56,7 @@ export function Registration(props) {
     onNavigate?.({ view: "registration", mode: next, filter: "" });
   };
 
-  const handleFinalBaselineChanged = async () => {
+  const handleFullRefresh = async () => {
     await onOperationalDataChanged?.();
     if (typeof window !== "undefined") window.location.reload();
   };
@@ -79,7 +80,7 @@ export function Registration(props) {
       <PageHead
         title="Registration & check-in"
         sessionName={sessionName}
-        description="Keep normal arrivals fast. Resolve participant blockers in one Solutions queue, and use Readiness for the supporting setup."
+        description="Keep normal arrivals fast. Use Solutions for roster decisions and true exceptions, and Readiness for supporting setup."
       />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
         {canUseRegistrationTools ? <SegmentedControl
@@ -103,6 +104,7 @@ export function Registration(props) {
 
     <div className="registration-workspace-pane registration-workspace-pane-v5 registration-unified-pane">
       <div role="tabpanel" aria-labelledby={journeyMode === "desk" ? "registration-mode-desk" : "registration-mode-roster"} hidden={mode === "readiness"}>
+        {journeyMode === "roster" && mode === "roster" ? <RosterFinalizationPanel sessionId={sessionId} onApplied={handleFullRefresh} /> : null}
         <RegistrationJourney view={journeyMode} {...journeyProps} />
       </div>
 
@@ -116,7 +118,7 @@ export function Registration(props) {
           canManage={props.canManage}
           setImported={props.setImported}
           onChanged={onOperationalDataChanged}
-          onFinalBaselineChanged={handleFinalBaselineChanged}
+          onFinalBaselineChanged={handleFullRefresh}
           onNavigate={onNavigate}
         />
       </div> : null}
