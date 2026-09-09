@@ -1,0 +1,103 @@
+/* Overlay behavior belongs to the design system so every route gets the same
+   scroll ownership, action geometry and recovery behavior. */
+
+.modal-backdrop,
+.dismissible-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.layer-panel,
+.modal {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Context drawers occupy the visible viewport. A route-specific inner body may
+   own scrolling, otherwise the panel itself does. In either case the document
+   behind it is never the scroll target. */
+.sheet-layer:not(:has(.confirm-action-sheet)) > .layer-panel {
+  min-height: 0;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.housing-v5-assignment-layer.layer-panel,
+.housing-v36-room-detail-layer.layer-panel,
+.staff-status-v36-layer.layer-panel,
+.wellness-editor-layer.layer-panel {
+  overflow: hidden !important;
+}
+
+.housing-v5-assignment-body,
+.housing-v6-room-detail-body,
+.staff-role-transition-sheet,
+.staff-status-v36,
+.wellness-sheet {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Confirmation actions use the same button system as every other action. */
+.confirm-action-buttons {
+  align-items: center;
+}
+
+.confirm-action-buttons > button,
+.confirm-action-primary {
+  min-height: var(--ds-control);
+  padding: 0 15px;
+  border-radius: var(--ds-radius-sm);
+  font-family: var(--ds-font);
+  font-size: var(--ds-text-sm);
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.primary.danger,
+.confirm-action-primary.danger {
+  border-color: var(--ds-danger);
+  background: var(--ds-danger);
+  color: #fff;
+}
+
+.primary.danger:hover,
+.confirm-action-primary.danger:hover {
+  border-color: #8f332c;
+  background: #8f332c;
+  color: #fff;
+}
+
+@media (max-width: 760px) {
+  .dismissible-layer,
+  .modal-backdrop {
+    height: 100dvh;
+  }
+
+  .confirm-action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+
+  .confirm-action-buttons > button {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .confirm-action-buttons {
+    grid-template-columns: 1fr;
+  }
+}
