@@ -1,19 +1,19 @@
 /* Wellness v5 hotfix: keep long private records usable at every viewport height. */
-.wellness-editor-layer.layer-panel{
+.dismissible-layer .wellness-editor-layer.layer-panel{
   display:flex;
   flex-direction:column;
   width:min(720px,calc(100vw - 24px));
-  max-height:calc(100dvh - 32px);
+  max-height:min(90dvh,900px);
   padding:0;
   overflow:hidden;
 }
 
-.wellness-editor-layer .wellness-sheet{
+.dismissible-layer .wellness-editor-layer .wellness-sheet{
   flex:1 1 auto;
   width:100%;
   min-width:0;
   min-height:0;
-  max-height:calc(100dvh - 32px);
+  max-height:min(90dvh,900px);
   overflow-x:hidden;
   overflow-y:auto;
   overscroll-behavior-y:contain;
@@ -24,7 +24,7 @@
   padding:22px 22px 0;
 }
 
-.wellness-editor-layer .wellness-editor-actions{
+.dismissible-layer .wellness-editor-layer .wellness-editor-actions{
   position:sticky;
   z-index:6;
   bottom:0;
@@ -36,12 +36,12 @@
   backdrop-filter:blur(10px);
 }
 
-.wellness-editor-layer .wellness-editor-actions button{
+.dismissible-layer .wellness-editor-layer .wellness-editor-actions button{
   min-height:46px;
 }
 
 @media(max-width:700px){
-  .wellness-editor-layer.layer-panel{
+  .dismissible-layer .wellness-editor-layer.layer-panel{
     width:100%;
     max-width:none;
     height:100dvh;
@@ -50,14 +50,14 @@
     border-radius:0;
   }
 
-  .wellness-editor-layer .wellness-sheet{
+  .dismissible-layer .wellness-editor-layer .wellness-sheet{
     max-height:100dvh;
     padding:16px 16px 0;
     gap:14px;
     scroll-padding-bottom:104px;
   }
 
-  .wellness-editor-layer .wellness-editor-actions{
+  .dismissible-layer .wellness-editor-layer .wellness-editor-actions{
     bottom:0;
     margin:0 -16px;
     padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
@@ -68,48 +68,48 @@
 }
 
 @media(max-width:420px){
-  .wellness-editor-layer .wellness-editor-heading{
+  .dismissible-layer .wellness-editor-layer .wellness-editor-heading{
     grid-template-columns:44px minmax(0,1fr);
     gap:11px;
     padding-right:38px;
   }
 
-  .wellness-editor-layer .wellness-editor-avatar{
+  .dismissible-layer .wellness-editor-layer .wellness-editor-avatar{
     width:44px;
     height:44px;
   }
 
-  .wellness-editor-layer .wellness-editor-heading h2{
+  .dismissible-layer .wellness-editor-layer .wellness-editor-heading h2{
     font-size:21px;
     line-height:1.16;
   }
 
-  .wellness-editor-layer .wellness-editor-section,
-  .wellness-editor-layer .wellness-checkout-block{
+  .dismissible-layer .wellness-editor-layer .wellness-editor-section,
+  .dismissible-layer .wellness-editor-layer .wellness-checkout-block{
     padding:13px;
   }
 
-  .wellness-editor-layer .wellness-health-context summary{
+  .dismissible-layer .wellness-editor-layer .wellness-health-context summary{
     min-height:46px;
   }
 }
 
 @media(max-height:760px) and (min-width:701px){
-  .wellness-editor-layer .wellness-sheet{
+  .dismissible-layer .wellness-editor-layer .wellness-sheet{
     gap:13px;
     padding-top:17px;
   }
 
-  .wellness-editor-layer .wellness-editor-section{
+  .dismissible-layer .wellness-editor-layer .wellness-editor-section{
     gap:10px;
     padding:13px;
   }
 
-  .wellness-editor-layer textarea{
+  .dismissible-layer .wellness-editor-layer textarea{
     min-height:68px;
   }
 }
 
 @media(prefers-reduced-motion:reduce){
-  .wellness-editor-layer .wellness-sheet{scroll-behavior:auto}
+  .dismissible-layer .wellness-editor-layer .wellness-sheet{scroll-behavior:auto}
 }
