@@ -72,8 +72,14 @@ export function SessionFinalization({ sessionId, onChanged, onNavigate }) {
 
   const applied = Boolean(result || preview?.already_finalized);
   const summary = result || preview?.final_summary || {};
-  const blocked = !preview?.safe_to_apply;
+  const blocked = Boolean(preview) && !preview?.safe_to_apply;
   const newGroups = Number(preview?.new_female_groups || 0) + Number(preview?.new_male_groups || 0);
+  const participantBlockers = Number(preview?.remaining_participant_blockers || 0);
+  const femaleCounselorsNeeded = Number(preview?.existing_female_groups_needing_counselor || 0) + Number(preview?.new_female_groups || 0);
+  const maleCounselorsNeeded = Number(preview?.existing_male_groups_needing_counselor || 0) + Number(preview?.new_male_groups || 0);
+  const femaleCounselorShortfall = Math.max(0, femaleCounselorsNeeded - Number(preview?.available_female_counselors || 0));
+  const maleCounselorShortfall = Math.max(0, maleCounselorsNeeded - Number(preview?.available_male_counselors || 0));
+  const assistantShortfall = Math.max(0, Number(preview?.new_companies || 0) - Number(preview?.available_assistant_coordinators || 0));
 
   return <section className="session-finalization" aria-busy={applying}>
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
@@ -131,7 +137,9 @@ export function SessionFinalization({ sessionId, onChanged, onNavigate }) {
       </div>
 
       {Number(preview?.exclusion_conflicts || 0) ? <MutationFeedback tone="error"><WarningCircle /> {n(preview?.exclusion_conflicts)} person aged 20+ already has live placement, check-in, Housing or badge work. The batch will not touch them automatically.</MutationFeedback> : null}
-      {!Number(preview?.exclusion_conflicts || 0) && blocked ? <MutationFeedback tone="error">The available counselor or Assistant Coordinator pool is not large enough for this batch. Review Staff coverage first.</MutationFeedback> : null}
+      {!Number(preview?.exclusion_conflicts || 0) && participantBlockers ? <MutationFeedback tone="error"><WarningCircle /> {n(participantBlockers)} participant eligibility blocker{participantBlockers === 1 ? "" : "s"} remain. Review those participant records before finalizing.</MutationFeedback> : null}
+      {!Number(preview?.exclusion_conflicts || 0) && !participantBlockers && (femaleCounselorShortfall || maleCounselorShortfall || assistantShortfall) ? <MutationFeedback tone="error"><WarningCircle /> Staff coverage is short for this batch{femaleCounselorShortfall ? ` by ${n(femaleCounselorShortfall)} female counselor${femaleCounselorShortfall === 1 ? "" : "s"}` : ""}{maleCounselorShortfall ? `${femaleCounselorShortfall ? " and" : " by"} ${n(maleCounselorShortfall)} male counselor${maleCounselorShortfall === 1 ? "" : "s"}` : ""}{assistantShortfall ? `${femaleCounselorShortfall || maleCounselorShortfall ? " and" : " by"} ${n(assistantShortfall)} Assistant Coordinator${assistantShortfall === 1 ? "" : "s"}` : ""}. Review Staff coverage first.</MutationFeedback> : null}
+      {!Number(preview?.exclusion_conflicts || 0) && !participantBlockers && !femaleCounselorShortfall && !maleCounselorShortfall && !assistantShortfall && blocked ? <MutationFeedback tone="error">The final roster is blocked by an unresolved session condition. Refresh the preview and review the result before applying it.</MutationFeedback> : null}
 
       <div className="session-finalization-guard">
         <b>After this is applied</b>
