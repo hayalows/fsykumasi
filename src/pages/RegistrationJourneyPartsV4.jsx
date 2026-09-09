@@ -80,7 +80,7 @@ function StepIndicator({ step, label }) {
   </div>;
 }
 
-function GroupPicker({ groups, companies, row, busy, onChoose }) {
+function GroupPicker({ groups, companies, row, busy, error, onChoose }) {
   const [query, setQuery] = useState("");
   const [visibleLimit, setVisibleLimit] = useState(6);
   const [selectedId, setSelectedId] = useState("");
@@ -99,14 +99,19 @@ function GroupPicker({ groups, companies, row, busy, onChoose }) {
   const visible = filtered.slice(0, visibleLimit);
   const selected = choices.find((group) => group.id === selectedId) || null;
   const selectedCompany = selected ? companyById.get(selected.companyId) : null;
+  const firstName = String(row.fullName || "participant").trim().split(/\s+/)[0] || "participant";
+
+  useEffect(() => {
+    if (selectedId && !choices.some((group) => group.id === selectedId)) setSelectedId("");
+  }, [choices, selectedId]);
 
   return <div className="regjourney-group-picker regjourney-group-picker-v5">
     {choices.length > 6 ? <label className="regjourney-inline-search regjourney-inline-search-v5"><span className="sr-only">Find counselor group</span><MagnifyingGlass aria-hidden="true" /><input value={query} onChange={(event) => { setQuery(event.target.value); setVisibleLimit(6); }} placeholder="Search groups or companies" /></label> : null}
-    <div className="regjourney-choice-list" role="list" aria-label="Compatible counselor groups">
+    <div className="regjourney-choice-list" role="radiogroup" aria-label="Compatible counselor groups">
       {visible.map((group, index) => {
         const company = companyById.get(group.companyId);
         const isSelected = group.id === selectedId;
-        return <button type="button" key={group.id} className={`regjourney-choice regjourney-choice-v5${isSelected ? " selected" : ""}`} disabled={busy} onClick={() => setSelectedId(group.id)} aria-pressed={isSelected}>
+        return <button type="button" key={group.id} className={`regjourney-choice regjourney-choice-v5${isSelected ? " selected" : ""}`} disabled={busy} onClick={() => setSelectedId(group.id)} role="radio" aria-checked={isSelected}>
           <span><b>{group.displayName || group.name}</b><small>{company?.displayName || company?.name || "Company"} · {Number(group.memberCount || 0)} currently assigned</small></span>
           <span className="regjourney-choice-end">{!query.trim() && index === 0 ? <em>Lowest load</em> : null}{isSelected ? <CheckCircle weight="fill" /> : <span className="regjourney-choice-radio" aria-hidden="true" />}</span>
         </button>;
@@ -114,9 +119,10 @@ function GroupPicker({ groups, companies, row, busy, onChoose }) {
       {!visible.length ? <Empty icon={UsersThree} title="No matching counselor groups" text="Try another group or company name." /> : null}
     </div>
     {filtered.length > visible.length ? <button type="button" className="text-action regjourney-show-groups" onClick={() => setVisibleLimit((value) => value + 14)}>Show {Math.min(14, filtered.length - visible.length)} more groups</button> : null}
-    <div className={`regjourney-placement-confirm${selected ? " ready" : ""}`}>
-      <div>{selected ? <><b>{selected.displayName || selected.name}</b><small>{selectedCompany?.displayName || selectedCompany?.name || "Company"} · Company and FSY ID will follow this placement.</small></> : <><b>Select a counselor group</b><small>Nothing is saved until you confirm below.</small></>}</div>
-      <button type="button" className="primary" disabled={busy || !selected} onClick={() => selected && onChoose(selected)}>{busy ? "Placing…" : selected ? `Place in ${selected.displayName || selected.name}` : "Choose a group"}<ArrowRight /></button>
+    {error ? <MutationFeedback tone="error" className="regjourney-placement-feedback">Placement was not saved. {error}</MutationFeedback> : null}
+    <div className={`regjourney-placement-confirm${selected ? " ready" : ""}`} aria-live="polite">
+      <div>{selected ? <><b>{selected.displayName || selected.name}</b><small>{selectedCompany?.displayName || selectedCompany?.name || "Company"} · {row.sourceKind === "on_site" ? "FSY ID will be created after placement." : "Company follows this group; existing identity stays unchanged."}</small></> : <><b>Select a counselor group</b><small>Choose one group, then confirm placement.</small></>}</div>
+      <button type="button" className="primary" disabled={busy || !selected} aria-busy={busy} onClick={() => selected && void onChoose(selected)}>{busy ? "Placing…" : selected ? `Place ${firstName}` : "Select a group"}<ArrowRight /></button>
     </div>
   </div>;
 }
@@ -288,14 +294,14 @@ export function PersonJourney({ row, eligibility, identityReadiness, vacancies, 
     {row.checkinStatus === "arrived" ? <CompletionState row={row} assignment={housingAssignment} onDone={onDone} onUndoCheckin={onUndoCheckin} containerRef={completionRef} /> : null}
     {onsitePending && canManageRegistration ? <ApprovalStep busy={busy} error={error} onVerify={onVerify} /> : null}
 
-    {!onsitePending && needsPlacement && canManageRegistration ? <div className="regjourney-resolution-section regjourney-placement-id regjourney-resolution-section-v5"><div className="regjourney-section-head"><div><h3>Choose a counselor group</h3><p>{onsite ? "The company follows the group. The FSY ID is then created automatically from the company and Stake or District." : "Groups with fewer assigned participants appear first. The company follows the group automatically."}</p></div></div><GroupPicker groups={groups} companies={companies} row={row} busy={busy} onChoose={onAssignGroup} />{finalized && onsite ? <VacancyOptions vacancies={vacancies} row={row} busy={busy} onChoose={onUseVacancy} /> : null}</div> : null}
+    {!onsitePending && needsPlacement && canManageRegistration ? <div className="regjourney-resolution-section regjourney-placement-id regjourney-resolution-section-v5"><div className="regjourney-section-head"><div><span className="kicker">Placement</span><h3>Place in a counselor group</h3><p>{onsite ? "Choose a compatible group. The FSY ID is then created automatically, and the company follows this placement." : "Choose a compatible group. Existing placements are not rearranged."}</p></div></div><GroupPicker groups={groups} companies={companies} row={row} busy={busy} error={error} onChoose={onAssignGroup} />{finalized && onsite ? <VacancyOptions vacancies={vacancies} row={row} busy={busy} onChoose={onUseVacancy} /> : null}</div> : null}
 
     {!onsitePending && !needsPlacement && ready ? <div className="regjourney-ready-panel regjourney-ready-panel-v5" ref={readyRef}><div><CheckCircle weight="fill"/><span><b>Ready to check in</b><small>{[row.fsyId, row.companyName, row.groupName].filter(Boolean).join(" · ")}</small></span></div><button type="button" className="primary" disabled={busy} aria-busy={busy} onClick={onCheckin}>{busy ? "Saving check-in…" : "Complete check-in"}<Check /></button></div> : null}
 
     {!onsitePending && !needsPlacement && !ready && row.checkinStatus !== "arrived" && problem ? <div className="regjourney-blocked"><WarningCircle/><div><b>{problem}</b><p>{problem === "Needs FSY ID" ? "The participant cannot check in until identity is complete. Review their Stake or District and placement." : "Resolve this eligibility issue before placement or check-in."}</p></div></div> : null}
 
     {row.checkinStatus !== "arrived" ? <details className="regjourney-secondary-actions"><summary><span><b>Not checking in now?</b><small>Update the arrival status only when needed</small></span><span aria-hidden="true">+</span></summary><div className="regjourney-secondary-grid">{row.attendanceStatus !== "expected" ? <button type="button" className="secondary" disabled={busy} onClick={() => onArrivalStatus("expected")}>Expected today</button> : null}{row.attendanceStatus !== "expected_later" ? <button type="button" className="secondary" disabled={busy} onClick={() => onArrivalStatus("expected_later")}>Expected later</button> : null}{row.attendanceStatus !== "unknown" ? <button type="button" className="secondary" disabled={busy} onClick={() => onArrivalStatus("unknown")}>Needs follow-up</button> : null}{canManageRegistration && row.attendanceStatus !== "confirmed_not_attending" ? <button type="button" className="secondary danger-subtle" disabled={busy} onClick={() => setNoShowOpen((open) => !open)}>Confirm not attending</button> : null}{canManageRegistration && row.attendanceStatus !== "confirmed_not_attending" && row.operationalStatus !== "did_not_arrive" ? <button type="button" className="secondary danger-subtle" disabled={busy} onClick={() => setDidNotArriveOpen((open) => !open)}>Mark did not arrive</button> : null}</div>{didNotArriveOpen && row.attendanceStatus !== "confirmed_not_attending" && row.operationalStatus !== "did_not_arrive" ? <div className="regjourney-noshow-inline"><div><b>Record a confirmed no-show</b><p>The registration record and FSY identity stay in history. Active group, room, meal and head-count work will be released; restoring the participant requires a fresh placement review.</p></div><label>Operational reason <span>Required</span><textarea rows="2" value={didNotArriveReason} onChange={(event) => setDidNotArriveReason(event.target.value)} placeholder="e.g. Participant did not arrive by the session close" /></label><button type="button" className="danger-button" disabled={busy || didNotArriveReason.trim().length < 5} onClick={() => { setDidNotArriveOpen(false); onArrivalStatus("did_not_arrive", didNotArriveReason.trim()); }}>Mark did not arrive</button></div> : null}{noShowOpen && row.attendanceStatus !== "confirmed_not_attending" ? <div className="regjourney-noshow-inline"><div><b>Confirm only from an authorized source</b><p>This can make a finalized roster place available to a verified on-site participant.</p></div><label>Who confirmed this?<select value={confirmationSource} onChange={(event) => setConfirmationSource(event.target.value)}><option value="">Choose source</option>{NO_SHOW_CONFIRMATION_SOURCES.map((source) => <option key={source} value={source}>{source}</option>)}</select></label><label>Short note <span>{confirmationSource === "Other authorized confirmation" ? "Required" : "Optional"}</span><textarea rows="2" value={confirmationNote} onChange={(event) => setConfirmationNote(event.target.value)} placeholder="e.g. Parent confirmed by phone at 8:15 AM" /></label><button type="button" className="danger-button" disabled={busy || !confirmationSource || (confirmationSource === "Other authorized confirmation" && !confirmationNote.trim())} onClick={() => onArrivalStatus("confirmed_not_attending", confirmationNote.trim() ? `${confirmationSource}: ${confirmationNote.trim()}` : confirmationSource)}>Confirm not attending</button></div> : null}</details> : null}
-    {error && !onsitePending ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
+    {error && !onsitePending && !needsPlacement ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
   </div>;
 }
 
