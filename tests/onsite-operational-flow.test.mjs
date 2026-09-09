@@ -25,7 +25,7 @@ test("on-site arrivals cannot bypass identity before check-in", () => {
 });
 
 test("normal on-site placement is primary and confirmed vacancy is optional", () => {
-  assert.match(parts, /Choose a counselor group/);
+  assert.match(parts, /Place in a counselor group/);
   assert.match(parts, /FSY ID is then created automatically/);
   assert.match(parts, /Use a confirmed vacancy instead/);
   assert.doesNotMatch(parts, /No compatible confirmed vacancy/);
