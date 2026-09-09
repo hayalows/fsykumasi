@@ -28,6 +28,9 @@ function sexValue(value) {
 
 export function arrivalLabel(row) {
   if (row.checkinStatus === "arrived") return "Checked in";
+  if (row.operationalStatus === "did_not_arrive") return "Did not arrive";
+  if (row.operationalStatus === "withdrawn") return "Withdrawn";
+  if (row.operationalStatus === "not_attending") return "Not attending";
   if (row.attendanceStatus === "confirmed_not_attending") return "Not attending";
   if (row.attendanceStatus === "expected_later") return "Expected later";
   if (row.attendanceStatus === "unknown") return "Follow up";
@@ -36,13 +39,14 @@ export function arrivalLabel(row) {
 
 export function arrivalTone(row) {
   if (row.checkinStatus === "arrived") return "good";
+  if (row.operationalStatus && row.operationalStatus !== "active") return "danger";
   if (row.attendanceStatus === "confirmed_not_attending") return "danger";
   if (row.attendanceStatus === "expected_later" || row.attendanceStatus === "unknown") return "warn";
   return "muted";
 }
 
 export function rowProblem(row, eligibility) {
-  if (!row.isCurrent || row.attendanceStatus === "confirmed_not_attending" || row.checkinStatus === "arrived") return "";
+  if (!row.isCurrent || row.operationalStatus && row.operationalStatus !== "active" || row.attendanceStatus === "confirmed_not_attending" || row.checkinStatus === "arrived") return "";
   if (row.sourceKind === "on_site" && row.verificationStatus !== "verified") return "Needs verification";
   if (eligibility && !eligibility.eligible) return eligibility.reason || "Needs review";
   if (!row.groupName) return "Needs counselor group";
@@ -53,6 +57,7 @@ export function rowProblem(row, eligibility) {
 
 export function isReady(row, eligibility) {
   return row.isCurrent
+    && (!row.operationalStatus || row.operationalStatus === "active")
     && row.attendanceStatus !== "confirmed_not_attending"
     && row.checkinStatus !== "arrived"
     && !rowProblem(row, eligibility);
@@ -245,8 +250,10 @@ function OnsitePlacementContext({ row }) {
 
 export function PersonJourney({ row, eligibility, identityReadiness, vacancies, groups, companies, housingAssignment, canManageRegistration, busy, error, onVerify, onAssignGroup, onUseVacancy, onCheckin, onUndoCheckin, onArrivalStatus, onDone, onClose }) {
   const [noShowOpen, setNoShowOpen] = useState(false);
+  const [didNotArriveOpen, setDidNotArriveOpen] = useState(false);
   const [confirmationSource, setConfirmationSource] = useState("");
   const [confirmationNote, setConfirmationNote] = useState("");
+  const [didNotArriveReason, setDidNotArriveReason] = useState("");
   const readyRef = useRef(null);
   const completionRef = useRef(null);
   const problem = rowProblem(row, eligibility);
@@ -287,7 +294,7 @@ export function PersonJourney({ row, eligibility, identityReadiness, vacancies, 
 
     {!onsitePending && !needsPlacement && !ready && row.checkinStatus !== "arrived" && problem ? <div className="regjourney-blocked"><WarningCircle/><div><b>{problem}</b><p>{problem === "Needs FSY ID" ? "The participant cannot check in until identity is complete. Review their Stake or District and placement." : "Resolve this eligibility issue before placement or check-in."}</p></div></div> : null}
 
-    {row.checkinStatus !== "arrived" ? <details className="regjourney-secondary-actions"><summary><span><b>Not checking in now?</b><small>Update the arrival status only when needed</small></span><span aria-hidden="true">+</span></summary><div className="regjourney-secondary-grid">{row.attendanceStatus !== "expected" ? <button type="button" className="secondary" disabled={busy} onClick={() => onArrivalStatus("expected")}>Expected today</button> : null}{row.attendanceStatus !== "expected_later" ? <button type="button" className="secondary" disabled={busy} onClick={() => onArrivalStatus("expected_later")}>Expected later</button> : null}{row.attendanceStatus !== "unknown" ? <button type="button" className="secondary" disabled={busy} onClick={() => onArrivalStatus("unknown")}>Needs follow-up</button> : null}{canManageRegistration && row.attendanceStatus !== "confirmed_not_attending" ? <button type="button" className="secondary danger-subtle" disabled={busy} onClick={() => setNoShowOpen((open) => !open)}>Confirm not attending</button> : null}</div>{noShowOpen && row.attendanceStatus !== "confirmed_not_attending" ? <div className="regjourney-noshow-inline"><div><b>Confirm only from an authorized source</b><p>This can make a finalized roster place available to a verified on-site participant.</p></div><label>Who confirmed this?<select value={confirmationSource} onChange={(event) => setConfirmationSource(event.target.value)}><option value="">Choose source</option>{NO_SHOW_CONFIRMATION_SOURCES.map((source) => <option key={source} value={source}>{source}</option>)}</select></label><label>Short note <span>{confirmationSource === "Other authorized confirmation" ? "Required" : "Optional"}</span><textarea rows="2" value={confirmationNote} onChange={(event) => setConfirmationNote(event.target.value)} placeholder="e.g. Parent confirmed by phone at 8:15 AM" /></label><button type="button" className="danger-button" disabled={busy || !confirmationSource || (confirmationSource === "Other authorized confirmation" && !confirmationNote.trim())} onClick={() => onArrivalStatus("confirmed_not_attending", confirmationNote.trim() ? `${confirmationSource}: ${confirmationNote.trim()}` : confirmationSource)}>Confirm not attending</button></div> : null}</details> : null}
+    {row.checkinStatus !== "arrived" ? <details className="regjourney-secondary-actions"><summary><span><b>Not checking in now?</b><small>Update the arrival status only when needed</small></span><span aria-hidden="true">+</span></summary><div className="regjourney-secondary-grid">{row.attendanceStatus !== "expected" ? <button type="button" className="secondary" disabled={busy} onClick={() => onArrivalStatus("expected")}>Expected today</button> : null}{row.attendanceStatus !== "expected_later" ? <button type="button" className="secondary" disabled={busy} onClick={() => onArrivalStatus("expected_later")}>Expected later</button> : null}{row.attendanceStatus !== "unknown" ? <button type="button" className="secondary" disabled={busy} onClick={() => onArrivalStatus("unknown")}>Needs follow-up</button> : null}{canManageRegistration && row.attendanceStatus !== "confirmed_not_attending" ? <button type="button" className="secondary danger-subtle" disabled={busy} onClick={() => setNoShowOpen((open) => !open)}>Confirm not attending</button> : null}{canManageRegistration && row.attendanceStatus !== "confirmed_not_attending" && row.operationalStatus !== "did_not_arrive" ? <button type="button" className="secondary danger-subtle" disabled={busy} onClick={() => setDidNotArriveOpen((open) => !open)}>Mark did not arrive</button> : null}</div>{didNotArriveOpen && row.attendanceStatus !== "confirmed_not_attending" && row.operationalStatus !== "did_not_arrive" ? <div className="regjourney-noshow-inline"><div><b>Record a confirmed no-show</b><p>The registration record and FSY identity stay in history. Active group, room, meal and head-count work will be released; restoring the participant requires a fresh placement review.</p></div><label>Operational reason <span>Required</span><textarea rows="2" value={didNotArriveReason} onChange={(event) => setDidNotArriveReason(event.target.value)} placeholder="e.g. Participant did not arrive by the session close" /></label><button type="button" className="danger-button" disabled={busy || didNotArriveReason.trim().length < 5} onClick={() => { setDidNotArriveOpen(false); onArrivalStatus("did_not_arrive", didNotArriveReason.trim()); }}>Mark did not arrive</button></div> : null}{noShowOpen && row.attendanceStatus !== "confirmed_not_attending" ? <div className="regjourney-noshow-inline"><div><b>Confirm only from an authorized source</b><p>This can make a finalized roster place available to a verified on-site participant.</p></div><label>Who confirmed this?<select value={confirmationSource} onChange={(event) => setConfirmationSource(event.target.value)}><option value="">Choose source</option>{NO_SHOW_CONFIRMATION_SOURCES.map((source) => <option key={source} value={source}>{source}</option>)}</select></label><label>Short note <span>{confirmationSource === "Other authorized confirmation" ? "Required" : "Optional"}</span><textarea rows="2" value={confirmationNote} onChange={(event) => setConfirmationNote(event.target.value)} placeholder="e.g. Parent confirmed by phone at 8:15 AM" /></label><button type="button" className="danger-button" disabled={busy || !confirmationSource || (confirmationSource === "Other authorized confirmation" && !confirmationNote.trim())} onClick={() => onArrivalStatus("confirmed_not_attending", confirmationNote.trim() ? `${confirmationSource}: ${confirmationNote.trim()}` : confirmationSource)}>Confirm not attending</button></div> : null}</details> : null}
     {error && !onsitePending ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
   </div>;
 }

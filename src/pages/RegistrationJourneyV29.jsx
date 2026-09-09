@@ -34,6 +34,23 @@ const SOLUTION_META={
   on_site:{label:"On-site",help:"Verify and place"},
 };
 
+function demoRegistrationRows(participants = []) {
+  return participants.map((person, index) => ({
+    ...person,
+    participantId: person.id,
+    id: person.id,
+    isCurrent: person.isCurrent !== false,
+    registrationStatus: person.registrationStatus || "approved",
+    verificationStatus: person.verificationStatus || "verified",
+    attendanceStatus: person.attendanceStatus || "expected",
+    checkinStatus: person.checkinStatus || "expected",
+    companyName: person.companyName || `Company ${(index % 44) + 1}`,
+    groupName: person.groupName || `Group ${(index % 175) + 1}`,
+    fsyId: person.fsyId || `D-${String(index + 1).padStart(4, "0")}`,
+    serverEligibility: person.serverEligibility || { eligible: true, reason: "Demo rehearsal eligible" },
+  }));
+}
+
 function matchesWorkFilter(row,eligibility,filter){
   if(filter==="arrived")return row.checkinStatus==="arrived";
   if(filter==="expected")return row.checkinStatus!=="arrived"&&row.attendanceStatus!=="confirmed_not_attending";
@@ -51,7 +68,7 @@ function matchesWorkFilter(row,eligibility,filter){
 export function RegistrationJourneyV29({ view="desk", participants=[], initialGroups=[], initialFilter="", sessionId, capabilities=[], onOperationalDataChanged, onCheckin, onUndoCheckin, onSetOperationalStatus }){
   const canManageRegistration=hasCapability(capabilities,"registration_manage");
   const canCheckin=hasCapability(capabilities,"checkin_record")||canManageRegistration;
-  const[rows,setRows]=useState([]);
+  const[rows,setRows]=useState(()=>sessionId?[]:demoRegistrationRows(participants));
   const[query,setQuery]=useState("");
   const[filter,setFilterState]=useState(initialFilter||(view==="desk"?"ready":"needs_help"));
   const[sourceFilter,setSourceFilter]=useState("all");
@@ -84,7 +101,7 @@ export function RegistrationJourneyV29({ view="desk", participants=[], initialGr
     finally{if(initial)setInitialLoading(false);setRefreshing(false);}
   },[sessionId]);
 
-  useEffect(()=>{let active=true;reload({initial:true}).catch(()=>{if(active)setInitialLoading(false);});return()=>{active=false;};},[reload]);
+  useEffect(()=>{if(!sessionId){setRows(current=>current.length?current:demoRegistrationRows(participants));setInitialLoading(false);setRefreshing(false);setLoadError("");return undefined;}let active=true;reload({initial:true}).catch(()=>{if(active)setInitialLoading(false);});return()=>{active=false;};},[reload,sessionId,participants.length]);
   useEffect(()=>{setFilterState(initialFilter||(view==="desk"?"ready":"needs_help"));setShown(PAGE_SIZE);},[view,initialFilter]);
   useEffect(()=>{setPlacementGroups(initialGroups||[]);},[initialGroups]);
   useEffect(()=>{setPlacementCompanies([]);setVacancies([]);setSessionStart("");},[sessionId]);
@@ -167,13 +184,13 @@ export function RegistrationJourneyV29({ view="desk", participants=[], initialGr
     if(!sessionStart&&sessionId)loadOnSiteReferenceDate(sessionId).then(setSessionStart).catch(()=>{});
   };
   const focusNext=()=>{setSelectedId("");setQuery("");setFilter("ready");window.requestAnimationFrame(()=>{searchRef.current?.scrollIntoView?.({block:"start",behavior:"auto"});searchRef.current?.querySelector?.("input")?.focus?.();});};
-  const checkIn=async(row,keepOpen=false)=>{if(!canCheckin)return;try{const housing=housingByPerson.get(row.participantId);const success=housing?`${row.fullName} is checked in · Housing: ${housing.roomName}.`:`${row.fullName} is checked in. Housing can now see them in Arrivals waiting.`;const state=await runMutation(row.participantId,()=>onCheckin?onCheckin(row.participantId,"arrived"):recordCheckin({sessionId,participantId:row.participantId,status:"arrived"}),success,{refresh:false,parent:false});setRows(current=>current.map(item=>item.participantId===row.participantId?{...item,checkinStatus:"arrived",checkinRecordedAt:state?.recordedAt||item.checkinRecordedAt||null}:item));if(!keepOpen)focusNext();}catch{}};
-  const undoCheckIn=async(row)=>{if(!onUndoCheckin)return;try{await runMutation(row.participantId,()=>onUndoCheckin(row.participantId,row.checkinRecordedAt||null),`${row.fullName} is back to Expected.`,{refresh:false,parent:false});setRows(current=>current.map(item=>item.participantId===row.participantId?{...item,checkinStatus:"expected",checkinRecordedAt:null}:item));}catch{}};
+  const checkIn=async(row,keepOpen=false)=>{if(!canCheckin)return;try{const housing=housingByPerson.get(row.participantId);const success=housing?`${row.fullName} is checked in · Housing: ${housing.roomName}.`:`${row.fullName} is checked in. Housing can now see them in Arrivals waiting.`;const state=await runMutation(row.participantId,()=>onCheckin?onCheckin(row.participantId,"arrived"):!sessionId?Promise.resolve({recordedAt:new Date().toISOString()}):recordCheckin({sessionId,participantId:row.participantId,status:"arrived"}),success,{refresh:false,parent:false});setRows(current=>current.map(item=>item.participantId===row.participantId?{...item,checkinStatus:"arrived",checkinRecordedAt:state?.recordedAt||item.checkinRecordedAt||null}:item));if(!keepOpen)focusNext();}catch{}};
+  const undoCheckIn=async(row)=>{if(!onUndoCheckin&&!sessionId){setRows(current=>current.map(item=>item.participantId===row.participantId?{...item,checkinStatus:"expected",checkinRecordedAt:null}:item));setMessage({tone:"success",text:`${row.fullName} is back to Expected.`});return;}if(!onUndoCheckin)return;try{await runMutation(row.participantId,()=>onUndoCheckin(row.participantId,row.checkinRecordedAt||null),`${row.fullName} is back to Expected.`,{refresh:false,parent:false});setRows(current=>current.map(item=>item.participantId===row.participantId?{...item,checkinStatus:"expected",checkinRecordedAt:null}:item));}catch{}};
   const createOnsite=async(form)=>{setBusyId("onsite-new");setError("");try{const participantId=await addOnSiteParticipantDetailed({sessionId,...form});await refreshAfterMutation();setOnsiteOpen(false);setSelectedId(participantId);setMessage({tone:"success",text:`${form.firstName} ${form.lastName} was added. Continue verification, placement + ID, then check-in.`});}catch(err){setError(err.message||"Unable to add this participant.");}finally{setBusyId("");}};
   const verifySelected=async(note)=>{if(!selectedRow)return;try{await runMutation(selectedRow.participantId,()=>verifyOnSiteParticipant(selectedRow.participantId,true,note),`${selectedRow.fullName} is verified. Continue with placement and identity.`);}catch{}};
   const assignGroup=async(group)=>{if(!selectedRow)return;const onSite=selectedRow.sourceKind==="on_site";try{await runMutation(selectedRow.participantId,()=>assignParticipantToGroup(selectedRow.participantId,group.id),onSite?`${selectedRow.fullName} was placed in ${group.displayName||group.name}. Their FSY ID was created automatically.`:`${selectedRow.fullName} was assigned to ${group.displayName||group.name}.`);}catch{}};
   const useVacancy=async(vacancy)=>{if(!selectedRow)return;try{await runMutation(selectedRow.participantId,()=>replaceArrivalVacancy(vacancy.participantId,selectedRow.participantId),`${selectedRow.fullName} was placed in ${vacancy.groupName}. Their FSY ID was issued automatically.`);setVacancies(current=>current.filter(item=>item.participantId!==vacancy.participantId));}catch{}};
-  const arrivalStatus=async(next,note="")=>{if(!selectedRow)return;try{const operationalStatus=next==="confirmed_not_attending"?"not_attending":next==="expected"&&selectedRow.operationalStatus&&selectedRow.operationalStatus!=="active"?"active":null;await runMutation(selectedRow.participantId,()=>operationalStatus&&onSetOperationalStatus?onSetOperationalStatus({participantId:selectedRow.participantId,status:operationalStatus,revision:selectedRow.operationalRevision||0,reason:note||"Updated from Registration & Check-in desk",authority:note.split(":")[0]||""}):setArrivalStatus(selectedRow.participantId,next,note||"Updated from Registration & Check-in desk"),`${selectedRow.fullName} is now ${next==="expected_later"?"expected later":next==="unknown"?"marked for follow-up":next==="confirmed_not_attending"?"confirmed not attending":"expected today"}.`);await reload();}catch{}};
+  const arrivalStatus=async(next,note="")=>{if(!selectedRow)return;try{const operationalStatus=next==="confirmed_not_attending"?"not_attending":next==="did_not_arrive"?"did_not_arrive":next==="expected"&&selectedRow.operationalStatus&&selectedRow.operationalStatus!=="active"?"active":null;const demoUpdate=()=>{setRows(current=>current.map(item=>item.participantId!==selectedRow.participantId?item:{...item,attendanceStatus:operationalStatus&&operationalStatus!=="active"?"confirmed_not_attending":next,operationalStatus:operationalStatus||item.operationalStatus,operationalRevision:(item.operationalRevision||0)+1}));return Promise.resolve();};await runMutation(selectedRow.participantId,()=>operationalStatus&&onSetOperationalStatus?onSetOperationalStatus({participantId:selectedRow.participantId,status:operationalStatus,revision:selectedRow.operationalRevision||0,reason:note||"Updated from Registration & Check-in desk",authority:note.split(":")[0]||""}):!sessionId?demoUpdate():setArrivalStatus(selectedRow.participantId,next,note||"Updated from Registration & Check-in desk"),`${selectedRow.fullName} is now ${next==="expected_later"?"expected later":next==="unknown"?"marked for follow-up":next==="confirmed_not_attending"?"confirmed not attending":next==="did_not_arrive"?"marked did not arrive":"expected today"}.`);await reload();}catch{}};
   const refreshResolution=async()=>{setMessage({tone:"success",text:"Leadership decision recorded. Rechecking this participant now."});await refreshAfterMutation();};
   const closePerson=()=>{if(!busyId){setSelectedId("");setError("");}};
   const closeOnsite=()=>{if(!busyId){setOnsiteOpen(false);setError("");}};

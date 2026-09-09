@@ -29,6 +29,17 @@ test("secondary navigation has one strong current-page state and a quiet More di
   assert.match(css, /\.sidebar\.open ~ \.workspace \.mobile-nav\s*\{[\s\S]*pointer-events:\s*none/);
 });
 
+test("More disclosure closes on Escape as well as the mobile drawer", async () => {
+  const shell = await read("src/components/AppShell.jsx");
+  assert.match(shell, /if \(!moreOpen\) return undefined/);
+  assert.match(shell, /setMoreOpen\(false\)/);
+  assert.match(shell, /document\.addEventListener\("keydown", onKeyDown\)/);
+  assert.match(shell, /const previousActive = document\.activeElement/);
+  assert.match(shell, /moreButtonRef\.current/);
+  assert.match(shell, /restore\?\.focus\?\./);
+  assert.match(shell, /ref=\{moreButtonRef\}/);
+});
+
 test("drawer adapts to compact, wider and short phone viewports from viewport rules", async () => {
   const css = await read("src/sidebar-navigation-v2.css");
   assert.match(css, /width:\s*clamp\(288px, 82vw, 328px\)/);

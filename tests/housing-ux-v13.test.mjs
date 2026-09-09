@@ -22,6 +22,12 @@ test("Housing never presents loading counts as confirmed zeroes", () => {
   assert.match(page, /initialLoading \? "—" : assignedCount/);
 });
 
+test("demo Housing settles without a live session id", () => {
+  const page = read("src/pages/HousingV6.jsx");
+  assert.match(page, /if \(!sessionId\) \{/);
+  assert.match(page, /setInitialLoading\(false\)/);
+});
+
 test("Housing field optional markers share one stable label row", () => {
   const room = read("src/pages/HousingDialogsV4.jsx");
   const assignment = read("src/pages/HousingAssignmentV5.jsx");

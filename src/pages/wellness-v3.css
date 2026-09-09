@@ -1,0 +1,57 @@
+.wellness-date-nav {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 2px;
+}
+
+.wellness-date-nav label {
+  display: grid;
+  min-width: 180px;
+  gap: 5px;
+  color: var(--blue-35);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.wellness-date-nav input,
+.wellness-date-nav button {
+  min-height: 44px;
+}
+
+.wellness-date-nav input {
+  min-width: 180px;
+  padding: 0 12px;
+  border: 1px solid var(--line, #d7e4e8);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  color: var(--ink, #17313a);
+  font: inherit;
+}
+
+.wellness-today-button {
+  min-height: 44px;
+}
+
+@media (max-width: 520px) {
+  .wellness-date-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .wellness-date-nav label {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .wellness-date-nav input,
+  .wellness-date-nav button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .wellness-date-nav .wellness-today-button {
+    grid-column: 1 / -1;
+  }
+}

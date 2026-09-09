@@ -17,6 +17,7 @@ import { IdentityFoundationV31 as IdentityFoundationV28 } from "./RegistrationId
 import { RegistrationFinalBaselineV22 as RegistrationFinalBaselineV21 } from "./RegistrationFinalBaselineV22.jsx";
 import { StaffReadinessV31 as StaffReadiness } from "./StaffReadinessV31.jsx";
 import "./registration-phase2-v30.css";
+import "./registration-readiness-demo.css";
 
 const TOOL_META = {
   identity: { label: "FSY IDs", kicker: "Participant identity" },
@@ -40,10 +41,48 @@ function ReadinessCard({ icon: Icon, title, status, tone = "good", value, detail
   </article>;
 }
 
+function DemoReadinessTool({ tool, participantCount = 0, onBack }) {
+  const meta = {
+    identity: {
+      icon: IdentificationCard,
+      kicker: "Participant identity",
+      title: "FSY IDs are not issued in demo mode",
+      detail: "The rehearsal uses synthetic participant records so you can exercise the arrival flow. ID preparation, origin review and finalization are live-session operations and are deliberately not simulated here.",
+      stat: `${participantCount.toLocaleString()} synthetic participant records`,
+    },
+    staff: {
+      icon: Users,
+      kicker: "Staff",
+      title: "Staff readiness is not simulated in demo mode",
+      detail: "No Staff records are seeded in the rehearsal. Sign in to a session with the appropriate scope to review source approval, service confirmation, arrival and assignment readiness.",
+      stat: "Live Staff data required",
+    },
+    final: {
+      icon: FileText,
+      kicker: "Official source",
+      title: "The final roster is not applied in demo mode",
+      detail: "The rehearsal cannot upload, preview or apply a source roster. This keeps synthetic data separate from real participant, counselor and access records.",
+      stat: "No live roster write available",
+    },
+  }[tool] || {};
+  const Icon = meta.icon || FileText;
+  return <section className="registration-readiness-demo-tool" aria-label={`${meta.title || "Demo readiness"}`}>
+    <div className="registration-readiness-tool-head-v30">
+      <button type="button" className="secondary registration-readiness-back-v30" onClick={onBack}><ArrowLeft />Readiness</button>
+      <div><span className="kicker">{meta.kicker}</span><h2>{meta.title}</h2></div>
+    </div>
+    <article className="panel registration-readiness-demo-card">
+      <div className="registration-readiness-demo-icon"><Icon size={26} /></div>
+      <div><Status tone="muted">Demo only</Status><p>{meta.detail}</p><strong>{meta.stat}</strong></div>
+    </article>
+  </section>;
+}
+
 export function RegistrationReadinessV30({
   imported = [], cohort, live = false, sessionId, capabilities = [], canManage = false,
   setImported, onChanged, onFinalBaselineChanged, onNavigate,
 }) {
+  const demoMode = !live || !sessionId;
   const [tool, setTool] = useState("overview");
   const [visited, setVisited] = useState(() => new Set());
   const [identity, setIdentity] = useState(null);
@@ -104,15 +143,17 @@ export function RegistrationReadinessV30({
 
   const identityPending = !identity || (!Number(identity.finalizedIds || 0) && !Number(identity.draftIds || 0));
   const identityReview = Number(identity?.unresolvedOrigin || 0);
-  const identityStatus = checkErrors.identity ? "Could not load" : loading && !identity ? "Checking" : identityReview ? `${identityReview} origin issue${identityReview === 1 ? "" : "s"}` : Number(identity?.finalizedIds || 0) ? "Finalized" : Number(identity?.draftIds || 0) ? "Draft ready" : "Not prepared";
-  const identityTone = checkErrors.identity ? "danger" : loading && !identity ? "muted" : identityReview || identityPending ? "warn" : "good";
-  const staffStatus = checkErrors.staff ? "Could not load" : loading && !staff.length ? "Checking" : staffConfirmation ? `${staffConfirmation} need confirmation` : staffAttention ? `${staffAttention} need review` : staffCurrent.length ? "Ready" : "No Staff loaded";
-  const staffTone = checkErrors.staff ? "danger" : loading && !staff.length ? "muted" : staffConfirmation || staffAttention || !staffCurrent.length ? "warn" : "good";
-  const baselineStatus = checkErrors.baseline ? "Could not load" : loading && baseline === null ? "Checking" : baseline ? "Final baseline active" : "Not finalized";
-  const baselineTone = checkErrors.baseline ? "danger" : loading && baseline === null ? "muted" : baseline ? "good" : "warn";
+  const identityStatus = demoMode ? "Demo only" : checkErrors.identity ? "Could not load" : loading && !identity ? "Checking" : identityReview ? `${identityReview} origin issue${identityReview === 1 ? "" : "s"}` : Number(identity?.finalizedIds || 0) ? "Finalized" : Number(identity?.draftIds || 0) ? "Draft ready" : "Not prepared";
+  const identityTone = demoMode ? "muted" : checkErrors.identity ? "danger" : loading && !identity ? "muted" : identityReview || identityPending ? "warn" : "good";
+  const staffStatus = demoMode ? "Demo only" : checkErrors.staff ? "Could not load" : loading && !staff.length ? "Checking" : staffConfirmation ? `${staffConfirmation} need confirmation` : staffAttention ? `${staffAttention} need review` : staffCurrent.length ? "Ready" : "No Staff loaded";
+  const staffTone = demoMode ? "muted" : checkErrors.staff ? "danger" : loading && !staff.length ? "muted" : staffConfirmation || staffAttention || !staffCurrent.length ? "warn" : "good";
+  const baselineStatus = demoMode ? "Demo only" : checkErrors.baseline ? "Could not load" : loading && baseline === null ? "Checking" : baseline ? "Final baseline active" : "Not finalized";
+  const baselineTone = demoMode ? "muted" : checkErrors.baseline ? "danger" : loading && baseline === null ? "muted" : baseline ? "good" : "warn";
   const hasCheckErrors = Object.keys(checkErrors).length > 0;
 
-  const nextStep = hasCheckErrors
+  const nextStep = demoMode
+    ? { title: "Explore the rehearsal workspace", text: "Synthetic data demonstrates the day-one participant journey. Live roster, FSY ID and Staff readiness checks appear after sign-in.", action: () => onNavigate?.({ view: "registration", mode: "desk" }), label: "Open Live check-in" }
+    : hasCheckErrors
     ? { title: "Retry the readiness checks", text: "At least one supporting check did not load, so Readiness will not guess or mark it complete.", action: reload, label: "Retry checks" }
     : !baseline
       ? { title: "Confirm the final roster", text: "Use the complete official Participant + Counselor export before treating rehearsal structure as final.", action: () => openTool("final"), label: "Open Final roster" }
@@ -126,6 +167,7 @@ export function RegistrationReadinessV30({
 
   const toolMeta = TOOL_META[tool];
   if (tool !== "overview") {
+    if (demoMode) return <DemoReadinessTool tool={tool} participantCount={imported.length || Number(cohort?.eligible || 0)} onBack={() => setTool("overview")} />;
     return <section className="registration-readiness-v30 registration-readiness-tool-v30">
       <div className="registration-readiness-tool-head-v30">
         <button type="button" className="secondary registration-readiness-back-v30" onClick={() => setTool("overview")}><ArrowLeft />Readiness</button>
@@ -148,15 +190,15 @@ export function RegistrationReadinessV30({
     <div className="registration-readiness-summary-v30">
       <span><b>{Number(cohort?.eligible || 0).toLocaleString()}</b><small>eligible youth</small></span>
       <span><b>{blockerCount.toLocaleString()}</b><small>participant blockers</small></span>
-      <span><b>{checkErrors.staff ? "—" : staffCurrent.length.toLocaleString()}</b><small>current Staff</small></span>
+      <span><b>{demoMode || checkErrors.staff ? "—" : staffCurrent.length.toLocaleString()}</b><small>{demoMode ? "live Staff check" : "current Staff"}</small></span>
       <button type="button" className="text-action" disabled={loading} onClick={reload}><ArrowClockwise />{loading ? "Checking" : "Refresh readiness"}</button>
     </div>
 
     <div className="registration-readiness-grid-v30">
-      <ReadinessCard icon={WarningCircle} title="Participant blockers" status={blockerCount ? "Blocked" : "Clear"} tone={blockerCount ? "warn" : "good"} value={blockerCount.toLocaleString()} detail={blockerCount ? "Approval, eligibility, verification, placement, identity or follow-up is blocking normal check-in." : "No current participant is blocked from the normal Registration path."} action={() => onNavigate?.({ view: "registration", mode: "roster", filter: blockerCount ? "needs_help" : "all" })} actionLabel="Open Solutions" />
-      <ReadinessCard icon={FileText} title="Final roster" status={baselineStatus} tone={baselineTone} value={!checkErrors.baseline && baseline ? Number(baseline.recordCount || 0).toLocaleString() : undefined} detail={checkErrors.baseline ? "The final-roster check did not load. Retry before treating this state as complete." : baseline ? `Active final source · ${baseline.sourceFilename}` : "The final Participant + Counselor export has not been confirmed as the active baseline."} action={() => openTool("final")} actionLabel="Open Final roster" disabled={loading && baseline === null} />
-      <ReadinessCard icon={IdentificationCard} title="FSY IDs" status={identityStatus} tone={identityTone} value={!checkErrors.identity && identity ? Number(identity.finalizedIds || identity.draftIds || 0).toLocaleString() : undefined} detail={checkErrors.identity ? "The participant-identity check did not load. Retry before treating this state as complete." : identityReview ? `${identityReview} origin issue${identityReview === 1 ? "" : "s"} must be resolved before finalization.` : Number(identity?.finalizedIds || 0) ? "The active participant identity set is finalized." : "Prepare IDs only after the active participant cohort and counselor groups are stable."} action={() => openTool("identity")} actionLabel="Open FSY IDs" disabled={loading && !identity} />
-      <ReadinessCard icon={Users} title="Staff readiness" status={staffStatus} tone={staffTone} value={!checkErrors.staff && staffCurrent.length ? staffCurrent.length.toLocaleString() : undefined} detail={checkErrors.staff ? "The Staff readiness check did not load. Retry before treating this state as complete." : staffConfirmation ? `${staffConfirmation} Staff member${staffConfirmation === 1 ? "" : "s"} still need service confirmation.` : staffAttention ? `${staffAttention} Staff member${staffAttention === 1 ? "" : "s"} have a clearance, arrival or replacement issue.` : "Source approval, service confirmation and operational readiness stay separate."} action={() => openTool("staff")} actionLabel="Open Staff readiness" disabled={loading && !staff.length} />
+      <ReadinessCard icon={WarningCircle} title="Participant blockers" status={blockerCount ? "Blocked" : demoMode ? "Demo clear" : "Clear"} tone={blockerCount ? "warn" : "good"} value={blockerCount.toLocaleString()} detail={blockerCount ? "Approval, eligibility, verification, placement, identity or follow-up is blocking normal check-in." : demoMode ? "No participant blockers are simulated in this rehearsal. Live exceptions appear after sign-in." : "No current participant is blocked from the normal Registration path."} action={() => onNavigate?.({ view: "registration", mode: "roster", filter: blockerCount ? "needs_help" : "all" })} actionLabel="Open Solutions" />
+      <ReadinessCard icon={FileText} title="Final roster" status={baselineStatus} tone={baselineTone} value={!demoMode && !checkErrors.baseline && baseline ? Number(baseline.recordCount || 0).toLocaleString() : undefined} detail={demoMode ? "The rehearsal does not represent an applied official source roster." : checkErrors.baseline ? "The final-roster check did not load. Retry before treating this state as complete." : baseline ? `Active final source · ${baseline.sourceFilename}` : "The final Participant + Counselor export has not been confirmed as the active baseline."} action={() => openTool("final")} actionLabel="Open Final roster" disabled={!demoMode && loading && baseline === null} />
+      <ReadinessCard icon={IdentificationCard} title="FSY IDs" status={identityStatus} tone={identityTone} value={!demoMode && !checkErrors.identity && identity ? Number(identity.finalizedIds || identity.draftIds || 0).toLocaleString() : undefined} detail={demoMode ? "Synthetic records support navigation only; live ID preparation and origin review require sign-in." : checkErrors.identity ? "The participant-identity check did not load. Retry before treating this state as complete." : identityReview ? `${identityReview} origin issue${identityReview === 1 ? "" : "s"} must be resolved before finalization.` : Number(identity?.finalizedIds || 0) ? "The active participant identity set is finalized." : "Prepare IDs only after the active participant cohort and counselor groups are stable."} action={() => openTool("identity")} actionLabel="Open FSY IDs" disabled={!demoMode && loading && !identity} />
+      <ReadinessCard icon={Users} title="Staff readiness" status={staffStatus} tone={staffTone} value={!demoMode && !checkErrors.staff && staffCurrent.length ? staffCurrent.length.toLocaleString() : undefined} detail={demoMode ? "Staff records are not seeded in this rehearsal; live permission-scoped Staff checks require sign-in." : checkErrors.staff ? "The Staff readiness check did not load. Retry before treating this state as complete." : staffConfirmation ? `${staffConfirmation} Staff member${staffConfirmation === 1 ? "" : "s"} still need service confirmation.` : staffAttention ? `${staffAttention} Staff member${staffAttention === 1 ? "" : "s"} have a clearance, arrival or replacement issue.` : "Source approval, service confirmation and operational readiness stay separate."} action={() => openTool("staff")} actionLabel="Open Staff readiness" disabled={!demoMode && loading && !staff.length} />
     </div>
 
     <p className="registration-readiness-principle-v30"><CheckCircle size={18} weight="fill" /><span><b>One exception queue.</b> Participant problems are resolved in Solutions. Readiness only tells you whether the supporting setup is ready and sends you to the correct tool.</span></p>

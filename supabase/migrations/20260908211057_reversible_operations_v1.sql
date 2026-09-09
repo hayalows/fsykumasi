@@ -60,16 +60,20 @@ declare
   body text;
   original text;
 begin
-  if to_regprocedure('private.participant_eligibility_projection(uuid)') is not null then
-    body := pg_get_functiondef('private.participant_eligibility_projection(uuid)'::regprocedure);
-    original := body;
-    body := replace(
-      body,
-      'p.attendance_status <> ''confirmed_not_attending''',
-      'coalesce(p.operational_status, ''active'') = ''active'' and p.attendance_status <> ''confirmed_not_attending'''
-    );
-    if body <> original then execute body; end if;
+  if to_regprocedure('private.participant_eligibility_projection(uuid)') is null then
+    raise exception 'Expected private.participant_eligibility_projection(uuid) before reversible operations migration';
   end if;
+  body := pg_get_functiondef('private.participant_eligibility_projection(uuid)'::regprocedure);
+  original := body;
+  body := replace(
+    body,
+    'p.attendance_status <> ''confirmed_not_attending''',
+    'coalesce(p.operational_status, ''active'') = ''active'' and p.attendance_status <> ''confirmed_not_attending'''
+  );
+  if body = original then
+    raise exception 'Eligibility projection baseline drifted; operational lifecycle guard was not installed';
+  end if;
+  execute body;
 end;
 $$;
 
@@ -94,6 +98,15 @@ as $$
     and private.has_session_access(p_session_id)
     and (
       private.has_session_role(p_session_id, array['coordinator','logistics_admin','session_director']::public.app_role[])
+      or (
+        not private.has_session_role(p_session_id, array['assistant_coordinator']::public.app_role[])
+        and (
+          private.has_capability(p_session_id, 'people_lookup')
+          or private.has_capability(p_session_id, 'registration_view')
+          or private.has_capability(p_session_id, 'registration_manage')
+          or private.has_capability(p_session_id, 'reports_export')
+        )
+      )
       or (g.company_id is not null and private.can_access_company(p_session_id, g.company_id))
     );
 $$;
@@ -113,6 +126,15 @@ as $$
     and private.has_session_access(p_session_id)
     and (
       private.has_session_role(p_session_id, array['coordinator','logistics_admin','session_director']::public.app_role[])
+      or (
+        not private.has_session_role(p_session_id, array['assistant_coordinator']::public.app_role[])
+        and (
+          private.has_capability(p_session_id, 'people_lookup')
+          or private.has_capability(p_session_id, 'registration_view')
+          or private.has_capability(p_session_id, 'registration_manage')
+          or private.has_capability(p_session_id, 'reports_export')
+        )
+      )
       or exists (
         select 1
         from public.participants p
@@ -137,6 +159,15 @@ as $$
   where c.session_id = p_session_id and private.has_session_access(p_session_id)
     and (
       private.has_session_role(p_session_id, array['coordinator','logistics_admin','session_director']::public.app_role[])
+      or (
+        not private.has_session_role(p_session_id, array['assistant_coordinator']::public.app_role[])
+        and (
+          private.has_capability(p_session_id, 'people_lookup')
+          or private.has_capability(p_session_id, 'registration_view')
+          or private.has_capability(p_session_id, 'registration_manage')
+          or private.has_capability(p_session_id, 'reports_export')
+        )
+      )
       or exists (
         select 1
         from public.participants p
@@ -168,13 +199,16 @@ begin
     private.has_session_role(p_session_id, array['coordinator','logistics_admin','session_director']::public.app_role[])
     or (
       private.has_capability(p_session_id, 'checkin_record')
-      and exists (
-        select 1
-        from public.participants p
-        join public.counselor_groups g on g.id = p.group_id and g.session_id = p.session_id
-        where p.id = p_participant_id
-          and p.session_id = p_session_id
-          and private.can_access_company(p_session_id, g.company_id)
+      and (
+        not private.has_session_role(p_session_id, array['assistant_coordinator']::public.app_role[])
+        or exists (
+          select 1
+          from public.participants p
+          join public.counselor_groups g on g.id = p.group_id and g.session_id = p.session_id
+          where p.id = p_participant_id
+            and p.session_id = p_session_id
+            and private.can_access_company(p_session_id, g.company_id)
+        )
       )
     )
   ) then raise exception 'Your role cannot record check-in for this participant'; end if;
@@ -183,6 +217,20 @@ begin
     select 1 from public.participants p
     where p.id = p_participant_id and p.session_id = p_session_id
   ) then raise exception 'Participant does not belong to this session'; end if;
+
+  if not private.operational_participant_is_eligible(p_session_id, p_participant_id) then
+    raise exception 'This record is outside the current youth operational eligibility rules';
+  end if;
+
+  if exists (
+    select 1 from public.counselor_groups g
+    where g.session_id = p_session_id and g.state = 'published'
+  ) and not exists (
+    select 1 from public.participants p
+    where p.id = p_participant_id and p.session_id = p_session_id and p.group_id is not null
+  ) then
+    raise exception 'Participant still needs a counselor group assignment';
+  end if;
 
   insert into public.check_ins(session_id, participant_id, status, note, recorded_by, recorded_at)
   values (p_session_id, p_participant_id, p_status, nullif(trim(coalesce(p_note, '')), ''), auth.uid(), now())
@@ -217,6 +265,7 @@ declare
   previous_group uuid;
   previous_checkin public.check_in_status;
   released_housing uuid;
+  headcount_released integer := 0;
   allowed boolean;
   normalized_reason text := nullif(trim(coalesce(p_reason, '')), '');
   normalized_authority text := nullif(trim(coalesce(p_authority, '')), '');
@@ -270,6 +319,25 @@ begin
       set status = 'departed', note = coalesce(normalized_reason, note), recorded_by = auth.uid(), recorded_at = now()
       where session_id = target.session_id and participant_id = target.id;
     end if;
+
+    -- Open head-count rounds are live operational work. Release this person
+    -- from those snapshots without rewriting closed or voided history.
+    update public.headcount_round_people hp
+    set status = 'not_expected',
+        note = coalesce(normalized_reason, hp.note),
+        revision = hp.revision + 1,
+        recorded_by = auth.uid(),
+        recorded_at = now()
+    from public.headcount_rounds hr
+    where hp.round_id = hr.id
+      and hp.session_id = target.session_id
+      and hp.person_type = 'participant'
+      and hp.person_id = target.id
+      and hr.session_id = target.session_id
+      and hr.roster_version = 3
+      and hr.closes_at is null
+      and hp.status <> 'not_expected';
+    get diagnostics headcount_released = row_count;
   end if;
 
   update public.participants
@@ -300,6 +368,7 @@ begin
       'authority', normalized_authority,
       'previous_group_id', previous_group,
       'released_housing_id', released_housing,
+      'headcount_released_count', headcount_released,
       'previous_checkin_status', previous_checkin
     ));
 
@@ -309,6 +378,7 @@ begin
     'revision', p_revision + 1,
     'released_group_id', case when p_status = 'active' then null else previous_group end,
     'released_housing_id', released_housing,
+    'headcount_released_count', headcount_released,
     'checkin_status', case when p_status = 'active' then coalesce(previous_checkin::text, 'expected') else case when previous_checkin = 'arrived' then 'departed' else coalesce(previous_checkin::text, 'expected') end end
   );
 end;
@@ -606,7 +676,7 @@ declare target public.meal_services%rowtype; served_count integer; normalized_re
 begin
   select * into target from public.meal_services where id = p_service_id for update;
   if target.id is null then raise exception 'Meal service not found'; end if;
-  if not private.has_capability(target.session_id, 'food_manage') then raise exception 'Your account cannot cancel meal services'; end if;
+  if not private.has_session_role(target.session_id, array['coordinator','logistics_admin','session_director']::public.app_role[]) then raise exception 'Session leadership required to void meal services'; end if;
   if length(coalesce(normalized_reason, '')) < 5 then raise exception 'Record why this meal service is being voided'; end if;
   select count(*)::integer into served_count from public.meal_attendance where meal_service_id = p_service_id;
   if target.status = 'void' then return jsonb_build_object('voided', false, 'reason', 'already_void', 'served_count', served_count); end if;
@@ -702,38 +772,45 @@ declare
   body text;
   original text;
 begin
-  if to_regprocedure('public.get_operational_report(uuid,text)') is not null then
-    body := pg_get_functiondef('public.get_operational_report(uuid,text)'::regprocedure);
-    original := body;
-    body := replace(
-      body,
-      'where ma.session_id = p_session_id',
-      'where ma.session_id = p_session_id and ms.status <> ''void'''
-    );
-    body := replace(
-      body,
-      'from public.meal_services ms where ms.session_id = p_session_id',
-      'from public.meal_services ms where ms.session_id = p_session_id and ms.status <> ''void'''
-    );
-    body := regexp_replace(
-      body,
-      'where r[.]session_id = p_session_id[[:space:]]+and [(]not private[.]is_assistant_coordinator',
-      E'where r.session_id = p_session_id\n        and r.voided_at is null\n        and (not private.is_assistant_coordinator',
-      1
-    );
-    body := regexp_replace(
-      body,
-      'from public[.]meal_services ms[[:space:]]+where ms[.]session_id = p_session_id',
-      'from public.meal_services ms where ms.session_id = p_session_id and ms.status <> ''void''',
-      1
-    );
-    body := replace(
-      body,
-      'a.action in (''company_headcount_submitted'',',
-      'a.action in (''headcount_round_voided'',''participant_operational_status_changed'',''participant_checkin_undone'',''staff_operational_status_changed'',''housing_unassigned'',''company_headcount_submitted'', '
-    );
-    if body <> original then execute body; end if;
+  if to_regprocedure('public.get_operational_report(uuid,text)') is null then
+    raise exception 'Expected public.get_operational_report(uuid,text) before reversible operations migration';
   end if;
+  body := pg_get_functiondef('public.get_operational_report(uuid,text)'::regprocedure);
+  original := body;
+  body := replace(
+    body,
+    'where ma.session_id = p_session_id',
+    'where ma.session_id = p_session_id and ms.status <> ''void'''
+  );
+  body := replace(
+    body,
+    'from public.meal_services ms where ms.session_id = p_session_id',
+    'from public.meal_services ms where ms.session_id = p_session_id and ms.status <> ''void'''
+  );
+  body := regexp_replace(
+    body,
+    'where r[.]session_id = p_session_id[[:space:]]+and [(]not private[.]is_assistant_coordinator',
+    E'where r.session_id = p_session_id\n        and r.voided_at is null\n        and (not private.is_assistant_coordinator',
+    1
+  );
+  body := regexp_replace(
+    body,
+    'from public[.]meal_services ms[[:space:]]+where ms[.]session_id = p_session_id',
+    'from public.meal_services ms where ms.session_id = p_session_id and ms.status <> ''void''',
+    1
+  );
+  body := replace(
+    body,
+    'a.action in (''company_headcount_submitted'',',
+    'a.action in (''headcount_round_voided'',''participant_operational_status_changed'',''participant_checkin_recorded'',''participant_checkin_undone'',''staff_operational_status_changed'',''housing_room_created'',''housing_room_updated'',''housing_unassigned'',''housing_unassigned_for_participant_status'',''housing_assignment_restored'',''company_headcount_submitted'', '
+  );
+  if body = original
+     or position('r.voided_at is null' in body) = 0
+     or position('ms.status <> ''void''' in body) = 0
+     or position('headcount_round_voided' in body) = 0 then
+    raise exception 'Operational report baseline drifted; void/history filters were not installed';
+  end if;
+  execute body;
 end;
 $$;
 
@@ -744,15 +821,19 @@ declare
   body text;
   original text;
 begin
-  if to_regprocedure('public.get_my_operational_overview(uuid)') is not null then
-    body := pg_get_functiondef('public.get_my_operational_overview(uuid)'::regprocedure);
-    original := body;
-    body := replace(
-      body,
-      'where r.session_id = p_session_id and r.roster_version >= 3',
-      'where r.session_id = p_session_id and r.roster_version >= 3 and r.voided_at is null'
-    );
-    if body <> original then execute body; end if;
+  if to_regprocedure('public.get_my_operational_overview(uuid)') is null then
+    raise exception 'Expected public.get_my_operational_overview(uuid) before reversible operations migration';
   end if;
+  body := pg_get_functiondef('public.get_my_operational_overview(uuid)'::regprocedure);
+  original := body;
+  body := replace(
+    body,
+    'where r.session_id = p_session_id and r.roster_version >= 3',
+    'where r.session_id = p_session_id and r.roster_version >= 3 and r.voided_at is null'
+  );
+  if body = original or position('r.voided_at is null' in body) = 0 then
+    raise exception 'Operational overview baseline drifted; voided rounds remain eligible';
+  end if;
+  execute body;
 end;
 $$;

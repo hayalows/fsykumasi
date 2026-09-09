@@ -87,7 +87,15 @@ export function Housing({ sessionId, participants = [], capabilities = [], sessi
     }
   };
 
-  useEffect(() => { reload({ initial: true }).catch(() => {}); }, [sessionId, canView]);
+  useEffect(() => {
+    if (!sessionId) {
+      setInitialLoading(false);
+      setRefreshing(false);
+      return undefined;
+    }
+    reload({ initial: true }).catch(() => {});
+    return undefined;
+  }, [sessionId, canView]);
   useEffect(() => {
     if (initialArea === "rooms") setWorkspace("rooms");
     else if (initialArea === "assigned") { setWorkspace("people"); setPersonStatus("assigned"); }

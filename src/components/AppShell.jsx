@@ -52,6 +52,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
   const [clock, setClock] = useState(Date.now());
   const menuButtonRef = useRef(null);
   const sidebarRef = useRef(null);
+  const moreButtonRef = useRef(null);
 
   const nav = useMemo(() => {
     const canPeople = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"people_lookup");
@@ -134,6 +135,17 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
     const onPopState=()=>setMenu(false); document.addEventListener("keydown",onKeyDown); window.addEventListener("popstate",onPopState);
     return()=>{window.cancelAnimationFrame(frame);document.removeEventListener("keydown",onKeyDown);window.removeEventListener("popstate",onPopState);document.body.style.overflow=previousOverflow;const restore=sidebarRef.current?.contains(previousActive)?menuButtonRef.current:previousActive;(restore||menuButtonRef.current)?.focus?.();};
   }, [menu]);
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+    const previousActive = document.activeElement;
+    const onKeyDown = (event) => { if (event.key === "Escape") { event.preventDefault(); setMoreOpen(false); } };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      const restore = previousActive && document.contains(previousActive) ? previousActive : moreButtonRef.current;
+      restore?.focus?.();
+    };
+  }, [moreOpen]);
   useEffect(() => { setMenu(false); setMoreOpen(nav.moreIds.has(active)); }, [active, nav.moreIds]);
 
   const navigate=(id)=>{setActive(id);setMenu(false);window.scrollTo({top:0,behavior:"auto"});};
@@ -157,7 +169,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
       <div className={isTraining?"session-badge training":"session-badge"}><span>{isTraining?"Training":sessionInfo?.year||demoSession.year}</span><small>{isTraining?"Synthetic rehearsal workspace":demoSession.theme}</small></div>
       <nav className="sidebar-nav">
         <div className="nav-group"><span className="nav-group-label">Today</span>{nav.today.map(navItem)}</div>
-        {nav.more.length?<div className="nav-group nav-group-more"><button type="button" className={nav.moreIds.has(active)?"sidebar-more-trigger active":"sidebar-more-trigger"} onClick={()=>setMoreOpen((v)=>!v)} aria-expanded={moreOpen} aria-controls="sidebar-more-tools"><DotsThree size={22}/><span>More</span><CaretDown size={17} className={moreOpen?"more-chevron open":"more-chevron"}/></button>{moreOpen?<div id="sidebar-more-tools" className="sidebar-more-items">{nav.more.map(([label,items])=><div className="sidebar-more-group" key={label}><span className="sidebar-more-label">{label}</span>{items.map(navItem)}</div>)}</div>:null}</div>:null}
+        {nav.more.length?<div className="nav-group nav-group-more"><button ref={moreButtonRef} type="button" className={nav.moreIds.has(active)?"sidebar-more-trigger active":"sidebar-more-trigger"} onClick={()=>setMoreOpen((v)=>!v)} aria-expanded={moreOpen} aria-controls="sidebar-more-tools"><DotsThree size={22}/><span>More</span><CaretDown size={17} className={moreOpen?"more-chevron open":"more-chevron"}/></button>{moreOpen?<div id="sidebar-more-tools" className="sidebar-more-items">{nav.more.map(([label,items])=><div className="sidebar-more-group" key={label}><span className="sidebar-more-label">{label}</span>{items.map(navItem)}</div>)}</div>:null}</div>:null}
       </nav>
       {installPrompt&&!installed?<button type="button" className="sidebar-install" onClick={installApp}><DownloadSimple size={21}/><span><b>Install FSY Ops</b><small>Open it like an app on this device</small></span></button>:null}
       <div className="sidebar-foot"><button className={active==="profile"?"sidebar-profile active":"sidebar-profile"} onClick={()=>navigate("profile")} aria-label="Open your profile" aria-current={active==="profile"?"page":undefined}><AccountAvatar seed={currentUser?.user_id||currentUser?.id} label={`${displayName} profile`} size={38}/><span className="sidebar-account-copy"><b>{displayName}</b><small>{displayRole}</small></span></button>{onSignOut?<button className="sidebar-signout" onClick={onSignOut} aria-label="Sign out" title="Sign out"><SignOut size={18}/></button>:null}</div>
