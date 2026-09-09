@@ -40,14 +40,6 @@
   min-height:46px;
 }
 
-/* Keep the close control inside the visible editor chrome while the form scrolls. */
-.wellness-editor-layer .modal-close{
-  position:sticky;
-  top:0;
-  z-index:8;
-  margin-left:auto;
-}
-
 @media(max-width:700px){
   .wellness-editor-layer.layer-panel{
     width:100%;
