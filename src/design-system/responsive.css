@@ -1,0 +1,434 @@
+/* Adaptive composition. Desktop and mobile share the same work and state,
+   but not necessarily the same arrangement. */
+
+@media (max-width: 1100px) {
+  :root {
+    --ds-gutter: clamp(18px, 2.7vw, 32px);
+  }
+
+  .assignments-v15-quick {
+    grid-template-columns: 1fr;
+  }
+
+  .assignments-v15-quick > button {
+    min-height: 88px;
+    border-right: 0;
+    border-bottom: 1px solid var(--ds-line);
+  }
+
+  .assignments-v15-quick > button:last-child {
+    border-bottom: 0;
+  }
+
+  .wellness-workspace {
+    grid-template-columns: minmax(0,1fr);
+  }
+
+  .wellness-activity-column {
+    width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: min(88vw, 320px);
+  }
+
+  .workspace {
+    margin-left: 0;
+  }
+
+  .page {
+    max-width: none;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --ds-gutter: 16px;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  .topbar {
+    height: 58px;
+    padding-inline: 12px;
+  }
+
+  .session small {
+    display: none;
+  }
+
+  .page {
+    padding: 22px var(--ds-gutter) calc(104px + env(safe-area-inset-bottom));
+  }
+
+  .page-head {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .page-head h1 {
+    font-size: clamp(28px, 9vw, 34px);
+    margin-bottom: 7px;
+  }
+
+  .page-head p:last-child {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .page-head > .primary,
+  .page-head > .secondary,
+  .page-head-actions {
+    width: 100%;
+  }
+
+  .page-head > .primary,
+  .page-head > .secondary,
+  .page-head-actions .primary,
+  .page-head-actions .secondary {
+    width: 100%;
+  }
+
+  .panel {
+    padding: 20px 0;
+  }
+
+  .segmented {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .segmented::-webkit-scrollbar {
+    display: none;
+  }
+
+  .segmented button {
+    flex: 0 0 auto;
+    min-width: max-content;
+  }
+
+  .overview-focus {
+    grid-template-columns: auto minmax(0,1fr);
+  }
+
+  .overview-focus > .primary {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .overview-section-head {
+    align-items: start;
+    gap: 8px;
+  }
+
+  .overview-metrics,
+  .wellness-summary-strip,
+  .housing-v5-metrics,
+  .snapshot-metrics,
+  .field-metrics,
+  .headcount-glance,
+  .import-summary,
+  .quality-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  }
+
+  .overview-metrics > *,
+  .wellness-summary-strip > *,
+  .housing-v5-metrics > *,
+  .snapshot-metrics > *,
+  .field-metrics > *,
+  .headcount-glance > *,
+  .import-summary > *,
+  .quality-grid > * {
+    border-right: 1px solid var(--ds-line) !important;
+    border-bottom: 1px solid var(--ds-line) !important;
+  }
+
+  .overview-metrics > *:nth-child(2n),
+  .wellness-summary-strip > *:nth-child(2n),
+  .housing-v5-metrics > *:nth-child(2n),
+  .snapshot-metrics > *:nth-child(2n),
+  .field-metrics > *:nth-child(2n),
+  .headcount-glance > *:nth-child(2n),
+  .import-summary > *:nth-child(2n),
+  .quality-grid > *:nth-child(2n) {
+    border-right: 0 !important;
+  }
+
+  .overview-metrics > *:nth-last-child(-n+2),
+  .wellness-summary-strip > *:nth-last-child(-n+2),
+  .housing-v5-metrics > *:nth-last-child(-n+2),
+  .snapshot-metrics > *:nth-last-child(-n+2),
+  .field-metrics > *:nth-last-child(-n+2),
+  .headcount-glance > *:nth-last-child(-n+2),
+  .import-summary > *:nth-last-child(-n+2),
+  .quality-grid > *:nth-last-child(-n+2) {
+    border-bottom: 0 !important;
+  }
+
+  .people-v2-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .people-v2-facts > div,
+  .people-v2-facts > div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .people-v2-facts > div:last-child {
+    border-bottom: 0;
+  }
+
+  .assignments-v3-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .assignments-v3-summary > button {
+    width: 100%;
+  }
+
+  .assignments-v3-toolbar,
+  .housing-v5-person-controls,
+  .housing-v5-room-controls,
+  .housing-v6-room-controls,
+  .food-v3-filter-row,
+  .food-dietary-tools {
+    grid-template-columns: minmax(0,1fr) !important;
+    align-items: stretch;
+  }
+
+  .assignments-v3-person-row,
+  .assignments-v3-coverage-row {
+    grid-template-columns: minmax(0,1fr) !important;
+    gap: 10px;
+  }
+
+  .housing-v5-layout,
+  .housing-v6-layout {
+    grid-template-columns: minmax(0,1fr) !important;
+    gap: 0;
+  }
+
+  .housing-v6-availability {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+
+  .housing-v6-availability > button:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .housing-v6-availability > button:nth-child(-n+2) {
+    border-bottom: 1px solid var(--ds-line);
+  }
+
+  .housing-v5-room-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+
+  .housing-v5-room-card,
+  .housing-v5-room-card:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .housing-v5-room-card:last-child {
+    border-bottom: 0;
+  }
+
+  .housing-person-identity-row {
+    grid-template-columns: auto minmax(0,1fr);
+    gap: 10px;
+  }
+
+  .housing-person-identity-row .assignment {
+    grid-column: 2;
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+  }
+
+  .food-date-nav,
+  .wellness-date-nav {
+    grid-template-columns: 1fr 1.35fr 1fr;
+    gap: 6px;
+  }
+
+  .food-date-nav .secondary,
+  .wellness-date-nav .secondary {
+    min-width: 0;
+    padding-inline: 10px;
+  }
+
+  .food-v3-command-head {
+    align-items: start;
+    gap: 14px;
+  }
+
+  .food-v3-count {
+    min-width: 0;
+  }
+
+  .food-company-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .food-company-card {
+    border-right: 0 !important;
+  }
+
+  .food-company-card:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .wellness-workspace {
+    display: block;
+  }
+
+  .wellness-activity-column {
+    margin-top: 24px;
+  }
+
+  .wellness-visit-row {
+    grid-template-columns: minmax(0,1fr) !important;
+    gap: 6px;
+  }
+
+  /* Contextual sheets become bottom sheets on phones. */
+  .modal-backdrop,
+  .dismissible-layer {
+    padding: 0;
+  }
+
+  .sheet-layer:not(:has(.confirm-action-sheet)) {
+    align-items: flex-end;
+    justify-content: stretch;
+  }
+
+  .sheet-layer:not(:has(.confirm-action-sheet)) > .layer-panel {
+    width: 100%;
+    height: auto;
+    max-height: calc(100dvh - 10px);
+    border: 1px solid var(--ds-line);
+    border-bottom: 0;
+    border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
+  }
+
+  .layer-panel,
+  .modal {
+    width: 100%;
+    max-height: calc(100dvh - 10px);
+    border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
+  }
+
+  .confirm-action-layer {
+    align-items: flex-end;
+  }
+
+  .confirm-action-layer > .layer-panel {
+    width: 100%;
+    max-height: calc(100dvh - 10px);
+    border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
+  }
+
+  .field-sheet,
+  .people-v2-detail,
+  .wellness-picker,
+  .food-setup-form-v2,
+  .confirm-action-sheet {
+    padding: 20px 16px;
+  }
+
+  .field-sheet-actions,
+  .modal-actions,
+  .confirm-action-buttons {
+    margin: 18px -16px -20px;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .field-sheet-actions > button,
+  .modal-actions > button,
+  .confirm-action-buttons > button {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .action-toast {
+    left: 12px;
+    right: 12px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    max-width: none;
+  }
+
+  .mobile-nav {
+    border-top: 1px solid var(--ds-line);
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 -8px 24px rgba(10,44,55,.06);
+    backdrop-filter: blur(16px);
+  }
+
+  .mobile-nav button {
+    min-height: 58px;
+    color: var(--ds-text-secondary);
+  }
+
+  .mobile-nav button.active {
+    color: var(--ds-brand-strong);
+    background: transparent;
+  }
+}
+
+@media (max-width: 390px) {
+  .page {
+    padding-inline: 14px;
+  }
+
+  .primary,
+  .secondary {
+    padding-inline: 12px;
+  }
+
+  .overview-focus {
+    padding: 15px;
+  }
+
+  .overview-metrics > *,
+  .wellness-summary-strip > *,
+  .housing-v5-metrics > *,
+  .snapshot-metrics > *,
+  .field-metrics > *,
+  .headcount-glance > *,
+  .import-summary > *,
+  .quality-grid > * {
+    padding: 12px;
+  }
+
+  .food-date-nav,
+  .wellness-date-nav {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .food-date-nav label,
+  .wellness-date-nav label {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .food-date-nav button:first-child,
+  .wellness-date-nav button:first-child {
+    grid-column: 1;
+  }
+
+  .food-date-nav button:last-child,
+  .wellness-date-nav button:last-child {
+    grid-column: 2;
+  }
+}
