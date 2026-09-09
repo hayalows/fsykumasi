@@ -6,6 +6,12 @@ export function normalizeSearch(value) {
 const idText = value => normalizeSearch(value).replace(/ /g, '');
 const compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;
 
+export function humanizeSearchContext(value) {
+  return String(value ?? '').replace(/\b([a-z]+(?:_[a-z]+)+)\b/gi, token =>
+    token.split('_').map(word => word ? word[0].toUpperCase() + word.slice(1).toLowerCase() : '').join(' ')
+  );
+}
+
 function oneEdit(a, b) {
   if (Math.min(a.length, b.length) < 4 || Math.abs(a.length - b.length) > 1) return false;
   if (a.length === b.length) {
@@ -88,7 +94,11 @@ export function createPersonSearch(rows, contextFor = () => []) {
     return entries.map(entry => ({ ...entry, rank: rankDocument(entry.doc, profile) }))
     .filter(entry => Number.isFinite(entry.rank))
     .sort((a, b) => a.rank - b.rank || compare(a.doc.name, b.doc.name) || compare(a.doc.key, b.doc.key))
-    .map(entry => entry.row);
+    .map(entry => {
+      const row = entry.row;
+      if (typeof row.context !== 'string' || !row.context.includes('_')) return row;
+      return { ...row, context: humanizeSearchContext(row.context) };
+    });
   };
 }
 export const searchPeople = (rows, query, contextFor) => createPersonSearch(rows, contextFor)(query);

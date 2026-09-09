@@ -1,0 +1,115 @@
+/* Wellness v5 hotfix: keep long private records usable at every viewport height. */
+.dismissible-layer .wellness-editor-layer.layer-panel{
+  display:flex;
+  flex-direction:column;
+  width:min(720px,calc(100vw - 24px));
+  max-height:min(90dvh,900px);
+  padding:0;
+  overflow:hidden;
+}
+
+.dismissible-layer .wellness-editor-layer .wellness-sheet{
+  flex:1 1 auto;
+  width:100%;
+  min-width:0;
+  min-height:0;
+  max-height:min(90dvh,900px);
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  scrollbar-gutter:stable;
+  scroll-padding-bottom:96px;
+  padding:22px 22px 0;
+}
+
+.dismissible-layer .wellness-editor-layer .wellness-editor-actions{
+  position:sticky;
+  z-index:6;
+  bottom:0;
+  margin:0 -22px;
+  padding:12px 22px calc(12px + env(safe-area-inset-bottom,0px));
+  border-top:1px solid #e2e9e5;
+  background:rgba(255,255,255,.98);
+  box-shadow:0 -10px 24px rgba(18,45,37,.08);
+  backdrop-filter:blur(10px);
+}
+
+.dismissible-layer .wellness-editor-layer .wellness-editor-actions button{
+  min-height:46px;
+}
+
+@media(max-width:700px){
+  .dismissible-layer .wellness-editor-layer.layer-panel{
+    width:100%;
+    max-width:none;
+    height:100dvh;
+    max-height:100dvh;
+    margin:0;
+    border-radius:0;
+  }
+
+  .dismissible-layer .wellness-editor-layer .wellness-sheet{
+    max-height:100dvh;
+    padding:16px 16px 0;
+    gap:14px;
+    scroll-padding-bottom:104px;
+  }
+
+  .dismissible-layer .wellness-editor-layer .wellness-editor-actions{
+    bottom:0;
+    margin:0 -16px;
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
+    gap:10px;
+  }
+}
+
+@media(max-width:420px){
+  .dismissible-layer .wellness-editor-layer .wellness-editor-heading{
+    grid-template-columns:44px minmax(0,1fr);
+    gap:11px;
+    padding-right:38px;
+  }
+
+  .dismissible-layer .wellness-editor-layer .wellness-editor-avatar{
+    width:44px;
+    height:44px;
+  }
+
+  .dismissible-layer .wellness-editor-layer .wellness-editor-heading h2{
+    font-size:21px;
+    line-height:1.16;
+  }
+
+  .dismissible-layer .wellness-editor-layer .wellness-editor-section,
+  .dismissible-layer .wellness-editor-layer .wellness-checkout-block{
+    padding:13px;
+  }
+
+  .dismissible-layer .wellness-editor-layer .wellness-health-context summary{
+    min-height:46px;
+  }
+}
+
+@media(max-height:760px) and (min-width:701px){
+  .dismissible-layer .wellness-editor-layer .wellness-sheet{
+    gap:13px;
+    padding-top:17px;
+  }
+
+  .dismissible-layer .wellness-editor-layer .wellness-editor-section{
+    gap:10px;
+    padding:13px;
+  }
+
+  .dismissible-layer .wellness-editor-layer textarea{
+    min-height:68px;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .dismissible-layer .wellness-editor-layer .wellness-sheet{scroll-behavior:auto}
+}
