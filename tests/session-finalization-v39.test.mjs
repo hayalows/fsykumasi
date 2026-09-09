@@ -8,8 +8,11 @@ const policyV2 = fs.readFileSync('supabase/migrations/20260909184719_final_roste
 const settingsHotfix = fs.readFileSync('supabase/migrations/20260909200000_fix_final_roster_settings_reference.sql', 'utf8');
 const arrivalPolicy = fs.readFileSync('supabase/migrations/20260909200500_hide_excluded_age20_arrival_roster.sql', 'utf8');
 const reliability = fs.readFileSync('supabase/migrations/20260909203000_registration_checkin_reliability_v1.sql', 'utf8');
+const previewPerformance = fs.readFileSync('supabase/migrations/20260909210500_final_roster_preview_performance_v2.sql', 'utf8');
 const registration = fs.readFileSync('src/pages/Registration.jsx', 'utf8');
+const registrationWorkspace = fs.readFileSync('src/pages/registration-workspace.css', 'utf8');
 const finalization = fs.readFileSync('src/pages/SessionFinalization.jsx', 'utf8');
+const finalizationClient = fs.readFileSync('src/lib/session-finalization.js', 'utf8');
 const staffState = fs.readFileSync('src/lib/staff-state.js', 'utf8');
 const staffSheet = fs.readFileSync('src/components/StaffOperationsSheet.jsx', 'utf8');
 const resolution = fs.readFileSync('src/components/RegistrationLeadershipResolution.jsx', 'utf8');
@@ -62,7 +65,7 @@ test('Registration presents final roster as a first-class pre-session task', () 
   assert.match(registration, /<SessionFinalization/);
   assert.match(finalization, /ConfirmActionSheet/);
   assert.match(finalization, /Existing participant placements are not moved/);
-  assert.match(finalization, /New participants or Staff are handled through the on-site registration flows/);
+  assert.match(finalization, /on-site registration flows/);
 });
 
 test('committee staff use a direct responsibility label', () => {
@@ -105,7 +108,35 @@ test('active arrival roster excludes age 20+ and locally excluded source records
 });
 
 test('finalization does not show a staffing error while its preview is unavailable', () => {
+  assert.match(finalization, /if \(!preview && issue\) return <PreviewRecovery/);
   assert.match(finalization, /const blocked = Boolean\(preview\) && !preview\?\.safe_to_apply/);
   assert.match(finalization, /participantBlockers/);
   assert.match(finalization, /assistantShortfall/);
+  assert.match(finalization, /Ready to finalize/);
+});
+
+test('final roster database timeouts are translated into a retryable staff message', () => {
+  assert.match(finalizationClient, /code === "57014"/);
+  assert.match(finalizationClient, /FINAL_ROSTER_TIMEOUT/);
+  assert.match(finalizationClient, /Nothing was changed\. Try the preview again\./);
+  assert.doesNotMatch(finalization, /err\.message/);
+  assert.match(finalization, /Retry preview/);
+});
+
+test('final roster preview computes participant state once instead of nested per-person helpers', () => {
+  assert.match(previewPerformance, /participant_state as materialized/);
+  assert.match(previewPerformance, /evaluated as materialized/);
+  assert.match(previewPerformance, /candidates as materialized/);
+  assert.match(previewPerformance, /unplaced_people as materialized/);
+  assert.doesNotMatch(previewPerformance, /private\.session_finalization_include_candidate\(/);
+  assert.doesNotMatch(previewPerformance, /private\.session_participant_age\(/);
+  assert.match(previewPerformance, /grant execute on function public\.get_session_finalization_preview_v2\(uuid\) to authenticated/);
+});
+
+test('registration mode navigation is compact and has exactly three workspace columns', () => {
+  assert.match(registration, /registration-mode-cue-compact/);
+  assert.match(registration, /registration-mode-summary/);
+  assert.match(registration, /registration-workspace\.css/);
+  assert.match(registrationWorkspace, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(registrationWorkspace, /registration-mode-cue-compact/);
 });
