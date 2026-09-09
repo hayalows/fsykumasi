@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { PreSessionFinalizationSummary } from "../components/PreSessionFinalizationSummary.jsx";
 import { RegistrationJourney } from "./RegistrationJourney.jsx";
 import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
+import { SessionFinalization } from "./SessionFinalization.jsx";
 import { formatCount } from "../lib/cohort.js";
 import { registrationBlockerCount } from "../lib/registration-workflow-v30.js";
 import { PageHead, SegmentedControl } from "../components/UI.jsx";
@@ -9,23 +9,22 @@ import "./registration-review.css";
 import "./registration-v5.css";
 import "./registration-journey.css";
 import "./registration-readiness-v28.css";
-import "../pre-session-finalization-v38.css";
 
 const MODE_META = {
   desk: {
     phase: "Arrival desk",
     title: "Live check-in",
-    help: "Find the participant and complete normal arrivals quickly. If something needs a decision, move that person to Final roster review.",
+    help: "Find the participant and complete normal arrivals quickly. If something needs a decision, move that person to Final roster.",
   },
   roster: {
     phase: "Pre-session roster",
     title: "Final roster",
-    help: "Finish the remaining participant decisions before the session. Included youth continue to placement and identity; people kept out stay in source history but leave active operations.",
+    help: "Finish the remaining participant and Staff decisions before the session, then use this same area for any person who needs an individual review.",
   },
   readiness: {
     phase: "Session readiness",
     title: "Readiness",
-    help: "Check the final roster, participant identities and Staff coverage before the rehearsal and Day One.",
+    help: "Check participant identity, Staff coverage and the final source before the rehearsal and Day One.",
   },
 };
 
@@ -81,7 +80,7 @@ export function Registration(props) {
       <PageHead
         title="Registration & check-in"
         sessionName={sessionName}
-        description="Finish the participant list before the session, keep normal arrivals fast, and use Readiness for identities and Staff coverage."
+        description="Settle the final participant list before the session, keep normal arrivals fast, and use Readiness for identities and Staff coverage."
       />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
         {canUseRegistrationTools ? <SegmentedControl
@@ -105,7 +104,7 @@ export function Registration(props) {
 
     <div className="registration-workspace-pane registration-workspace-pane-v5 registration-unified-pane">
       <div role="tabpanel" aria-labelledby={journeyMode === "desk" ? "registration-mode-desk" : "registration-mode-roster"} hidden={mode === "readiness"}>
-        {mode === "roster" && live ? <PreSessionFinalizationSummary sessionId={sessionId} onNavigate={onNavigate} /> : null}
+        {mode === "roster" && live ? <SessionFinalization sessionId={sessionId} onChanged={onOperationalDataChanged} onNavigate={onNavigate} /> : null}
         <RegistrationJourney view={journeyMode} {...journeyProps} />
       </div>
 
