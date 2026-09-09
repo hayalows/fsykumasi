@@ -1,57 +1,180 @@
-.wellness-date-nav {
-  display: flex;
-  align-items: end;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 0 0 2px;
+/* Wellness v4: a calm current-care workspace with history kept secondary. */
+.wellness-v4{gap:16px}
+.wellness-v4 .page-head{align-items:flex-start;gap:20px}
+.wellness-head-action{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;white-space:nowrap}
+
+.wellness-summary-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.wellness-summary-strip>div{position:relative;display:grid;gap:4px;min-width:0;padding:14px 15px;border:1px solid var(--line,#dce6e2);border-radius:14px;background:#fff;overflow:hidden}
+.wellness-summary-strip>div::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:transparent}
+.wellness-summary-strip>div.attention::before{background:#fcb449}
+.wellness-summary-strip>div.urgent::before{background:#b64d3a}
+.wellness-summary-strip span{font-size:11px;font-weight:850;letter-spacing:.035em;text-transform:uppercase;color:var(--muted,#65776e);overflow-wrap:anywhere}
+.wellness-summary-strip strong{font-size:30px;line-height:1;color:var(--blue-35,#005175);font-variant-numeric:tabular-nums}
+.wellness-summary-strip small{font-size:11px;color:var(--muted,#65776e)}
+.wellness-summary-strip .urgent strong{color:#9d3f31}
+
+.wellness-workspace{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,.72fr);gap:16px;align-items:start}
+.wellness-priority-column,.wellness-activity-column{display:grid;gap:16px;min-width:0}
+.wellness-queue-panel,.wellness-followup-panel,.wellness-day-panel{padding:0;overflow:hidden}
+.wellness-queue-panel.has-active{border-color:#b8d5ca}
+.wellness-followup-panel{border-color:#ead9b9}
+.wellness-v4 .panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:19px 20px 15px;border-bottom:1px solid #e5ece8}
+.wellness-v4 .panel-head h2,.wellness-day-head h2{margin:2px 0 4px;font-size:22px;line-height:1.18}
+.wellness-v4 .panel-head p,.wellness-day-head p{margin:0;max-width:650px;color:#64766d;line-height:1.45}
+.wellness-panel-icon{display:grid;place-items:center;flex:0 0 auto;width:42px;height:42px;border-radius:12px;background:#eaf6f3;color:#145e50}
+.wellness-panel-icon.followup{background:#fff7e8;color:#8a641b}
+
+.wellness-queue-list{display:grid}
+.wellness-visit-row{width:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,.72fr);gap:18px;align-items:center;min-height:76px;padding:12px 20px;border:0;border-bottom:1px solid #e8eeeb;background:#fff;color:inherit;text-align:left}
+button.wellness-visit-row{cursor:pointer}
+button.wellness-visit-row:hover{background:#f7faf8}
+button.wellness-visit-row:focus-visible{position:relative;z-index:1;outline:3px solid rgba(0,125,165,.24);outline-offset:-3px}
+.wellness-visit-row:last-child{border-bottom:0}
+.wellness-visit-primary,.wellness-visit-secondary,.wellness-visit-secondary>span{display:grid;gap:4px;min-width:0}
+.wellness-visit-primary b{font-size:14px;color:var(--ink,#17313a);overflow-wrap:anywhere}
+.wellness-visit-primary small,.wellness-visit-secondary small{color:#687a71;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.wellness-visit-secondary{grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-items:end;text-align:right}
+.wellness-visit-secondary>span{justify-items:end}
+.wellness-private-preview{max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wellness-v4 .empty{min-height:210px;padding:34px 22px}
+.wellness-v4 .empty .primary{display:inline-flex;align-items:center;gap:7px;margin-top:7px;min-height:44px}
+
+.wellness-day-panel{background:#fbfcfb}
+.wellness-day-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:18px 18px 12px}
+.wellness-date-nav{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:end;gap:7px;padding:0 18px 10px}
+.wellness-date-nav label{display:grid;gap:5px;min-width:0;color:var(--blue-35,#005175);font-size:11px;font-weight:850}
+.wellness-date-nav input,.wellness-date-nav button{min-height:44px}
+.wellness-date-nav input{width:100%;min-width:0;padding:0 10px;border:1px solid var(--line,#d7e4e8);border-radius:10px;background:#fff;color:var(--ink,#17313a);font:inherit}
+.wellness-date-nav button{padding-inline:10px}
+.wellness-today-button{margin:0 18px 12px;min-height:40px}
+.wellness-day-list{display:grid;border-top:1px solid #e4ebe7;background:#fff}
+.wellness-day-list .wellness-visit-row{grid-template-columns:1fr;gap:7px;min-height:0;padding:12px 16px}
+.wellness-day-list .wellness-visit-secondary{justify-items:start;text-align:left}
+.wellness-day-list .wellness-visit-secondary>span{justify-items:start}
+.wellness-day-list .wellness-private-preview{max-width:100%;justify-self:start}
+.wellness-day-list .empty{min-height:190px}
+.wellness-more-history{border-top:1px solid #e6ece9}
+.wellness-more-history>summary{display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:8px 14px;cursor:pointer;color:#496056;font-weight:800;font-size:12px;list-style:none}
+.wellness-more-history>summary::-webkit-details-marker{display:none}
+.wellness-more-history[open]>summary svg{transform:rotate(180deg)}
+.wellness-day-list.more{border-top:1px solid #edf1ef}
+
+.wellness-reporting-note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:14px 15px;border:1px solid #e3e9e6;border-radius:13px;background:#f7f9f8;color:#486056}
+.wellness-reporting-note>svg{margin-top:2px;color:#0b6b69}
+.wellness-reporting-note p{display:grid;gap:3px;margin:0}
+.wellness-reporting-note b{font-size:12px}
+.wellness-reporting-note span{font-size:11px;line-height:1.45;color:#677970}
+
+.wellness-picker-layer.layer-panel{width:min(700px,calc(100vw - 24px));padding:0;overflow:hidden}
+.wellness-picker{position:relative;display:grid;gap:16px;padding:22px;max-height:min(86dvh,760px);overflow:auto}
+.wellness-picker-head{display:grid;grid-template-columns:auto minmax(0,1fr);gap:13px;align-items:start;padding-right:42px}
+.wellness-picker-head h2{margin:2px 0 5px;font-size:24px}
+.wellness-picker-head p{margin:0;color:#65776e;line-height:1.45}
+.wellness-picker-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:#e9f5f8;color:var(--blue-35,#005175)}
+.wellness-picker .search{margin:0}
+.wellness-picker-results{max-height:430px;margin-top:0;border-top:1px solid #e4ebe7;padding-top:6px}
+.wellness-search-prompt{display:grid;place-items:center;text-align:center;gap:4px;min-height:150px;padding:24px;color:#687a71}
+.wellness-search-prompt b{color:#3e574c}
+.wellness-search-prompt span{max-width:380px;font-size:12px;line-height:1.45}
+
+.wellness-editor-layer.layer-panel{width:min(720px,calc(100vw - 24px));padding:0;overflow:hidden}
+.wellness-sheet{width:100%;min-width:0;max-height:min(90dvh,900px);overflow:auto;padding:22px;gap:17px}
+.wellness-editor-heading{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start;padding-right:42px}
+.wellness-editor-heading>div{display:grid;gap:4px;min-width:0}
+.wellness-editor-heading h2{margin:1px 0;font-size:25px;overflow-wrap:anywhere}
+.wellness-editor-heading p{margin:0 0 3px;color:#687a71;overflow-wrap:anywhere}
+.wellness-editor-avatar{width:52px;height:52px;font-size:15px}
+.wellness-start-note{display:inline-flex;align-items:center;gap:6px;margin-top:4px;color:#397152;font-size:11px;font-weight:800}
+.wellness-start-note svg{flex:0 0 auto}
+.wellness-health-context{margin:0}
+.wellness-health-context summary{display:flex;align-items:center;gap:7px;min-height:42px}
+.wellness-editor-section{display:grid;gap:13px;padding:16px;border:1px solid #dfe7e3;border-radius:14px;background:#fbfcfb}
+.wellness-editor-section-head,.wellness-action-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wellness-editor-section-head>span,.wellness-action-heading>span{display:grid;gap:2px}
+.wellness-editor-section-head small,.wellness-action-heading small{font-size:10px;font-weight:850;letter-spacing:.04em;text-transform:uppercase;color:#73847b}
+.wellness-editor-section-head b,.wellness-action-heading b{color:#24483a;font-size:14px}
+.wellness-editor-section-head>svg,.wellness-action-heading>svg{color:#3b6658}
+.wellness-checkout-block{display:grid;gap:13px;padding:16px;border:1px solid #e8d8b9;border-radius:14px;background:#fffaf0}
+.wellness-checkout-form{display:grid;gap:12px}
+.wellness-checkout-trigger{width:100%;min-height:44px}
+.wellness-outcome-guidance{margin:0;padding:10px 11px;border-radius:10px;background:rgba(255,255,255,.72);color:#61736a;font-size:11px;line-height:1.45}
+.wellness-outcome-guidance.attention{border:1px solid #ecc6bd;background:#fff4f1;color:#793f34}
+.wellness-followup-resolve{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 15px;border:1px solid #e9d8b6;border-radius:13px;background:#fff9ed}
+.wellness-followup-resolve>div{display:grid;gap:3px}
+.wellness-followup-resolve small{color:#746952}
+.wellness-privacy-note{display:flex;align-items:flex-start;gap:6px!important;margin:0!important;color:#677970!important}
+.wellness-privacy-note svg{flex:0 0 auto;margin-top:1px}
+.wellness-editor-actions{position:sticky;bottom:-22px;margin:0 -22px -22px;padding:12px 22px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid #e2e9e5;background:rgba(255,255,255,.96);backdrop-filter:blur(10px)}
+
+.wellness-loading{display:grid;gap:16px}
+.wellness-loading-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.wellness-loading-metrics span{height:88px;border-radius:14px;background:linear-gradient(90deg,#eef3f0 25%,#f7faf8 38%,#eef3f0 63%);background-size:400% 100%;animation:wellness-shimmer 1.4s ease infinite}
+.wellness-loading-panel{display:grid;gap:10px;min-height:260px;padding:22px}
+.wellness-loading-line{display:block;width:42%;height:16px;border-radius:999px;background:#edf2ef}
+.wellness-loading-line.wide{width:68%;height:24px}
+.wellness-loading-rows{display:grid;gap:8px;margin-top:8px}
+.wellness-loading-rows span{height:58px;border-radius:11px;background:#f0f4f2}
+.wellness-loading-panel p{margin:auto 0 0;color:#687a71;font-size:12px}
+.wellness-load-error{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:18px 20px}
+.wellness-load-error>svg{color:#9b4a3a}
+.wellness-load-error h2{margin:0 0 4px;font-size:18px}
+.wellness-load-error p{margin:0;color:#687a71}
+
+@keyframes wellness-shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+
+@media(max-width:960px){
+  .wellness-workspace{grid-template-columns:1fr}
+  .wellness-activity-column{grid-template-columns:minmax(0,1fr)}
+  .wellness-day-panel{order:1}
+  .wellness-reporting-note{order:2}
 }
 
-.wellness-date-nav label {
-  display: grid;
-  min-width: 180px;
-  gap: 5px;
-  color: var(--blue-35);
-  font-size: 12px;
-  font-weight: 850;
+@media(max-width:700px){
+  .wellness-v4{gap:13px}
+  .wellness-v4 .page-head{display:grid;gap:13px}
+  .wellness-head-action{width:100%;min-height:48px}
+  .wellness-summary-strip,.wellness-loading-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .wellness-summary-strip>div{padding:12px 12px}
+  .wellness-summary-strip strong{font-size:26px}
+  .wellness-v4 .panel-head{padding:16px 15px 13px}
+  .wellness-v4 .panel-head h2,.wellness-day-head h2{font-size:20px}
+  .wellness-panel-icon{width:38px;height:38px}
+  .wellness-visit-row{grid-template-columns:1fr;gap:8px;min-height:76px;padding:12px 15px}
+  .wellness-visit-secondary{justify-items:start;text-align:left}
+  .wellness-visit-secondary>span{justify-items:start}
+  .wellness-private-preview{max-width:100%;justify-self:start}
+  .wellness-day-head{padding:16px 15px 11px}
+  .wellness-date-nav{padding:0 15px 10px}
+  .wellness-today-button{margin:0 15px 12px}
+  .wellness-picker-layer.layer-panel,.wellness-editor-layer.layer-panel{width:100%;max-width:none;border-radius:20px 20px 0 0;margin-top:auto}
+  .wellness-picker,.wellness-sheet{padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:88dvh}
+  .wellness-editor-actions{bottom:calc(-18px - env(safe-area-inset-bottom,0px));margin:0 -16px calc(-18px - env(safe-area-inset-bottom,0px));padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+  .wellness-followup-resolve{display:grid}
+  .wellness-followup-resolve button{width:100%}
+  .wellness-load-error{grid-template-columns:auto minmax(0,1fr)}
+  .wellness-load-error button{grid-column:1/-1;width:100%}
 }
 
-.wellness-date-nav input,
-.wellness-date-nav button {
-  min-height: 44px;
+@media(max-width:430px){
+  .wellness-summary-strip>div{min-height:82px}
+  .wellness-summary-strip span{font-size:10px}
+  .wellness-summary-strip strong{font-size:24px}
+  .wellness-date-nav{grid-template-columns:1fr 1fr}
+  .wellness-date-nav label{grid-column:1/-1;grid-row:1}
+  .wellness-date-nav button{width:100%}
+  .wellness-v4 .empty{min-height:190px;padding:28px 16px}
+  .wellness-editor-heading{grid-template-columns:44px minmax(0,1fr);gap:11px}
+  .wellness-editor-avatar{width:44px;height:44px}
+  .wellness-editor-heading h2{font-size:21px}
+  .wellness-picker-head{grid-template-columns:40px minmax(0,1fr);gap:10px}
+  .wellness-picker-icon{width:40px;height:40px}
+  .wellness-picker-head h2{font-size:21px}
+  .wellness-editor-section,.wellness-checkout-block{padding:13px}
+  .wellness-editor-actions{display:grid;grid-template-columns:1fr 1fr}
+  .wellness-editor-actions button{width:100%;min-height:46px}
 }
 
-.wellness-date-nav input {
-  min-width: 180px;
-  padding: 0 12px;
-  border: 1px solid var(--line, #d7e4e8);
-  border-radius: 10px;
-  background: var(--surface, #fff);
-  color: var(--ink, #17313a);
-  font: inherit;
-}
-
-.wellness-today-button {
-  min-height: 44px;
-}
-
-@media (max-width: 520px) {
-  .wellness-date-nav {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .wellness-date-nav label {
-    grid-column: 1 / -1;
-    min-width: 0;
-  }
-
-  .wellness-date-nav input,
-  .wellness-date-nav button {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .wellness-date-nav .wellness-today-button {
-    grid-column: 1 / -1;
-  }
+@media(prefers-reduced-motion:reduce){
+  .wellness-loading-metrics span{animation:none}
+  .wellness-more-history>summary svg{transition:none}
 }
