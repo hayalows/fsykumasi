@@ -41,6 +41,7 @@ import "./phase4-operations-v32.css";
 import "./phase5-release-v33.css";
 import "./pages/wellness-v35.css";
 import "./operations-product-v36.css";
+import "./design-system/index.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
