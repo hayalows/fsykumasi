@@ -42,3 +42,17 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Committee Staff should display one direct responsibility label such as `Materials committee` rather than a generic `Committee member` label plus a second visible label.
 - Preserve source approval statuses, published companies/groups and finalized FSY IDs; no new Housing allocation UI in this scope.
 - User approved existing development database testing but explicitly asked to skip authenticated database permission tests. Do not create synthetic auth identities automatically.
+
+## Controlled final-roster decision — 2026-09-09
+
+- This decision supersedes the earlier additive 12–19 supplemental-closeout rules above for the current Kumasi session final roster.
+- The active youth roster for this controlled finalization is age 12 through 18 at session start. Age 19 and above leave the active youth roster without deleting their source registration/person history.
+- Finalization uses a minimum-change controlled rebalance. Treat the current published groups, companies and FSY IDs as valuable baseline state rather than rebuilding everybody from scratch.
+- Keep existing participant placements wherever possible. Fill compatible open places first, then create only the groups and companies that the final population mathematically requires. Move an already-placed participant only when the 8–10 person group rule or ward/branch separation rule requires it.
+- A ward, branch or unit still cannot repeat within one counselor group. Company-level repetition is allowed.
+- Prefer any necessary existing-participant move inside the same company so the participant keeps the same FSY ID. A company change requires a replacement FSY ID and an ID-history record; new participants receive new IDs.
+- Before the controlled rebalance writes anything, save a complete operational roster version covering participant placements, participant decisions, companies, groups, Staff company assignments, Staff operational state, badge assignments/ID history, structure settings and finalization state.
+- Support guarded restore of a saved roster version while the session remains in planning. Refuse restore when live check-in, active Housing or later head-count dependencies would make rollback unsafe. Save another safety version immediately before any restore so the restore itself is reversible.
+- Refuse controlled finalization while live check-ins remain. The user intends to reset the current check-ins manually before applying the final roster so arrival operations restart from a clean state.
+- Future verified on-site youth must obey the same active session age policy; an age-19+ participant must not receive an active youth badge through an older supplemental path.
+- Do not merge or deploy this controlled final-roster change to production until the user reviews the completed build and explicitly approves the production push.
