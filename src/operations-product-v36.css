@@ -140,8 +140,11 @@
 .staff-status-v36-details,.staff-status-v36-lifecycle{margin:0;border:1px solid #e0e8e4;border-radius:12px;background:#fafcfb}
 .staff-status-v36-details>summary,.staff-status-v36-lifecycle>summary{min-height:48px;padding:10px 12px;font-weight:800;cursor:pointer}
 .staff-status-v36-details>div,.staff-status-v36-lifecycle>div{display:grid;gap:12px;padding:0 12px 13px}
-.staff-status-v36-actions{position:sticky;bottom:0;z-index:5;display:grid;grid-template-columns:auto minmax(150px,220px);justify-content:end;gap:9px;margin:0 -20px;padding:11px 20px calc(11px + env(safe-area-inset-bottom,0px));border-top:1px solid #dfe7e3;background:rgba(255,255,255,.98);box-shadow:0 -9px 22px rgba(18,52,42,.07);backdrop-filter:blur(10px)}
-.staff-status-v36-actions button{min-height:46px}
+.staff-status-v36-required-note{margin:0!important;padding:10px 12px!important;border-radius:10px;background:#fff8ea;color:#74551a}
+.staff-status-v36-actions{position:sticky;bottom:0;z-index:5;display:grid;gap:9px;margin:0 -20px;padding:11px 20px calc(11px + env(safe-area-inset-bottom,0px));border-top:1px solid #dfe7e3;background:rgba(255,255,255,.98);box-shadow:0 -9px 22px rgba(18,52,42,.07);backdrop-filter:blur(10px)}
+.staff-status-v36-error{margin:0!important}
+.staff-status-v36-action-buttons{display:grid;grid-template-columns:auto minmax(150px,220px);justify-content:end;gap:9px}
+.staff-status-v36-action-buttons button{min-height:46px}
 
 /* ------------------------------- Food ------------------------------- */
 .food-v3{gap:15px}
@@ -263,7 +266,7 @@
   .staff-status-v36-layer.layer-panel{width:100%;max-width:none;height:100dvh;max-height:100dvh;margin:0;border-radius:0}
   .staff-status-v36{height:100dvh;max-height:100dvh;padding:16px 15px 0!important;gap:12px!important}
   .staff-status-v36-summary{grid-template-columns:1fr}
-  .staff-status-v36-actions{grid-template-columns:1fr 1.15fr;margin:0 -15px;padding:10px 15px calc(10px + env(safe-area-inset-bottom,0px))}
+  .staff-status-v36-actions{margin:0 -15px;padding:10px 15px calc(10px + env(safe-area-inset-bottom,0px))}
 
   .food-v3 .page-head{display:grid;gap:12px}
   .food-v3 .food-date-nav{grid-template-columns:1fr 1fr;gap:6px}
@@ -293,7 +296,7 @@
   .housing-v6 .housing-v5-metrics b{font-size:21px}
   .housing-v6 .housing-v6-availability button{min-height:64px}
   .staff-status-v36>header h2{font-size:21px}
-  .staff-status-v36-actions{grid-template-columns:1fr}
+  .staff-status-v36-action-buttons{grid-template-columns:1fr 1.15fr;justify-content:stretch}
   .food-v3-command-head{grid-template-columns:1fr}
   .food-v3-count{grid-template-columns:auto auto;justify-content:start;text-align:left}
   .food-v3-count .status{justify-self:start}
