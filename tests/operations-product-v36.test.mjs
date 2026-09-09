@@ -33,7 +33,7 @@ test("Assignments uses plain staff status language and explains the three separa
   assert.match(sheet, /<small>Presence<\/small>/);
   assert.match(sheet, /<small>Ready to serve<\/small>/);
   assert.match(sheet, /physically at the FSY session/);
-  assert.match(sheet, /Session Directing Couple has confirmed they may actively serve/);
+  assert.match(sheet, /whole-session leadership has confirmed they may actively serve/);
   assert.doesNotMatch(sheet, /Staff arrival & service/);
 });
 
