@@ -13,10 +13,11 @@ begin
     'groups_per_company:=greatest(coalesce(ss.groups_per_company,2),1);',
     'groups_per_company:=greatest(coalesce(groups_per_company,2),1);'
   );
-  if replaced = body then
-    raise exception 'Expected broken preview settings normalization was not found';
+  if replaced <> body then
+    execute replaced;
+  elsif position('groups_per_company:=greatest(coalesce(groups_per_company,2),1);' in body) = 0 then
+    raise exception 'Final-roster preview settings normalization is neither repaired nor repairable';
   end if;
-  execute replaced;
 
   body := pg_get_functiondef('public.apply_session_finalization_v2(uuid)'::regprocedure);
   replaced := replace(
@@ -24,10 +25,11 @@ begin
     'groups_per_company:=greatest(coalesce(ss.groups_per_company,2),1);',
     'groups_per_company:=greatest(coalesce(groups_per_company,2),1);'
   );
-  if replaced = body then
-    raise exception 'Expected broken apply settings normalization was not found';
+  if replaced <> body then
+    execute replaced;
+  elsif position('groups_per_company:=greatest(coalesce(groups_per_company,2),1);' in body) = 0 then
+    raise exception 'Final-roster apply settings normalization is neither repaired nor repairable';
   end if;
-  execute replaced;
 end;
 $migration$;
 
@@ -42,10 +44,10 @@ begin
     'array[''logistics_admin'',''session_director'']::public.app_role[]',
     'array[''coordinator'',''logistics_admin'',''session_director'',''area_advisory_couple'']::public.app_role[]'
   );
-  if replaced = body then
+  if replaced = body and position('array[''coordinator'',''logistics_admin'',''session_director'',''area_advisory_couple'']::public.app_role[]' in body) = 0 then
     raise exception 'Expected staff clearance authority rule was not found';
   end if;
-  execute replaced;
+  if replaced <> body then execute replaced; end if;
 
   body := pg_get_functiondef('public.set_staff_operational_status_v1(uuid,text,integer,text,text)'::regprocedure);
   replaced := replace(
@@ -53,10 +55,10 @@ begin
     'array[''coordinator'',''logistics_admin'',''session_director'']::public.app_role[]',
     'array[''coordinator'',''logistics_admin'',''session_director'',''area_advisory_couple'']::public.app_role[]'
   );
-  if replaced = body then
+  if replaced = body and position('array[''coordinator'',''logistics_admin'',''session_director'',''area_advisory_couple'']::public.app_role[]' in body) = 0 then
     raise exception 'Expected staff lifecycle authority rule was not found';
   end if;
-  execute replaced;
+  if replaced <> body then execute replaced; end if;
 
   body := pg_get_functiondef('public.assign_participant_to_group(uuid,uuid)'::regprocedure);
   replaced := replace(
@@ -64,10 +66,10 @@ begin
     'array[''coordinator'',''logistics_admin'',''session_director'']::public.app_role[]',
     'array[''coordinator'',''logistics_admin'',''session_director'',''area_advisory_couple'']::public.app_role[]'
   );
-  if replaced = body then
+  if replaced = body and position('array[''coordinator'',''logistics_admin'',''session_director'',''area_advisory_couple'']::public.app_role[]' in body) = 0 then
     raise exception 'Expected participant placement authority rule was not found';
   end if;
-  execute replaced;
+  if replaced <> body then execute replaced; end if;
 end;
 $migration$;
 
