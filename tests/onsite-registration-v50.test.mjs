@@ -34,6 +34,15 @@ test("new on-site capture requires guardian phone and supports a second guardian
   assert.match(onsite, /p_contact_2_phone: secondGuardianPhone/);
 });
 
+test("placement loading does not look like an unsaved placement", () => {
+  assert.match(journey, /placementDataStatus/);
+  assert.match(journey, /placementLoading=\{placementLoading\}/);
+  assert.doesNotMatch(journey, /busy=\{busyId===selectedRow\.participantId\|\|placementLoading\}/);
+  assert.match(parts, /loading = false/);
+  assert.match(parts, /Loading groups…/);
+  assert.match(parts, /disabled=\{busy \|\| loading \|\| !selected\}/);
+});
+
 test("T-shirt sizes are selected from the approved five options", () => {
   for (const size of ["Small", "Medium", "Large", "Extra Large", "Extra Extra Large"]) {
     assert.ok(parts.includes(`\"${size}\"`));
