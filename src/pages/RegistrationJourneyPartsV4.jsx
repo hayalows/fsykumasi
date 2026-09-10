@@ -299,9 +299,11 @@ export function PersonJourney({ row, eligibility, identityReadiness, vacancies, 
   </div>;
 }
 
-export function DeskFilters({ filter, setFilter, counts }) {
+function filterCountLabel(value,loading=false){return loading?"—":Number(value||0).toLocaleString();}
+
+export function DeskFilters({ filter, setFilter, counts, loading = false }) {
   const primary = [["ready", "Ready", counts.ready], ["needs_help", "Needs attention", counts.needs_help], ["arrived", "Checked in", counts.arrived]];
   const secondary = [["expected", "Yet to arrive", counts.expected], ["on_site", "On-site", counts.on_site], ["not_attending", "Not attending", counts.not_attending], ["all", "Everyone", counts.all]];
   const secondaryActive = secondary.some(([value]) => value === filter);
-  return <div className="regjourney-filter-system"><div className="regjourney-primary-filter" role="group" aria-label="Check-in status">{primary.map(([value, label, count]) => <button type="button" key={value} className={filter === value ? "active" : ""} aria-pressed={filter === value} onClick={() => setFilter(value)}><span>{label}</span><b>{count.toLocaleString()}</b></button>)}</div><details className={`regjourney-more-filters${secondaryActive ? " active" : ""}`}><summary><Funnel /><span>{secondaryActive ? secondary.find(([value]) => value === filter)?.[1] : "More"}</span></summary><div>{secondary.map(([value, label, count]) => <button type="button" key={value} className={filter === value ? "active" : ""} onClick={(event) => { setFilter(value); event.currentTarget.closest("details")?.removeAttribute("open"); }}><span>{label}</span><b>{count.toLocaleString()}</b></button>)}</div></details></div>;
+  return <div className="regjourney-filter-system"><div className="regjourney-primary-filter" role="group" aria-label="Check-in status">{primary.map(([value, label, count]) => <button type="button" key={value} className={filter === value ? "active" : ""} aria-pressed={filter === value} onClick={() => setFilter(value)}><span>{label}</span><b>{filterCountLabel(count,loading)}</b></button>)}</div><details className={`regjourney-more-filters${secondaryActive ? " active" : ""}`}><summary><Funnel /><span>{secondaryActive ? secondary.find(([value]) => value === filter)?.[1] : "More"}</span></summary><div>{secondary.map(([value, label, count]) => <button type="button" key={value} className={filter === value ? "active" : ""} aria-pressed={filter === value} onClick={(event) => { setFilter(value); event.currentTarget.closest("details")?.removeAttribute("open"); }}><span>{label}</span><b>{filterCountLabel(count,loading)}</b></button>)}</div></details></div>;
 }
