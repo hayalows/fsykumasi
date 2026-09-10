@@ -13,9 +13,10 @@ export async function loadOnSiteReferenceDate(sessionId) {
 
 export async function addOnSiteParticipantDetailed({
   sessionId, firstName, lastName, preferredName, sex, birthday, unit, stake,
-  phone, guardianName, guardianPhone, tshirtSize, medicalInformation, dietaryInformation,
+  phone, guardianName, guardianPhone, secondGuardianName, secondGuardianPhone,
+  tshirtSize, medicalInformation, dietaryInformation,
 }) {
-  const { data, error } = await client().rpc("add_on_site_participant_v2", {
+  const { data, error } = await client().rpc("add_on_site_participant_v3", {
     p_session_id: sessionId,
     p_first_name: firstName,
     p_last_name: lastName,
@@ -25,8 +26,10 @@ export async function addOnSiteParticipantDetailed({
     p_unit_name: unit,
     p_stake_name: stake || null,
     p_phone: phone || null,
-    p_contact_name: guardianName || null,
-    p_contact_phone: guardianPhone || null,
+    p_contact_1_name: guardianName || null,
+    p_contact_1_phone: guardianPhone || null,
+    p_contact_2_name: secondGuardianName || null,
+    p_contact_2_phone: secondGuardianPhone || null,
     p_tshirt_size: tshirtSize || null,
     p_medical_information: medicalInformation || null,
     p_dietary_information: dietaryInformation || null,
