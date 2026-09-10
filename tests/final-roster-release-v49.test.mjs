@@ -7,7 +7,15 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 test("controlled roster ward comparison treats the group unit set as a text array", () => {
   const sql = read("supabase/migrations/20260909235000_controlled_roster_unit_array_hotfix_v1.sql");
   assert.match(sql, /unit_key=any\(coalesce\(\(select g_target\.unit_keys/);
-  assert.match(sql, /'\{\}'::text\[\]/);
+  assert.match(sql, /\{\}''::text\[\]/);
+});
+
+test("controlled roster apply lookups cannot collide with PLpgSQL variable names", () => {
+  const lookup = read("supabase/migrations/20260909235500_controlled_roster_apply_lookup_hotfix_v1.sql");
+  const counselor = read("supabase/migrations/20260909235800_controlled_roster_apply_variable_hotfix_v1.sql");
+  assert.match(lookup, /m\.company_key=\(group_spec->>''company_key''\)/);
+  assert.match(lookup, /m\.group_key=\(placement->>''target_group_key''\)/);
+  assert.match(counselor, /execute ''update public\.counselor_groups set counselor_id=\$1 where id=\$2'' using counselor_id,group_id/);
 });
 
 test("missing production roster RPC is a friendly recoverable release state", () => {
