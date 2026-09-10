@@ -10,7 +10,7 @@ test("on-site registration uses compact step progress and explicit placement con
   assert.match(parts, /Step \{step\} of 4/);
   assert.match(parts, /Lowest load/);
   assert.doesNotMatch(parts, /Best fit/);
-  assert.match(parts, /Choose one group, then confirm placement/);
+  assert.match(parts, /Nothing is saved until you confirm/);
   assert.match(parts, /Place \$\{firstName\}/);
   assert.match(parts, /aria-busy=\{busy\}/);
 });
