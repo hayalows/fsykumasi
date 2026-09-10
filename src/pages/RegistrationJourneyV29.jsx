@@ -95,6 +95,7 @@ export function RegistrationJourneyV29({ view="desk", participants=[], initialGr
   const[placementCompanies,setPlacementCompanies]=useState([]);
   const[vacancies,setVacancies]=useState([]);
   const[placementLoading,setPlacementLoading]=useState(false);
+  const[placementDataStatus,setPlacementDataStatus]=useState("idle");
   const[placementRefreshFailed,setPlacementRefreshFailed]=useState(false);
   const[sessionStart,setSessionStart]=useState("");
   const searchRef=useRef(null);
@@ -115,7 +116,7 @@ export function RegistrationJourneyV29({ view="desk", participants=[], initialGr
   useEffect(()=>{if(!sessionId){setRows(current=>current.length?current:demoRegistrationRows(participants));setInitialLoading(false);setRefreshing(false);setLoadError("");return undefined;}let active=true;reload({initial:true}).catch(()=>{if(active)setInitialLoading(false);});return()=>{active=false;};},[reload,sessionId,participants.length]);
   useEffect(()=>{setFilterState(initialFilter||(view==="desk"?"ready":"needs_help"));setShown(PAGE_SIZE);},[view,initialFilter]);
   useEffect(()=>{setPlacementGroups(initialGroups||[]);},[initialGroups]);
-  useEffect(()=>{setPlacementCompanies([]);setVacancies([]);setSessionStart("");},[sessionId]);
+  useEffect(()=>{setPlacementCompanies([]);setVacancies([]);setPlacementDataStatus("idle");setSessionStart("");},[sessionId]);
 
   const participantById=useMemo(()=>new Map(participants.map(person=>[person.id,person])),[participants]);
   const enrichedRows=useMemo(()=>rows.map(row=>({...participantById.get(row.participantId),...row,id:row.participantId,age:row.age??participantById.get(row.participantId)?.age??null})),[rows,participantById]);
@@ -125,6 +126,7 @@ export function RegistrationJourneyV29({ view="desk", participants=[], initialGr
   const unitDirectory=useMemo(()=>buildUnitDirectory(enrichedRows),[enrichedRows]);
   const searching=Boolean(query.trim());
   const finalized=useMemo(()=>enrichedRows.some(row=>row.badgeState==="finalized"),[enrichedRows]);
+  useEffect(()=>{setPlacementDataStatus("idle");},[finalized]);
   const identityReadiness=useMemo(()=>({finalizedIds:finalized?1:0}),[finalized]);
 
   const counts=useMemo(()=>Object.fromEntries(Object.keys(FILTER_LABELS).map(key=>[key,currentRows.filter(row=>matchesWorkFilter(row,eligibilityMap.get(row.participantId),key)).length])),[currentRows,eligibilityMap]);
@@ -172,18 +174,18 @@ export function RegistrationJourneyV29({ view="desk", participants=[], initialGr
   };
 
   const ensurePlacementData=useCallback(async()=>{
-    if(!sessionId||placementLoading)return;
-    if(placementCompanies.length&&(!finalized||vacancies.length))return;
+    if(!sessionId||placementLoading||placementDataStatus!=="idle")return;
+    setPlacementDataStatus("loading");
     setPlacementLoading(true);
     try{
       const[grouping,nextVacancies]=await Promise.all([
         loadGroupingPlan(sessionId),
         canManageRegistration&&finalized?loadArrivalVacancies(sessionId):Promise.resolve([]),
       ]);
-      setPlacementGroups(grouping.groups||[]);setPlacementCompanies(grouping.companies||[]);setVacancies(nextVacancies||[]);
-    }catch(err){setError(mutationErrorMessage(err,"Placement options could not load."));}
+      setPlacementGroups(grouping.groups||[]);setPlacementCompanies(grouping.companies||[]);setVacancies(nextVacancies||[]);setPlacementDataStatus("loaded");
+    }catch(err){setPlacementDataStatus("failed");setError(mutationErrorMessage(err,"Placement options could not load."));}
     finally{setPlacementLoading(false);}
-  },[sessionId,placementLoading,placementCompanies.length,finalized,vacancies.length,canManageRegistration]);
+  },[sessionId,placementLoading,placementDataStatus,finalized,canManageRegistration]);
 
   useEffect(()=>{
     const needsPlacement=Boolean(selectedRow&&selectedEligibility?.eligible&&selectedRow.verificationStatus==="verified"&&!selectedRow.groupName);
@@ -204,7 +206,7 @@ export function RegistrationJourneyV29({ view="desk", participants=[], initialGr
   const useVacancy=async(vacancy)=>{if(!selectedRow)return;try{await runMutation(selectedRow.participantId,()=>replaceArrivalVacancy(vacancy.participantId,selectedRow.participantId),`${selectedRow.fullName} was placed in ${vacancy.groupName}. Their FSY ID was issued automatically.`);setVacancies(current=>current.filter(item=>item.participantId!==vacancy.participantId));}catch{}};
   const arrivalStatus=async(next,note="")=>{if(!selectedRow)return;try{const operationalStatus=next==="confirmed_not_attending"?"not_attending":next==="did_not_arrive"?"did_not_arrive":next==="expected"&&selectedRow.operationalStatus&&selectedRow.operationalStatus!=="active"?"active":null;const demoUpdate=()=>{setRows(current=>current.map(item=>item.participantId!==selectedRow.participantId?item:{...item,attendanceStatus:operationalStatus&&operationalStatus!=="active"?"confirmed_not_attending":next,operationalStatus:operationalStatus||item.operationalStatus,operationalRevision:(item.operationalRevision||0)+1}));return Promise.resolve();};await runMutation(selectedRow.participantId,()=>operationalStatus&&onSetOperationalStatus?onSetOperationalStatus({participantId:selectedRow.participantId,status:operationalStatus,revision:selectedRow.operationalRevision||0,reason:note||"Updated from Registration & Check-in desk",authority:note.split(":")[0]||""}):!sessionId?demoUpdate():setArrivalStatus(selectedRow.participantId,next,note||"Updated from Registration & Check-in desk"),`${selectedRow.fullName} is now ${next==="expected_later"?"expected later":next==="unknown"?"marked for follow-up":next==="confirmed_not_attending"?"confirmed not attending":next==="did_not_arrive"?"marked did not arrive":"expected today"}.`);await reload();}catch{}};
   const refreshResolution=async()=>{setMessage({tone:"success",text:"Leadership decision recorded. Rechecking this participant now."});await refreshAfterMutation();};
-  const closePerson=()=>{if(!busyId){setSelectedId("");setError("");setPlacementRefreshFailed(false);}};
+  const closePerson=()=>{if(!busyId){setSelectedId("");setError("");setPlacementRefreshFailed(false);if(placementDataStatus==="failed")setPlacementDataStatus("idle");}};
   const closeOnsite=()=>{if(!busyId){setOnsiteOpen(false);setError("");}};
   const openPerson=(row)=>{setSelectedId(row.participantId);setError("");setPlacementRefreshFailed(false);};
   const clearSearch=()=>{setQuery("");setShown(PAGE_SIZE);window.requestAnimationFrame(()=>searchRef.current?.querySelector?.("input")?.focus?.());};
@@ -228,6 +230,6 @@ export function RegistrationJourneyV29({ view="desk", participants=[], initialGr
       {filtered.length>shown?<button type="button" className="secondary regjourney-show-more" onClick={()=>setShown(value=>value+PAGE_SIZE)}>Show {Math.min(PAGE_SIZE,filtered.length-shown)} more</button>:null}
     </article>
     <DismissibleLayer open={onsiteOpen} onClose={closeOnsite} title="On-site registration" sheet className="regjourney-onsite-layer regjourney-onsite-layer-v3"><OnSiteDetails initialSearch={query} sessionStart={sessionStart} unitDirectory={unitDirectory} busy={busyId==="onsite-new"} error={error} onCreate={createOnsite} onCancel={closeOnsite} onClose={closeOnsite}/></DismissibleLayer>
-    <DismissibleLayer open={Boolean(selectedRow)} onClose={closePerson} title={selectedRow?selectedRow.fullName:"Participant"} sheet className="regjourney-person-layer regjourney-person-layer-v3">{selectedRow?<><PersonJourney row={selectedRow} eligibility={selectedEligibility} identityReadiness={identityReadiness} vacancies={vacancies} groups={placementGroups} companies={placementCompanies} housingAssignment={selectedHousing} canManageRegistration={canManageRegistration} busy={busyId===selectedRow.participantId||placementLoading} error={error} placementRefreshFailed={placementRefreshFailed} onRetry={retryRegistrationWorkspace} onVerify={verifySelected} onAssignGroup={assignGroup} onUseVacancy={useVacancy} onCheckin={()=>checkIn(selectedRow,true)} onUndoCheckin={()=>undoCheckIn(selectedRow)} onArrivalStatus={arrivalStatus} onDone={focusNext} onClose={closePerson}/><RegistrationLeadershipResolution sessionId={sessionId} row={selectedRow} eligibility={selectedEligibility} onResolved={refreshResolution}/></>:null}</DismissibleLayer>
+    <DismissibleLayer open={Boolean(selectedRow)} onClose={closePerson} title={selectedRow?selectedRow.fullName:"Participant"} sheet className="regjourney-person-layer regjourney-person-layer-v3">{selectedRow?<><PersonJourney row={selectedRow} eligibility={selectedEligibility} identityReadiness={identityReadiness} vacancies={vacancies} groups={placementGroups} companies={placementCompanies} housingAssignment={selectedHousing} canManageRegistration={canManageRegistration} busy={busyId===selectedRow.participantId} placementLoading={placementLoading} error={error} placementRefreshFailed={placementRefreshFailed} onRetry={retryRegistrationWorkspace} onVerify={verifySelected} onAssignGroup={assignGroup} onUseVacancy={useVacancy} onCheckin={()=>checkIn(selectedRow,true)} onUndoCheckin={()=>undoCheckIn(selectedRow)} onArrivalStatus={arrivalStatus} onDone={focusNext} onClose={closePerson}/><RegistrationLeadershipResolution sessionId={sessionId} row={selectedRow} eligibility={selectedEligibility} onResolved={refreshResolution}/></>:null}</DismissibleLayer>
   </section>;
 }
