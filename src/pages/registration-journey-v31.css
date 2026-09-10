@@ -1,0 +1,79 @@
+.regjourney-v31 .regjourney-roster-head {
+  align-items: center;
+}
+
+.regjourney-placement-guidance {
+  display: flex;
+  gap: 8px 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line-subtle, #d9e4e8);
+  border-radius: 12px;
+  background: var(--surface-soft, #f7fafb);
+  color: var(--text-secondary, #5c737d);
+  font-size: 13px;
+}
+
+.regjourney-placement-guidance b {
+  color: var(--text-primary, #123846);
+}
+
+.regjourney-inline-optional {
+  margin-top: 12px;
+  border-top: 1px solid var(--line-subtle, #d9e4e8);
+  padding-top: 10px;
+}
+
+.regjourney-inline-optional > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--text-primary, #123846);
+  list-style: none;
+}
+
+.regjourney-inline-optional > summary::-webkit-details-marker {
+  display: none;
+}
+
+.regjourney-inline-optional > summary span:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.regjourney-inline-optional > summary small {
+  color: var(--text-secondary, #647b85);
+  font-weight: 500;
+}
+
+.regjourney-inline-optional[open] > summary > span:last-child {
+  transform: rotate(45deg);
+}
+
+.regjourney-inline-optional > .regjourney-form-grid {
+  padding-top: 10px;
+}
+
+.regjourney-v31 .regjourney-choice small {
+  line-height: 1.35;
+}
+
+.regjourney-v31 .regjourney-choice-end em {
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .regjourney-placement-guidance {
+    display: grid;
+    gap: 3px;
+  }
+
+  .regjourney-v31 .regjourney-roster-head > div:last-child {
+    align-self: flex-start;
+  }
+}
