@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowClockwise } from "@phosphor-icons/react/ArrowClockwise";
 import { ArrowCounterClockwise } from "@phosphor-icons/react/ArrowCounterClockwise";
 import { ArrowRight } from "@phosphor-icons/react/ArrowRight";
@@ -195,7 +195,7 @@ export function SessionFinalization({ sessionId, onChanged, onNavigate }) {
   const blocked = Boolean(preview) && !preview?.safe_to_apply;
   const latestVersion = versions[0];
 
-  const mainBlocker = useMemo(() => {
+  const mainBlocker = (() => {
     if (liveCheckins) return `${n(liveCheckins)} current check-in${liveCheckins === 1 ? "" : "s"} must be reset first.`;
     if (activeHousing) return `${n(activeHousing)} active Housing assignment${activeHousing === 1 ? "" : "s"} must be reviewed first.`;
     if (participantBlockers) return `${n(participantBlockers)} participant record${participantBlockers === 1 ? "" : "s"} still need a final eligibility decision.`;
@@ -204,7 +204,7 @@ export function SessionFinalization({ sessionId, onChanged, onNavigate }) {
     if (unassigned || underMin) return "The current plan cannot place everybody inside the 8–10 person and ward/branch rules.";
     if (femaleCounselorShortfall || maleCounselorShortfall || assistantShortfall) return "Staff coverage is short for the proposed final structure.";
     return blocked ? "The plan still has an unresolved safety condition." : "";
-  }, [liveCheckins, activeHousing, participantBlockers, unitConflicts, overCapacity, unassigned, underMin, femaleCounselorShortfall, maleCounselorShortfall, assistantShortfall, blocked]);
+  })();
 
   return <section className="session-finalization" aria-busy={applying || loading || restoring}>
     {issue ? <div className="session-finalization-inline-issue" role="status">
