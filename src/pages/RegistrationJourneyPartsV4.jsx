@@ -108,7 +108,7 @@ function GroupPicker({ groups, companies, row, busy, error, placementRefreshFail
   }, [choices, selectedId]);
 
   return <div className="regjourney-group-picker regjourney-group-picker-v5">
-    <div className="regjourney-placement-guidance"><b>Available groups only</b><span>Lowest-load groups are first. For new on-site arrivals, the ward or branch does not block placement.</span></div>
+    <div className="regjourney-placement-guidance"><b>Available groups only</b><span>Lowest load groups are first. For new on-site arrivals, the ward or branch does not block placement.</span></div>
     {choices.length > 6 ? <label className="regjourney-inline-search regjourney-inline-search-v5"><span className="sr-only">Find counselor group</span><MagnifyingGlass aria-hidden="true" /><input value={query} onChange={(event) => { setQuery(event.target.value); setVisibleLimit(6); }} placeholder="Search groups or companies" /></label> : null}
     <div className="regjourney-choice-list" role="radiogroup" aria-label="Available counselor groups">
       {visible.map((group, index) => {
