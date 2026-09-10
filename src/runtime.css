@@ -313,3 +313,43 @@
   .signout-full, .profile-save { width: 100%; }
   .profile-details > div { grid-template-columns: 92px minmax(0, 1fr); }
 }
+
+
+.route-loading {
+  min-height: min(56vh, 520px);
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 8px;
+}
+.route-loading h1 {
+  margin-bottom: 4px;
+}
+.route-loading > p:last-of-type {
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.route-loading-bar {
+  width: min(100%, 360px);
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--blue-5);
+  position: relative;
+}
+.route-loading-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  border-radius: inherit;
+  background: var(--blue-25);
+  animation: route-loading-slide 1.15s ease-in-out infinite;
+}
+@keyframes route-loading-slide {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(255%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-loading-bar::after { animation: none; }
+}
