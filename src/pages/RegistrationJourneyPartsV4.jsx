@@ -82,7 +82,7 @@ function StepIndicator({ step, label }) {
   </div>;
 }
 
-function GroupPicker({ groups, companies, row, busy, error, placementRefreshFailed = false, onRetry, onChoose }) {
+function GroupPicker({ groups, companies, row, busy, loading = false, error, placementRefreshFailed = false, onRetry, onChoose }) {
   const [query, setQuery] = useState("");
   const [visibleLimit, setVisibleLimit] = useState(6);
   const [selectedId, setSelectedId] = useState("");
@@ -115,7 +115,7 @@ function GroupPicker({ groups, companies, row, busy, error, placementRefreshFail
         const company = companyById.get(group.companyId);
         const isSelected = group.id === selectedId;
         const openSpots = Math.max(0, 10 - Number(group.memberCount || 0));
-        return <button type="button" key={group.id} className={`regjourney-choice regjourney-choice-v5${isSelected ? " selected" : ""}`} disabled={busy} onClick={() => setSelectedId(group.id)} role="radio" aria-checked={isSelected}>
+        return <button type="button" key={group.id} className={`regjourney-choice regjourney-choice-v5${isSelected ? " selected" : ""}`} disabled={busy || loading} onClick={() => setSelectedId(group.id)} role="radio" aria-checked={isSelected}>
           <span><b>{group.displayName || group.name}</b><small>{company?.displayName || company?.name || "Company"} · {Number(group.memberCount || 0)}/10 · {openSpots} {openSpots === 1 ? "place" : "places"} open</small></span>
           <span className="regjourney-choice-end">{!query.trim() && index === 0 ? <em>Recommended</em> : null}{isSelected ? <CheckCircle weight="fill" /> : <span className="regjourney-choice-radio" aria-hidden="true" />}</span>
         </button>;
@@ -126,7 +126,7 @@ function GroupPicker({ groups, companies, row, busy, error, placementRefreshFail
     {error ? <MutationFeedback tone="error" className="regjourney-placement-feedback">{placementRefreshFailed ? <>Placement was saved, but the latest roster could not be loaded. {onRetry ? <button type="button" className="text-action regjourney-placement-retry" disabled={busy} onClick={onRetry}>Retry roster</button> : null}</> : <>Placement was not saved. {error}</>}</MutationFeedback> : null}
     <div className={`regjourney-placement-confirm${selected ? " ready" : ""}`} aria-live="polite">
       <div>{selected ? <><b>{selected.displayName || selected.name}</b><small>{selectedCompany?.displayName || selectedCompany?.name || "Company"} · FSY ID will be created with this company when placement is saved.</small></> : <><b>Select a counselor group</b><small>The company follows the group. Nothing is saved until you confirm.</small></>}</div>
-      <button type="button" className="primary" disabled={busy || !selected} aria-busy={busy} onClick={() => selected && void onChoose(selected)}>{busy ? "Placing…" : selected ? `Place ${firstName}` : "Select a group"}<ArrowRight /></button>
+      <button type="button" className="primary" disabled={busy || loading || !selected} aria-busy={busy || loading} onClick={() => selected && void onChoose(selected)}>{busy ? "Placing…" : loading ? "Loading groups…" : selected ? `Place ${firstName}` : "Select a group"}<ArrowRight /></button>
     </div>
   </div>;
 }
@@ -248,7 +248,7 @@ function OnsitePlacementContext({ row }) {
   return <div className="regjourney-key-context"><span><small>Participant</small><b>{String(row.sex || "").replace(/^./, (letter) => letter.toUpperCase()) || "Sex not recorded"}</b></span><span><small>Stake / district</small><b>{row.stake || "Not recorded"}</b></span><span><small>FSY ID</small><b>Created with selected group</b></span></div>;
 }
 
-export function PersonJourney({ row, eligibility, identityReadiness, vacancies, groups, companies, housingAssignment, canManageRegistration, busy, error, placementRefreshFailed = false, onRetry, onVerify, onAssignGroup, onUseVacancy, onCheckin, onUndoCheckin, onArrivalStatus, onDone, onClose }) {
+export function PersonJourney({ row, eligibility, identityReadiness, vacancies, groups, companies, housingAssignment, canManageRegistration, busy, placementLoading = false, error, placementRefreshFailed = false, onRetry, onVerify, onAssignGroup, onUseVacancy, onCheckin, onUndoCheckin, onArrivalStatus, onDone, onClose }) {
   const [noShowOpen, setNoShowOpen] = useState(false);
   const [didNotArriveOpen, setDidNotArriveOpen] = useState(false);
   const [confirmationSource, setConfirmationSource] = useState("");
@@ -288,7 +288,7 @@ export function PersonJourney({ row, eligibility, identityReadiness, vacancies, 
     {row.checkinStatus === "arrived" ? <CompletionState row={row} assignment={housingAssignment} onDone={onDone} onUndoCheckin={onUndoCheckin} containerRef={completionRef} /> : null}
     {onsitePending && canManageRegistration ? <ApprovalStep busy={busy} error={error} onVerify={onVerify} /> : null}
 
-    {!onsitePending && needsPlacement && canManageRegistration ? <div className="regjourney-resolution-section regjourney-placement-id regjourney-resolution-section-v5"><div className="regjourney-section-head"><div><span className="kicker">Step 3</span><h3>Choose a counselor group</h3><p>Select an available group. Its company becomes the participant's company, and the FSY ID is created in the same save.</p></div></div><GroupPicker groups={groups} companies={companies} row={row} busy={busy} error={error} placementRefreshFailed={placementRefreshFailed} onRetry={onRetry} onChoose={onAssignGroup} />{finalized && onsite ? <VacancyOptions vacancies={vacancies} row={row} busy={busy} onChoose={onUseVacancy} /> : null}</div> : null}
+    {!onsitePending && needsPlacement && canManageRegistration ? <div className="regjourney-resolution-section regjourney-placement-id regjourney-resolution-section-v5"><div className="regjourney-section-head"><div><span className="kicker">Step 3</span><h3>Choose a counselor group</h3><p>Select an available group. Its company becomes the participant's company, and the FSY ID is created in the same save.</p></div></div><GroupPicker groups={groups} companies={companies} row={row} busy={busy} loading={placementLoading} error={error} placementRefreshFailed={placementRefreshFailed} onRetry={onRetry} onChoose={onAssignGroup} />{finalized && onsite ? <VacancyOptions vacancies={vacancies} row={row} busy={busy || placementLoading} onChoose={onUseVacancy} /> : null}</div> : null}
 
     {!onsitePending && !needsPlacement && ready ? <div className="regjourney-ready-panel regjourney-ready-panel-v5" ref={readyRef}><div><CheckCircle weight="fill"/><span><b>Ready to check in</b><small>{[row.fsyId, row.companyName, row.groupName].filter(Boolean).join(" · ")}</small></span></div><button type="button" className="primary" disabled={busy} aria-busy={busy} onClick={onCheckin}>{busy ? "Saving check-in…" : "Complete check-in"}<Check /></button></div> : null}
 
