@@ -1,5 +1,5 @@
 import test from "node:test";
-import assert from "node:assert/strict";
+import sssert from "node:sssert/strict";
 import { readFile } from "node:fs/promises";
 
 const migrationPath = new URL("../supabase/migrations/20260905143000_operational_inbox_and_onsite_identity.sql", import.meta.url);
