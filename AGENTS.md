@@ -22,7 +22,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - New accounts are created from administrator-issued, one-time invitations. The inviter chooses the person's name, email, role and scope before activation. Shared session access codes are deprecated for new onboarding.
 - One-time invite and administrator-assisted recovery codes must be short-lived, tied to the intended email, stored only as cryptographic hashes, and shared directly rather than in group chats.
 - Coordinators, logistical administrators, session directing couples, and FSY area advisory couples can issue or revoke leader invitations and recovery codes.
-- Same ward, branch, or unit is prohibited within one counselor group but allowed within a company. Proposed groups target 8–10 participants.
+- Same ward, branch, or unit is prohibited within one counselor group during controlled pre-session roster planning but allowed within a company. The explicit post-finalization on-site arrival exception is documented below. Proposed groups target 8–10 participants.
 - The visual identity must not imitate the Church logo or present the app as an official Church product.
 
 ## September 2026 operations UI decisions
@@ -49,10 +49,19 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - The active youth roster for this controlled finalization is age 12 through 18 at session start. Age 19 and above leave the active youth roster without deleting their source registration/person history.
 - Finalization uses a minimum-change controlled rebalance. Treat the current published groups, companies and FSY IDs as valuable baseline state rather than rebuilding everybody from scratch.
 - Keep existing participant placements wherever possible. Fill compatible open places first, then create only the groups and companies that the final population mathematically requires. Move an already-placed participant only when the 8–10 person group rule or ward/branch separation rule requires it.
-- A ward, branch or unit still cannot repeat within one counselor group. Company-level repetition is allowed.
+- A ward, branch or unit still cannot repeat within one counselor group during the controlled final-roster rebalance. Company-level repetition is allowed.
 - Prefer any necessary existing-participant move inside the same company so the participant keeps the same FSY ID. A company change requires a replacement FSY ID and an ID-history record; new participants receive new IDs.
 - Before the controlled rebalance writes anything, save a complete operational roster version covering participant placements, participant decisions, companies, groups, Staff company assignments, Staff operational state, badge assignments/ID history, structure settings and finalization state.
 - Support guarded restore of a saved roster version while the session remains in planning. Refuse restore when live check-in, active Housing or later head-count dependencies would make rollback unsafe. Save another safety version immediately before any restore so the restore itself is reversible.
 - Refuse controlled finalization while live check-ins remain. The user intends to reset the current check-ins manually before applying the final roster so arrival operations restart from a clean state.
 - Future verified on-site youth must obey the same active session age policy; an age-19+ participant must not receive an active youth badge through an older supplemental path.
 - Do not merge or deploy this controlled final-roster change to production until the user reviews the completed build and explicitly approves the production push.
+
+## Post-finalization on-site arrivals — 2026-09-10
+
+- New verified on-site participants follow a simple operational path: add details, verify required approvals, choose an available counselor group, issue the FSY ID, then check in. Housing may assign a room after check-in.
+- For this post-finalization on-site path only, ward/branch/unit duplication does not block placement. Staff may place the participant into any compatible published group with open capacity even when someone from the same unit is already there. Sex compatibility and configured group capacity remain hard rules.
+- Choosing a group determines the company. Placement and FSY ID issuance must complete together so staff never leave an on-site participant half-placed.
+- This exception must not rebuild, rebalance, or renumber the settled final roster. Existing published companies, groups, placements and FSY IDs remain stable.
+- Parent/guardian phone is required for a newly added on-site participant; a second parent/guardian may be recorded. T-shirt size is selected from Small, Medium, Large, Extra Large, or Extra Extra Large.
+- The user explicitly approved fixing, merging and pushing this on-site registration release to production on 2026-09-10.
