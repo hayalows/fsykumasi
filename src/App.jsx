@@ -151,6 +151,7 @@ export function App() {
       ["head count",()=>loadHeadcount(granted.session_id),(value)=>setHeadcount(value)],
       ["birthdays",()=>loadSessionBirthdays(granted.session_id),(value)=>setBirthdays(value)],
       ["structure settings",()=>loadStructureSettings(granted.session_id),(value)=>setStructureSettings(value)],
+      ["field operations",()=>loadFieldData(granted.session_id,granted.capabilities||[],"registration"),()=>{}],
     ];
     const results=await Promise.allSettled(jobs.map(([,run])=>run()));
     if(generation!==hydrateGeneration.current)return;
