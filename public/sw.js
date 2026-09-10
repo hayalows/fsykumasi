@@ -1,4 +1,4 @@
-const CACHE_NAME = "fsy-kumasi-shell-v50";
+const CACHE_NAME = "fsy-kumasi-shell-v51";
 // On-site registration v50 separates verification from placement, uses existing group capacity first,
 // requires parent contact, keeps T-shirt sizes consistent, and removes resolved history from action queues.
 // Final roster reliability v49 aligns the production roster engine with the client, fixes ward/branch
@@ -23,12 +23,19 @@ const CACHE_NAME = "fsy-kumasi-shell-v50";
 // fsy-kumasi-shell-v42, fsy-kumasi-shell-v41, fsy-kumasi-shell-v40, fsy-kumasi-shell-v39,
 // fsy-kumasi-shell-v38, fsy-kumasi-shell-v37 and fsy-kumasi-shell-v36.
 // Access + Assignments v15 and Housing workflow v14 remain part of this release.
+const NAVIGATION_TIMEOUT_MS = 8000;
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
   "/app-icon.svg",
   "/brand/2026-theme-identifier-full-color.png",
 ];
+
+function fetchWithTimeout(request, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(request, { signal: controller.signal }).finally(() => clearTimeout(timeout));
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -54,7 +61,7 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
+      fetchWithTimeout(request, NAVIGATION_TIMEOUT_MS)
         .then((response) => {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put("/", copy)).catch(() => {});
