@@ -32,7 +32,7 @@ test("Phase 2 gives each normal Registration blocker one next useful action", ()
 
   const unassigned = registrationBlocker({ ...base, groupId: "", groupName: "" }, { eligible: true, reason: "Eligible" });
   assert.equal(unassigned.label, "Needs counselor group");
-  assert.equal(registrationNextAction({ ...base, groupId: "", groupName: "" }, { eligible: true, reason: "Eligible" }), "Assign a compatible counselor group");
+  assert.equal(registrationNextAction({ ...base, groupId: "", groupName: "" }, { eligible: true, reason: "Eligible" }), "Choose an available counselor group");
 });
 
 test("Phase 2 blocker model preserves current check-in readiness policy", () => {
@@ -42,7 +42,7 @@ test("Phase 2 blocker model preserves current check-in readiness policy", () => 
   assert.equal(registrationBlocker({ ...base, checkinStatus: "arrived" }, { eligible: true, reason: "Eligible" }), null);
 });
 
-test("Registration top-level IA has one participant exception queue", async () => {
+test("Registration top-level IA has one participant action workspace", async () => {
   const [registration, journey, readiness] = await Promise.all([
     read("src/pages/Registration.jsx"),
     read("src/pages/RegistrationJourneyV29.jsx"),
@@ -53,7 +53,7 @@ test("Registration top-level IA has one participant exception queue", async () =
   assert.match(registration, /value: "readiness", label: "Readiness"/);
   assert.doesNotMatch(registration, /Preflight review/);
   assert.doesNotMatch(registration, /RegistrationReviewInbox/);
-  assert.match(journey, /One final participant queue/);
+  assert.match(journey, /One participant, one next step/);
   assert.match(readiness, /One final participant queue/);
   assert.doesNotMatch(readiness, /RegistrationReviewInbox/);
 });
@@ -63,10 +63,10 @@ test("Final roster rows expose blocker and next action before opening the sheet"
   assert.match(journey, /registrationBlocker\(row,eligibility\)/);
   assert.match(journey, /regjourney-next-action-v30/);
   assert.match(journey, /blocker\.nextAction/);
-  assert.match(journey, />Resolve<ArrowRight/);
-  assert.match(journey, /All blockers/);
-  assert.match(journey, /Leadership decision/);
-  assert.match(journey, /Place participant/);
+  assert.match(journey, />Continue<ArrowRight/);
+  assert.match(journey, /Needs action/);
+  assert.match(journey, /Only unresolved/);
+  assert.match(journey, /Choose placement/);
 });
 
 test("Readiness never turns a failed supporting check into a ready state", async () => {
@@ -90,7 +90,7 @@ test("Readiness keeps heavy tools lazy and routes participant blockers back to F
   assert.match(readiness, /StaffReadiness/);
 });
 
-test("Final roster count is based on actionable blockers rather than the old review inbox", async () => {
+test("Final roster action count stays inside the participant worklist instead of a partial top-level summary", async () => {
   const rows = [
     { ...base, id: "1", serverEligibility: { eligible: true, reason: "Eligible" } },
     { ...base, id: "2", groupId: "", groupName: "", serverEligibility: { eligible: true, reason: "Eligible" } },
@@ -98,8 +98,13 @@ test("Final roster count is based on actionable blockers rather than the old rev
     { ...base, id: "4", checkinStatus: "arrived", serverEligibility: { eligible: true, reason: "Eligible" } },
   ];
   assert.equal(registrationBlockerCount(rows), 2);
-  const registration = await read("src/pages/Registration.jsx");
-  assert.match(registration, /registrationBlockerCount\(imported\)/);
+  const [registration, journey] = await Promise.all([
+    read("src/pages/Registration.jsx"),
+    read("src/pages/RegistrationJourneyV29.jsx"),
+  ]);
+  assert.doesNotMatch(registration, /registrationBlockerCount\(imported\)/);
+  assert.doesNotMatch(registration, /registration-mode-summary/);
+  assert.match(journey, /counts\.needs_help\.toLocaleString\(\)/);
 });
 
 test("Phase 2 compact layouts keep the three work areas and Final roster usable at phone widths", async () => {
