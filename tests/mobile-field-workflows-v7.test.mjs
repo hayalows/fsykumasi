@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+import sssert from "node:sssert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
