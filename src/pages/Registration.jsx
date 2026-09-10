@@ -8,6 +8,7 @@ import "./registration-v5.css";
 import "./registration-journey.css";
 import "./registration-readiness-v28.css";
 import "./registration-workspace.css";
+import "./registration-journey-v31.css";
 
 const MODE_META = {
   desk: {
@@ -75,28 +76,15 @@ export function Registration(props) {
 
   return <div className={`registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28 registration-v29 registration-workspace-v30 registration-mode-${mode}`}>
     <section className="page registration-workspace-intro registration-workspace-intro-v5 registration-unified-intro">
-      <PageHead
-        title="Registration & check-in"
-        sessionName={sessionName}
-        description="Finish each participant's next step, then move on."
-      />
+      <PageHead title="Registration & check-in" sessionName={sessionName} description="Finish each participant's next step, then move on." />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
-        {canUseRegistrationTools ? <SegmentedControl
-          className="registration-mode-switch registration-workspace-tabs registration-workspace-tabs-v5 registration-unified-tabs"
-          label="Registration and check-in work area"
-          value={mode}
-          onChange={chooseMode}
-          options={[
-            { value: "desk", label: "Live check-in", id: "registration-mode-desk" },
-            { value: "roster", label: "Final roster", id: "registration-mode-roster" },
-            { value: "readiness", label: "Readiness", id: "registration-mode-readiness" },
-          ]}
-        /> : null}
+        {canUseRegistrationTools ? <SegmentedControl className="registration-mode-switch registration-workspace-tabs registration-workspace-tabs-v5 registration-unified-tabs" label="Registration and check-in work area" value={mode} onChange={chooseMode} options={[
+          { value: "desk", label: "Live check-in", id: "registration-mode-desk" },
+          { value: "roster", label: "Final roster", id: "registration-mode-roster" },
+          { value: "readiness", label: "Readiness", id: "registration-mode-readiness" },
+        ]} /> : null}
         <div className="registration-mode-cue-v5 registration-mode-cue-compact" data-mode={mode} role="status" aria-label={`${modeMeta.title}. ${modeMeta.help}`}>
-          <div className="registration-mode-copy">
-            <span className="kicker">{modeMeta.phase}</span>
-            <p>{modeMeta.help}</p>
-          </div>
+          <div className="registration-mode-copy"><span className="kicker">{modeMeta.phase}</span><p>{modeMeta.help}</p></div>
         </div>
       </div>
     </section>
@@ -108,18 +96,7 @@ export function Registration(props) {
       </div>
 
       {readinessVisited ? <div role="tabpanel" aria-labelledby="registration-mode-readiness" hidden={mode !== "readiness"}>
-        <RegistrationReadinessV30
-          imported={imported}
-          cohort={cohortSummary}
-          live={live}
-          sessionId={sessionId}
-          capabilities={capabilities}
-          canManage={props.canManage}
-          setImported={props.setImported}
-          onChanged={onOperationalDataChanged}
-          onFinalBaselineChanged={handleFinalBaselineChanged}
-          onNavigate={onNavigate}
-        />
+        <RegistrationReadinessV30 imported={imported} cohort={cohortSummary} live={live} sessionId={sessionId} capabilities={capabilities} canManage={props.canManage} setImported={props.setImported} onChanged={onOperationalDataChanged} onFinalBaselineChanged={handleFinalBaselineChanged} onNavigate={onNavigate} />
       </div> : null}
     </div>
   </div>;
