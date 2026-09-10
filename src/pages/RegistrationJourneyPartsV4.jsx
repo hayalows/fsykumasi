@@ -12,9 +12,11 @@ import { NO_SHOW_CONFIRMATION_SOURCES } from "../lib/identity-arrival.js";
 import { uniqueUnitMatch } from "../lib/registration-lookup.js";
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+const TSHIRT_SIZES = ["Small", "Medium", "Large", "Extra Large", "Extra Extra Large"];
 const EMPTY_FORM = {
   firstName: "", lastName: "", preferredName: "", sex: "Female", birthday: "",
   unit: "", stake: "", phone: "", guardianName: "", guardianPhone: "",
+  secondGuardianName: "", secondGuardianPhone: "",
   tshirtSize: "", medicalInformation: "", dietaryInformation: "",
 };
 
@@ -86,7 +88,7 @@ function GroupPicker({ groups, companies, row, busy, error, placementRefreshFail
   const [selectedId, setSelectedId] = useState("");
   const companyById = useMemo(() => new Map(companies.map((item) => [item.id, item])), [companies]);
   const choices = useMemo(() => groups
-    .filter((group) => sexValue(group.sex) === sexValue(row.sex))
+    .filter((group) => sexValue(group.sex) === sexValue(row.sex) && Number(group.memberCount || 0) < 10)
     .sort((a, b) => Number(a.memberCount || 0) - Number(b.memberCount || 0) || collator.compare(a.name, b.name)), [groups, row.sex]);
   const filtered = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -106,22 +108,24 @@ function GroupPicker({ groups, companies, row, busy, error, placementRefreshFail
   }, [choices, selectedId]);
 
   return <div className="regjourney-group-picker regjourney-group-picker-v5">
+    <div className="regjourney-placement-guidance"><b>Available groups only</b><span>Lowest-load groups are first. For new on-site arrivals, the ward or branch does not block placement.</span></div>
     {choices.length > 6 ? <label className="regjourney-inline-search regjourney-inline-search-v5"><span className="sr-only">Find counselor group</span><MagnifyingGlass aria-hidden="true" /><input value={query} onChange={(event) => { setQuery(event.target.value); setVisibleLimit(6); }} placeholder="Search groups or companies" /></label> : null}
-    <div className="regjourney-choice-list" role="radiogroup" aria-label="Compatible counselor groups">
+    <div className="regjourney-choice-list" role="radiogroup" aria-label="Available counselor groups">
       {visible.map((group, index) => {
         const company = companyById.get(group.companyId);
         const isSelected = group.id === selectedId;
+        const openSpots = Math.max(0, 10 - Number(group.memberCount || 0));
         return <button type="button" key={group.id} className={`regjourney-choice regjourney-choice-v5${isSelected ? " selected" : ""}`} disabled={busy} onClick={() => setSelectedId(group.id)} role="radio" aria-checked={isSelected}>
-          <span><b>{group.displayName || group.name}</b><small>{company?.displayName || company?.name || "Company"} · {Number(group.memberCount || 0)} currently assigned</small></span>
-          <span className="regjourney-choice-end">{!query.trim() && index === 0 ? <em>Lowest load</em> : null}{isSelected ? <CheckCircle weight="fill" /> : <span className="regjourney-choice-radio" aria-hidden="true" />}</span>
+          <span><b>{group.displayName || group.name}</b><small>{company?.displayName || company?.name || "Company"} · {Number(group.memberCount || 0)}/10 · {openSpots} {openSpots === 1 ? "place" : "places"} open</small></span>
+          <span className="regjourney-choice-end">{!query.trim() && index === 0 ? <em>Recommended</em> : null}{isSelected ? <CheckCircle weight="fill" /> : <span className="regjourney-choice-radio" aria-hidden="true" />}</span>
         </button>;
       })}
-      {!visible.length ? <Empty icon={UsersThree} title="No matching counselor groups" text="Try another group or company name." /> : null}
+      {!visible.length ? <Empty icon={UsersThree} title="No available counselor groups" text="Every matching group is full. Review group capacity before placing this participant." /> : null}
     </div>
     {filtered.length > visible.length ? <button type="button" className="text-action regjourney-show-groups" onClick={() => setVisibleLimit((value) => value + 14)}>Show {Math.min(14, filtered.length - visible.length)} more groups</button> : null}
     {error ? <MutationFeedback tone="error" className="regjourney-placement-feedback">{placementRefreshFailed ? <>Placement was saved, but the latest roster could not be loaded. {onRetry ? <button type="button" className="text-action regjourney-placement-retry" disabled={busy} onClick={onRetry}>Retry roster</button> : null}</> : <>Placement was not saved. {error}</>}</MutationFeedback> : null}
     <div className={`regjourney-placement-confirm${selected ? " ready" : ""}`} aria-live="polite">
-      <div>{selected ? <><b>{selected.displayName || selected.name}</b><small>{selectedCompany?.displayName || selectedCompany?.name || "Company"} · {row.sourceKind === "on_site" ? "FSY ID will be created after placement." : "Company follows this group; existing identity stays unchanged."}</small></> : <><b>Select a counselor group</b><small>Choose one group, then confirm placement.</small></>}</div>
+      <div>{selected ? <><b>{selected.displayName || selected.name}</b><small>{selectedCompany?.displayName || selectedCompany?.name || "Company"} · FSY ID will be created with this company when placement is saved.</small></> : <><b>Select a counselor group</b><small>The company follows the group. Nothing is saved until you confirm.</small></>}</div>
       <button type="button" className="primary" disabled={busy || !selected} aria-busy={busy} onClick={() => selected && void onChoose(selected)}>{busy ? "Placing…" : selected ? `Place ${firstName}` : "Select a group"}<ArrowRight /></button>
     </div>
   </div>;
@@ -171,23 +175,7 @@ function UnitCombobox({ value, stake, options = [], onChange, onStakeChange }) {
   return <div className="regjourney-unit-field">
     <div className="regjourney-combobox">
       <MagnifyingGlass aria-hidden="true" />
-      <input
-        required
-        value={value}
-        onChange={(event) => handleChange(event.target.value)}
-        onFocus={() => { if (value.trim()) setOpen(true); }}
-        onBlur={() => { blurTimer.current = window.setTimeout(() => setOpen(false), 120); }}
-        onKeyDown={handleKeyDown}
-        role="combobox"
-        aria-label="Ward / branch"
-        aria-expanded={open && Boolean(matches.length)}
-        aria-haspopup="listbox"
-        aria-activedescendant={open && matches[activeIndex] ? `${listId}-${activeIndex}` : undefined}
-        aria-autocomplete="list"
-        aria-controls={open && matches.length ? listId : undefined}
-        placeholder="Start typing a ward or branch"
-        autoComplete="off"
-      />
+      <input required value={value} onChange={(event) => handleChange(event.target.value)} onFocus={() => { if (value.trim()) setOpen(true); }} onBlur={() => { blurTimer.current = window.setTimeout(() => setOpen(false), 120); }} onKeyDown={handleKeyDown} role="combobox" aria-label="Ward / branch" aria-expanded={open && Boolean(matches.length)} aria-haspopup="listbox" aria-activedescendant={open && matches[activeIndex] ? `${listId}-${activeIndex}` : undefined} aria-autocomplete="list" aria-controls={open && matches.length ? listId : undefined} placeholder="Start typing a ward or branch" autoComplete="off" />
       {open && matches.length ? <div id={listId} className="regjourney-unit-options" role="listbox">
         {matches.map((option, index) => <button type="button" role="option" tabIndex={-1} id={`${listId}-${index}`} aria-selected={index === activeIndex} className={index === activeIndex ? "active" : ""} key={`${option.unit}-${option.stake}`} onMouseDown={(event) => event.preventDefault()} onClick={() => { if (blurTimer.current) window.clearTimeout(blurTimer.current); choose(option); }}><span><b>{option.unit}</b>{option.stake ? <small>{option.stake}</small> : null}</span><ArrowRight /></button>)}
       </div> : null}
@@ -202,10 +190,10 @@ export function OnSiteDetails({ initialSearch = "", sessionStart, unitDirectory 
   const submit = (event) => { event.preventDefault(); onCreate(form); };
 
   return <form className="regjourney-onsite-form regjourney-onsite-form-v3 regjourney-onsite-form-v5" onSubmit={submit}>
-    <header className="regjourney-sheet-intro regjourney-sheet-intro-v3 regjourney-sheet-intro-v5"><div><span className="kicker">On-site registration</span><h2>Add participant</h2><p>Enter only what Registration needs to verify and place this participant.</p></div><LayerCloseButton onClose={onClose} /></header>
+    <header className="regjourney-sheet-intro regjourney-sheet-intro-v3 regjourney-sheet-intro-v5"><div><span className="kicker">On-site registration</span><h2>Add participant</h2><p>Add the minimum details needed to verify, place and check this person in.</p></div><LayerCloseButton onClose={onClose} /></header>
     <StepIndicator step={1} label="Participant details" />
 
-    <section className="regjourney-form-section"><div className="regjourney-form-section-head"><h3>Identity</h3><span>Required details</span></div><div className="regjourney-form-grid two">
+    <section className="regjourney-form-section"><div className="regjourney-form-section-head"><h3>Participant</h3><span>Required</span></div><div className="regjourney-form-grid two">
       <label>First name<input data-layer-autofocus required autoComplete="given-name" spellCheck="false" value={form.firstName} onChange={(e) => set("firstName", e.target.value)} /></label>
       <label>Last name<input required autoComplete="family-name" spellCheck="false" value={form.lastName} onChange={(e) => set("lastName", e.target.value)} /></label>
       <label>Preferred name <span>Optional</span><input autoComplete="off" spellCheck="false" value={form.preferredName} onChange={(e) => set("preferredName", e.target.value)} /></label>
@@ -213,27 +201,33 @@ export function OnSiteDetails({ initialSearch = "", sessionStart, unitDirectory 
       <label className="regjourney-span-2">Date of birth<input type="date" required autoComplete="bday" max={sessionStart || undefined} value={form.birthday} onChange={(e) => set("birthday", e.target.value)} /></label>
     </div></section>
 
-    <section className="regjourney-form-section"><div className="regjourney-form-section-head"><h3>Church unit</h3><span>Stake / district can fill itself</span></div><div className="regjourney-form-grid two">
+    <section className="regjourney-form-section"><div className="regjourney-form-section-head"><h3>Church unit</h3><span>For identity</span></div><div className="regjourney-form-grid two">
       <label className="regjourney-span-2">Ward / branch<UnitCombobox value={form.unit} stake={form.stake} options={unitDirectory} onChange={(value) => set("unit", value)} onStakeChange={(value) => set("stake", value)} /></label>
-      <label className="regjourney-span-2">Stake / district <span>Used to create the FSY ID</span><input value={form.stake} onChange={(e) => set("stake", e.target.value)} placeholder="Will fill from the ward / branch when available" /></label>
+      <label className="regjourney-span-2">Stake / district <span>Used in the FSY ID</span><input value={form.stake} onChange={(e) => set("stake", e.target.value)} placeholder="Filled automatically when known" /></label>
     </div></section>
 
-    <section className="regjourney-form-section"><div className="regjourney-form-section-head"><h3>Contact</h3><span>One phone number is enough</span></div><div className="regjourney-form-grid two">
-      <label>Participant phone <span>Optional if guardian phone is added</span><input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} /></label>
-      <label>Parent / guardian phone<input type="tel" inputMode="tel" value={form.guardianPhone} onChange={(e) => set("guardianPhone", e.target.value)} /></label>
-      <label className="regjourney-span-2">Parent / guardian name <span>Recommended</span><input autoComplete="name" spellCheck="false" value={form.guardianName} onChange={(e) => set("guardianName", e.target.value)} /></label>
-    </div></section>
+    <section className="regjourney-form-section"><div className="regjourney-form-section-head"><h3>Parent / guardian</h3><span>Phone required</span></div><div className="regjourney-form-grid two">
+      <label>Parent / guardian name <span>Recommended</span><input autoComplete="name" spellCheck="false" value={form.guardianName} onChange={(e) => set("guardianName", e.target.value)} /></label>
+      <label>Parent / guardian phone<input required type="tel" inputMode="tel" autoComplete="tel" value={form.guardianPhone} onChange={(e) => set("guardianPhone", e.target.value)} /></label>
+    </div>
+    <details className="regjourney-inline-optional"><summary><span><b>Add another parent / guardian</b><small>Optional</small></span><span aria-hidden="true">+</span></summary><div className="regjourney-form-grid two"><label>Name<input spellCheck="false" value={form.secondGuardianName} onChange={(e) => set("secondGuardianName", e.target.value)} /></label><label>Phone<input type="tel" inputMode="tel" value={form.secondGuardianPhone} onChange={(e) => set("secondGuardianPhone", e.target.value)} /></label></div></details>
+    </section>
 
-    <details className="regjourney-optional-details"><summary><span><b>Participant needs</b><small>T-shirt, medical and dietary information</small></span><span aria-hidden="true">+</span></summary><div className="regjourney-form-grid"><label>T-shirt size<input value={form.tshirtSize} onChange={(e) => set("tshirtSize", e.target.value)} placeholder="Optional" /></label><label>Medical information<textarea rows="2" value={form.medicalInformation} onChange={(e) => set("medicalInformation", e.target.value)} placeholder="Optional" /></label><label>Dietary information<textarea rows="2" value={form.dietaryInformation} onChange={(e) => set("dietaryInformation", e.target.value)} placeholder="Optional" /></label></div></details>
+    <details className="regjourney-optional-details"><summary><span><b>Contact & participant needs</b><small>Optional participant phone, T-shirt and health information</small></span><span aria-hidden="true">+</span></summary><div className="regjourney-form-grid">
+      <label>Participant phone <span>Optional</span><input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} /></label>
+      <label>T-shirt size <span>Optional</span><select value={form.tshirtSize} onChange={(e) => set("tshirtSize", e.target.value)}><option value="">Choose size</option>{TSHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
+      <label>Medical information<textarea rows="2" value={form.medicalInformation} onChange={(e) => set("medicalInformation", e.target.value)} placeholder="Optional" /></label>
+      <label>Dietary information<textarea rows="2" value={form.dietaryInformation} onChange={(e) => set("dietaryInformation", e.target.value)} placeholder="Optional" /></label>
+    </div></details>
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
-    <footer className="regjourney-sheet-actions regjourney-sheet-actions-v5"><button type="button" className="secondary" disabled={busy} onClick={onCancel}>Cancel</button><button className="primary" disabled={busy || !form.firstName.trim() || !form.lastName.trim() || !form.birthday || !form.unit.trim() || (!form.phone.trim() && !form.guardianPhone.trim())}>{busy ? "Adding…" : "Add & continue"}<ArrowRight /></button></footer>
+    <footer className="regjourney-sheet-actions regjourney-sheet-actions-v5"><button type="button" className="secondary" disabled={busy} onClick={onCancel}>Cancel</button><button className="primary" disabled={busy || !form.firstName.trim() || !form.lastName.trim() || !form.birthday || !form.unit.trim() || !form.guardianPhone.trim() || (form.secondGuardianName.trim() && !form.secondGuardianPhone.trim())}>{busy ? "Adding…" : "Add & continue"}<ArrowRight /></button></footer>
   </form>;
 }
 
 function ApprovalStep({ busy, error, onVerify }) {
   const [checks, setChecks] = useState({ terms: false, leader: false, payment: false });
   const complete = checks.terms && checks.leader && checks.payment;
-  return <div className="regjourney-resolution-section regjourney-resolution-section-v5"><div className="regjourney-section-head"><div><h3>Verify registration</h3><p>Confirm each requirement before placement.</p></div></div><div className="regjourney-checklist"><label><input type="checkbox" checked={checks.terms} onChange={(e) => setChecks({ ...checks, terms: e.target.checked })} /><span><b>Parent / guardian terms confirmed</b><small>Required consent or registration terms are complete.</small></span></label><label><input type="checkbox" checked={checks.leader} onChange={(e) => setChecks({ ...checks, leader: e.target.checked })} /><span><b>Bishop or branch president approval confirmed</b><small>The youth has approval to attend this session.</small></span></label><label><input type="checkbox" checked={checks.payment} onChange={(e) => setChecks({ ...checks, payment: e.target.checked })} /><span><b>Payment checked</b><small>The applicable session payment requirement is resolved.</small></span></label></div>{error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}<button type="button" className="primary regjourney-step-primary" disabled={busy || !complete} onClick={() => onVerify("On-site registration verified by Registration Committee: parent/guardian terms confirmed; bishop/branch president approval confirmed; payment information checked.")}>{busy ? "Verifying…" : "Verify & continue"}<ArrowRight /></button></div>;
+  return <div className="regjourney-resolution-section regjourney-resolution-section-v5"><div className="regjourney-section-head"><div><h3>Verify registration</h3><p>Confirm the three requirements. Placement comes next.</p></div></div><div className="regjourney-checklist"><label><input type="checkbox" checked={checks.terms} onChange={(e) => setChecks({ ...checks, terms: e.target.checked })} /><span><b>Parent / guardian terms confirmed</b><small>Required consent or registration terms are complete.</small></span></label><label><input type="checkbox" checked={checks.leader} onChange={(e) => setChecks({ ...checks, leader: e.target.checked })} /><span><b>Bishop or branch president approval confirmed</b><small>The youth has approval to attend this session.</small></span></label><label><input type="checkbox" checked={checks.payment} onChange={(e) => setChecks({ ...checks, payment: e.target.checked })} /><span><b>Payment checked</b><small>The applicable session payment requirement is resolved.</small></span></label></div>{error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}<button type="button" className="primary regjourney-step-primary" disabled={busy || !complete} onClick={() => onVerify("On-site registration verified by Registration Committee: parent/guardian terms confirmed; bishop/branch president approval confirmed; payment information checked.")}>{busy ? "Verifying…" : "Verify & choose group"}<ArrowRight /></button></div>;
 }
 
 function VacancyOptions({ vacancies, row, busy, onChoose }) {
@@ -243,7 +237,7 @@ function VacancyOptions({ vacancies, row, busy, onChoose }) {
 }
 
 function CompletionState({ row, assignment, onDone, onUndoCheckin, containerRef }) {
-  return <div className="regjourney-completion-state regjourney-completion-state-v5" ref={containerRef}><div className="regjourney-completion-card"><CheckCircle weight="fill"/><div><span className="kicker">Check-in complete</span><h3>{row.fullName} has arrived</h3><p>{assignment ? `Housing · ${assignment.roomName}${assignment.bedLabel ? ` · Bed / key ${assignment.bedLabel}` : ""}` : "Sent automatically to Housing · Waiting for room assignment"}</p></div></div><div className="regjourney-completion-actions">{onUndoCheckin?<button type="button" className="secondary" onClick={onUndoCheckin}>Undo check-in</button>:null}<button type="button" className="primary regjourney-next-person" onClick={onDone}>Next participant<ArrowRight /></button></div></div>;
+  return <div className="regjourney-completion-state regjourney-completion-state-v5" ref={containerRef}><div className="regjourney-completion-card"><CheckCircle weight="fill"/><div><span className="kicker">Check-in complete</span><h3>{row.fullName} has arrived</h3><p>{assignment ? `Housing · ${assignment.roomName}${assignment.bedLabel ? ` · Bed / key ${assignment.bedLabel}` : ""}` : "Housing can assign a room now."}</p></div></div><div className="regjourney-completion-actions">{onUndoCheckin?<button type="button" className="secondary" onClick={onUndoCheckin}>Undo check-in</button>:null}<button type="button" className="primary regjourney-next-person" onClick={onDone}>Next participant<ArrowRight /></button></div></div>;
 }
 
 function StandardFacts({ row, housingText }) {
@@ -251,7 +245,7 @@ function StandardFacts({ row, housingText }) {
 }
 
 function OnsitePlacementContext({ row }) {
-  return <div className="regjourney-key-context"><span><small>Participant</small><b>{String(row.sex || "").replace(/^./, (letter) => letter.toUpperCase()) || "Sex not recorded"}</b></span><span><small>Stake / district</small><b>{row.stake || "Not recorded"}</b></span><span><small>FSY ID</small><b>Created after placement</b></span></div>;
+  return <div className="regjourney-key-context"><span><small>Participant</small><b>{String(row.sex || "").replace(/^./, (letter) => letter.toUpperCase()) || "Sex not recorded"}</b></span><span><small>Stake / district</small><b>{row.stake || "Not recorded"}</b></span><span><small>FSY ID</small><b>Created with selected group</b></span></div>;
 }
 
 export function PersonJourney({ row, eligibility, identityReadiness, vacancies, groups, companies, housingAssignment, canManageRegistration, busy, error, placementRefreshFailed = false, onRetry, onVerify, onAssignGroup, onUseVacancy, onCheckin, onUndoCheckin, onArrivalStatus, onDone, onClose }) {
@@ -271,7 +265,7 @@ export function PersonJourney({ row, eligibility, identityReadiness, vacancies, 
   const ready = isReady(row, eligibility);
   const housingText = housingAssignment?.roomName || (row.checkinStatus === "arrived" ? "Waiting for Housing" : "After check-in");
   const activeStep = onsitePending ? 2 : needsPlacement ? 3 : ready ? 4 : null;
-  const activeStepLabel = activeStep === 2 ? "Verification" : activeStep === 3 ? "Placement" : activeStep === 4 ? "Check-in" : "";
+  const activeStepLabel = activeStep === 2 ? "Verification" : activeStep === 3 ? "Choose group" : activeStep === 4 ? "Check-in" : "";
 
   useEffect(() => {
     if (!busy || !ready) return;
@@ -294,7 +288,7 @@ export function PersonJourney({ row, eligibility, identityReadiness, vacancies, 
     {row.checkinStatus === "arrived" ? <CompletionState row={row} assignment={housingAssignment} onDone={onDone} onUndoCheckin={onUndoCheckin} containerRef={completionRef} /> : null}
     {onsitePending && canManageRegistration ? <ApprovalStep busy={busy} error={error} onVerify={onVerify} /> : null}
 
-    {!onsitePending && needsPlacement && canManageRegistration ? <div className="regjourney-resolution-section regjourney-placement-id regjourney-resolution-section-v5"><div className="regjourney-section-head"><div><span className="kicker">Placement</span><h3>Place in a counselor group</h3><p>{onsite ? "Choose a compatible group. The FSY ID is then created automatically, and the company follows this placement." : "Choose a compatible group. Existing placements are not rearranged."}</p></div></div><GroupPicker groups={groups} companies={companies} row={row} busy={busy} error={error} placementRefreshFailed={placementRefreshFailed} onRetry={onRetry} onChoose={onAssignGroup} />{finalized && onsite ? <VacancyOptions vacancies={vacancies} row={row} busy={busy} onChoose={onUseVacancy} /> : null}</div> : null}
+    {!onsitePending && needsPlacement && canManageRegistration ? <div className="regjourney-resolution-section regjourney-placement-id regjourney-resolution-section-v5"><div className="regjourney-section-head"><div><span className="kicker">Step 3</span><h3>Choose a counselor group</h3><p>Select an available group. Its company becomes the participant's company, and the FSY ID is created in the same save.</p></div></div><GroupPicker groups={groups} companies={companies} row={row} busy={busy} error={error} placementRefreshFailed={placementRefreshFailed} onRetry={onRetry} onChoose={onAssignGroup} />{finalized && onsite ? <VacancyOptions vacancies={vacancies} row={row} busy={busy} onChoose={onUseVacancy} /> : null}</div> : null}
 
     {!onsitePending && !needsPlacement && ready ? <div className="regjourney-ready-panel regjourney-ready-panel-v5" ref={readyRef}><div><CheckCircle weight="fill"/><span><b>Ready to check in</b><small>{[row.fsyId, row.companyName, row.groupName].filter(Boolean).join(" · ")}</small></span></div><button type="button" className="primary" disabled={busy} aria-busy={busy} onClick={onCheckin}>{busy ? "Saving check-in…" : "Complete check-in"}<Check /></button></div> : null}
 
