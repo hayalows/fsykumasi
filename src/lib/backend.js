@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from "./supabase.js";
+import { loadRpcPages } from "./rpc-pages.js";
 
 function requireClient() {
   if (!isSupabaseConfigured || !supabase) throw new Error("Supabase is not configured for this deployment.");
@@ -122,8 +123,12 @@ export async function loadCompanies(sessionId) {
 
 export async function loadParticipants(sessionId) {
   const client = requireClient();
-  const { data: rows, error } = await client.rpc("get_participant_roster_v2", { p_session_id: sessionId });
-  if (error) throw error;
+  const rows = await loadRpcPages(
+    client,
+    "get_participant_roster_v2",
+    { p_session_id: sessionId },
+    ["participant_id"],
+  );
   return (rows || []).map((row) => ({
     id: row.participant_id,
     registrationId: row.registration_id,
