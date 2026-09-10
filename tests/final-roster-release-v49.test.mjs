@@ -26,11 +26,12 @@ test("missing production roster RPC is a friendly recoverable release state", ()
   assert.doesNotMatch(source, /message:\s*raw\b/);
 });
 
-test("registration workspace uses a compact non-duplicated summary", () => {
+test("registration workspace uses the v50 compact settled-roster contract", () => {
   const source = read("src/pages/Registration.jsx");
   const css = read("src/pages/registration-workspace.css");
-  assert.match(source, /showRecordCount/);
-  assert.match(source, /Review the final plan, resolve only real blockers, then lock the roster/);
+  assert.doesNotMatch(source, /showRecordCount/);
+  assert.match(source, /See the settled roster and handle only new arrivals or real exceptions/);
+  assert.doesNotMatch(source, /registration-mode-summary/);
   assert.match(css, /grid-template-columns:\s*minmax\(390px, 510px\) minmax\(0, 1fr\)/);
   assert.match(css, /regjourney-solution-principle-v30[\s\S]*display:\s*none/);
 });
