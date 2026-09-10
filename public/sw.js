@@ -1,4 +1,6 @@
-const CACHE_NAME = "fsy-kumasi-shell-v48";
+const CACHE_NAME = "fsy-kumasi-shell-v49";
+// Final roster reliability v49 aligns the production roster engine with the client, fixes ward/branch
+// planning at runtime, and tightens the Registration workspace so the plan and next action stay clear.
 // Registration closeout v48 removes the final-roster preview timeout, translates preview failures
 // into a recoverable staff message, and ships the compact Registration workspace hierarchy.
 // Phase 5 release hardening adds single-flight protection for consequential UI writes,
@@ -14,10 +16,10 @@ const CACHE_NAME = "fsy-kumasi-shell-v48";
 // Access operations v20 remains intact; Access identity and permission behavior remains on v19.
 // Historical Access operations v19 used email-first identity reconciliation with automatic staff backfill.
 // Historical Access operations v18 and Access operations v17 remain covered by regressions.
-// Historical shell markers: fsy-kumasi-shell-v47, fsy-kumasi-shell-v46, fsy-kumasi-shell-v45,
-// fsy-kumasi-shell-v44, fsy-kumasi-shell-v43, fsy-kumasi-shell-v42, fsy-kumasi-shell-v41,
-// fsy-kumasi-shell-v40, fsy-kumasi-shell-v39, fsy-kumasi-shell-v38, fsy-kumasi-shell-v37
-// and fsy-kumasi-shell-v36.
+// Historical shell markers: fsy-kumasi-shell-v48, fsy-kumasi-shell-v47, fsy-kumasi-shell-v46,
+// fsy-kumasi-shell-v45, fsy-kumasi-shell-v44, fsy-kumasi-shell-v43, fsy-kumasi-shell-v42,
+// fsy-kumasi-shell-v41, fsy-kumasi-shell-v40, fsy-kumasi-shell-v39, fsy-kumasi-shell-v38,
+// fsy-kumasi-shell-v37 and fsy-kumasi-shell-v36.
 // Access + Assignments v15 and Housing workflow v14 remain part of this release.
 const CORE_ASSETS = [
   "/",

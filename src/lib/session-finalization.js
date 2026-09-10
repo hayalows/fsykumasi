@@ -25,6 +25,18 @@ export function describeSessionFinalizationError(error, phase = "preview") {
     };
   }
 
+  if (code === "PGRST202" || /could not find the function public\.(get_controlled_final_roster_preview_v3|apply_controlled_final_roster_rebalance_v3|save_session_roster_version_v1|list_session_roster_versions_v1|restore_session_roster_version_v1)/i.test(raw)) {
+    return {
+      accessDenied: false,
+      backendUnavailable: true,
+      title: "Final roster update is still syncing",
+      message: "Participant review is still available, but finalizing and restoring the roster are temporarily unavailable. Retry the plan in a moment.",
+      retryable: true,
+      safeNoChange: true,
+      code: "FINAL_ROSTER_ENGINE_MISSING",
+    };
+  }
+
   if (/reset all live check-ins/i.test(raw)) {
     return {
       accessDenied: false,

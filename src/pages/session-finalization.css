@@ -1,19 +1,19 @@
-/* Final-roster closeout. Keep the task compact, readable and recoverable. */
+/* Final-roster closeout. Keep the plan compact, readable and recoverable. */
 .session-finalization {
   width: min(calc(100% - (var(--fsy-page-gutter, 24px) * 2)), 1280px);
   max-width: 1280px;
   margin: 0 auto;
-  padding: 24px 0 64px;
+  padding: 16px 0 30px;
   display: grid;
-  gap: 20px;
+  gap: 13px;
 }
 
 .session-finalization-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 28px;
-  padding: 0 0 20px;
+  gap: 22px;
+  padding: 0 0 13px;
   border-bottom: 1px solid var(--border-default, var(--line));
 }
 
@@ -21,21 +21,22 @@
 
 .session-finalization-head h2,
 .session-finalization-recovery-card h2 {
-  margin: 5px 0 7px;
+  margin: 3px 0 5px;
   color: var(--text-primary, var(--ink));
-  font-size: clamp(1.5rem, 1.8vw, 1.95rem);
-  line-height: 1.08;
-  letter-spacing: -.03em;
+  font-size: clamp(1.25rem, 1.5vw, 1.55rem);
+  line-height: 1.1;
+  letter-spacing: -.025em;
 }
 
 .session-finalization-head p {
-  max-width: 760px;
+  max-width: 820px;
   margin: 0;
   color: var(--text-secondary, var(--muted));
-  line-height: 1.52;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
-.session-finalization-head .status { flex: none; margin-top: 2px; }
+.session-finalization-head .status { flex: none; margin-top: 1px; }
 
 .session-finalization-strip,
 .session-finalization-facts {
@@ -43,61 +44,73 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   overflow: hidden;
   border: 1px solid var(--border-default, var(--line));
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--surface, var(--paper));
 }
 
 .session-finalization-strip-controlled { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .session-finalization-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
-.session-finalization-fact { min-width: 0; padding: 17px 18px; }
+.session-finalization-fact { min-width: 0; padding: 12px 13px; }
 .session-finalization-fact + .session-finalization-fact { border-left: 1px solid var(--border-default, var(--line)); }
 .session-finalization-fact strong {
   display: block;
   color: var(--text-primary, var(--ink));
-  font-size: clamp(1.35rem, 1.6vw, 1.65rem);
+  font-size: clamp(1.18rem, 1.35vw, 1.4rem);
   line-height: 1.05;
-  letter-spacing: -.035em;
+  letter-spacing: -.03em;
   font-variant-numeric: tabular-nums;
 }
-.session-finalization-fact span { display: block; margin-top: 6px; font-weight: 700; }
-.session-finalization-fact small { display: block; margin-top: 4px; color: var(--text-secondary, var(--muted)); line-height: 1.35; }
+.session-finalization-fact span { display: block; margin-top: 4px; font-size: 11px; font-weight: 750; }
+.session-finalization-fact small { display: block; margin-top: 2px; color: var(--text-secondary, var(--muted)); font-size: 10.5px; line-height: 1.3; }
 
-.session-finalization-sections { display: grid; border-top: 1px solid var(--border-default, var(--line)); }
-.session-finalization-sections > section {
+/* The policy explanation is supportive context, not another dashboard. */
+.session-finalization-sections {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  gap: 14px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--border-default, var(--line));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.session-finalization-sections > section {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid var(--border-default, var(--line));
+  border-radius: 10px;
+  background: var(--surface-subtle, #f7f9f8);
 }
 .session-finalization-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--surface-subtle, #f5f7f6);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--surface, #fff);
   color: var(--action-primary, var(--accent));
 }
-.session-finalization-sections h3 { margin: 0 0 5px; font-size: 1rem; }
-.session-finalization-sections p { max-width: 88ch; margin: 0; color: var(--text-secondary, var(--muted)); line-height: 1.5; }
+.session-finalization-sections h3 { margin: 0 0 2px; font-size: 11.5px; }
+.session-finalization-sections p { margin: 0; color: var(--text-secondary, var(--muted)); font-size: 10.5px; line-height: 1.38; }
 
 .session-finalization-guard {
-  padding: 15px 17px;
+  padding: 12px 14px;
   border: 1px solid var(--border-default, var(--line));
-  border-left: 3px solid var(--action-primary, var(--accent));
   border-radius: 10px;
   background: var(--surface-subtle, #f5f7f6);
 }
-.session-finalization-guard b { display: block; margin-bottom: 4px; }
-.session-finalization-guard p { max-width: 90ch; margin: 0; color: var(--text-secondary, var(--muted)); line-height: 1.48; }
+.session-finalization-guard b { display: block; margin-bottom: 2px; font-size: 12px; }
+.session-finalization-guard p { max-width: 90ch; margin: 0; color: var(--text-secondary, var(--muted)); font-size: 10.5px; line-height: 1.4; }
+
+/* The read-only disclaimer is already communicated by the confirmation action.
+   Removing the duplicated card keeps the primary action in the first viewport. */
+.session-finalization-guard:not(.session-finalization-backup-card) { display: none; }
 
 .session-finalization-backup-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 18px;
+  border-left: 3px solid var(--status-success, #4f7b45);
 }
 .session-finalization-backup-card > div { min-width: 0; }
 .session-finalization-backup-card > button { flex: none; }
@@ -105,7 +118,7 @@
 .session-roster-versions {
   overflow: hidden;
   border: 1px solid var(--border-default, var(--line));
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--surface, var(--paper));
 }
 .session-roster-versions-head,
@@ -113,81 +126,90 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 13px 15px;
+  gap: 14px;
+  padding: 9px 12px;
 }
 .session-roster-versions-head { background: var(--surface-subtle, #f5f7f6); }
 .session-roster-versions-head > div,
-.session-roster-version-row > div { min-width: 0; display: grid; gap: 2px; }
+.session-roster-version-row > div { min-width: 0; display: grid; gap: 1px; }
 .session-roster-versions-head span,
 .session-roster-version-row span,
-.session-roster-version-row small { color: var(--text-secondary, var(--muted)); }
+.session-roster-version-row small { color: var(--text-secondary, var(--muted)); font-size: 10px; }
 .session-roster-version-row + .session-roster-version-row { border-top: 1px solid var(--border-default, var(--line)); }
-.session-roster-version-row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-roster-version-row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
 .session-roster-version-row .text-action { flex: none; }
 
-.session-finalization-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 2px; }
+.session-finalization-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding-top: 1px;
+}
 .session-finalization-result {
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 16px 0;
+  gap: 11px;
+  padding: 12px 0;
   border-block: 1px solid var(--border-default, var(--line));
   color: var(--status-success, var(--good));
 }
-.session-finalization-result div { display: grid; gap: 2px; }
-.session-finalization-result b { font-size: 1.08rem; color: var(--text-primary, var(--ink)); }
-.session-finalization-result span { color: var(--text-secondary, var(--muted)); }
+.session-finalization-result div { display: grid; gap: 1px; }
+.session-finalization-result b { font-size: 1rem; color: var(--text-primary, var(--ink)); }
+.session-finalization-result span { color: var(--text-secondary, var(--muted)); font-size: 11px; }
 
-.session-finalization-loading { min-height: 108px; display: grid; align-content: center; gap: 7px; }
-.session-finalization-loading p { margin: 0; color: var(--text-secondary, var(--muted)); }
+.session-finalization-loading { min-height: 74px; display: grid; align-content: center; gap: 4px; }
+.session-finalization-loading p { margin: 0; color: var(--text-secondary, var(--muted)); font-size: 11px; }
 .session-finalization .mutation-feedback svg { flex: 0 0 auto; }
 
-/* A failed preview is its own state. Never pair an unavailable preview with a misleading Ready badge or raw database text. */
-.session-finalization-recovery { padding-top: 24px; }
+/* A failed preview is a compact recoverable state. Never pair an unavailable
+   preview with a Ready badge or expose raw database text. */
+.session-finalization-recovery { padding-top: 14px; padding-bottom: 14px; }
 .session-finalization-recovery-card {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
-  gap: 16px;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 11px;
   align-items: center;
-  padding: 20px;
-  border: 1px solid color-mix(in srgb, var(--status-warning, #a86b13) 34%, transparent);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--status-warning, #a86b13) 7%, white);
+  padding: 12px 13px;
+  border: 1px solid color-mix(in srgb, var(--status-warning, #a86b13) 28%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--status-warning, #a86b13) 5%, white);
 }
 .session-finalization-recovery-icon {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 9px;
   color: var(--status-warning, #9a6616);
-  background: color-mix(in srgb, var(--status-warning, #a86b13) 12%, white);
+  background: color-mix(in srgb, var(--status-warning, #a86b13) 10%, white);
 }
 .session-finalization-recovery-copy { min-width: 0; }
-.session-finalization-recovery-copy p { max-width: 72ch; margin: 0; color: var(--text-secondary, var(--muted)); line-height: 1.5; }
-.session-finalization-recovery-copy small { display: block; margin-top: 6px; color: var(--text-tertiary, var(--muted)); }
+.session-finalization-recovery-copy .kicker { display: none; }
+.session-finalization-recovery-copy p { max-width: 76ch; margin: 0; color: var(--text-secondary, var(--muted)); font-size: 11px; line-height: 1.4; }
+.session-finalization-recovery-copy small { display: block; margin-top: 3px; color: var(--text-tertiary, var(--muted)); font-size: 9.5px; }
 
 .session-finalization-inline-issue {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
-  gap: 11px;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 9px;
   align-items: center;
-  padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--status-warning, #a86b13) 28%, transparent);
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--status-warning, #a86b13) 6%, white);
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--status-warning, #a86b13) 24%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--status-warning, #a86b13) 5%, white);
   color: var(--status-warning, #8a5d17);
 }
-.session-finalization-inline-issue > div { min-width: 0; display: grid; gap: 2px; }
-.session-finalization-inline-issue b { color: var(--text-primary, var(--ink)); }
+.session-finalization-inline-issue > div { min-width: 0; display: grid; gap: 1px; }
+.session-finalization-inline-issue b { color: var(--text-primary, var(--ink)); font-size: 11px; }
 .session-finalization-inline-issue span,
-.session-finalization-inline-issue small { color: var(--text-secondary, var(--muted)); }
+.session-finalization-inline-issue small { color: var(--text-secondary, var(--muted)); font-size: 10px; }
 
 @media (max-width: 1040px) {
   .session-finalization-strip-controlled { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .session-finalization-strip-controlled .session-finalization-fact:nth-child(4) { border-left: 0; }
   .session-finalization-strip-controlled .session-finalization-fact:nth-child(n+4) { border-top: 1px solid var(--border-default, var(--line)); }
+  .session-finalization-sections { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 860px) {
@@ -202,7 +224,7 @@
   .session-finalization-facts .session-finalization-fact:nth-child(n+3),
   .session-finalization-strip-controlled .session-finalization-fact:nth-child(n+3) { border-top: 1px solid var(--border-default, var(--line)); }
   .session-finalization-recovery-card,
-  .session-finalization-inline-issue { grid-template-columns: 40px minmax(0, 1fr); }
+  .session-finalization-inline-issue { grid-template-columns: 34px minmax(0, 1fr); }
   .session-finalization-recovery-card > button,
   .session-finalization-inline-issue > button { grid-column: 2; justify-self: start; }
   .session-finalization-backup-card { align-items: flex-start; flex-direction: column; }
@@ -211,11 +233,11 @@
 @media (max-width: 560px) {
   .session-finalization {
     width: min(calc(100% - 28px), 1280px);
-    gap: 17px;
-    padding-top: 18px;
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    gap: 11px;
+    padding-top: 12px;
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
   }
-  .session-finalization-head { display: grid; gap: 12px; }
+  .session-finalization-head { display: grid; gap: 9px; }
   .session-finalization-head .status { justify-self: start; }
   .session-finalization-strip,
   .session-finalization-facts,
@@ -225,9 +247,7 @@
   .session-finalization-facts .session-finalization-fact:nth-child(odd):not(:first-child),
   .session-finalization-strip-controlled .session-finalization-fact:nth-child(odd):not(:first-child),
   .session-finalization-strip-controlled .session-finalization-fact:nth-child(4) { border-left: 0; border-top: 1px solid var(--border-default, var(--line)); }
-  .session-finalization-fact { padding: 14px 15px; }
-  .session-finalization-sections > section { grid-template-columns: 34px minmax(0, 1fr); gap: 11px; }
-  .session-finalization-icon { width: 32px; height: 32px; }
+  .session-finalization-fact { padding: 11px 12px; }
   .session-finalization-actions { display: grid; grid-template-columns: 1fr; }
   .session-finalization-actions button { width: 100%; justify-content: center; }
   .session-finalization-recovery-card,
