@@ -15,18 +15,18 @@ test("Registration exposes one clear Live check-in, Final roster and Readiness j
   assert.doesNotMatch(registration, /ArrivalOperations/);
 });
 
-test("Check-in desk stays task first while Final roster exposes the next action", async () => {
+test("Check-in desk stays task first while Final roster exposes one next action", async () => {
   const [journey, parts] = await Promise.all([
     read("src/pages/RegistrationJourneyV29.jsx"),
     read("src/pages/RegistrationJourneyPartsV4.jsx"),
   ]);
   assert.match(journey, /Find a participant/);
-  assert.match(journey, /All blockers/);
+  assert.match(journey, /Needs action/);
   assert.match(journey, /regjourney-next-action-v30/);
   assert.match(journey, /blocker\.nextAction/);
-  assert.match(journey, />Resolve<ArrowRight/);
+  assert.match(journey, />Continue<ArrowRight/);
   assert.match(parts, /Complete check-in/);
-  assert.match(parts, /Waiting for Housing/);
+  assert.match(parts, /Housing can assign a room now/);
 });
 
 test("Readiness owns FSY IDs, Staff readiness and Final roster without duplicating participant review", async () => {

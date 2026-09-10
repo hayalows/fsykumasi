@@ -23,12 +23,12 @@ test("on-site group placement issues an FSY ID in the same transaction", () => {
 test("on-site arrivals cannot bypass identity before check-in", () => {
   assert.match(migration, /On-site participant still needs an FSY ID before check-in/);
   assert.match(parts, /return "Needs FSY ID"/);
-  assert.match(parts, /FSY ID[\s\S]*Created after placement/);
+  assert.match(parts, /FSY ID will be created with this company when placement is saved/);
 });
 
 test("normal on-site placement is primary and confirmed vacancy is optional", () => {
-  assert.match(parts, /Place in a counselor group/);
-  assert.match(parts, /FSY ID is then created automatically/);
+  assert.match(parts, /Choose a counselor group/);
+  assert.match(parts, /FSY ID is created in the same save/);
   assert.match(parts, /Use a confirmed vacancy instead/);
   assert.doesNotMatch(parts, /No compatible confirmed vacancy/);
 });

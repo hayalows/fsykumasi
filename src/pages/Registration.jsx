@@ -1,31 +1,30 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { RegistrationJourney } from "./RegistrationJourney.jsx";
 import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
 import { SessionFinalization } from "./SessionFinalization.jsx";
-import { formatCount } from "../lib/cohort.js";
-import { registrationBlockerCount } from "../lib/registration-workflow-v30.js";
 import { PageHead, SegmentedControl } from "../components/UI.jsx";
 import "./registration-review.css";
 import "./registration-v5.css";
 import "./registration-journey.css";
 import "./registration-readiness-v28.css";
 import "./registration-workspace.css";
+import "./registration-journey-v31.css";
 
 const MODE_META = {
   desk: {
     phase: "Arrival desk",
     title: "Live check-in",
-    help: "Find the person, confirm identity, and complete the arrival.",
+    help: "Search, finish any one missing step, then check the participant in.",
   },
   roster: {
-    phase: "Before Day One",
+    phase: "Final roster",
     title: "Final roster",
-    help: "Review the final plan, resolve only real blockers, then lock the roster.",
+    help: "See the settled roster and handle only new arrivals or real exceptions.",
   },
   readiness: {
     phase: "Session readiness",
     title: "Readiness",
-    help: "Check participant identity, Staff coverage, and the final source before Day One.",
+    help: "Check the remaining setup work before Day One.",
   },
 };
 
@@ -42,7 +41,6 @@ export function Registration(props) {
   const [mode, setMode] = useState(normalizedMode);
   const [journeyMode, setJourneyMode] = useState(normalizedMode === "roster" ? "roster" : "desk");
   const [readinessVisited, setReadinessVisited] = useState(normalizedMode === "readiness");
-  const solutionCount = useMemo(() => registrationBlockerCount(imported), [imported]);
 
   useEffect(() => {
     setMode(normalizedMode);
@@ -64,7 +62,6 @@ export function Registration(props) {
 
   const cohortSummary = props.cohort;
   const modeMeta = MODE_META[mode];
-  const showRecordCount = cohortSummary && Number(cohortSummary.records || 0) !== Number(cohortSummary.eligible || 0);
   const journeyProps = {
     participants: imported,
     initialGroups: props.groups || [],
@@ -79,33 +76,15 @@ export function Registration(props) {
 
   return <div className={`registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28 registration-v29 registration-workspace-v30 registration-mode-${mode}`}>
     <section className="page registration-workspace-intro registration-workspace-intro-v5 registration-unified-intro">
-      <PageHead
-        title="Registration & check-in"
-        sessionName={sessionName}
-        description="Settle the roster before Day One, then keep arrivals quick and clear."
-      />
+      <PageHead title="Registration & check-in" sessionName={sessionName} description="Finish each participant's next step, then move on." />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
-        {canUseRegistrationTools ? <SegmentedControl
-          className="registration-mode-switch registration-workspace-tabs registration-workspace-tabs-v5 registration-unified-tabs"
-          label="Registration and check-in work area"
-          value={mode}
-          onChange={chooseMode}
-          options={[
-            { value: "desk", label: "Live check-in", id: "registration-mode-desk" },
-            { value: "roster", label: "Final roster", count: solutionCount, id: "registration-mode-roster" },
-            { value: "readiness", label: "Readiness", id: "registration-mode-readiness" },
-          ]}
-        /> : null}
+        {canUseRegistrationTools ? <SegmentedControl className="registration-mode-switch registration-workspace-tabs registration-workspace-tabs-v5 registration-unified-tabs" label="Registration and check-in work area" value={mode} onChange={chooseMode} options={[
+          { value: "desk", label: "Live check-in", id: "registration-mode-desk" },
+          { value: "roster", label: "Final roster", id: "registration-mode-roster" },
+          { value: "readiness", label: "Readiness", id: "registration-mode-readiness" },
+        ]} /> : null}
         <div className="registration-mode-cue-v5 registration-mode-cue-compact" data-mode={mode} role="status" aria-label={`${modeMeta.title}. ${modeMeta.help}`}>
-          <div className="registration-mode-copy">
-            <span className="kicker">{modeMeta.phase}</span>
-            <p>{modeMeta.help}</p>
-          </div>
-          {cohortSummary ? <div className="registration-mode-summary" aria-label="Registration summary">
-            <span className="registration-summary-stat"><b>{formatCount(cohortSummary.eligible)}</b> eligible</span>
-            {showRecordCount ? <span className="registration-summary-stat registration-summary-records"><b>{formatCount(cohortSummary.records)}</b> records</span> : null}
-            <span className={`registration-summary-stat ${solutionCount ? "needs-action" : "clear"}`}><b>{formatCount(solutionCount)}</b> {solutionCount === 1 ? "decision" : "decisions"}</span>
-          </div> : null}
+          <div className="registration-mode-copy"><span className="kicker">{modeMeta.phase}</span><p>{modeMeta.help}</p></div>
         </div>
       </div>
     </section>
@@ -117,18 +96,7 @@ export function Registration(props) {
       </div>
 
       {readinessVisited ? <div role="tabpanel" aria-labelledby="registration-mode-readiness" hidden={mode !== "readiness"}>
-        <RegistrationReadinessV30
-          imported={imported}
-          cohort={cohortSummary}
-          live={live}
-          sessionId={sessionId}
-          capabilities={capabilities}
-          canManage={props.canManage}
-          setImported={props.setImported}
-          onChanged={onOperationalDataChanged}
-          onFinalBaselineChanged={handleFinalBaselineChanged}
-          onNavigate={onNavigate}
-        />
+        <RegistrationReadinessV30 imported={imported} cohort={cohortSummary} live={live} sessionId={sessionId} capabilities={capabilities} canManage={props.canManage} setImported={props.setImported} onChanged={onOperationalDataChanged} onFinalBaselineChanged={handleFinalBaselineChanged} onNavigate={onNavigate} />
       </div> : null}
     </div>
   </div>;

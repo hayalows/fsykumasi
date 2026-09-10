@@ -137,10 +137,10 @@ test('historical final roster preview computes participant state once instead of
   assert.match(previewPerformance, /grant execute on function public\.get_session_finalization_preview_v2\(uuid\) to authenticated/);
 });
 
-test('registration mode navigation is compact and has exactly three workspace columns', () => {
+test('registration mode navigation is compact and keeps the settled-roster workspace usable', () => {
   assert.match(registration, /registration-mode-cue-compact/);
-  assert.match(registration, /registration-mode-summary/);
+  assert.doesNotMatch(registration, /registration-mode-summary/);
   assert.match(registration, /registration-workspace\.css/);
-  assert.match(registrationWorkspace, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(registrationWorkspace, /grid-template-columns: minmax\(390px, 510px\) minmax\(0, 1fr\)/);
   assert.match(registrationWorkspace, /registration-mode-cue-compact/);
 });

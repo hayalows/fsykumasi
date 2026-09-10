@@ -5,6 +5,12 @@ const AGE_REASONS = new Set([
   "Date of birth is missing",
 ]);
 
+const RESOLVED_HISTORY_REASONS = new Set([
+  "Excluded from active youth operations",
+  "Age 20+ removed from active participant roster",
+  "Outside active youth age policy",
+]);
+
 function eligibilityFor(row, eligibility) {
   return eligibility || row?.serverEligibility || null;
 }
@@ -12,6 +18,7 @@ function eligibilityFor(row, eligibility) {
 export function registrationBlocker(row = {}, eligibility) {
   const decision = eligibilityFor(row, eligibility);
   if (!row.isCurrent || row.attendanceStatus === "confirmed_not_attending" || row.checkinStatus === "arrived") return null;
+  if (row.operationalStatus && row.operationalStatus !== "active") return null;
 
   if (row.sourceKind === "on_site" && row.verificationStatus !== "verified") {
     return {
@@ -25,6 +32,7 @@ export function registrationBlocker(row = {}, eligibility) {
 
   if (decision && decision.eligible === false) {
     const reason = decision.reason || "Needs review";
+    if (RESOLVED_HISTORY_REASONS.has(reason)) return null;
     if (reason === "Registration is not approved") {
       return {
         key: "awaiting",
@@ -57,7 +65,7 @@ export function registrationBlocker(row = {}, eligibility) {
       key: "needs_group",
       queue: "needs_group",
       label: "Needs counselor group",
-      nextAction: "Assign a compatible counselor group",
+      nextAction: "Choose an available counselor group",
       authority: "Registration Committee",
     };
   }
@@ -92,6 +100,7 @@ export function registrationProblem(row = {}, eligibility) {
 export function isRegistrationReady(row = {}, eligibility) {
   return Boolean(
     row.isCurrent
+    && (!row.operationalStatus || row.operationalStatus === "active")
     && row.attendanceStatus !== "confirmed_not_attending"
     && row.checkinStatus !== "arrived"
     && !registrationBlocker(row, eligibility),
