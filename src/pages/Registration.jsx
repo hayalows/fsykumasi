@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { RegistrationJourney } from "./RegistrationJourney.jsx";
 import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
 import { SessionFinalization } from "./SessionFinalization.jsx";
-import { formatCount } from "../lib/cohort.js";
-import { registrationBlockerCount } from "../lib/registration-workflow-v30.js";
 import { PageHead, SegmentedControl } from "../components/UI.jsx";
 import "./registration-review.css";
 import "./registration-v5.css";
@@ -15,17 +13,17 @@ const MODE_META = {
   desk: {
     phase: "Arrival desk",
     title: "Live check-in",
-    help: "Find the person, confirm identity, and complete the arrival.",
+    help: "Search, finish any one missing step, then check the participant in.",
   },
   roster: {
-    phase: "Before Day One",
+    phase: "Final roster",
     title: "Final roster",
-    help: "Review the final plan, resolve only real blockers, then lock the roster.",
+    help: "See the settled roster and handle only new arrivals or real exceptions.",
   },
   readiness: {
     phase: "Session readiness",
     title: "Readiness",
-    help: "Check participant identity, Staff coverage, and the final source before Day One.",
+    help: "Check the remaining setup work before Day One.",
   },
 };
 
@@ -42,7 +40,6 @@ export function Registration(props) {
   const [mode, setMode] = useState(normalizedMode);
   const [journeyMode, setJourneyMode] = useState(normalizedMode === "roster" ? "roster" : "desk");
   const [readinessVisited, setReadinessVisited] = useState(normalizedMode === "readiness");
-  const solutionCount = useMemo(() => registrationBlockerCount(imported), [imported]);
 
   useEffect(() => {
     setMode(normalizedMode);
@@ -64,7 +61,6 @@ export function Registration(props) {
 
   const cohortSummary = props.cohort;
   const modeMeta = MODE_META[mode];
-  const showRecordCount = cohortSummary && Number(cohortSummary.records || 0) !== Number(cohortSummary.eligible || 0);
   const journeyProps = {
     participants: imported,
     initialGroups: props.groups || [],
@@ -82,7 +78,7 @@ export function Registration(props) {
       <PageHead
         title="Registration & check-in"
         sessionName={sessionName}
-        description="Settle the roster before Day One, then keep arrivals quick and clear."
+        description="Finish each participant's next step, then move on."
       />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
         {canUseRegistrationTools ? <SegmentedControl
@@ -92,7 +88,7 @@ export function Registration(props) {
           onChange={chooseMode}
           options={[
             { value: "desk", label: "Live check-in", id: "registration-mode-desk" },
-            { value: "roster", label: "Final roster", count: solutionCount, id: "registration-mode-roster" },
+            { value: "roster", label: "Final roster", id: "registration-mode-roster" },
             { value: "readiness", label: "Readiness", id: "registration-mode-readiness" },
           ]}
         /> : null}
@@ -101,11 +97,6 @@ export function Registration(props) {
             <span className="kicker">{modeMeta.phase}</span>
             <p>{modeMeta.help}</p>
           </div>
-          {cohortSummary ? <div className="registration-mode-summary" aria-label="Registration summary">
-            <span className="registration-summary-stat"><b>{formatCount(cohortSummary.eligible)}</b> eligible</span>
-            {showRecordCount ? <span className="registration-summary-stat registration-summary-records"><b>{formatCount(cohortSummary.records)}</b> records</span> : null}
-            <span className={`registration-summary-stat ${solutionCount ? "needs-action" : "clear"}`}><b>{formatCount(solutionCount)}</b> {solutionCount === 1 ? "decision" : "decisions"}</span>
-          </div> : null}
         </div>
       </div>
     </section>
