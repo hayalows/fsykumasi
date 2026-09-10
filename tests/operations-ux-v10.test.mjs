@@ -77,7 +77,7 @@ test("Registration separates live arrivals, one Final roster queue and supportin
   assert.match(source, /Readiness/);
   assert.match(source, /RegistrationReadinessV30/);
   assert.doesNotMatch(source, /Preflight review|Final roster table|Before session|Prepare/);
-  assert.match(journey, /One final participant queue/);
+  assert.match(journey, /One participant, one next step/);
   assert.match(readiness, /One final participant queue/);
 });
 
