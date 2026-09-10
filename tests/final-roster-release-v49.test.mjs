@@ -43,7 +43,7 @@ test("final roster recovery and plan stay compact", () => {
   assert.match(css, /session-finalization-guard:not\(\.session-finalization-backup-card\)\s*\{\s*display:\s*none/);
 });
 
-test("PWA shell advances for the roster release", () => {
+test("PWA shell advances for the v50 roster release", () => {
   const sw = read("public/sw.js");
-  assert.match(sw, /fsy-kumasi-shell-v49/);
+  assert.match(sw, /fsy-kumasi-shell-v50/);
 });
