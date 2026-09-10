@@ -16,22 +16,51 @@ function demoSummary({ currentRole, companies, imported, checkedCount, fieldSumm
   };
 }
 
-export function Overview({ live = false, sessionId, setActive, currentRole, currentUser, capabilities = [], fieldSummary = {}, companies = [], imported = [], checkedCount = 0, sessionName }) {
+export function Overview({ live = false, sessionId, sessionInfo, setActive, currentRole, currentUser, capabilities = [], fieldSummary = {}, companies = [], imported = [], checkedCount = 0, sessionName }) {
   const fallback = useMemo(() => demoSummary({ currentRole, companies, imported, checkedCount, fieldSummary }), [currentRole, companies, imported, checkedCount, fieldSummary]);
   const [summary, setSummary] = useState(live ? null : fallback);const [phase,setPhase]=useState("unknown");const [loading,setLoading]=useState(Boolean(live));const [error,setError]=useState("");
   const summaryRef = useRef(summary);
+  const overviewRequestRef = useRef(0);
+  const overviewInFlightRef = useRef(false);
   useEffect(() => { summaryRef.current = summary; }, [summary]);
   useEffect(() => { if (!live) setSummary(fallback); }, [live, fallback]);
-  useEffect(() => { setLoading(Boolean(live));setError("");setPhase("unknown"); }, [live, sessionId]);
+  useEffect(() => { overviewRequestRef.current += 1; overviewInFlightRef.current = false; setLoading(Boolean(live));setError("");setPhase("unknown"); }, [live, sessionId]);
 
   const refresh = useCallback(async ({ quiet = false } = {}) => {
-    if (!live || !sessionId) return;
+    if (!live || !sessionId || overviewInFlightRef.current) return;
+    const requestId = ++overviewRequestRef.current;
+    overviewInFlightRef.current = true;
     if (!quiet) setLoading(true);
-    const [overviewResult,sessionResult]=await Promise.all([supabase.rpc("get_my_operational_overview",{p_session_id:sessionId}),supabase.from("sessions").select("starts_on,ends_on").eq("id",sessionId).single()]);
-    if (overviewResult.error) { setError(summaryRef.current ? "The overview update failed. Showing the last successful overview." : "The live overview is not available yet.");setLoading(false);return; }
-    const nextPhase=sessionResult.error?"unknown":sessionPhase({startsOn:sessionResult.data?.starts_on,endsOn:sessionResult.data?.ends_on});
-    setPhase(nextPhase);setSummary(overviewResult.data||null);setError("");setLoading(false);
-  }, [live, sessionId]);
+    let timeoutId = null;
+    try {
+      const timeout = new Promise((_, reject) => {
+        timeoutId = globalThis.setTimeout(() => reject(new Error("Overview request timed out")), 10000);
+      });
+      const { data, error: overviewError } = await Promise.race([
+        supabase.rpc("get_my_operational_overview", { p_session_id: sessionId }),
+        timeout,
+      ]);
+      if (requestId !== overviewRequestRef.current) return;
+      if (overviewError) {
+        setError(summaryRef.current ? "The overview update failed. Showing the last successful overview." : "The live overview is not available yet.");
+        setLoading(false);
+        return;
+      }
+      const nextPhase = sessionPhase({ startsOn: sessionInfo?.starts_on, endsOn: sessionInfo?.ends_on });
+      setPhase(nextPhase);
+      setSummary(data || null);
+      setError("");
+      setLoading(false);
+    } catch {
+      if (requestId === overviewRequestRef.current) {
+        setError(summaryRef.current ? "The overview update failed. Showing the last successful overview." : "The live overview is not available yet.");
+        setLoading(false);
+      }
+    } finally {
+      if (timeoutId !== null) globalThis.clearTimeout(timeoutId);
+      if (requestId === overviewRequestRef.current) overviewInFlightRef.current = false;
+    }
+  }, [live, sessionId, sessionInfo?.starts_on, sessionInfo?.ends_on]);
 
   useEffect(() => { if(!live||!sessionId)return undefined;let active=true;refresh().catch(()=>active&&setError("Overview could not refresh. Your workspaces are still available."));const timer=window.setInterval(()=>{if(active&&document.visibilityState!=="hidden")refresh({quiet:true}).catch(()=>{});},20000);return()=>{active=false;window.clearInterval(timer);};},[live,sessionId,refresh]);
 
