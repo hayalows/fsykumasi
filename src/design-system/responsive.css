@@ -384,6 +384,18 @@
     color: var(--ds-brand-strong);
     background: transparent;
   }
+
+  /* The mobile sidebar uses a light active surface; keep its icon and label dark. */
+  .sidebar nav button.active:not(.sidebar-more-trigger),
+  .sidebar-more-items button.active {
+    color: var(--ds-brand-strong, var(--blue-35));
+    background: rgba(196,233,245,.94);
+  }
+
+  .sidebar nav button.active:not(.sidebar-more-trigger) > svg,
+  .sidebar-more-items button.active > svg {
+    color: inherit !important;
+  }
 }
 
 @media (max-width: 390px) {
