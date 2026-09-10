@@ -1,9 +1,8 @@
 import { PersonProvider } from "./components/PersonPeek.jsx";
-import { HeadcountRoster } from "./pages/HeadcountRoster.jsx";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "./components/AppShell.jsx";
 import { InviteClaimScreen, LoadingScreen, PasswordRecoveryScreen, SignInScreen, WorkspaceRecoveryScreen } from "./components/AuthGate.jsx";
-import { createDemoParticipants } from "./data/demo.js";
+import { createDemoParticipants, demoAccessRequests } from "./data/demo.js";
 import { demoSession } from "./data/session.js";
 import { isSupabaseConfigured } from "./lib/supabase.js";
 import { friendlyRuntimeError } from "./lib/ux-errors.js";
@@ -29,24 +28,40 @@ import { installLifecycleDiagnostics, recordDiagnostic } from "./lib/diagnostics
 import { activateLeaderAccount, changePassword, requestPasswordReset, signInWithPassword, signOutAccount, subscribeToAuth, updateRecoveredPassword } from "./lib/auth.js";
 import { claimInviteWhileSignedIn, createLeaderInvite, createLeaderRecoveryCode, loadLeaderInvites, revokeLeaderInvite, subscribeToLeaderInvites } from "./lib/invites.js";
 import { loadArrivedParticipantIds, subscribeToCheckins } from "./lib/checkins.js";
-import { Overview } from "./pages/Overview.jsx";
-import { Birthdays } from "./pages/Birthdays.jsx";
-import { Registration } from "./pages/Registration.jsx";
-import { People } from "./pages/People.jsx";
-import { Assignments } from "./pages/Assignments.jsx";
-import { Groups } from "./pages/Groups.jsx";
-import { Headcount } from "./pages/Headcount.jsx";
-import { Access, createInitialAccessRequests } from "./pages/Access.jsx";
-import { Profile } from "./pages/Profile.jsx";
-import { Housing } from "./pages/Housing.jsx";
-import { Wellness } from "./pages/Wellness.jsx";
-import { Food } from "./pages/Food.jsx";
-import { Reports } from "./pages/Reports.jsx";
 
 const BASE_OPERATIONAL = new Set(["assistant_coordinator","coordinator","logistics_admin","session_director","area_advisory_couple"]);
 const WHOLE_SESSION = new Set(["coordinator","logistics_admin","session_director","area_advisory_couple"]);
 const DEMO_CAPABILITIES = ["people_lookup","groups_view","checkin_record","headcount_view","headcount_record","housing_view","housing_manage","housing_export","food_view","food_manage","food_export","wellness_status","wellness_private","wellness_manage","wellness_export","registration_view","registration_manage","identity_manage","arrival_manage","staff_view","staff_manage","reports_export","access_admin"];
 const REPORT_CAPABILITIES = ["reports_export","housing_export","food_export","wellness_export","access_admin"];
+
+const lazyPage = (loader, exportName) => lazy(async () => {
+  const module = await loader();
+  return { default: module[exportName] };
+});
+
+const HeadcountRoster = lazyPage(() => import("./pages/HeadcountRoster.jsx"), "HeadcountRoster");
+const Overview = lazyPage(() => import("./pages/Overview.jsx"), "Overview");
+const Birthdays = lazyPage(() => import("./pages/Birthdays.jsx"), "Birthdays");
+const Registration = lazyPage(() => import("./pages/Registration.jsx"), "Registration");
+const People = lazyPage(() => import("./pages/People.jsx"), "People");
+const Assignments = lazyPage(() => import("./pages/Assignments.jsx"), "Assignments");
+const Groups = lazyPage(() => import("./pages/Groups.jsx"), "Groups");
+const Headcount = lazyPage(() => import("./pages/Headcount.jsx"), "Headcount");
+const Access = lazyPage(() => import("./pages/Access.jsx"), "Access");
+const Profile = lazyPage(() => import("./pages/Profile.jsx"), "Profile");
+const Housing = lazyPage(() => import("./pages/Housing.jsx"), "Housing");
+const Wellness = lazyPage(() => import("./pages/Wellness.jsx"), "Wellness");
+const Food = lazyPage(() => import("./pages/Food.jsx"), "Food");
+const Reports = lazyPage(() => import("./pages/Reports.jsx"), "Reports");
+
+function RouteLoading() {
+  return <section className="page route-loading" role="status" aria-live="polite" aria-busy="true">
+    <p className="eyebrow">FSY Kumasi</p>
+    <h1>Opening this workspace…</h1>
+    <p>Keeping the navigation available while this area loads.</p>
+    <div className="route-loading-bar" aria-hidden="true" />
+  </section>;
+}
 
 function normalizeDemoGrouping(nextAssignment) {
   const groups=(nextAssignment.groups||[]).map((group)=>({...group,displayName:group.displayName||group.name,memberCount:Number(group.memberCount||group.members?.length||0),counselorId:group.counselorId||null}));
@@ -59,7 +74,7 @@ export function App() {
   const initialWorkspace=useMemo(()=>readWorkspaceLocation(),[]);
   const [active,setActive]=useState(initialWorkspace.view); const [selectedPersonId,setSelectedPersonId]=useState(initialWorkspace.personId); const [workspaceContext,setWorkspaceContext]=useState(initialWorkspace);
   const [imported,setImported]=useState([]); const [assignment,setAssignment]=useState(null); const [structureSettings,setStructureSettings]=useState(DEFAULT_STRUCTURE_SETTINGS);
-  const [accessRequests,setAccessRequests]=useState(createInitialAccessRequests); const [leaderInvites,setLeaderInvites]=useState([]); const [accessRoster,setAccessRoster]=useState([]); const [teamCatalog,setTeamCatalog]=useState([]);
+  const [accessRequests,setAccessRequests]=useState(()=>[...demoAccessRequests]); const [leaderInvites,setLeaderInvites]=useState([]); const [accessRoster,setAccessRoster]=useState([]); const [teamCatalog,setTeamCatalog]=useState([]);
   const [companies,setCompanies]=useState([]); const [headcount,setHeadcount]=useState({round:null,submissions:[]}); const [checkedIds,setCheckedIds]=useState([]); const [birthdays,setBirthdays]=useState([]); const [staffBirthdays,setStaffBirthdays]=useState([]);
   const [eligibilityMap,setEligibilityMap]=useState(new Map()); const [identityMap,setIdentityMap]=useState(new Map()); const [housingAssignments,setHousingAssignments]=useState([]); const [foodNeeds,setFoodNeeds]=useState([]); const [wellnessEncounters,setWellnessEncounters]=useState([]);
   const [authSession,setAuthSession]=useState(null); const [profile,setProfile]=useState(null); const [accessState,setAccessState]=useState([]); const [sessionInfo,setSessionInfo]=useState(null);
@@ -76,20 +91,23 @@ export function App() {
   useEffect(()=>{if(initialWorkspace.legacyCheckin)writeWorkspaceLocation(initialWorkspace,{replace:true});},[]);
   useEffect(()=>{const onPopState=()=>{const next=readWorkspaceLocation();setActive(next.view);setSelectedPersonId(next.personId);setWorkspaceContext(next);window.requestAnimationFrame(()=>window.scrollTo({top:Number.isFinite(Number(next.scrollY))?Number(next.scrollY):next.returnTo&&Number.isFinite(Number(next.returnTo.scrollY))?Number(next.returnTo.scrollY):0,behavior:"auto"}));recordDiagnostic("POPSTATE",{view:next.view,mode:next.mode||"",tab:next.tab||"",filter:next.filter||""});};window.addEventListener("popstate",onPopState);return()=>window.removeEventListener("popstate",onPopState);},[]);
 
-  const loadFieldData=useCallback(async(sessionId,capabilities=[])=>{
+  const loadFieldData=useCallback(async(sessionId,capabilities=[],scope="all")=>{
     if(!sessionId)return [];
-    const jobs=[
-      ["teams",()=>loadTeamCatalog(sessionId),(value)=>setTeamCatalog(value)],
-      ["eligibility",()=>loadParticipantEligibility(sessionId),(value)=>setEligibilityMap(value)],
-      ["identity",()=>(hasCapability(capabilities,"people_lookup")||hasCapability(capabilities,"registration_view")||hasCapability(capabilities,"reports_export"))?loadOperationalIdentityMap(sessionId):Promise.resolve(new Map()),(value)=>setIdentityMap(value)],
-      ["staff birthdays",()=>loadStaffBirthdays(sessionId),(value)=>setStaffBirthdays(value)],
-      ["housing",()=>hasCapability(capabilities,"housing_view")?loadHousingAssignments(sessionId):Promise.resolve([]),(value)=>setHousingAssignments(value)],
-      ["food",()=>hasCapability(capabilities,"food_view")?loadFoodNeeds(sessionId):Promise.resolve([]),(value)=>setFoodNeeds(value)],
-      ["wellness",()=>hasCapability(capabilities,"wellness_private")?loadWellnessEncounters(sessionId):hasCapability(capabilities,"wellness_status")?loadWellnessStatus(sessionId):Promise.resolve([]),(value)=>setWellnessEncounters(value)],
-    ];
+    const jobs=[];
+    if(scope==="all"||scope==="registration"){
+      jobs.push(
+        ["eligibility",()=>loadParticipantEligibility(sessionId),(value)=>setEligibilityMap(value)],
+        ["identity",()=>(hasCapability(capabilities,"people_lookup")||hasCapability(capabilities,"registration_view")||hasCapability(capabilities,"reports_export"))?loadOperationalIdentityMap(sessionId):Promise.resolve(new Map()),(value)=>setIdentityMap(value)],
+      );
+    }
+    if(scope==="all"||scope==="teams") jobs.push(["teams",()=>loadTeamCatalog(sessionId),(value)=>setTeamCatalog(value)]);
+    if(scope==="all"||scope==="birthdays") jobs.push(["staff birthdays",()=>loadStaffBirthdays(sessionId),(value)=>setStaffBirthdays(value)]);
+    if(scope==="all"||scope==="housing") jobs.push(["housing",()=>hasCapability(capabilities,"housing_view")?loadHousingAssignments(sessionId):Promise.resolve([]),(value)=>setHousingAssignments(value)]);
+    if(scope==="all"||scope==="food") jobs.push(["food",()=>hasCapability(capabilities,"food_view")?loadFoodNeeds(sessionId):Promise.resolve([]),(value)=>setFoodNeeds(value)]);
+    if(scope==="all"||scope==="wellness") jobs.push(["wellness",()=>hasCapability(capabilities,"wellness_private")?loadWellnessEncounters(sessionId):hasCapability(capabilities,"wellness_status")?loadWellnessStatus(sessionId):Promise.resolve([]),(value)=>setWellnessEncounters(value)]);
     const results=await Promise.allSettled(jobs.map(([,run])=>run()));
     const errors=[];
-    results.forEach((result,index)=>{const[label,,apply]=jobs[index];if(result.status==="fulfilled")apply(result.value);else errors.push(`${label}: ${result.reason?.message||"could not refresh"}`);});
+    results.forEach((result,index)=>{const[label,,apply]=jobs[index];if(result.status==="fulfilled")apply(result.value);else errors.push(label+": "+(result.reason?.message||"could not refresh"));});
     return errors;
   },[]);
 
@@ -118,6 +136,10 @@ export function App() {
     try{nextSession=await loadSession(granted.session_id);}catch(error){if(generation!==hydrateGeneration.current)return;setRuntimeError(error.message||"The FSY session could not be loaded.");if(blocking)setRuntimeStatus("error");else setWorkspacePhase("stale");setWorkspaceHydrating(false);return;}
     if(generation!==hydrateGeneration.current)return;
     setSessionInfo(nextSession);
+    setRuntimeStatus("ready");setWorkspacePhase("refreshing");
+    // Let the signed-in shell and the first route paint before secondary workspace reads begin.
+    await new Promise((resolve)=>setTimeout(resolve,120));
+    if(generation!==hydrateGeneration.current)return;
 
     const jobs=[
       ["participants",()=>loadParticipants(granted.session_id),(value)=>setImported(value)],
@@ -129,7 +151,6 @@ export function App() {
       ["head count",()=>loadHeadcount(granted.session_id),(value)=>setHeadcount(value)],
       ["birthdays",()=>loadSessionBirthdays(granted.session_id),(value)=>setBirthdays(value)],
       ["structure settings",()=>loadStructureSettings(granted.session_id),(value)=>setStructureSettings(value)],
-      ["field operations",()=>loadFieldData(granted.session_id,granted.capabilities||[]),()=>{}],
     ];
     const results=await Promise.allSettled(jobs.map(([,run])=>run()));
     if(generation!==hydrateGeneration.current)return;
@@ -142,8 +163,6 @@ export function App() {
 
   useEffect(()=>{if(!isSupabaseConfigured)return undefined;let activeSubscription=true;hydrateLive(undefined,"",{reason:"initial"}).catch((error)=>{if(activeSubscription){setRuntimeError(error.message||"Unable to connect to live FSY data.");setRuntimeStatus("error");setWorkspacePhase("failed");}});const unsubscribe=subscribeToAuth((event,session)=>{if(!activeSubscription)return;if(event==="PASSWORD_RECOVERY"){setAuthSession(session);setRuntimeStatus("password-recovery");return;}if(event==="TOKEN_REFRESHED"||event==="USER_UPDATED"){setAuthSession(session||null);recordDiagnostic("AUTH_MAINTENANCE",{event});return;}if(event==="INITIAL_SESSION"||event==="SIGNED_IN"){recordDiagnostic("AUTH_IGNORED",{event});return;}if(event==="SIGNED_OUT")hydrateLive(null,"",{reason:"signed-out"});});return()=>{activeSubscription=false;unsubscribe();};},[hydrateLive]);
   useEffect(()=>{if(!isSupabaseConfigured||runtimeStatus!=="ready"||!sessionInfo?.id)return undefined;const currentGrant=accessState.find((item)=>item.session_id===sessionInfo.id&&item.active&&item.role);const canManageAccess=canApproveAccess(currentGrant?.role,currentGrant?.capabilities||[]);const reloadRequests=async()=>{try{const[nextRequests,nextRoster,nextInvites]=await Promise.all([loadAccessRequests(sessionInfo.id),loadAccessRosterV2(sessionInfo.id),canManageAccess?loadLeaderInvites(sessionInfo.id):Promise.resolve([])]);setAccessRequests(nextRequests);setAccessRoster(nextRoster);setLeaderInvites(nextInvites);markUpdated();}catch(error){setRuntimeError(error.message||"Access updates could not be refreshed.");}};const reloadCheckins=async()=>{try{setCheckedIds(await loadArrivedParticipantIds(sessionInfo.id));markUpdated();}catch(error){setRuntimeError(error.message||"Check-in updates could not be refreshed.");}};const reloadHeadcount=async()=>{try{setHeadcount(await loadHeadcount(sessionInfo.id));markUpdated();}catch(error){setRuntimeError(error.message||"Head-count updates could not be refreshed.");}};const unsubscribeAccess=subscribeToAccessRequests(sessionInfo.id,reloadRequests);const unsubscribeInvites=canManageAccess?subscribeToLeaderInvites(sessionInfo.id,reloadRequests):()=>{};const unsubscribeCheckins=subscribeToCheckins(sessionInfo.id,reloadCheckins);const unsubscribeHeadcount=subscribeToHeadcount(sessionInfo.id,reloadHeadcount);return()=>{unsubscribeAccess();unsubscribeInvites();unsubscribeCheckins();unsubscribeHeadcount();};},[runtimeStatus,sessionInfo?.id,accessState]);
-  useEffect(()=>{if(runtimeStatus!=="ready"||!sessionInfo?.id||!["overview","reports"].includes(active))return;const grant=accessState.find((item)=>item.session_id===sessionInfo.id&&item.active&&item.role);loadFieldData(sessionInfo.id,grant?.capabilities||[]).then(markUpdated).catch(()=>{});},[active,runtimeStatus,sessionInfo?.id,accessState,loadFieldData]);
-
   const saveProfile=async(displayName)=>{const updated=await updateMyProfile(displayName);setProfile((current)=>({...current,display_name:updated?.display_name||displayName}));markUpdated();return updated;};
   const handleSignOut=async()=>{setRuntimeError("");try{await signOutAccount();navigate("overview",{replace:true});await hydrateLive(null,"",{reason:"local-signout"});}catch(error){setRuntimeError(error.message||"Unable to sign out. Please try again.");throw error;}};
   const handleSessionChange=async(sessionId)=>{const next=accessState.find((item)=>item.session_id===sessionId&&item.active&&item.role);if(!next||sessionId===sessionInfo?.id)return;selectedSessionRef.current=sessionId;setSelectedSessionId(sessionId);navigate("overview",{replace:true});if(typeof window!=="undefined"){const url=new URL(window.location.href);if(next.session_status==="training")url.searchParams.set("session",sessionId);else url.searchParams.delete("session");window.history.replaceState({},"",`${url.pathname}${url.search}${url.hash}`);}await hydrateLive(authSession,sessionId,{reason:"session-change"});};
@@ -169,7 +188,7 @@ export function App() {
   const effectiveActive=canOpen(active)?active:"overview";
 
   const reloadEligibility=async()=>{if(!live)return;setEligibilityMap(await loadParticipantEligibility(sessionInfo.id));markUpdated();};
-  const refreshOperationalIdentity=async()=>{if(!live)return;await loadFieldData(sessionInfo.id,currentCapabilities);markUpdated();};
+  const refreshOperationalIdentity=async()=>{if(!live)return;await loadFieldData(sessionInfo.id,currentCapabilities,"registration");markUpdated();};
   const applyImport=live?async({records,sourceFilename,sourceSha256})=>{const summary=await applyRegistrationSnapshot({sessionId:sessionInfo.id,sourceFilename,sourceSha256,records});setImported(await loadParticipants(sessionInfo.id));await reloadEligibility();setBirthdays(await loadSessionBirthdays(sessionInfo.id));markUpdated();return summary;}:null;
   const handleAddOnSite=live?async(values)=>{await addOnSiteParticipant({sessionId:sessionInfo.id,...values});setImported(await loadParticipants(sessionInfo.id));await reloadEligibility();await refreshOperationalIdentity();}:null;
   const handleVerifyOnSite=live?async(participantId,approved)=>{await verifyOnSiteParticipant(participantId,approved);setImported(await loadParticipants(sessionInfo.id));await reloadEligibility();await refreshOperationalIdentity();setBirthdays(await loadSessionBirthdays(sessionInfo.id));}:null;
@@ -204,5 +223,5 @@ export function App() {
   :effectiveActive==="profile"?<Profile currentUser={live?profile:{user_id:"demo-fsy-kumasi-leader",display_name:"FSY Leader",email:"demo@example.org"}} currentRole={currentRole} grantedAccess={grantedAccess} companies={companyOptions} sessionInfo={sessionInfo} sessionName={sessionName} live={live} onSave={saveProfile} onChangePassword={changePassword} onSignOut={handleSignOut}/>
   :<Access initialFilter={workspaceContext.filter||""} sessionId={sessionInfo?.id} onRefreshRoster={async()=>setAccessRoster(await loadAccessRosterV2(sessionInfo.id))} requests={accessRequests} setRequests={setAccessRequests} invites={leaderInvites} currentRole={currentRole} currentCapabilities={currentCapabilities} onDecision={handleAccessDecision} onCreateInvite={handleCreateInvite} onRevokeInvite={handleRevokeInvite} onCreateRecovery={handleRecoveryCode} onManageLeaderAccess={handleManageLeaderAccess} roster={live?accessRoster:undefined} companies={companyOptions} teams={teamCatalog} live={live} sessionName={sessionName}/>;
 
-  return <AppShell active={effectiveActive} setActive={navigate} attentionCount={pendingAccess} currentUser={live?profile:{user_id:"demo-fsy-kumasi-leader",display_name:"FSY Leader",email:"demo@example.org"}} currentRole={currentRole} currentCapabilities={currentCapabilities} sessionInfo={sessionInfo} sessions={activeSessions} selectedSessionId={sessionInfo?.id||selectedSessionId} onSessionChange={live?handleSessionChange:undefined} onSignOut={live?handleSignOut:undefined} syncError={live?runtimeError:""} workspacePhase={workspacePhase} lastUpdatedAt={lastUpdatedAt} onRefresh={()=>hydrateLive(authSession,sessionInfo?.id||"",{reason:"manual-refresh",blocking:false})}><PersonProvider participants={ownParticipants} assignment={assignment} sessionId={sessionInfo?.id} onNavigate={navigate} view={effectiveActive}>{content}</PersonProvider></AppShell>;
+  return <AppShell active={effectiveActive} setActive={navigate} attentionCount={pendingAccess} currentUser={live?profile:{user_id:"demo-fsy-kumasi-leader",display_name:"FSY Leader",email:"demo@example.org"}} currentRole={currentRole} currentCapabilities={currentCapabilities} sessionInfo={sessionInfo} sessions={activeSessions} selectedSessionId={sessionInfo?.id||selectedSessionId} onSessionChange={live?handleSessionChange:undefined} onSignOut={live?handleSignOut:undefined} syncError={live?runtimeError:""} workspacePhase={workspacePhase} lastUpdatedAt={lastUpdatedAt} onRefresh={()=>hydrateLive(authSession,sessionInfo?.id||"",{reason:"manual-refresh",blocking:false})}><PersonProvider participants={ownParticipants} assignment={assignment} sessionId={sessionInfo?.id} onNavigate={navigate} view={effectiveActive}><Suspense fallback={<RouteLoading />}>{content}</Suspense></PersonProvider></AppShell>;
 }
