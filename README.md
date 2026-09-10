@@ -88,3 +88,7 @@ The repository also runs these checks in GitHub Actions for pull requests and pu
 10. Import the approved real participant export only after the security rehearsal passes.
 
 Only public client values belong in Vite environment variables. Never expose a service-role key in the browser or repository.
+
+## September 2026 roster release
+
+The production final-roster flow now uses the controlled rebalance model: active youth are ages 12–18, existing placements and FSY IDs are preserved wherever possible, new groups and companies are created only when required, ward/branch separation is enforced, and pre-change roster versions are retained for guarded rollback. PR #108 contains the production runtime fixes and the compact Registration/Final roster workspace used with this release.
