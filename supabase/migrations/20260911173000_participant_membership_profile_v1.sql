@@ -74,6 +74,31 @@ as $$
   order by p.id;
 $$;
 
+create or replace function public.get_participant_membership_status(p_participant_id uuid)
+returns table(
+  participant_id uuid,
+  membership_status text,
+  verification_source text,
+  verified_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    p.id,
+    coalesce(m.membership_status,'unconfirmed') as membership_status,
+    coalesce(m.verification_source,'not_recorded') as verification_source,
+    m.verified_at
+  from public.participants p
+  left join public.participant_membership_profiles m
+    on m.participant_id = p.id and m.session_id = p.session_id
+  where p.id = p_participant_id
+    and private.can_read_participant_membership(p.session_id,p.id)
+  limit 1;
+$$;
+
 create or replace function public.set_participant_membership_status(
   p_participant_id uuid,
   p_membership_status text,
@@ -194,8 +219,10 @@ as $$
 $$;
 
 revoke all on function public.get_participant_membership_statuses(uuid) from public, anon;
+revoke all on function public.get_participant_membership_status(uuid) from public, anon;
 revoke all on function public.set_participant_membership_status(uuid,text,text) from public, anon;
 revoke all on function public.get_participant_membership_summary(uuid) from public, anon;
 grant execute on function public.get_participant_membership_statuses(uuid) to authenticated;
+grant execute on function public.get_participant_membership_status(uuid) to authenticated;
 grant execute on function public.set_participant_membership_status(uuid,text,text) to authenticated;
 grant execute on function public.get_participant_membership_summary(uuid) to authenticated;
