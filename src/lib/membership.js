@@ -10,7 +10,6 @@ export const MEMBERSHIP_OPTIONS = [
 export const MEMBERSHIP_SOURCES = [
   { value: "participant_or_guardian", label: "Participant / guardian" },
   { value: "unit_or_stake_leader", label: "Bishop / branch president or stake leader" },
-  { value: "registration_record", label: "Approved registration record" },
   { value: "checkin_confirmation", label: "Confirmed at check-in" },
 ];
 
@@ -22,6 +21,15 @@ function client() {
   return supabase;
 }
 
+function membershipRow(row) {
+  if (!row) return null;
+  return {
+    status: row.membership_status || "unconfirmed",
+    source: row.verification_source || "not_recorded",
+    verifiedAt: row.verified_at || null,
+  };
+}
+
 export function membershipLabel(status, { short = false } = {}) {
   const key = String(status || "unconfirmed");
   return (short ? SHORT_LABELS[key] : LABELS[key]) || LABELS.unconfirmed;
@@ -31,11 +39,15 @@ export async function loadParticipantMembershipStatuses(sessionId) {
   if (!sessionId || !isSupabaseConfigured || !supabase) return new Map();
   const { data, error } = await client().rpc("get_participant_membership_statuses", { p_session_id: sessionId });
   if (error) throw error;
-  return new Map((data || []).map((row) => [row.participant_id, {
-    status: row.membership_status || "unconfirmed",
-    source: row.verification_source || "not_recorded",
-    verifiedAt: row.verified_at || null,
-  }]));
+  return new Map((data || []).map((row) => [row.participant_id, membershipRow(row)]));
+}
+
+export async function loadParticipantMembershipStatus(participantId) {
+  if (!participantId || !isSupabaseConfigured || !supabase) return null;
+  const { data, error } = await client().rpc("get_participant_membership_status", { p_participant_id: participantId });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return membershipRow(row);
 }
 
 export async function setParticipantMembershipStatus(participantId, status, source = "checkin_confirmation") {
