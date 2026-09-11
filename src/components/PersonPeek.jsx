@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DismissibleLayer } from './UI.jsx';
+import { loadParticipantMembershipStatuses, membershipLabel } from '../lib/membership.js';
 import { loadStaff } from '../lib/operations.js';
 import { personIdentity } from '../lib/person-identity.js';
 import { staffException } from '../lib/staff-state.js';
@@ -27,10 +28,23 @@ function buildOrigin(view,person,kind,target,context){
 }
 
 export function PersonProvider({children,participants=[],assignment,sessionId,onNavigate,view}) {
-  const [selected,setSelected]=useState(null),[error,setError]=useState('');
+  const [selected,setSelected]=useState(null),[error,setError]=useState(''),[membershipByParticipant,setMembershipByParticipant]=useState(new Map());
   const generation=useRef(0);
   const participantById=useMemo(()=>new Map(participants.map((person)=>[person.id||person.participantId||person.person_id,person])),[participants]);
   useEffect(()=>{generation.current++;setSelected(null);setError('');},[sessionId,view]);
+  useEffect(()=>{
+    let active=true;
+    if(!sessionId){setMembershipByParticipant(new Map());return undefined;}
+    const refresh=()=>loadParticipantMembershipStatuses(sessionId).then((rows)=>{if(active)setMembershipByParticipant(rows);}).catch(()=>{if(active)setMembershipByParticipant(new Map());});
+    refresh();
+    const onUpdated=(event)=>{
+      const detail=event.detail||{};
+      if(!detail.participantId)return;
+      setMembershipByParticipant((current)=>{const next=new Map(current);next.set(detail.participantId,{status:detail.status,source:detail.source||'checkin_confirmation',verifiedAt:new Date().toISOString()});return next;});
+    };
+    window.addEventListener('fsy:membership-updated',onUpdated);
+    return()=>{active=false;window.removeEventListener('fsy:membership-updated',onUpdated);};
+  },[sessionId]);
 
   const open=async(person,kind,context,target)=>{
     const version=++generation.current;
@@ -51,6 +65,7 @@ export function PersonProvider({children,participants=[],assignment,sessionId,on
   };
   const close=()=>{generation.current++;setSelected(null);setError('');};
   const identity=selected?personIdentity(selected.person,selected.kind,assignment?.groups,assignment?.companies):null;
+  const participantMembership=identity?.kind==='participant'?membershipByParticipant.get(identity.id):null;
   const location=readWorkspaceLocation();
   const returnTo=location.returnTo&&location.returnTo.view&&location.returnTo.view!==view?location.returnTo:null;
   const returnLabel=returnTo?(RETURN_LABELS[returnTo.view]||'previous work'):'';
@@ -64,7 +79,8 @@ export function PersonProvider({children,participants=[],assignment,sessionId,on
       ['Role',identity.role],
       ['Company',identity.company||identity.responsibilities.join(', ')],
       ['Counselor group',identity.group],
-      ['Ward / branch',identity.unit]
+      ['Ward / branch',identity.unit],
+      ['Church membership',participantMembership?membershipLabel(participantMembership.status):null]
     ].filter(([,value])=>value!==null&&value!==undefined&&value!=='').map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>{selected.kind==='staff'&&staffException(selected.person)?<p className="notice">{staffException(selected.person)}</p>:null}{selected.context?.label&&selected.context?.value?<div className="person-peek-context"><span>{selected.context.label}</span><b>{selected.context.value}</b></div>:null}{error?<p role="alert">{error}</p>:null}<button className="secondary" disabled={selected.loading||!identity.id} onClick={()=>{const id=identity.id;const returnTo=selected.origin;close();onNavigate('people',{personId:id,returnTo});}}>Open full record</button></section></DismissibleLayer>:null}
   </PersonContext.Provider>;
 }
