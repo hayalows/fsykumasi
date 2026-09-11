@@ -3,13 +3,14 @@ import { RegistrationJourneyV53 as RegistrationJourney } from "./RegistrationJou
 import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
 import { SessionFinalization } from "./SessionFinalization.jsx";
 import { PageHead, SegmentedControl } from "../components/UI.jsx";
-import { attemptParticipantMembershipCheckin } from "../lib/participant-membership.js";
+import { attemptParticipantMembershipCheckin, undoParticipantMembershipCheckin } from "../lib/participant-membership.js";
 import "./registration-review.css";
 import "./registration-v5.css";
 import "./registration-journey.css";
 import "./registration-readiness-v28.css";
 import "./registration-workspace.css";
 import "./registration-journey-v31.css";
+import "../participant-membership-v54.css";
 
 const MODE_META = {
   desk: {
@@ -66,6 +67,11 @@ export function Registration(props) {
     return attemptParticipantMembershipCheckin({ sessionId, participantId });
   };
 
+  const membershipAwareUndo = async (participantId, expectedRecordedAt) => {
+    if (!sessionId) return props.onUndoCheckin?.(participantId, expectedRecordedAt);
+    return undoParticipantMembershipCheckin({ sessionId, participantId, expectedRecordedAt });
+  };
+
   const cohortSummary = props.cohort;
   const modeMeta = MODE_META[mode];
   const journeyProps = {
@@ -76,7 +82,7 @@ export function Registration(props) {
     capabilities,
     onOperationalDataChanged,
     onCheckin: membershipAwareCheckin,
-    onUndoCheckin: props.onUndoCheckin,
+    onUndoCheckin: membershipAwareUndo,
     onSetOperationalStatus: props.onSetOperationalStatus,
   };
 
