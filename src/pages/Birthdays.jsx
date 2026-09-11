@@ -51,9 +51,12 @@ function staffRoleLabel(role) {
 }
 
 function primaryContext(person) {
-  if (person.kind === "staff") return staffRoleLabel(person.staffRole);
   const hasAge = person.turningAge !== null && person.turningAge !== undefined && person.turningAge !== ""
     && Number.isFinite(Number(person.turningAge));
+  if (person.kind === "staff") {
+    const role = staffRoleLabel(person.staffRole);
+    return hasAge ? `${role} · Turning ${person.turningAge}` : role;
+  }
   return hasAge ? `Turning ${person.turningAge}` : "Youth participant";
 }
 
@@ -222,7 +225,7 @@ export function Birthdays({ birthdays = [], staffBirthdays = [], onSetAcknowledg
     <PageHead
       title="Birthdays"
       sessionName={sessionName}
-      description="See exactly who is celebrating during this FSY and keep track of who has been acknowledged. Youth ages are shown; adult ages stay private."
+      description="See exactly who is celebrating during this FSY and keep track of who has been acknowledged. Ages are shown for people in your authorized birthday scope."
     />
 
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
@@ -241,7 +244,7 @@ export function Birthdays({ birthdays = [], staffBirthdays = [], onSetAcknowledg
         <div className="birthday-summary-grid">
           <div className={remainingCount ? "attention" : "complete"}><span>Still to acknowledge</span><strong>{remainingCount}</strong><small>{remainingCount ? "Needs attention" : "All done"}</small></div>
           <div><span>Youth</span><strong>{youthCount}</strong><small>Ages shown</small></div>
-          <div><span>Staff</span><strong>{staffCount}</strong><small>Adult ages private</small></div>
+          <div><span>Staff</span><strong>{staffCount}</strong><small>Ages shown in your scope</small></div>
         </div>
       </section>
 
