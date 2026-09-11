@@ -72,6 +72,6 @@ test("unexpected database internals are not rendered directly in the participant
   assert.ok(!journey.includes('setError(err.message||"That change could not be saved.")'));
 });
 
-test("v50 service worker forces installed clients onto the new Registration release", () => {
-  assert.match(sw, /fsy-kumasi-shell-v50/);
+test("current service worker keeps installed clients on the latest Registration release", () => {
+  assert.match(sw, /fsy-kumasi-shell-v51/);
 });

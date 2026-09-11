@@ -104,7 +104,7 @@ test("Final roster action count stays inside the participant worklist instead of
   ]);
   assert.doesNotMatch(registration, /registrationBlockerCount\(imported\)/);
   assert.doesNotMatch(registration, /registration-mode-summary/);
-  assert.match(journey, /counts\.needs_help\.toLocaleString\(\)/);
+  assert.match(journey, /countLabel\(counts\.needs_help,initialLoading\)/);
 });
 
 test("Phase 2 compact layouts keep the three work areas and Final roster usable at phone widths", async () => {

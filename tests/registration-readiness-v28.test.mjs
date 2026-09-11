@@ -34,10 +34,10 @@ test('arrival and live phases retain live operational signals',()=>{
   assert.equal(shapeOverviewForPhase(summary,'live'),summary);
 });
 
-test('Overview reads the actual session dates before shaping live signals',async()=>{
-  const source=await read('src/pages/Overview.jsx');
-  assert.match(source,/from\("sessions"\)\.select\("starts_on,ends_on"\)/);
-  assert.match(source,/sessionPhase\(\{startsOn:sessionResult\.data\?\.starts_on,endsOn:sessionResult\.data\?\.ends_on\}\)/);
+test('Overview uses the session dates loaded by the signed-in workspace before shaping live signals',async()=>{
+  const [source,app]=await Promise.all([read('src/pages/Overview.jsx'),read('src/App.jsx')]);
+  assert.match(app,/<Overview[\s\S]*sessionInfo=\{sessionInfo\}/);
+  assert.match(source,/sessionPhase\(\{ startsOn: sessionInfo\?\.starts_on, endsOn: sessionInfo\?\.ends_on \}\)/);
   assert.match(source,/shapeOverviewForPhase\(summary,phase\)/);
 });
 
