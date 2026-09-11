@@ -43,14 +43,17 @@ test("membership status never changes participant check-in eligibility", () => {
 test("Registration exposes a compact participant membership workflow", () => {
   assert.match(registration, /ParticipantMembershipPanel/);
   assert.match(panel, /Participant membership/);
-  assert.match(panel, /Recent convert · under 12 months/);
-  assert.match(panel, /Member · 12\+ months/);
-  assert.match(panel, /Not confirmed/);
-  assert.match(panel, /Do not guess from ward, surname or registration history/);
+  assert.match(membership, /Recent convert · under 12 months/);
+  assert.match(membership, /Member · 12\+ months/);
+  assert.match(membership, /Not confirmed/);
+  assert.match(panel, /Do not guess from ward, surname, Church account or registration history/);
   assert.match(panel, /Tap one option\. It saves immediately/);
 });
 
-test("staff person peek never receives a membership label", () => {
+test("participant details load one membership record lazily and staff never receive one", () => {
+  assert.match(migration, /get_participant_membership_status\(p_participant_id uuid\)/);
+  assert.match(membership, /loadParticipantMembershipStatus/);
+  assert.match(personPeek, /kind==='participant'&&!cachedMembership\?loadParticipantMembershipStatus\(id\)/);
   assert.match(personPeek, /identity\?\.kind==='participant'\?membershipByParticipant\.get\(identity\.id\):null/);
   assert.match(personPeek, /\['Church membership',participantMembership\?membershipLabel\(participantMembership\.status\):null\]/);
 });
