@@ -1,0 +1,241 @@
+.participant-membership-panel {
+  margin: 0 0 var(--ds-space-5);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--ds-line);
+  background: var(--ds-surface);
+}
+
+.participant-membership-summary {
+  width: 100%;
+  min-height: 76px;
+  padding: 14px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text);
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto 24px;
+  gap: 16px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+}
+
+.participant-membership-summary:hover { background: var(--ds-surface-subtle); }
+.participant-membership-summary:focus-visible { outline: 3px solid var(--ds-focus); outline-offset: -3px; }
+
+.participant-membership-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.participant-membership-title > svg { color: var(--ds-brand); flex: 0 0 auto; }
+.participant-membership-title > span { display: grid; gap: 2px; min-width: 0; }
+.participant-membership-title b { font-size: var(--ds-text-lg); color: var(--ds-text-strong); }
+.participant-membership-title small { color: var(--ds-text-secondary); font-weight: 500; }
+
+.participant-membership-counts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(70px, 1fr));
+  gap: 6px;
+}
+
+.participant-membership-counts > span {
+  min-width: 72px;
+  padding: 8px 10px;
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-subtle);
+  display: grid;
+  gap: 1px;
+}
+
+.participant-membership-counts b { font-size: 17px; color: var(--ds-text-strong); }
+.participant-membership-counts small { font-size: 11px; color: var(--ds-text-secondary); white-space: nowrap; }
+.participant-membership-counts .needs-review { background: var(--ds-warning-soft); }
+.participant-membership-counts .needs-review b { color: var(--ds-warning); }
+
+.participant-membership-caret { transition: transform var(--ds-normal) var(--ds-ease); }
+.participant-membership-panel.open .participant-membership-caret { transform: rotate(180deg); }
+
+.participant-membership-body {
+  border-top: 1px solid var(--ds-line);
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.participant-membership-guidance {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-info-soft);
+  color: var(--ds-text-secondary);
+  font-size: var(--ds-text-sm);
+  line-height: 1.45;
+}
+
+.participant-membership-guidance svg { color: var(--ds-info); flex: 0 0 auto; margin-top: 1px; }
+.participant-membership-guidance b { color: var(--ds-text-strong); }
+
+.participant-membership-feedback {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--ds-radius-sm);
+  font-size: var(--ds-text-sm);
+}
+
+.participant-membership-feedback.success { background: var(--ds-success-soft); color: var(--ds-success); display: flex; gap: 7px; align-items: center; }
+.participant-membership-feedback.error { background: var(--ds-danger-soft); color: var(--ds-danger); }
+
+.participant-membership-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, .85fr) minmax(360px, 1.15fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.participant-membership-picker,
+.participant-membership-editor {
+  min-width: 0;
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-md);
+  padding: 14px;
+  background: var(--ds-surface);
+}
+
+.participant-membership-picker h3,
+.participant-membership-editor h3 { margin: 0 0 10px; font-size: var(--ds-text-lg); color: var(--ds-text-strong); }
+
+.participant-membership-search-hint,
+.participant-membership-results > p,
+.participant-membership-readonly {
+  margin: 10px 0 0;
+  color: var(--ds-text-secondary);
+  font-size: var(--ds-text-sm);
+  line-height: 1.45;
+}
+
+.participant-membership-results {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  max-height: 310px;
+  overflow: auto;
+}
+
+.participant-membership-results > button {
+  width: 100%;
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  padding: 10px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.participant-membership-results > button:hover { border-color: var(--ds-line-strong); background: var(--ds-surface-subtle); }
+.participant-membership-results > button > span:first-child { min-width: 0; display: grid; gap: 2px; }
+.participant-membership-results b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.participant-membership-results small { color: var(--ds-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.participant-membership-editor > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.participant-membership-editor > header > span:first-child { min-width: 0; }
+.participant-membership-editor header small { color: var(--ds-text-secondary); }
+.participant-membership-editor header h3 { margin: 2px 0; }
+.participant-membership-editor header p { margin: 0; color: var(--ds-text-secondary); font-size: var(--ds-text-sm); }
+
+.participant-membership-source { display: grid; gap: 6px; margin-bottom: 12px; }
+.participant-membership-source > span { color: var(--ds-text-secondary); font-size: var(--ds-text-sm); font-weight: 650; }
+.participant-membership-source select { min-height: var(--ds-control); width: 100%; border: 1px solid var(--ds-line-strong); border-radius: var(--ds-radius-sm); background: var(--ds-surface); color: var(--ds-text); padding: 0 10px; font: inherit; }
+
+.participant-membership-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.participant-membership-options button {
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid var(--ds-line-strong);
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  font: inherit;
+  font-weight: 650;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.participant-membership-options button:hover:not(:disabled) { background: var(--ds-surface-subtle); }
+.participant-membership-options button.selected { border-color: var(--ds-brand); background: var(--ds-brand-soft); color: var(--ds-brand-strong); }
+.participant-membership-options button:disabled { opacity: .62; cursor: wait; }
+.participant-membership-options svg { flex: 0 0 auto; }
+.participant-membership-save-note { display: block; margin-top: 9px; color: var(--ds-text-secondary); line-height: 1.4; }
+
+.participant-membership-empty {
+  min-height: 190px;
+  display: grid;
+  place-content: center;
+  gap: 5px;
+  text-align: center;
+  color: var(--ds-text-secondary);
+}
+.participant-membership-empty b { color: var(--ds-text-strong); }
+.participant-membership-empty span { max-width: 44ch; font-size: var(--ds-text-sm); line-height: 1.45; }
+
+.participant-membership-report {
+  border-top: 1px solid var(--ds-line);
+  padding-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+.participant-membership-report > span { display: grid; gap: 2px; }
+.participant-membership-report b { color: var(--ds-text-strong); }
+.participant-membership-report small { color: var(--ds-text-secondary); }
+.participant-membership-report > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.participant-membership-report button { min-height: 40px; display: inline-flex; align-items: center; gap: 6px; }
+
+@media (max-width: 860px) {
+  .participant-membership-summary { grid-template-columns: 1fr 24px; }
+  .participant-membership-counts { grid-column: 1 / -1; grid-row: 2; }
+  .participant-membership-workspace { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .participant-membership-panel { margin-inline: 0; border-radius: var(--ds-radius-lg); }
+  .participant-membership-summary { padding: 13px 14px; gap: 10px; }
+  .participant-membership-title small { font-size: 12px; }
+  .participant-membership-counts { grid-template-columns: repeat(2, 1fr); }
+  .participant-membership-counts > span { min-width: 0; }
+  .participant-membership-body { padding: 12px; }
+  .participant-membership-picker,
+  .participant-membership-editor { padding: 12px; }
+  .participant-membership-options { grid-template-columns: 1fr; }
+  .participant-membership-report { align-items: stretch; flex-direction: column; }
+  .participant-membership-report > div { display: grid; grid-template-columns: 1fr 1fr; }
+  .participant-membership-report button { justify-content: center; }
+}
