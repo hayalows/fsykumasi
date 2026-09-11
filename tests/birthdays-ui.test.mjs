@@ -10,8 +10,10 @@ test("Birthdays keeps identity clear while progressively disclosing completed wo
     read("src/pages/birthdays.css"),
   ]);
 
-  assert.match(page, /Youth ages are shown; adult ages stay private/i);
+  assert.match(page, /Ages are shown for people in your authorized birthday scope/i);
   assert.match(page, /staffRoleLabel\(person\.staffRole\)/);
+  assert.match(page, /Turning \$\{person\.turningAge\}/);
+  assert.match(page, /Ages shown in your scope/);
   assert.match(page, /birthday-context-chips/);
   assert.match(page, /Needs acknowledgement/);
   assert.match(page, /<SegmentedControl/);

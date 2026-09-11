@@ -38,7 +38,7 @@ test("committee responsibilities expose sensitive labels in plain language", () 
 
 test("birthdays derive richer assignment context and can deep-link to assignments", () => {
   const field=read("src/lib/field-operations.js"); const birthdays=read("src/pages/Birthdays.jsx"); const app=read("src/App.jsx");
-  assert.match(field,/get_staff_birthdays_v2/); assert.match(field,/group: row\.group_name/); assert.match(birthdays,/Open assignment/); assert.match(app,/tab:"people",staffId/);
+  assert.match(field,/get_staff_birthdays_v3/); assert.match(field,/group: row\.group_name/); assert.match(birthdays,/Open assignment/); assert.match(app,/tab:"people",staffId/);
 });
 
 test("Overview actions carry exact destinations", () => {
