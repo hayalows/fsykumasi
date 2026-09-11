@@ -65,36 +65,35 @@ html {
   overflow-wrap: anywhere;
 }
 
-/* Wellness picker: the row itself is selectable, with an explicit action cue. */
-.wellness-picker-results > button {
+/* Wellness picker: the row itself is selectable, with an explicit action cue.
+   The extra route wrapper keeps this override stable when Wellness lazy-loads
+   its own field CSS after the global stylesheet. */
+.wellness-picker .wellness-picker-results > button {
   position: relative;
   min-width: 0;
   min-height: 72px;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
   padding: 10px 8px;
   border-radius: 12px;
 }
 
-.wellness-picker-results > button > span:nth-child(2) {
+.wellness-picker .wellness-picker-results > button > span:nth-child(2) {
   min-width: 0;
 }
 
-.wellness-picker-results > button > span:nth-child(2) small {
+.wellness-picker .wellness-picker-results > button > span:nth-child(2) small {
   white-space: normal;
   overflow-wrap: anywhere;
   line-height: 1.35;
 }
 
-.wellness-picker-results > button > svg {
-  display: none;
-}
-
-.wellness-picker-results > button:not(:disabled)::after {
-  content: "Start visit";
+.wellness-picker .wellness-picker-results > button > .wellness-picker-result-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 5px;
   min-height: 38px;
-  padding: 0 11px;
+  padding: 0 10px;
   border: 1px solid #c8dfe7;
   border-radius: 9px;
   background: #f7fcfe;
@@ -104,13 +103,29 @@ html {
   white-space: nowrap;
 }
 
-.wellness-picker-results > button:not(:disabled):hover::after {
+.wellness-picker .wellness-picker-results > button > .wellness-picker-result-action > svg {
+  flex: 0 0 auto;
+}
+
+.wellness-picker .wellness-picker-results > button:not(:disabled):hover > .wellness-picker-result-action {
   border-color: var(--blue-25, #007da5);
   background: #eef9fc;
 }
 
-.wellness-picker-results > button:disabled {
+.wellness-picker .wellness-picker-results > button:disabled {
   opacity: .72;
+}
+
+/* Landscape iPhones are wider than 760 CSS pixels. Keep every text-entry
+   control at the native iOS threshold on touch screens, regardless of width. */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .search input,
+  .search-field input {
+    font-size: 16px !important;
+  }
 }
 
 @media (max-width: 760px) {
@@ -206,7 +221,7 @@ html {
     flex: 0 0 auto;
   }
 
-  .wellness-picker-results {
+  .wellness-picker .wellness-picker-results {
     width: 100%;
     min-width: 0;
     max-height: min(46dvh, 430px);
@@ -218,7 +233,7 @@ html {
     -webkit-overflow-scrolling: touch;
   }
 
-  .wellness-picker-results > button {
+  .wellness-picker .wellness-picker-results > button {
     min-height: 80px;
     grid-template-columns: 42px minmax(0, 1fr) auto;
     gap: 10px;
@@ -227,16 +242,16 @@ html {
     border-bottom: 1px solid var(--ds-line, var(--line));
   }
 
-  .wellness-picker-results > button:last-of-type {
+  .wellness-picker .wellness-picker-results > button:last-of-type {
     border-bottom: 0;
   }
 
-  .wellness-picker-results > button:not(:disabled)::after {
+  .wellness-picker .wellness-picker-results > button > .wellness-picker-result-action {
     min-height: 40px;
     padding-inline: 10px;
   }
 
-  .wellness-picker-results > button:disabled > .status {
+  .wellness-picker .wellness-picker-results > button:disabled > .status {
     justify-self: end;
     white-space: normal;
     text-align: right;
@@ -263,24 +278,24 @@ html {
     line-height: 1.4;
   }
 
-  .wellness-picker-results > button {
+  .wellness-picker .wellness-picker-results > button {
     grid-template-columns: 40px minmax(0, 1fr);
     min-height: 88px;
     align-items: start;
   }
 
-  .wellness-picker-results > button > .person-avatar {
+  .wellness-picker .wellness-picker-results > button > .person-avatar {
     margin-top: 2px;
   }
 
-  .wellness-picker-results > button:not(:disabled)::after,
-  .wellness-picker-results > button:disabled > .status {
+  .wellness-picker .wellness-picker-results > button > .wellness-picker-result-action,
+  .wellness-picker .wellness-picker-results > button:disabled > .status {
     grid-column: 2;
     justify-self: start;
     margin-top: 3px;
   }
 
-  .wellness-picker-results > button:not(:disabled)::after {
+  .wellness-picker .wellness-picker-results > button > .wellness-picker-result-action {
     min-height: 36px;
   }
 }
