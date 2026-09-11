@@ -92,6 +92,7 @@ export function RegistrationJourneyV53({ view="desk", participants=[], initialGr
   const[selectedId,setSelectedId]=useState("");
   const[onsiteOpen,setOnsiteOpen]=useState(false);
   const[membershipPrompt,setMembershipPrompt]=useState(null);
+  const[membershipChoice,setMembershipChoice]=useState("");
   const[busyId,setBusyId]=useState("");
   const[error,setError]=useState("");
   const[message,setMessage]=useState(null);
@@ -124,7 +125,7 @@ export function RegistrationJourneyV53({ view="desk", participants=[], initialGr
   useEffect(()=>{if(!sessionId){setRows(current=>current.length?current:demoRegistrationRows(participants));setInitialLoading(false);setRefreshing(false);setLoadError("");return undefined;}let active=true;reload({initial:true}).catch(()=>{if(active)setInitialLoading(false);});return()=>{active=false;};},[reload,sessionId,participants.length]);
   useEffect(()=>{setFilterState(initialFilter||(view==="desk"?"ready":"needs_help"));setShown(PAGE_SIZE);},[view,initialFilter]);
   useEffect(()=>{setPlacementGroups(initialGroups||[]);},[initialGroups]);
-  useEffect(()=>{setPlacementCompanies([]);setVacancies([]);setPlacementDataStatus("idle");setSessionStart("");setMembershipPrompt(null);demoMembershipKnown.current.clear();},[sessionId]);
+  useEffect(()=>{setPlacementCompanies([]);setVacancies([]);setPlacementDataStatus("idle");setSessionStart("");setMembershipPrompt(null);setMembershipChoice("");demoMembershipKnown.current.clear();},[sessionId]);
 
   const participantById=useMemo(()=>new Map(participants.map(person=>[person.id,person])),[participants]);
   const enrichedRows=useMemo(()=>rows.map(row=>({...participantById.get(row.participantId),...row,id:row.participantId,age:row.age??participantById.get(row.participantId)?.age??null})),[rows,participantById]);
@@ -205,32 +206,45 @@ export function RegistrationJourneyV53({ view="desk", participants=[], initialGr
     if(!sessionStart&&sessionId)loadOnSiteReferenceDate(sessionId).then(setSessionStart).catch(()=>{});
   };
   const focusNext=()=>{setSelectedId("");setQuery("");setFilter("ready");window.requestAnimationFrame(()=>{searchRef.current?.scrollIntoView?.({block:"start",behavior:"auto"});searchRef.current?.querySelector?.("input")?.focus?.();});};
+  const openMembershipPrompt=(row,keepOpen=false)=>{setMembershipChoice("");setError("");setMessage(null);setMembershipPrompt({row,keepOpen});};
   const checkinSuccess=(row,state,keepOpen=false)=>{const housing=housingByPerson.get(row.participantId);setRows(current=>current.map(item=>item.participantId===row.participantId?{...item,checkinStatus:"arrived",checkinRecordedAt:state?.recordedAt||new Date().toISOString()}:item));setMessage({tone:"success",text:housing?`${row.fullName} is checked in · Housing: ${housing.roomName}.`:`${row.fullName} is checked in. Housing can assign a room now.`});if(!keepOpen)focusNext();};
   const checkIn=async(row,keepOpen=false)=>{
     if(!canCheckin)return;
-    if(!sessionId&&!demoMembershipKnown.current.has(row.participantId)){setError("");setMessage(null);setMembershipPrompt({row,keepOpen});return;}
+    if(!sessionId&&!demoMembershipKnown.current.has(row.participantId)){setError("");setMessage(null);setMembershipPrompt({row,keepOpen});setMembershipChoice("");return;}
     setBusyId(row.participantId);setError("");setMessage(null);
     try{
       const state=await (onCheckin?onCheckin(row.participantId,"arrived"):!sessionId?Promise.resolve({recordedAt:new Date().toISOString()}):recordCheckin({sessionId,participantId:row.participantId,status:"arrived"}));
       checkinSuccess(row,state,keepOpen);
     }catch(err){
-      if(requiresParticipantMembership(err)){setMembershipPrompt({row,keepOpen});return;}
+      if(requiresParticipantMembership(err)){openMembershipPrompt(row,keepOpen);return;}
       setError(mutationErrorMessage(err,"Check-in could not be saved."));
     }finally{setBusyId("");}
   };
-  const chooseMembership=async(membershipStatus)=>{
-    const pending=membershipPrompt;if(!pending)return;
+  const saveMembershipCheckin=async()=>{
+    const pending=membershipPrompt;if(!pending||!membershipChoice)return;
     const{row,keepOpen}=pending;setBusyId(row.participantId);setError("");setMessage(null);
     try{
-      if(sessionId)await recordParticipantMembershipCheckin({sessionId,participantId:row.participantId,membershipStatus});
-      else demoMembershipKnown.current.add(row.participantId);
-      setMembershipPrompt(null);
-      checkinSuccess(row,{recordedAt:new Date().toISOString()},keepOpen);
+      const state=sessionId
+        ?await recordParticipantMembershipCheckin({sessionId,participantId:row.participantId,membershipStatus:membershipChoice})
+        :{recordedAt:new Date().toISOString(),membershipCreated:true};
+      if(!sessionId)demoMembershipKnown.current.add(row.participantId);
+      setMembershipPrompt(null);setMembershipChoice("");
+      checkinSuccess(row,state,keepOpen);
     }catch(err){setError(mutationErrorMessage(err,"Membership status and check-in could not be saved."));}
     finally{setBusyId("");}
   };
-  const closeMembershipPrompt=()=>{if(!busyId){setMembershipPrompt(null);setError("");}};
-  const undoCheckIn=async(row)=>{if(!onUndoCheckin&&!sessionId){setRows(current=>current.map(item=>item.participantId===row.participantId?{...item,checkinStatus:"expected",checkinRecordedAt:null}:item));setMessage({tone:"success",text:`${row.fullName} is back to Expected.`});return;}if(!onUndoCheckin)return;try{await runMutation(row.participantId,()=>onUndoCheckin(row.participantId,row.checkinRecordedAt||null),`${row.fullName} is back to Expected.`,{refresh:false,parent:false});setRows(current=>current.map(item=>item.participantId===row.participantId?{...item,checkinStatus:"expected",checkinRecordedAt:null}:item));}catch{}};
+  const closeMembershipPrompt=()=>{if(!busyId){setMembershipPrompt(null);setMembershipChoice("");setError("");}};
+  const undoCheckIn=async(row)=>{
+    if(!onUndoCheckin&&!sessionId){demoMembershipKnown.current.delete(row.participantId);setRows(current=>current.map(item=>item.participantId===row.participantId?{...item,checkinStatus:"expected",checkinRecordedAt:null}:item));setMessage({tone:"success",text:`${row.fullName} is back to Expected. Membership status was removed.`});return;}
+    if(!onUndoCheckin)return;
+    setBusyId(row.participantId);setError("");setMessage(null);
+    try{
+      const result=await onUndoCheckin(row.participantId,row.checkinRecordedAt||null);
+      setRows(current=>current.map(item=>item.participantId===row.participantId?{...item,checkinStatus:"expected",checkinRecordedAt:null}:item));
+      setMessage({tone:"success",text:result?.membershipReverted?`${row.fullName} is back to Expected. Membership status was removed.`:`${row.fullName} is back to Expected.`});
+    }catch(err){setError(mutationErrorMessage(err,"Check-in could not be undone."));}
+    finally{setBusyId("");}
+  };
   const createOnsite=async(form)=>{setBusyId("onsite-new");setError("");try{const participantId=await addOnSiteParticipantDetailed({sessionId,...form});await refreshAfterMutation();setOnsiteOpen(false);setSelectedId(participantId);setMessage({tone:"success",text:`${form.firstName} ${form.lastName} was added. Confirm the registration checks next.`});}catch(err){setError(mutationErrorMessage(err,"Unable to add this participant."));}finally{setBusyId("");}};
   const verifySelected=async(note)=>{if(!selectedRow)return;try{await runMutation(selectedRow.participantId,()=>verifyOnSiteParticipant(selectedRow.participantId,true,note),`${selectedRow.fullName} is verified. Choose an available counselor group next.`);}catch{}};
   const retryRegistrationWorkspace=async()=>{if(!selectedRow)return;setBusyId(selectedRow.participantId);setError("");setMessage(null);try{await reload();setPlacementRefreshFailed(false);setMessage({tone:"success",text:"Roster refreshed. The latest placement and FSY ID are now shown."});}catch(err){setPlacementRefreshFailed(true);setError(`The latest roster could not refresh. ${mutationErrorMessage(err,"Try again.")}`);}finally{setBusyId("");}};
@@ -261,7 +275,7 @@ export function RegistrationJourneyV53({ view="desk", participants=[], initialGr
       </div>
       {filtered.length>shown?<button type="button" className="secondary regjourney-show-more" onClick={()=>setShown(value=>value+PAGE_SIZE)}>Show {Math.min(PAGE_SIZE,filtered.length-shown)} more</button>:null}
     </article>
-    <DismissibleLayer open={Boolean(membershipPrompt)} onClose={closeMembershipPrompt} title="Membership status" sheet className="participant-membership-layer-v53">{membershipPrompt?<div className="participant-membership-sheet-v53" aria-busy={busyId===membershipPrompt.row.participantId}><header><span className="kicker">One quick check</span><h2>Membership status</h2><p>Choose the participant's current status. This is saved once and the check-in finishes immediately.</p></header><div className="participant-membership-person-v53"><span className="person-avatar">{initials(membershipPrompt.row.fullName)}</span><span><b>{membershipPrompt.row.fullName}</b><small>{membershipPrompt.row.fsyId||"FSY ID pending"}{membershipPrompt.row.unit?` · ${membershipPrompt.row.unit}`:""}</small></span></div>{error?<MutationFeedback tone="error">{error}</MutationFeedback>:null}<div className="participant-membership-options-v53" role="group" aria-label="Participant membership status">{PARTICIPANT_MEMBERSHIP_OPTIONS.map((option,index)=><button key={option.value} type="button" data-layer-autofocus={index===0?"true":undefined} disabled={busyId===membershipPrompt.row.participantId} onClick={()=>chooseMembership(option.value)}><span><b>{option.label}</b><small>{option.help}</small></span><ArrowRight aria-hidden="true"/></button>)}</div><button type="button" className="secondary participant-membership-cancel-v53" disabled={busyId===membershipPrompt.row.participantId} onClick={closeMembershipPrompt}>Cancel</button><p className="participant-membership-privacy-v53">Participant only. Staff are not classified here. If you are unsure, choose “Not sure” instead of guessing.</p></div>:null}</DismissibleLayer>
+    <DismissibleLayer open={Boolean(membershipPrompt)} onClose={closeMembershipPrompt} title="Membership status" sheet className="participant-membership-layer-v53">{membershipPrompt?<div className="participant-membership-sheet-v53" aria-busy={busyId===membershipPrompt.row.participantId}><header><span className="kicker">One quick check</span><h2>Membership status</h2><p>Choose the participant's current status. Review your choice, then save to complete check-in.</p></header><div className="participant-membership-person-v53"><span className="person-avatar">{initials(membershipPrompt.row.fullName)}</span><span><b>{membershipPrompt.row.fullName}</b><small>{membershipPrompt.row.fsyId||"FSY ID pending"}{membershipPrompt.row.unit?` · ${membershipPrompt.row.unit}`:""}</small></span></div>{error?<MutationFeedback tone="error">{error}</MutationFeedback>:null}<div className="participant-membership-options-v53" role="radiogroup" aria-label="Participant membership status">{PARTICIPANT_MEMBERSHIP_OPTIONS.map((option,index)=><button key={option.value} type="button" role="radio" aria-checked={membershipChoice===option.value} data-layer-autofocus={index===0?"true":undefined} disabled={busyId===membershipPrompt.row.participantId} onClick={()=>setMembershipChoice(option.value)}><span><b>{option.label}</b><small>{option.help}</small></span><span className="participant-membership-choice-indicator-v54" aria-hidden="true">{membershipChoice===option.value?<Check size={16} weight="bold"/>:null}</span></button>)}</div><p className="participant-membership-review-v54">Nothing is recorded until you tap Save &amp; check in.</p><div className="participant-membership-actions-v54"><button type="button" className="secondary participant-membership-cancel-v53" disabled={busyId===membershipPrompt.row.participantId} onClick={closeMembershipPrompt}>Cancel</button><button type="button" className="primary" disabled={!membershipChoice||busyId===membershipPrompt.row.participantId} onClick={saveMembershipCheckin}>{busyId===membershipPrompt.row.participantId?"Saving…":"Save & check in"}</button></div><p className="participant-membership-privacy-v53">Participant only. Staff are not classified here. If you are unsure, choose “Not sure” instead of guessing.</p></div>:null}</DismissibleLayer>
     <DismissibleLayer open={onsiteOpen} onClose={closeOnsite} title="On-site registration" sheet className="regjourney-onsite-layer regjourney-onsite-layer-v3"><OnSiteDetails initialSearch={query} sessionStart={sessionStart} unitDirectory={unitDirectory} busy={busyId==="onsite-new"} error={error} onCreate={createOnsite} onCancel={closeOnsite} onClose={closeOnsite}/></DismissibleLayer>
     <DismissibleLayer open={Boolean(selectedRow)} onClose={closePerson} title={selectedRow?selectedRow.fullName:"Participant"} sheet className="regjourney-person-layer regjourney-person-layer-v3">{selectedRow?<><PersonJourney row={selectedRow} eligibility={selectedEligibility} identityReadiness={identityReadiness} vacancies={vacancies} groups={placementGroups} companies={placementCompanies} housingAssignment={selectedHousing} canManageRegistration={canManageRegistration} busy={busyId===selectedRow.participantId} placementLoading={placementLoading} error={error} placementRefreshFailed={placementRefreshFailed} onRetry={retryRegistrationWorkspace} onVerify={verifySelected} onAssignGroup={assignGroup} onUseVacancy={useVacancy} onCheckin={()=>checkIn(selectedRow,true)} onUndoCheckin={()=>undoCheckIn(selectedRow)} onArrivalStatus={arrivalStatus} onDone={focusNext} onClose={closePerson}/><RegistrationLeadershipResolution sessionId={sessionId} row={selectedRow} eligibility={selectedEligibility} onResolved={refreshResolution}/></>:null}</DismissibleLayer>
   </section>;

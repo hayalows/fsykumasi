@@ -34,14 +34,23 @@ export function requiresParticipantMembership(error) {
   return String(error?.message || "").includes(PARTICIPANT_MEMBERSHIP_REQUIRED);
 }
 
+function normalizeCheckinResult(data) {
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || typeof row !== "object") return { recordedAt: null, membershipCreated: false };
+  return {
+    recordedAt: row.recorded_at || row.recordedAt || null,
+    membershipCreated: Boolean(row.membership_created ?? row.membershipCreated),
+  };
+}
+
 async function membershipAwareCheckin({ sessionId, participantId, membershipStatus = null }) {
-  const { error } = await client().rpc("record_participant_checkin_with_membership", {
+  const { data, error } = await client().rpc("record_participant_checkin_with_membership_v2", {
     p_session_id: sessionId,
     p_participant_id: participantId,
     p_membership_status: membershipStatus,
   });
   if (error) throw error;
-  return { recordedAt: new Date().toISOString() };
+  return normalizeCheckinResult(data);
 }
 
 export function attemptParticipantMembershipCheckin({ sessionId, participantId }) {
@@ -50,6 +59,20 @@ export function attemptParticipantMembershipCheckin({ sessionId, participantId }
 
 export function recordParticipantMembershipCheckin({ sessionId, participantId, membershipStatus }) {
   return membershipAwareCheckin({ sessionId, participantId, membershipStatus });
+}
+
+export async function undoParticipantMembershipCheckin({ sessionId, participantId, expectedRecordedAt = null }) {
+  const { data, error } = await client().rpc("undo_participant_checkin_with_membership_v2", {
+    p_session_id: sessionId,
+    p_participant_id: participantId,
+    p_expected_recorded_at: expectedRecordedAt || null,
+  });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    ...(row && typeof row === "object" ? row : {}),
+    membershipReverted: Boolean(row?.membership_reverted ?? row?.membershipReverted),
+  };
 }
 
 export async function loadParticipantMembershipReport(sessionId) {

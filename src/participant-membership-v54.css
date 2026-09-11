@@ -1,0 +1,58 @@
+.participant-membership-options-v53 > button[role="radio"] {
+  position: relative;
+}
+
+.participant-membership-options-v53 > button[aria-checked="true"] {
+  border-color: rgba(0, 125, 165, .68);
+  background: rgba(196, 233, 245, .28);
+  box-shadow: 0 0 0 3px rgba(0, 125, 165, .08);
+}
+
+.participant-membership-choice-indicator-v54 {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(0, 81, 117, .28);
+  border-radius: 50%;
+  color: #fff;
+  background: #fff;
+}
+
+.participant-membership-options-v53 > button[aria-checked="true"] .participant-membership-choice-indicator-v54 {
+  border-color: var(--blue-25);
+  background: var(--blue-25);
+}
+
+.participant-membership-actions-v54 {
+  display: grid;
+  grid-template-columns: minmax(110px, .42fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.participant-membership-actions-v54 > button {
+  min-height: 50px;
+}
+
+.participant-membership-actions-v54 .primary:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+}
+
+.participant-membership-review-v54 {
+  margin: -6px 2px 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+@media (max-width: 430px) {
+  .participant-membership-actions-v54 {
+    grid-template-columns: 1fr;
+  }
+
+  .participant-membership-actions-v54 .primary {
+    order: -1;
+  }
+}
