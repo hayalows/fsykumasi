@@ -431,8 +431,21 @@ export async function markMealServed({ serviceId, personType, personId }) {
   return { id: row.attendance_id, servedAt: row.served_at, alreadyServed: Boolean(row.already_served) };
 }
 
+function staffBirthdayV3Missing(error) {
+  const code = String(error?.code || "");
+  const message = String(error?.message || "").toLowerCase();
+  return code === "PGRST202" || code === "42883" || (
+    message.includes("get_staff_birthdays_v3") && (
+      message.includes("schema cache") || message.includes("could not find") || message.includes("does not exist")
+    )
+  );
+}
+
 export async function loadStaffBirthdays(sessionId) {
-  const { data, error } = await client().rpc("get_staff_birthdays_v3", { p_session_id: sessionId });
+  let { data, error } = await client().rpc("get_staff_birthdays_v3", { p_session_id: sessionId });
+  if (error && staffBirthdayV3Missing(error)) {
+    ({ data, error } = await client().rpc("get_staff_birthdays_v2", { p_session_id: sessionId }));
+  }
   if (error) throw error;
   return (data || []).map((row) => ({
     staffId: row.staff_id,
