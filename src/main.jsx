@@ -43,6 +43,7 @@ import "./pages/wellness-v35.css";
 import "./operations-product-v36.css";
 import "./design-system/index.css";
 import "./mobile-search-ux-v37.css";
+import "./wellness-picker-mobile-v38.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
