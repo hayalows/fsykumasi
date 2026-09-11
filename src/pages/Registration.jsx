@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ParticipantMembershipPanel } from "../components/ParticipantMembershipPanel.jsx";
 import { RegistrationJourney } from "./RegistrationJourney.jsx";
 import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
 import { SessionFinalization } from "./SessionFinalization.jsx";
@@ -90,6 +91,8 @@ export function Registration(props) {
     </section>
 
     <div className="registration-workspace-pane registration-workspace-pane-v5 registration-unified-pane">
+      <ParticipantMembershipPanel sessionId={sessionId} participants={imported} capabilities={capabilities} live={live} mode={mode} sessionName={sessionName} />
+
       <div role="tabpanel" aria-labelledby={journeyMode === "desk" ? "registration-mode-desk" : "registration-mode-roster"} hidden={mode === "readiness"}>
         {mode === "roster" && live ? <SessionFinalization sessionId={sessionId} onChanged={onOperationalDataChanged} onNavigate={onNavigate} /> : null}
         <RegistrationJourney view={journeyMode} {...journeyProps} />
