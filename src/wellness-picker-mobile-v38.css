@@ -1,0 +1,38 @@
+/* Wellness picker mobile v38
+ * Keep small result sets compact while preserving a capped, scrollable list
+ * when a search returns many people.
+ */
+
+@media (max-width: 760px) {
+  .wellness-picker-layer.layer-panel {
+    height: auto !important;
+    max-height: min(88dvh, 700px) !important;
+  }
+
+  .wellness-picker {
+    height: auto !important;
+    max-height: min(88dvh, 700px) !important;
+    overflow: hidden !important;
+  }
+
+  .wellness-picker .wellness-picker-results {
+    flex: 0 1 auto !important;
+    min-height: 0;
+    max-height: min(46dvh, 430px) !important;
+    align-content: start !important;
+    grid-auto-rows: max-content !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .wellness-picker .wellness-picker-results > button {
+    align-content: start !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .wellness-picker-layer.layer-panel {
+    height: auto !important;
+    max-height: min(88dvh, 700px) !important;
+  }
+}
