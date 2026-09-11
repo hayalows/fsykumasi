@@ -20,91 +20,14 @@ create index if not exists participant_membership_profiles_session_idx
 alter table public.participant_membership_profiles enable row level security;
 revoke all on public.participant_membership_profiles from public, anon, authenticated;
 
--- Existing check-in calls remain the normal fast path. They stop only when an
--- arriving participant has no recorded membership category yet.
-create or replace function public.record_participant_checkin(
-  p_session_id uuid,
-  p_participant_id uuid,
-  p_status public.check_in_status,
-  p_note text default null
-)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  participant_company uuid;
-begin
-  select g.company_id into participant_company
-  from public.participants p
-  left join public.counselor_groups g on g.id = p.group_id
-  where p.id = p_participant_id and p.session_id = p_session_id;
-
-  if not found then
-    raise exception 'Participant not found in this session';
-  end if;
-
-  if not (
-    private.has_capability(p_session_id, 'checkin_record')
-    or (participant_company is not null and private.can_access_company(p_session_id, participant_company))
-  ) then
-    raise exception 'Check-in access required';
-  end if;
-
-  if not private.operational_participant_is_eligible(p_session_id, p_participant_id) then
-    raise exception 'This participant is not currently eligible for check-in';
-  end if;
-
-  if exists (
-    select 1 from public.counselor_groups cg
-    where cg.session_id = p_session_id and cg.state = 'published'
-  ) and not exists (
-    select 1 from public.participants p
-    where p.id = p_participant_id and p.session_id = p_session_id and p.group_id is not null
-  ) then
-    raise exception 'Needs group assignment before check-in';
-  end if;
-
-  if p_status = 'arrived' and not exists (
-    select 1
-    from public.participant_membership_profiles m
-    where m.participant_id = p_participant_id and m.session_id = p_session_id
-  ) then
-    raise exception 'PARTICIPANT_MEMBERSHIP_STATUS_REQUIRED';
-  end if;
-
-  insert into public.check_ins(session_id, participant_id, status, note, recorded_by, recorded_at)
-  values (p_session_id, p_participant_id, p_status, nullif(trim(p_note), ''), (select auth.uid()), now())
-  on conflict (session_id, participant_id) do update
-    set status = excluded.status,
-        note = excluded.note,
-        recorded_by = excluded.recorded_by,
-        recorded_at = excluded.recorded_at;
-
-  insert into public.audit_events(session_id, actor_id, action, entity_type, entity_id, metadata)
-  values (
-    p_session_id,
-    (select auth.uid()),
-    'participant_checkin_recorded',
-    'participant',
-    p_participant_id::text,
-    jsonb_build_object('status', p_status, 'note', nullif(trim(p_note), ''))
-  );
-end;
-$$;
-
-revoke all on function public.record_participant_checkin(uuid, uuid, public.check_in_status, text) from public, anon;
-grant execute on function public.record_participant_checkin(uuid, uuid, public.check_in_status, text) to authenticated;
-
--- First-time capture and arrival are one transaction. If check-in fails, the
--- membership insert rolls back with it. An already-recorded category is never
--- overwritten by this fast check-in path, preventing stale multi-device taps
--- from silently changing sensitive data.
+-- The existing record_participant_checkin RPC is intentionally left unchanged.
+-- That keeps already-deployed clients safe during rollout. The membership-aware
+-- client uses this RPC for arrivals. Passing null means "use the saved category";
+-- if no category exists, the server asks the UI to collect it first.
 create or replace function public.record_participant_checkin_with_membership(
   p_session_id uuid,
   p_participant_id uuid,
-  p_membership_status text
+  p_membership_status text default null
 )
 returns void
 language plpgsql
@@ -115,7 +38,8 @@ declare
   participant_company uuid;
   inserted_count integer := 0;
 begin
-  if p_membership_status not in ('member_12_plus','recent_convert','non_member','not_sure') then
+  if p_membership_status is not null
+     and p_membership_status not in ('member_12_plus','recent_convert','non_member','not_sure') then
     raise exception 'Choose a valid membership status';
   end if;
 
@@ -136,27 +60,40 @@ begin
     raise exception 'Check-in access required';
   end if;
 
-  insert into public.participant_membership_profiles(
-    participant_id, session_id, membership_status, recorded_by, recorded_at, updated_at
-  ) values (
-    p_participant_id, p_session_id, p_membership_status, (select auth.uid()), now(), now()
-  )
-  on conflict (participant_id) do nothing;
+  if p_membership_status is null then
+    if not exists (
+      select 1
+      from public.participant_membership_profiles m
+      where m.participant_id = p_participant_id
+        and m.session_id = p_session_id
+    ) then
+      raise exception 'PARTICIPANT_MEMBERSHIP_STATUS_REQUIRED';
+    end if;
+  else
+    insert into public.participant_membership_profiles(
+      participant_id, session_id, membership_status, recorded_by, recorded_at, updated_at
+    ) values (
+      p_participant_id, p_session_id, p_membership_status, (select auth.uid()), now(), now()
+    )
+    on conflict (participant_id) do nothing;
 
-  get diagnostics inserted_count = row_count;
+    get diagnostics inserted_count = row_count;
 
-  if inserted_count > 0 then
-    insert into public.audit_events(session_id, actor_id, action, entity_type, entity_id, metadata)
-    values (
-      p_session_id,
-      (select auth.uid()),
-      'participant_membership_status_recorded',
-      'participant',
-      p_participant_id::text,
-      jsonb_build_object('membership_status', p_membership_status, 'source', 'checkin')
-    );
+    if inserted_count > 0 then
+      insert into public.audit_events(session_id, actor_id, action, entity_type, entity_id, metadata)
+      values (
+        p_session_id,
+        (select auth.uid()),
+        'participant_membership_status_recorded',
+        'participant',
+        p_participant_id::text,
+        jsonb_build_object('membership_status', p_membership_status, 'source', 'checkin')
+      );
+    end if;
   end if;
 
+  -- Membership capture and arrival remain one transaction. The established
+  -- check-in RPC retains all eligibility, published-group and audit safeguards.
   perform public.record_participant_checkin(
     p_session_id,
     p_participant_id,
