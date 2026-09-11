@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DismissibleLayer } from './UI.jsx';
-import { loadParticipantMembershipStatuses, membershipLabel } from '../lib/membership.js';
+import { loadParticipantMembershipStatus, membershipLabel } from '../lib/membership.js';
 import { loadStaff } from '../lib/operations.js';
 import { personIdentity } from '../lib/person-identity.js';
 import { staffException } from '../lib/staff-state.js';
@@ -32,19 +32,16 @@ export function PersonProvider({children,participants=[],assignment,sessionId,on
   const generation=useRef(0);
   const participantById=useMemo(()=>new Map(participants.map((person)=>[person.id||person.participantId||person.person_id,person])),[participants]);
   useEffect(()=>{generation.current++;setSelected(null);setError('');},[sessionId,view]);
+  useEffect(()=>{setMembershipByParticipant(new Map());},[sessionId]);
   useEffect(()=>{
-    let active=true;
-    if(!sessionId){setMembershipByParticipant(new Map());return undefined;}
-    const refresh=()=>loadParticipantMembershipStatuses(sessionId).then((rows)=>{if(active)setMembershipByParticipant(rows);}).catch(()=>{if(active)setMembershipByParticipant(new Map());});
-    refresh();
     const onUpdated=(event)=>{
       const detail=event.detail||{};
       if(!detail.participantId)return;
       setMembershipByParticipant((current)=>{const next=new Map(current);next.set(detail.participantId,{status:detail.status,source:detail.source||'checkin_confirmation',verifiedAt:new Date().toISOString()});return next;});
     };
     window.addEventListener('fsy:membership-updated',onUpdated);
-    return()=>{active=false;window.removeEventListener('fsy:membership-updated',onUpdated);};
-  },[sessionId]);
+    return()=>window.removeEventListener('fsy:membership-updated',onUpdated);
+  },[]);
 
   const open=async(person,kind,context,target)=>{
     const version=++generation.current;
@@ -52,8 +49,14 @@ export function PersonProvider({children,participants=[],assignment,sessionId,on
     setSelected({person,kind,context,origin,loading:true});setError('');
     try {
       const id=personId(person);
-      const rows=kind==='staff'&&sessionId?await loadStaff(sessionId):participants;
+      const rowsPromise=kind==='staff'&&sessionId?loadStaff(sessionId):Promise.resolve(participants);
+      const cachedMembership=kind==='participant'?membershipByParticipant.get(id):null;
+      const membershipPromise=kind==='participant'&&!cachedMembership?loadParticipantMembershipStatus(id).catch(()=>null):Promise.resolve(cachedMembership);
+      const [rows,membership]=await Promise.all([rowsPromise,membershipPromise]);
       if(version!==generation.current)return;
+      if(kind==='participant'&&membership){
+        setMembershipByParticipant((current)=>{const next=new Map(current);next.set(id,membership);return next;});
+      }
       const canonical=rows.find(p=>personId(p)===id);
       setSelected({person:canonical||person,kind,context,origin,loading:false});
     } catch {
