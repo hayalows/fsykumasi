@@ -44,6 +44,7 @@ import "./operations-product-v36.css";
 import "./design-system/index.css";
 import "./mobile-search-ux-v37.css";
 import "./wellness-picker-mobile-v38.css";
+import "./participant-membership-v53.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

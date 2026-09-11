@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { RegistrationJourney } from "./RegistrationJourney.jsx";
+import { RegistrationJourneyV53 as RegistrationJourney } from "./RegistrationJourneyV53.jsx";
 import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
 import { SessionFinalization } from "./SessionFinalization.jsx";
 import { PageHead, SegmentedControl } from "../components/UI.jsx";
+import { attemptParticipantMembershipCheckin } from "../lib/participant-membership.js";
 import "./registration-review.css";
 import "./registration-v5.css";
 import "./registration-journey.css";
@@ -60,6 +61,11 @@ export function Registration(props) {
     if (typeof window !== "undefined") window.location.reload();
   };
 
+  const membershipAwareCheckin = async (participantId, status) => {
+    if (!sessionId || status !== "arrived") return props.onCheckin?.(participantId, status);
+    return attemptParticipantMembershipCheckin({ sessionId, participantId });
+  };
+
   const cohortSummary = props.cohort;
   const modeMeta = MODE_META[mode];
   const journeyProps = {
@@ -69,7 +75,7 @@ export function Registration(props) {
     sessionId,
     capabilities,
     onOperationalDataChanged,
-    onCheckin: props.onCheckin,
+    onCheckin: membershipAwareCheckin,
     onUndoCheckin: props.onUndoCheckin,
     onSetOperationalStatus: props.onSetOperationalStatus,
   };

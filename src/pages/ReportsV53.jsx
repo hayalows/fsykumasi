@@ -26,7 +26,7 @@ function displayLabel(reportKey,key,label){return PARTICIPANT_REPORTS.has(report
 function visibleColumns(report,rows){if(!report)return[];const hidden=HIDDEN_DISPLAY_COLUMNS[report.key]||new Set();const available=report.columns.filter(([key])=>!hidden.has(key)&&(!rows.length||rows.some(row=>!isBlank(row[key]))));if(!PARTICIPANT_REPORTS.has(report.key))return available;const person=available.find(([key])=>PERSON_KEYS.includes(key));const id=available.find(([key])=>ID_KEYS.includes(key));const promoted=[person,id].filter(Boolean);return [...promoted,...available.filter(column=>!promoted.includes(column))];}
 function personCell(row,key){if(!PERSON_KEYS.includes(key))return null;const id=row.participant_id||row.staff_id||row.person_id;if(!id)return null;return <PersonName person={{...row,id,fullName:row[key],name:row[key]}} kind={row.staff_id||row.person_type==="staff"?"staff":"participant"}/>;}
 
-export function Reports({sessionId,sessionName,capabilities=[],currentRole="",live=false}){
+export function ReportsV53({sessionId,sessionName,capabilities=[],currentRole="",live=false}){
  const available=useMemo(()=>getAvailableReports(capabilities,currentRole),[capabilities,currentRole]);
  const groups=useMemo(()=>groupedReports(available),[available]);
  const[selectedKey,setSelectedKey]=useState(available[0]?.key||"");
