@@ -7,7 +7,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "
 const migration = read("supabase/migrations/20260911170000_participant_membership_checkin_v53.sql");
 const helper = read("src/lib/participant-membership.js");
 const journey = read("src/pages/RegistrationJourneyV53.jsx");
-const journeyEntry = read("src/pages/RegistrationJourney.jsx");
+const registration = read("src/pages/Registration.jsx");
 const reports = read("src/lib/reports-v53.js");
 const reportsEntry = read("src/pages/Reports.jsx");
 const main = read("src/main.jsx");
@@ -31,7 +31,7 @@ test("first arrival requires classification and atomic capture completes check-i
 });
 
 test("check-in UI asks only when the server reports missing membership status", () => {
-  assert.match(journeyEntry, /RegistrationJourneyV53/);
+  assert.match(registration, /RegistrationJourneyV53 as RegistrationJourney/);
   assert.match(journey, /requiresParticipantMembership\(err\)/);
   assert.match(journey, /setMembershipPrompt\(\{row,keepOpen\}\)/);
   assert.match(journey, /PARTICIPANT_MEMBERSHIP_OPTIONS\.map/);
@@ -48,7 +48,8 @@ test("participant membership report is restricted, excludes staff, and remains e
   assert.match(reports, /key: "participant_membership"/);
   assert.match(reports, /sensitive: true/);
   assert.match(reports, /loadParticipantMembershipReport/);
-  assert.match(reportsEntry, /ReportsV53/);
+  assert.match(reportsEntry, /participant_membership/);
+  assert.match(reportsEntry, /report-membership-summary-v53/);
 });
 
 test("membership UI styles are loaded by the production entrypoint", () => {
