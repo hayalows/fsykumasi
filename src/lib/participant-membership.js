@@ -34,13 +34,22 @@ export function requiresParticipantMembership(error) {
   return String(error?.message || "").includes(PARTICIPANT_MEMBERSHIP_REQUIRED);
 }
 
-export async function recordParticipantMembershipCheckin({ sessionId, participantId, membershipStatus }) {
+async function membershipAwareCheckin({ sessionId, participantId, membershipStatus = null }) {
   const { error } = await client().rpc("record_participant_checkin_with_membership", {
     p_session_id: sessionId,
     p_participant_id: participantId,
     p_membership_status: membershipStatus,
   });
   if (error) throw error;
+  return { recordedAt: new Date().toISOString() };
+}
+
+export function attemptParticipantMembershipCheckin({ sessionId, participantId }) {
+  return membershipAwareCheckin({ sessionId, participantId, membershipStatus: null });
+}
+
+export function recordParticipantMembershipCheckin({ sessionId, participantId, membershipStatus }) {
+  return membershipAwareCheckin({ sessionId, participantId, membershipStatus });
 }
 
 export async function loadParticipantMembershipReport(sessionId) {
