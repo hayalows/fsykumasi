@@ -367,7 +367,7 @@ function StartVisitPicker({ people, query, onQuery, activeKeys, onClose, onSelec
             return (
               <button key={`${person.kind}:${person.id}`} type="button" disabled={alreadyActive} onClick={() => !alreadyActive && onSelect(person)}>
                 <span className="person-avatar">{initials(person.name)}</span>
-                <span><b><PersonName person={person} kind={person.kind} /></b><small>{personContext(person)}</small></span>
+                <span><b><PersonName person={person} kind={person.kind} interactive={false} /></b><small>{personContext(person)}</small></span>
                 {alreadyActive ? <Status tone="warn">Already active</Status> : <span className="wellness-picker-result-action">Start visit<Plus size={17} aria-hidden="true" /></span>}
               </button>
             );
@@ -518,107 +518,3 @@ export function Wellness({ sessionId, participants = [], capabilities = [], sess
     setSelected({ person, encounter: null });
   };
 
-  if (!canViewStatus) {
-    return (
-      <section className="page">
-        <PageHead title="Wellness" sessionName={sessionName} description="Wellness status is limited to leaders assigned to the work." />
-        <article className="panel field-no-access"><FirstAidKit size={30} /><h2>Wellness is not in your access</h2><p>Ask an administrator to add Wellness status or private-record access to your assignment.</p></article>
-      </section>
-    );
-  }
-
-  const headAction = canEdit ? (
-    <button type="button" className="primary wellness-head-action" disabled={loadState !== "ready"} onClick={() => { setQuery(""); setPickerOpen(true); }}>
-      <Plus size={18} /> Start visit
-    </button>
-  ) : null;
-
-  return (
-    <section className="page field-page wellness-page wellness-v2 wellness-v4">
-      <PageHead
-        title="Wellness"
-        sessionName={sessionName}
-        description={canViewPrivate ? "Current care first. Keep follow-up visible until it is finished, and use the daily record when you need history." : "Operational status only. Private Wellness notes stay with the authorized Wellness team."}
-        action={headAction}
-      />
-
-      {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
-      {saved ? <MutationFeedback>{saved}</MutationFeedback> : null}
-
-      {loadState === "loading" ? <WellnessLoading /> : null}
-      {loadState === "error" && !rows.length ? (
-        <article className="panel wellness-load-error">
-          <FirstAidKit size={28} />
-          <div><h2>Wellness activity did not load</h2><p>Nothing has been shown as clear or zero because the live record is unavailable.</p></div>
-          <button type="button" className="secondary" onClick={() => reload({ initial: true })}>Try again</button>
-        </article>
-      ) : null}
-
-      {loadState === "ready" ? (
-        <>
-          <section className="wellness-summary-strip" aria-label="Current Wellness summary">
-            <div className={active.length ? "attention" : ""}><span>At Wellness now</span><strong>{active.length}</strong><small>Active visits</small></div>
-            <div className={followUp.length ? "attention" : ""}><span>Open follow-up</span><strong>{followUp.length}</strong><small>Until resolved</small></div>
-            <div><span>Returned today</span><strong>{returnedToday}</strong><small>Back to activity</small></div>
-            <div className={escalatedToday ? "urgent" : ""}><span>Off-site / emergency</span><strong>{escalatedToday}</strong><small>Today</small></div>
-          </section>
-
-          <div className="wellness-workspace">
-            <main className="wellness-priority-column">
-              <article className={`panel wellness-queue-panel wellness-v2-priority ${active.length ? "has-active" : ""}`}>
-                <div className="panel-head wellness-priority-head">
-                  <div><span className="kicker">Current care</span><h2>At Wellness now</h2><p>{active.length ? "Oldest active visit is first so the team can see who has been here longest." : "No one is currently marked as receiving support."}</p></div>
-                  <span className="wellness-panel-icon"><Heartbeat size={22} /></span>
-                </div>
-                <div className="wellness-queue-list">
-                  {active.map((item) => <VisitRow key={item.id} item={item} canEdit={canEdit} onOpen={openEditor} statusOnly={!canViewPrivate} />)}
-                  {!active.length ? (
-                    <Empty
-                      icon={FirstAidKit}
-                      title="The current queue is clear"
-                      text={canEdit ? "Start a visit when someone comes to Wellness." : "No one is currently marked as receiving support."}
-                      action={canEdit ? <button type="button" className="primary" onClick={() => { setQuery(""); setPickerOpen(true); }}><Plus size={17} /> Start visit</button> : null}
-                    />
-                  ) : null}
-                </div>
-              </article>
-
-              {followUp.length ? (
-                <article className="panel wellness-followup-panel">
-                  <div className="panel-head">
-                    <div><span className="kicker">Still needs action</span><h2>Open follow-up</h2><p>These stay here across days until someone marks the follow-up resolved.</p></div>
-                    <span className="wellness-panel-icon followup"><Clock size={22} /></span>
-                  </div>
-                  <div className="wellness-queue-list">
-                    {followUp.map((item) => <VisitRow key={item.id} item={item} canEdit={canEdit} onOpen={openEditor} statusOnly={!canViewPrivate} />)}
-                  </div>
-                </article>
-              ) : null}
-            </main>
-
-            <aside className="wellness-activity-column">
-              <DayActivity activityDate={activityDate} setActivityDate={setActivityDate} rows={rows} canEdit={canEdit} canViewPrivate={canViewPrivate} onOpen={openEditor} />
-              <div className="wellness-reporting-note"><ShieldCheck size={18} /><p><b>Incident reporting stays separate.</b><span>Illness or injury beyond basic first aid may need Global Incident Reporting. Emergency services come first when needed.</span></p></div>
-            </aside>
-          </div>
-        </>
-      ) : null}
-
-      {pickerOpen && canEdit ? <StartVisitPicker people={people} query={query} onQuery={setQuery} activeKeys={activeKeys} onClose={() => { setPickerOpen(false); setQuery(""); }} onSelect={startVisit} /> : null}
-      {selected && canEdit ? (
-        <WellnessEditor
-          sessionId={sessionId}
-          person={selected.person}
-          encounter={selected.encounter}
-          live={live}
-          onClose={() => setSelected(null)}
-          onSaved={async (message, record) => {
-            if (live) await reload();
-            else if (record) setEncounters((current) => [record, ...current.filter((item) => item.id !== record.id)]);
-            showSaved(message);
-          }}
-        />
-      ) : null}
-    </section>
-  );
-}

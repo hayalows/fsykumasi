@@ -24,6 +24,7 @@ test("Wellness search results expose a clear start-visit action and wrap identit
   const css = await read("src/mobile-search-ux-v37.css");
   const wellness = await read("src/pages/WellnessV3.jsx");
   assert.match(wellness, /className="wellness-picker-result-action"[^>]*>Start visit/);
+  assert.match(wellness, /<PersonName person=\{person\} kind=\{person\.kind\} interactive=\{false\} \/>/);
   assert.match(css, /\.wellness-picker \.wellness-picker-results > button > \.wellness-picker-result-action\s*\{[\s\S]*min-height:\s*38px/);
   assert.match(css, /\.wellness-picker \.wellness-picker-results > button > span:nth-child\(2\) small\s*\{[\s\S]*white-space:\s*normal/);
   assert.match(css, /\.wellness-picker \.wellness-picker-results[\s\S]*overflow-y:\s*auto/);
