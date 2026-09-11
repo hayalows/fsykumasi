@@ -1,6 +1,4 @@
-const CACHE_NAME = "fsy-kumasi-shell-v52";
-// Birthday reliability v52 restores staff birthdays after route/data splitting, keeps staff visibility
-// scoped to authorized responsibilities, and shows birthday age without exposing raw dates of birth.
+const CACHE_NAME = "fsy-kumasi-shell-v51";
 // On-site registration v50 separates verification from placement, uses existing group capacity first,
 // requires parent contact, keeps T-shirt sizes consistent, and removes resolved history from action queues.
 // Final roster reliability v49 aligns the production roster engine with the client, fixes ward/branch
@@ -20,10 +18,10 @@ const CACHE_NAME = "fsy-kumasi-shell-v52";
 // Access operations v20 remains intact; Access identity and permission behavior remains on v19.
 // Historical Access operations v19 used email-first identity reconciliation with automatic staff backfill.
 // Historical Access operations v18 and Access operations v17 remain covered by regressions.
-// Historical shell markers: fsy-kumasi-shell-v51, fsy-kumasi-shell-v49, fsy-kumasi-shell-v48,
-// fsy-kumasi-shell-v47, fsy-kumasi-shell-v46, fsy-kumasi-shell-v45, fsy-kumasi-shell-v44,
-// fsy-kumasi-shell-v43, fsy-kumasi-shell-v42, fsy-kumasi-shell-v41, fsy-kumasi-shell-v40,
-// fsy-kumasi-shell-v39, fsy-kumasi-shell-v38, fsy-kumasi-shell-v37 and fsy-kumasi-shell-v36.
+// Historical shell markers: fsy-kumasi-shell-v49, fsy-kumasi-shell-v48, fsy-kumasi-shell-v47,
+// fsy-kumasi-shell-v46, fsy-kumasi-shell-v45, fsy-kumasi-shell-v44, fsy-kumasi-shell-v43,
+// fsy-kumasi-shell-v42, fsy-kumasi-shell-v41, fsy-kumasi-shell-v40, fsy-kumasi-shell-v39,
+// fsy-kumasi-shell-v38, fsy-kumasi-shell-v37 and fsy-kumasi-shell-v36.
 // Access + Assignments v15 and Housing workflow v14 remain part of this release.
 const NAVIGATION_TIMEOUT_MS = 8000;
 const CORE_ASSETS = [
