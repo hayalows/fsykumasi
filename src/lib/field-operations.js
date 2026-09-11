@@ -432,12 +432,13 @@ export async function markMealServed({ serviceId, personType, personId }) {
 }
 
 export async function loadStaffBirthdays(sessionId) {
-  const { data, error } = await client().rpc("get_staff_birthdays_v2", { p_session_id: sessionId });
+  const { data, error } = await client().rpc("get_staff_birthdays_v3", { p_session_id: sessionId });
   if (error) throw error;
   return (data || []).map((row) => ({
     staffId: row.staff_id,
     name: row.display_name,
     date: row.birthday_date,
+    turningAge: row.turning_age === null || row.turning_age === undefined ? null : Number(row.turning_age),
     staffRole: row.staff_role || "counselor",
     company: row.company_name || "",
     companyNames: row.company_names || (row.company_name ? [row.company_name] : []),
