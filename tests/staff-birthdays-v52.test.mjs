@@ -14,7 +14,8 @@ test("staff birthday client uses v3 for age and safely falls back before the mig
   assert.match(client, /get_staff_birthdays_v3/);
   assert.match(client, /get_staff_birthdays_v2/);
   assert.match(client, /staffBirthdayV3Missing/);
-  assert.match(client, /turningAge:\s*row\.turning_age/);
+  assert.match(client, /turningAge:\s*row\.turning_age\s*===/);
+  assert.match(client, /Number\(row\.turning_age\)/);
   assert.doesNotMatch(client, /dateOfBirth:\s*row\.date_of_birth/);
 });
 
