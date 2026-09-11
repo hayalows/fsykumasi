@@ -367,7 +367,7 @@ function StartVisitPicker({ people, query, onQuery, activeKeys, onClose, onSelec
             return (
               <button key={`${person.kind}:${person.id}`} type="button" disabled={alreadyActive} onClick={() => !alreadyActive && onSelect(person)}>
                 <span className="person-avatar">{initials(person.name)}</span>
-                <span><b><PersonName person={person} kind={person.kind} /></b><small>{personContext(person)}</small></span>
+                <span><b><PersonName person={person} kind={person.kind} interactive={false} /></b><small>{personContext(person)}</small></span>
                 {alreadyActive ? <Status tone="warn">Already active</Status> : <span className="wellness-picker-result-action">Start visit<Plus size={17} aria-hidden="true" /></span>}
               </button>
             );
