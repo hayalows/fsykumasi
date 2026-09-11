@@ -1,0 +1,286 @@
+/* Mobile search UX v37
+ * Prevent iOS focus zoom and make directory / Wellness search results easier
+ * to scan and act on under event-day pressure.
+ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.search,
+.search-field {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.search input,
+.search-field input {
+  min-width: 0;
+  width: 100%;
+}
+
+/* People directory results use the entire row as the target. */
+.people-v2-list {
+  display: grid;
+  gap: 6px;
+}
+
+.people-v2-list > button {
+  width: 100%;
+  min-width: 0;
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+
+.people-v2-list > button:hover {
+  border-color: var(--ds-line, var(--line));
+  background: var(--ds-surface-subtle, var(--surface-soft));
+}
+
+.people-v2-list > button > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.people-v2-list > button > span:nth-child(2) > b {
+  overflow-wrap: anywhere;
+}
+
+.people-v2-list > button > span:nth-child(2) > small {
+  min-width: 0;
+  color: var(--muted);
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Wellness picker: the row itself is selectable, with an explicit action cue. */
+.wellness-picker-results > button {
+  position: relative;
+  min-width: 0;
+  min-height: 72px;
+  padding: 10px 8px;
+  border-radius: 12px;
+}
+
+.wellness-picker-results > button > span:nth-child(2) {
+  min-width: 0;
+}
+
+.wellness-picker-results > button > span:nth-child(2) small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.wellness-picker-results > button > svg {
+  display: none;
+}
+
+.wellness-picker-results > button:not(:disabled)::after {
+  content: "Start visit";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid #c8dfe7;
+  border-radius: 9px;
+  background: #f7fcfe;
+  color: var(--blue-35, #005175);
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.wellness-picker-results > button:not(:disabled):hover::after {
+  border-color: var(--blue-25, #007da5);
+  background: #eef9fc;
+}
+
+.wellness-picker-results > button:disabled {
+  opacity: .72;
+}
+
+@media (max-width: 760px) {
+  /* iOS Safari enlarges the viewport when a focused form control renders below
+     16px. The design-system desktop field size is 14px, so mobile controls use
+     a native-friendly 16px size instead of disabling pinch zoom. */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .search input,
+  .search-field input {
+    font-size: 16px !important;
+  }
+
+  input,
+  select,
+  textarea,
+  .search,
+  .search-field {
+    touch-action: manipulation;
+  }
+
+  .search,
+  .search-field {
+    width: 100%;
+    min-height: 52px;
+    gap: 9px;
+    padding-inline: 12px;
+    overflow: hidden;
+  }
+
+  .search > svg,
+  .search-field > svg {
+    flex: 0 0 auto;
+  }
+
+  .search input,
+  .search-field input {
+    min-height: 50px;
+    padding-inline: 0 !important;
+    line-height: 1.25;
+  }
+
+  .search-clear {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    margin-right: -8px;
+  }
+
+  .people-v2-search-card,
+  .people-v2-results {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .people-v2-results {
+    overflow: hidden;
+  }
+
+  .people-v2-list {
+    gap: 0;
+  }
+
+  .people-v2-list > button {
+    min-height: 76px;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 11px;
+    padding: 12px 2px;
+    border: 0;
+    border-bottom: 1px solid var(--ds-line, var(--line));
+    border-radius: 0;
+  }
+
+  .people-v2-list > button:last-child {
+    border-bottom: 0;
+  }
+
+  .people-v2-list > button > .status {
+    grid-column: 2;
+    justify-self: start;
+    white-space: normal;
+  }
+
+  .wellness-picker {
+    min-width: 0;
+    gap: 14px;
+  }
+
+  .wellness-picker .search,
+  .wellness-picker .search-field {
+    flex: 0 0 auto;
+  }
+
+  .wellness-picker-results {
+    width: 100%;
+    min-width: 0;
+    max-height: min(46dvh, 430px);
+    margin-top: 0;
+    padding-top: 4px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wellness-picker-results > button {
+    min-height: 80px;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 12px 2px;
+    border-radius: 0;
+    border-bottom: 1px solid var(--ds-line, var(--line));
+  }
+
+  .wellness-picker-results > button:last-of-type {
+    border-bottom: 0;
+  }
+
+  .wellness-picker-results > button:not(:disabled)::after {
+    min-height: 40px;
+    padding-inline: 10px;
+  }
+
+  .wellness-picker-results > button:disabled > .status {
+    justify-self: end;
+    white-space: normal;
+    text-align: right;
+  }
+}
+
+@media (max-width: 430px) {
+  .wellness-picker-head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    padding-right: 44px;
+  }
+
+  .wellness-picker-icon {
+    display: none;
+  }
+
+  .wellness-picker-head h2 {
+    font-size: 22px;
+  }
+
+  .wellness-picker-head p {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .wellness-picker-results > button {
+    grid-template-columns: 40px minmax(0, 1fr);
+    min-height: 88px;
+    align-items: start;
+  }
+
+  .wellness-picker-results > button > .person-avatar {
+    margin-top: 2px;
+  }
+
+  .wellness-picker-results > button:not(:disabled)::after,
+  .wellness-picker-results > button:disabled > .status {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 3px;
+  }
+
+  .wellness-picker-results > button:not(:disabled)::after {
+    min-height: 36px;
+  }
+}
