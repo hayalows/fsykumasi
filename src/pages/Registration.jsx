@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { RegistrationJourney } from "./RegistrationJourney.jsx";
+import { RegistrationJourneyV53 as RegistrationJourney } from "./RegistrationJourneyV53.jsx";
 import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
 import { SessionFinalization } from "./SessionFinalization.jsx";
 import { PageHead, SegmentedControl } from "../components/UI.jsx";
