@@ -150,6 +150,7 @@ export function App() {
       ["check-in",()=>loadArrivedParticipantIds(granted.session_id),(value)=>setCheckedIds(value)],
       ["head count",()=>loadHeadcount(granted.session_id),(value)=>setHeadcount(value)],
       ["birthdays",()=>loadSessionBirthdays(granted.session_id),(value)=>setBirthdays(value)],
+      ["staff birthdays",()=>loadStaffBirthdays(granted.session_id),(value)=>setStaffBirthdays(value)],
       ["structure settings",()=>loadStructureSettings(granted.session_id),(value)=>setStructureSettings(value)],
       ["field operations",()=>loadFieldData(granted.session_id,granted.capabilities||[],"registration"),()=>{}],
     ];
