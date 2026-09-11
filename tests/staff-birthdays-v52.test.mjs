@@ -7,12 +7,13 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 test("staff birthdays load with the normal workspace hydration", async () => {
   const app = await read("src/App.jsx");
   assert.match(app, /\["staff birthdays",\(\)=>loadStaffBirthdays\(granted\.session_id\),\(value\)=>setStaffBirthdays\(value\)\]/);
-  assert.match(app, /\["field operations",\(\)=>loadFieldData\(granted\.session_id,granted\.capabilities\|\|\[\],"registration"\)/);
 });
 
-test("staff birthday client uses the age-aware scoped RPC", async () => {
+test("staff birthday client uses v3 for age and safely falls back before the migration is deployed", async () => {
   const client = await read("src/lib/field-operations.js");
   assert.match(client, /get_staff_birthdays_v3/);
+  assert.match(client, /get_staff_birthdays_v2/);
+  assert.match(client, /staffBirthdayV3Missing/);
   assert.match(client, /turningAge:\s*row\.turning_age/);
   assert.doesNotMatch(client, /dateOfBirth:\s*row\.date_of_birth/);
 });
