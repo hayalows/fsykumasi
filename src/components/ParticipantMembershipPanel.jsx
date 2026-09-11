@@ -140,7 +140,7 @@ export function ParticipantMembershipPanel({ sessionId, participants = [], capab
     </button>
 
     {open ? <div className="participant-membership-body">
-      <div className="participant-membership-guidance"><ShieldCheck size={18}/><span><b>Participants only.</b> Record an answer from the participant, parent/guardian, approved registration record or an authorized Church leader. Do not guess from ward, surname or registration history.</span></div>
+      <div className="participant-membership-guidance"><ShieldCheck size={18}/><span><b>Participants only.</b> Record an explicit answer from the participant or parent/guardian, or confirmation from an authorized Church leader. Do not guess from ward, surname, Church account or registration history.</span></div>
       {error ? <p className="participant-membership-feedback error" role="alert">{error}</p> : null}
       {message ? <p className="participant-membership-feedback success" role="status"><CheckCircle weight="fill"/> {message}</p> : null}
 
