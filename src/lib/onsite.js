@@ -63,3 +63,21 @@ export async function addOnSiteStaff({
   if (error) throw error;
   return data;
 }
+
+export async function previewOnSiteOverflowPlacement(participantId) {
+  const { data, error } = await client().rpc("preview_onsite_supplemental_placement_v1", {
+    p_participant_id: participantId,
+  });
+  if (error) throw error;
+  return data || null;
+}
+
+export async function applyOnSiteOverflowPlacement({ participantId, counselorId, assistantId = null }) {
+  const { data, error } = await client().rpc("apply_onsite_supplemental_placement_v1", {
+    p_participant_id: participantId,
+    p_expected_counselor_id: counselorId || null,
+    p_expected_assistant_id: assistantId || null,
+  });
+  if (error) throw error;
+  return data || null;
+}
