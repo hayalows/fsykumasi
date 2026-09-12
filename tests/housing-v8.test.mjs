@@ -4,7 +4,12 @@ import fs from "node:fs";
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-const migration = read("supabase/migrations/20260912093000_housing_inventory_planning_v8.sql") + "\n" + read("supabase/migrations/20260912102000_housing_inventory_safety_v9.sql");
+const migration = [
+  "supabase/migrations/20260912093000_housing_inventory_planning_v8.sql",
+  "supabase/migrations/20260912102000_housing_inventory_safety_v9.sql",
+  "supabase/migrations/20260912114500_housing_youth_staff_separation_v10.sql",
+].map(read).join("\n");
+const v10 = read("supabase/migrations/20260912114500_housing_youth_staff_separation_v10.sql");
 const inventory = read("src/lib/housing-inventory-v8.js");
 const housingEntry = read("src/pages/Housing.jsx");
 const housingV8 = read("src/pages/HousingV8.jsx");
@@ -63,18 +68,47 @@ test("company block planner supports attendance scenarios and keeps special spac
   assert.match(migration, /p_attendance_pct integer default 100/);
   assert.match(migration, /r\.space_type='room'/);
   assert.match(migration, /flex_capacity/);
-  assert.match(migration, /counselor_spaces/);
   assert.match(plan, /SCENARIOS = \[50, 60, 70, 80, 90, 100\]/);
+});
+
+test("v10 plans youth only and reports staff beds separately", () => {
+  assert.match(v10, /0::integer as counselor_spaces/);
+  assert.match(v10, /as target_spaces/);
+  assert.match(v10, /'youth_only',true/);
+  assert.match(v10, /'male_staff_spaces'/);
+  assert.match(v10, /'female_staff_spaces'/);
+  assert.match(v10, /'unknown_staff_spaces'/);
+  assert.match(plan, /Staff housing is separate/);
+  assert.match(plan, /These beds are not included in the youth company blocks/);
+  assert.doesNotMatch(plan, /one counselor space for every published counselor group/);
+});
+
+test("assignment RPC blocks youth and staff from sharing rooms", () => {
+  assert.match(v10, /a\.staff_id is not null/);
+  assert.match(v10, /a\.participant_id is not null/);
+  assert.match(v10, /FSY staff cannot share a room with youth/);
+  assert.match(v10, /plan_kind='staff'/);
+  assert.match(v10, /plan_kind='company'/);
+  assert.match(v10, /restore_housing_assignment_v1/);
+});
+
+test("live room picker removes opposite-person-type rooms and respects youth/staff plans", () => {
+  assert.match(assignment, /roomCanReceivePerson/);
+  assert.match(assignment, /occupants\.some\(\(item\) => item\.personType !== person\.kind\)/);
+  assert.match(assignment, /person\.kind === "staff" && room\.planKind === "company"/);
+  assert.match(assignment, /person\.kind === "participant" && room\.planKind === "staff"/);
+  assert.match(assignment, /Youth rooms and saved youth company blocks stay out of this list/);
 });
 
 test("automatic planning never moves people and locks after live assignments begin", () => {
   assert.match(migration, /Automatic company planning is locked after live room assignments begin/);
   assert.doesNotMatch(migration, /update public\.housing_assignments[\s\S]*housing_company_plan_applied/);
-  assert.match(plan, /does not assign any person to a room/i);
+  assert.match(plan, /no person has been assigned/i);
 });
 
-test("live room recommendations prefer a participant's saved company block", () => {
+test("live participant room recommendations prefer a saved company block", () => {
   assert.match(assignment, /loadHousingRoomPlanMapV8/);
+  assert.match(assignment, /person\.kind === "participant"/);
   assert.match(assignment, /plannedForCompany/);
   assert.match(assignment, /Planned block/);
   assert.match(assignment, /score \+= 50000/);
