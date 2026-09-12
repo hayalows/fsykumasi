@@ -1,0 +1,460 @@
+/* FSY Operations interaction refinements — 2026-09-12.
+   These rules strengthen the existing design system without changing product
+   logic. Direction: task-first, familiar, low-friction, touch-safe and calm. */
+
+:root {
+  --ds-touch-target: 44px;
+  --ds-control-mobile: 48px;
+}
+
+/* Keep the shell available while people move through long operational pages. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+/* The native session picker stays native for reliability, but reads as a
+   workspace switcher instead of an unstyled form select. */
+.session {
+  position: relative;
+  min-width: 0;
+}
+
+.session-select {
+  width: auto;
+  max-width: min(390px, 38vw);
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-sm);
+  background: transparent;
+  color: var(--ds-text-strong);
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.session-select:hover {
+  border-color: var(--ds-line);
+  background: var(--ds-surface);
+}
+
+.session-select:focus-visible {
+  border-color: var(--ds-brand);
+  background: var(--ds-surface);
+}
+
+@supports selector(:has(*)) {
+  .session:has(.session-select)::after {
+    content: "";
+    position: absolute;
+    right: 11px;
+    top: 18px;
+    width: 7px;
+    height: 7px;
+    border-right: 1.5px solid var(--ds-text-secondary);
+    border-bottom: 1.5px solid var(--ds-text-secondary);
+    transform: rotate(45deg) translateY(-2px);
+    pointer-events: none;
+  }
+
+  .session:has(.session-select) .session-select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 32px;
+  }
+
+  /* Access notifications are actionable only when there is something to open. */
+  .notification-button:not(:has(i)) {
+    display: none;
+  }
+}
+
+/* Search is one of the most important operational actions. Make the existing
+   global People search discoverable on desktop while keeping it compact on phones. */
+.global-search-button {
+  width: auto;
+  min-width: var(--ds-touch-target);
+  padding-inline: 11px;
+  gap: 7px;
+  border: 1px solid var(--ds-line);
+  background: var(--ds-surface);
+  color: var(--ds-text-strong);
+}
+
+.global-search-button::after {
+  content: "Find person";
+  font-size: var(--ds-text-sm);
+  font-weight: 680;
+  white-space: nowrap;
+}
+
+.global-search-button:hover {
+  border-color: var(--ds-line-strong);
+  background: var(--ds-surface-subtle);
+}
+
+/* Connection state should be glanceable, not visually dominant. */
+.connection {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding-inline: 9px;
+}
+
+.connection::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--ds-text-tertiary);
+}
+
+.connection.live::before {
+  background: var(--ds-success);
+}
+
+.connection.updating::before {
+  background: var(--ds-warning);
+}
+
+.connection.stale::before,
+.connection.demo::before {
+  background: var(--ds-warning);
+}
+
+/* Training and sync messages share one calm system language. */
+.training-banner,
+.sync-warning {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px var(--ds-gutter) 0;
+  padding: 9px 12px;
+  border-radius: var(--ds-radius-md);
+  box-shadow: none;
+}
+
+.training-banner {
+  border: 1px solid #d8c58f;
+  border-left: 4px solid var(--ds-warning);
+  background: var(--ds-warning-soft);
+  color: var(--ds-warning);
+}
+
+.training-banner b,
+.sync-warning b {
+  color: inherit;
+}
+
+.training-banner span,
+.sync-warning span {
+  line-height: 1.4;
+}
+
+.sync-warning {
+  border-left-width: 4px;
+}
+
+.sync-warning button {
+  flex: 0 0 auto;
+  min-height: 36px;
+}
+
+/* Shared controls should answer touch quickly without ornamental motion. */
+button,
+[role="button"],
+summary,
+.text-action {
+  touch-action: manipulation;
+}
+
+.primary:active,
+.secondary:active,
+.icon-button:active,
+.text-action:active,
+.ds-action-item:active {
+  filter: brightness(.97);
+}
+
+/* Scannable rows get the same press language across operational workspaces. */
+:is(
+  .overview-followups,
+  .people-v2-list,
+  .assignments-v3-people,
+  .assignments-v3-coverage,
+  .housing-v5-person-list,
+  .food-meal-list,
+  .food-dietary-list,
+  .wellness-queue-list,
+  .wellness-day-list,
+  .birthday-list,
+  .assignment-queue,
+  .field-person-list
+) > button {
+  transition: background-color var(--ds-fast) var(--ds-ease), color var(--ds-fast) var(--ds-ease);
+}
+
+:is(
+  .overview-followups,
+  .people-v2-list,
+  .assignments-v3-people,
+  .assignments-v3-coverage,
+  .housing-v5-person-list,
+  .food-meal-list,
+  .food-dietary-list,
+  .wellness-queue-list,
+  .wellness-day-list,
+  .birthday-list,
+  .assignment-queue,
+  .field-person-list
+) > button:active {
+  background: var(--ds-brand-soft) !important;
+}
+
+/* Dense comparison views stay readable when they scroll. */
+.table-wrap,
+.report-table-wrap,
+.data-table-wrap {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.table-wrap tbody tr:focus-within td,
+.report-table-wrap tbody tr:focus-within td,
+.data-table-wrap tbody tr:focus-within td {
+  background: var(--ds-brand-soft);
+}
+
+@media (min-width: 761px) {
+  .table-wrap th,
+  .report-table-wrap th,
+  .data-table-wrap th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    box-shadow: 0 1px 0 var(--ds-line);
+  }
+}
+
+/* Temporary feedback should not become another page section. */
+.action-toast {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+}
+
+.action-toast > b {
+  min-width: 0;
+  font-size: var(--ds-text-sm);
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.action-toast button {
+  min-height: 36px;
+}
+
+/* Segment controls behave like local navigation, including on narrow screens. */
+.segmented {
+  scroll-behavior: smooth;
+}
+
+.segmented button:active {
+  background: var(--ds-brand-soft);
+}
+
+/* Slightly stronger hierarchy for task-first empty and error states. */
+.empty h3 {
+  color: var(--ds-text-strong);
+}
+
+.empty p {
+  max-width: 54ch;
+  margin-inline: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ds-action-item:hover,
+  .overview-followups > button:hover,
+  .people-v2-list > button:hover,
+  .assignment-queue > button:hover,
+  .birthday-list > button:hover {
+    background: var(--ds-surface-subtle) !important;
+  }
+}
+
+/* Coarse pointers get full-size targets and native-friendly text fields.
+   16px prevents iOS Safari focus zoom without disabling pinch zoom. */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role="button"],
+  summary,
+  .text-action,
+  .search-clear {
+    min-height: var(--ds-touch-target);
+  }
+
+  .text-action {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .search input,
+  .search-field input {
+    min-height: var(--ds-control-mobile);
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    gap: 8px;
+  }
+
+  .session {
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  .session-select {
+    width: 100%;
+    max-width: 100%;
+    min-height: var(--ds-touch-target);
+    padding-left: 9px;
+    border-color: var(--ds-line);
+    background: rgba(255,255,255,.76);
+    font-size: 15px;
+  }
+
+  @supports selector(:has(*)) {
+    .session:has(.session-select)::after {
+      top: 20px;
+    }
+  }
+
+  .global-search-button {
+    width: var(--ds-touch-target);
+    min-width: var(--ds-touch-target);
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .global-search-button::after {
+    display: none;
+  }
+
+  .connection {
+    min-width: 0;
+    min-height: 30px;
+    padding-inline: 7px;
+  }
+
+  .connection::before {
+    width: 6px;
+    height: 6px;
+    flex-basis: 6px;
+  }
+
+  .training-banner,
+  .sync-warning {
+    align-items: flex-start;
+    margin: 8px var(--ds-gutter) 0;
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+
+  .sync-warning button {
+    min-height: var(--ds-touch-target);
+  }
+
+  .segmented {
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 4px;
+  }
+
+  .segmented button {
+    min-height: var(--ds-touch-target);
+    scroll-snap-align: start;
+  }
+
+  .action-toast {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 11px 12px;
+  }
+
+  .action-toast button:not(.action-toast-dismiss) {
+    grid-column: 2 / -1;
+    justify-self: start;
+    min-height: var(--ds-touch-target);
+  }
+
+  .action-toast-dismiss {
+    width: var(--ds-touch-target);
+    min-width: var(--ds-touch-target);
+    min-height: var(--ds-touch-target);
+  }
+
+  .table-wrap,
+  .report-table-wrap,
+  .data-table-wrap {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 390px) {
+  .topbar {
+    padding-inline: 8px;
+  }
+
+  .connection-label-full {
+    display: none;
+  }
+
+  .connection-label-short {
+    display: inline;
+  }
+
+  .training-banner,
+  .sync-warning {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sync-warning button {
+    width: 100%;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .primary,
+  .secondary,
+  input,
+  select,
+  textarea,
+  .search,
+  .search-field,
+  .segmented,
+  .connection,
+  .table-wrap,
+  .report-table-wrap,
+  .data-table-wrap {
+    border-color: var(--ds-text-secondary);
+  }
+
+  .connection::before {
+    outline: 1px solid currentColor;
+    outline-offset: 1px;
+  }
+}
