@@ -127,7 +127,10 @@ function teamSensitivity(team) {
   return "";
 }
 
-export function TeamChoices({ teams, selected, onChange, compact = false }) {
+export function TeamChoices({ teams = [], selected, onChange, compact = false }) {
+  if (!teams.length) {
+    return <div className="account-choice-empty-v21" role="status"><b>No committee choices are available yet</b><small>Close and reopen this sheet in a moment. If this stays empty, the session committee catalog needs to be checked.</small></div>;
+  }
   return <div className={compact ? "account-choice-list-v2 compact" : "account-choice-list-v2"} role="group" aria-label="Committee responsibilities">
     {teams.map((team) => <label className={selected.includes(team.key) ? "account-choice-v2 selected" : "account-choice-v2"} key={team.key}>
       <input type="checkbox" checked={selected.includes(team.key)} onChange={(event) => onChange(event.target.checked ? [...selected, team.key] : selected.filter((key) => key !== team.key))} />
@@ -165,9 +168,9 @@ export function AccountTeams({ user, sessionId, teams, onClose, onSaved }) {
     <div className="account-setup-shell-v2">
       <button type="button" data-layer-close className="icon-button modal-close" onClick={close} disabled={busy} aria-label="Close"><X /></button>
       <header className="account-setup-header-v2"><span className="kicker">Additional access</span><h2>{user.name}</h2><p>Add only the committee tools this person needs beyond their primary responsibility.</p></header>
-      <div className="account-responsibility-summary"><b>{selected.length ? `${selected.length} additional ${selected.length === 1 ? "responsibility" : "responsibilities"}` : "No additional committee responsibilities"}</b><small>Primary FSY responsibility stays separate. Add only work this person genuinely needs.</small></div><TeamChoices teams={teams} selected={selected} onChange={setSelected} />
+      <div className="account-responsibility-summary"><b>{selected.length ? `${selected.length} additional ${selected.length === 1 ? "responsibility" : "responsibilities"}` : "No additional committee responsibilities"}</b><small>Primary FSY responsibility stays separate. A Coordinator can serve on committees without giving up the Coordinator role.</small></div><TeamChoices teams={teams} selected={selected} onChange={setSelected} />
       {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
-      <footer className="account-setup-actions-v2 field-sheet-actions"><button className="secondary" type="button" onClick={close} disabled={busy}>Cancel</button><button className="primary" type="button" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save responsibilities"}</button></footer>
+      <footer className="account-setup-actions-v2 field-sheet-actions"><button className="secondary" type="button" onClick={close} disabled={busy}>Cancel</button><button className="primary" type="button" disabled={busy || !teams?.length} onClick={save}>{busy ? "Saving…" : "Save responsibilities"}</button></footer>
     </div>
   </DismissibleLayer>;
 }
