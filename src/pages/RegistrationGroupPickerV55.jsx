@@ -46,8 +46,8 @@ export function GroupPickerV55({ groups, companies, row, busy, loading = false, 
     .filter((group) => {
       const max = Number(group.maxSize || 10);
       return sexValue(group.sex) === sexValue(row.sex)
-        && group.state !== "archived"
-        && group.counselorReady !== false
+        && group.state === "published"
+        && group.counselorReady === true
         && Number(group.memberCount || 0) < max;
     })
     .sort((a, b) => Number(a.memberCount || 0) - Number(b.memberCount || 0) || collator.compare(a.name, b.name)), [groups, row.sex]);
@@ -65,11 +65,16 @@ export function GroupPickerV55({ groups, companies, row, busy, loading = false, 
   const firstName = String(row.fullName || "participant").trim().split(/\s+/)[0] || "participant";
   const plan = planCopy(overflowPlan);
   const isOnSite = row.sourceKind === "on_site";
+  const noStandardSpace = !loading && choices.length === 0;
+  const noSearchMatch = !loading && choices.length > 0 && visible.length === 0;
 
   useEffect(() => {
     if (selectedId && !choices.some((group) => group.id === selectedId)) setSelectedId("");
   }, [choices, selectedId]);
   useEffect(() => {
+    setQuery("");
+    setSelectedId("");
+    setVisibleLimit(6);
     setOverflowPlan(null);
     setOverflowError("");
   }, [row.participantId]);
@@ -120,7 +125,7 @@ export function GroupPickerV55({ groups, companies, row, busy, loading = false, 
   };
 
   return <div className="regjourney-group-picker regjourney-group-picker-v5">
-    <div className="regjourney-placement-guidance"><b>Available groups only</b><span>Lowest load groups are first. For new on-site arrivals, the ward or branch does not block placement.</span></div>
+    <div className="regjourney-placement-guidance"><b>Available groups only</b><span>Lowest load groups are first. A group appears here only when it is published, has a ready counselor and has capacity.</span></div>
     {choices.length > 6 ? <label className="regjourney-inline-search regjourney-inline-search-v5"><span className="sr-only">Find counselor group</span><input value={query} onChange={(event) => { setQuery(event.target.value); setVisibleLimit(6); }} placeholder="Search groups or companies" /></label> : null}
     <div className="regjourney-choice-list" role="radiogroup" aria-label="Available counselor groups">
       {visible.map((group, index) => {
@@ -133,7 +138,9 @@ export function GroupPickerV55({ groups, companies, row, busy, loading = false, 
           <span className="regjourney-choice-end">{!query.trim() && index === 0 ? <em>Recommended</em> : null}{isSelected ? <CheckCircle weight="fill" /> : <span className="regjourney-choice-radio" aria-hidden="true" />}</span>
         </button>;
       })}
-      {!visible.length ? <Empty icon={UsersThree} title="No standard counselor group has space" text={isOnSite ? "Check live capacity first. If it is still full, Registration can prepare one supplemental group without reopening the full roster plan." : "Every compatible group is full. Review group capacity and staffing before placing this participant."} action={isOnSite ? <button type="button" className="secondary" disabled={busy || loading || overflowLoading || overflowBusy} onClick={reviewOverflow}>{overflowLoading ? "Checking…" : "Review overflow option"}</button> : null} /> : null}
+      {loading ? <Empty icon={UsersThree} title="Checking live group capacity" text="Loading published groups and counselor readiness." /> : null}
+      {noSearchMatch ? <Empty icon={UsersThree} title="No matching groups" text="Try another group or company name. Available groups still have space." /> : null}
+      {noStandardSpace ? <Empty icon={UsersThree} title="No standard counselor group has space" text={isOnSite ? "Registration can review one supplemental placement without reopening the full roster plan." : "Every compatible published group with a ready counselor is full. Review group capacity and staffing before placing this participant."} action={isOnSite ? <button type="button" className="secondary" disabled={busy || overflowLoading || overflowBusy} onClick={reviewOverflow}>{overflowLoading ? "Checking…" : "Review overflow option"}</button> : null} /> : null}
     </div>
     {filtered.length > visible.length ? <button type="button" className="text-action regjourney-show-groups" onClick={() => setVisibleLimit((value) => value + 14)}>Show {Math.min(14, filtered.length - visible.length)} more groups</button> : null}
 
