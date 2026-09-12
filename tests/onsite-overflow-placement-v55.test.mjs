@@ -7,6 +7,7 @@ const onsite = fs.readFileSync('src/lib/onsite.js', 'utf8');
 const picker = fs.readFileSync('src/pages/RegistrationGroupPickerV55.jsx', 'utf8');
 const parts = fs.readFileSync('src/pages/RegistrationJourneyPartsV4.jsx', 'utf8');
 const workspace = fs.readFileSync('src/lib/registration-workspace-v29.js', 'utf8');
+const app = fs.readFileSync('src/App.jsx', 'utf8');
 
 test('registration placement options expose live capacity and counselor readiness', () => {
   assert.match(migration, /get_registration_placement_groups_v1/);
@@ -45,6 +46,13 @@ test('overflow apply rechecks the suggested staff under a session lock and recor
   assert.match(migration, /suggested Assistant Coordinator changed/);
   assert.match(migration, /onsite_overflow_placement_applied/);
   assert.match(migration, /perform public\.assign_participant_to_group/);
+  assert.match(migration, /assistant_companies_limit/);
+  assert.match(migration, /assistant_load>=assistant_max_load/);
+  assert.match(migration, /assigned_company_id=\(/);
+});
+
+test('demo grouping marks generated groups as published for placement rehearsal', () => {
+  assert.match(app, /state:group\.state\|\|"published"/);
 });
 
 test('client loads authoritative placement rows instead of trusting stale group counts', () => {

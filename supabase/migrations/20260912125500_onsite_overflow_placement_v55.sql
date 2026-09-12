@@ -200,6 +200,7 @@ declare
   needs_company boolean:=false;
   next_company integer:=0;
   next_group integer:=0;
+  assistant_companies_limit integer:=4;
 begin
   select * into target from public.participants where id=p_participant_id;
   if target.id is null then raise exception 'Participant not found'; end if;
@@ -219,11 +220,12 @@ begin
   end if;
   if target.sex is null then raise exception 'Record the participant sex before placement'; end if;
 
-  select coalesce(ss.group_max_size,10),coalesce(ss.groups_per_company,4)
-    into max_group_size,groups_per_company
+  select coalesce(ss.group_max_size,10),coalesce(ss.groups_per_company,4),coalesce(ss.companies_per_assistant_coordinator,4)
+    into max_group_size,groups_per_company,assistant_companies_limit
   from public.session_structure_settings ss where ss.session_id=target.session_id;
   max_group_size:=greatest(coalesce(max_group_size,10),1);
   groups_per_company:=greatest(coalesce(groups_per_company,4),1);
+  assistant_companies_limit:=greatest(coalesce(assistant_companies_limit,4),1);
   cohort:=private.session_finalization_cohort(target.session_id,target.id);
 
   -- If an ordinary ready group has space, do not create extra structure.
@@ -305,7 +307,7 @@ begin
     where st.session_id=target.session_id and st.is_current and st.operational_role='assistant_coordinator'
       and st.registration_status='approved'
       and so.service_clearance='cleared' and so.arrival_state in ('expected','arrived') and so.planning_state<>'excluded'
-      and not exists(select 1 from public.staff_company_assignments a where a.session_id=target.session_id and a.staff_id=st.id)
+      and (select count(*) from public.staff_company_assignments a where a.session_id=target.session_id and a.staff_id=st.id) < assistant_companies_limit
     order by case when so.planning_state='reserve' then 0 else 1 end,lower(st.full_name),st.id
     limit 1;
     if assistant_id is null then
@@ -354,6 +356,8 @@ declare
   badge_id text;
   created_company boolean:=false;
   created_group boolean:=false;
+  assistant_load integer:=0;
+  assistant_max_load integer:=4;
 begin
   select * into target from public.participants where id=p_participant_id for update;
   if target.id is null then raise exception 'Participant not found'; end if;
@@ -391,12 +395,34 @@ begin
     if p_expected_assistant_id is null or assistant_id is distinct from p_expected_assistant_id then
       raise exception 'The suggested Assistant Coordinator changed. Review the overflow plan again before saving';
     end if;
+    select st.id into assistant_id
+    from public.staff st
+    where st.id=assistant_id and st.session_id=target.session_id
+    for update;
+    if assistant_id is null then raise exception 'The suggested Assistant Coordinator is no longer available'; end if;
+    select count(*) into assistant_load
+    from public.staff_company_assignments a
+    where a.session_id=target.session_id and a.staff_id=assistant_id;
+    select coalesce(ss.companies_per_assistant_coordinator,4) into assistant_max_load
+    from public.session_structure_settings ss
+    where ss.session_id=target.session_id;
+    assistant_max_load:=greatest(coalesce(assistant_max_load,4),1);
+    if assistant_load>=assistant_max_load then
+      raise exception 'The suggested Assistant Coordinator already supervises the configured maximum of % companies',assistant_max_load;
+    end if;
     insert into public.companies(session_id,name,operational_number,finalization_cohort,finalization_batch_id)
     values(target.session_id,target_company_name,target_company_number,cohort,extensions.gen_random_uuid())
     returning id into target_company_id;
     created_company:=true;
     insert into public.staff_company_assignments(session_id,staff_id,company_id,assignment_role,assigned_by,assigned_at)
     values(target.session_id,assistant_id,target_company_id,'assistant_coordinator',(select auth.uid()),now());
+    update public.staff s set assigned_company_id=(
+      select a.company_id
+      from public.staff_company_assignments a
+      where a.session_id=target.session_id and a.staff_id=assistant_id
+      order by a.assigned_at,a.company_id
+      limit 1
+    ) where s.id=assistant_id and s.session_id=target.session_id;
   elsif mode='new_group' then
     target_company_id:=(preview->>'company_id')::uuid;
     if target_company_id is null then raise exception 'The overflow company is no longer available'; end if;
