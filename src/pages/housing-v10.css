@@ -1,0 +1,3 @@
+.housing-v8-staff-separation{display:flex;align-items:flex-start;gap:10px;border:1px solid #d8e4e7;background:#f8fbfc;border-radius:15px;padding:13px 14px;color:#405d68}.housing-v8-staff-separation svg{flex:0 0 auto;margin-top:1px;color:#36778e}.housing-v8-staff-separation span{display:grid;gap:3px}.housing-v8-staff-separation small{color:#687b83;line-height:1.45}.housing-v8-block-math.youth-only{grid-template-columns:repeat(2,76px)}
+@media(max-width:720px){.housing-v8-block-math.youth-only{grid-template-columns:repeat(3,minmax(0,1fr))}.housing-v8-staff-separation{padding:12px}}
+@media(max-width:430px){.housing-v8-block-math.youth-only{grid-template-columns:repeat(2,minmax(0,1fr))}}
