@@ -64,6 +64,42 @@ export async function addOnSiteStaff({
   return data;
 }
 
+export async function loadRegistrationPlacementGroups(sessionId) {
+  const { data, error } = await client().rpc("get_registration_placement_groups_v1", {
+    p_session_id: sessionId,
+  });
+  if (error) throw error;
+
+  const rows = data || [];
+  const companyMap = new Map();
+  const groups = rows.map((row) => {
+    if (row.company_id && !companyMap.has(row.company_id)) {
+      companyMap.set(row.company_id, {
+        id: row.company_id,
+        name: row.company_name || "Company",
+        displayName: row.company_custom_name || row.company_name || "Company",
+        customName: row.company_custom_name || "",
+      });
+    }
+    return {
+      id: row.group_id,
+      name: row.group_name,
+      displayName: row.custom_name || row.group_name,
+      customName: row.custom_name || "",
+      companyId: row.company_id,
+      sex: row.sex === "female" ? "Female" : "Male",
+      state: row.state,
+      memberCount: Number(row.member_count || 0),
+      maxSize: Number(row.max_size || 10),
+      counselorId: row.counselor_id || null,
+      counselorName: row.counselor_name || "",
+      counselorReady: Boolean(row.counselor_ready),
+    };
+  });
+
+  return { groups, companies: [...companyMap.values()] };
+}
+
 export async function previewOnSiteOverflowPlacement(participantId) {
   const { data, error } = await client().rpc("preview_onsite_supplemental_placement_v1", {
     p_participant_id: participantId,
