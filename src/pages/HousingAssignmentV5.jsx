@@ -15,13 +15,12 @@ function roomRecommendation(room, person, assignments, currentAssignment) {
   const occupants = assignments.filter((item) => item.roomId === room.id && !(item.personType === person.kind && item.personId === person.id));
   const personGroup = person.group || currentAssignment?.group || "";
   const personCompany = person.company || currentAssignment?.company || "";
-  const sameGroup = personGroup ? occupants.filter((item) => item.group === personGroup).length : 0;
-  const sameCompany = personCompany ? occupants.filter((item) => item.company === personCompany).length : 0;
-  const plannedForCompany = Boolean(personCompany && room.planCompanyName && room.planCompanyName === personCompany);
-  const plannedForOtherCompany = Boolean(personCompany && room.planCompanyName && room.planCompanyName !== personCompany);
+  const sameGroup = personGroup ? occupants.filter((item) => item.personType === person.kind && item.group === personGroup).length : 0;
+  const sameCompany = personCompany ? occupants.filter((item) => item.personType === person.kind && item.company === personCompany).length : 0;
+  const plannedForCompany = Boolean(person.kind === "participant" && personCompany && room.planCompanyName && room.planCompanyName === personCompany);
+  const plannedForOtherCompany = Boolean(person.kind === "participant" && personCompany && room.planCompanyName && room.planCompanyName !== personCompany);
   const open = Math.max(0, Number(room.capacity || 0) - Number(room.occupancy || 0));
 
-  // Planned company blocks lead. Within that block, people already from the same counselor group stay together.
   let score = open;
   if (plannedForCompany) score += 50000;
   if (sameGroup > 0) score += 12000 + sameGroup * 1000;
@@ -47,6 +46,15 @@ function roomRecommendation(room, person, assignments, currentAssignment) {
     label = "Other company block";
   }
   return { sameGroup, sameCompany, plannedForCompany, plannedForOtherCompany, open, score, reason, label };
+}
+
+function roomCanReceivePerson(room, person, assignments, currentAssignment) {
+  if (room.id === currentAssignment?.roomId) return true;
+  const occupants = assignments.filter((item) => item.roomId === room.id && !(item.personType === person.kind && item.personId === person.id));
+  if (occupants.some((item) => item.personType !== person.kind)) return false;
+  if (person.kind === "staff" && room.planKind === "company") return false;
+  if (person.kind === "participant" && room.planKind === "staff") return false;
+  return true;
 }
 
 function MoveReason({ value, onChange }) {
@@ -83,7 +91,8 @@ export function AssignmentEditorV5({ sessionId, person, rooms, assignments = [],
       && room.sex === person.sex
       && (!room.availabilityStatus || room.availabilityStatus === "available")
       && (room.occupancy < room.capacity || room.id === currentAssignment?.roomId)
-      && (roomHasWayfinding(room) || room.id === currentAssignment?.roomId))
+      && (roomHasWayfinding(room) || room.id === currentAssignment?.roomId)
+      && roomCanReceivePerson(room, person, assignments, currentAssignment))
     .map((room) => ({ room, recommendation: roomRecommendation(room, person, assignments, currentAssignment) }))
     .sort((a, b) => b.recommendation.score - a.recommendation.score
       || Number(a.room.planOrder || 9999) - Number(b.room.planOrder || 9999)
@@ -168,6 +177,12 @@ export function AssignmentEditorV5({ sessionId, person, rooms, assignments = [],
     }
   };
 
+  const pickerHelp = !person.sex
+    ? "Add the person's sex before assigning a room."
+    : person.kind === "staff"
+      ? "Only staff-compatible rooms are shown. Youth rooms and saved youth company blocks stay out of this list."
+      : `${person.company ? `${person.company}'s planned ${sexLabel(person.sex).toLowerCase()} rooms are shown first. ` : ""}Within a youth block, the same counselor group stays together when possible. Staff rooms stay separate.`;
+
   return <DismissibleLayer open onClose={onClose} title={`Housing for ${person.name}`} sheet className="housing-v5-assignment-layer housing-v36-assignment-layer">
     <div className="housing-v5-assignment-modal housing-v36-assignment-modal">
       <header className="housing-v5-assignment-head"><div className="housing-v5-person"><span className="person-avatar">{initials(person.name)}</span><span><span className="kicker">Housing</span><h2>{person.name}</h2><p>{person.group ? `${person.group}${person.company ? ` · ${person.company}` : ""}` : person.context}</p></span></div><button type="button" data-layer-close className="icon-button" onClick={onClose} disabled={busy} aria-label="Close"><X/></button></header>
@@ -175,12 +190,12 @@ export function AssignmentEditorV5({ sessionId, person, rooms, assignments = [],
         {currentAssignment ? <section className="housing-v36-current-room" aria-label="Current room assignment">
           <div><small>Current room</small><b>{currentAssignment.roomName}</b><span>{currentRoom ? roomLocation(currentRoom) : currentAssignment.bedLabel ? `Bed / key ${currentAssignment.bedLabel}` : "Currently assigned"}</span></div>
           <button type="button" className="secondary danger-text housing-v36-unassign" disabled={busy} onClick={() => setConfirmRemove(true)}>Unassign room</button>
-        </section> : <div className="housing-v37-assignment-state" role="status"><Bed size={18}/><span><b>Needs a room</b><small>{person.sex ? `Choose a ${sexLabel(person.sex).toLowerCase()} room below.` : "Sex is missing, so a room cannot be assigned yet."}</small></span></div>}
+        </section> : <div className="housing-v37-assignment-state" role="status"><Bed size={18}/><span><b>Needs a room</b><small>{person.sex ? `Choose a ${sexLabel(person.sex).toLowerCase()} ${person.kind === "staff" ? "staff" : "youth"} room below.` : "Sex is missing, so a room cannot be assigned yet."}</small></span></div>}
 
         {selectedRoom && roomId !== currentAssignment?.roomId ? <div className="housing-v36-next-room"><small>{currentAssignment ? "New room" : "Selected room"}</small><b>{selectedRoom.name}</b><span>{roomLocation(selectedRoom)}</span></div> : null}
 
         {mode === "choose" ? <>
-          <div className="housing-v5-picker-head housing-v36-picker-head"><div><h3>{currentAssignment ? "Move to another room" : "Choose a room"}</h3><p>{person.sex ? `${person.company ? `${person.company}'s planned ${sexLabel(person.sex).toLowerCase()} rooms are shown first. ` : ""}Within the block, the same counselor group stays together when possible.` : "Add the person's sex before assigning a room."}</p></div><button type="button" className="secondary" disabled={!person.sex} onClick={() => { setMode("create"); setError(""); }}><Plus/>Create room</button></div>
+          <div className="housing-v5-picker-head housing-v36-picker-head"><div><h3>{currentAssignment ? "Move to another room" : "Choose a room"}</h3><p>{pickerHelp}</p></div><button type="button" className="secondary" disabled={!person.sex} onClick={() => { setMode("create"); setError(""); }}><Plus/>Create room</button></div>
           <SearchField value={query} onChange={setQuery} label="Find a room" placeholder="Search room, area, floor or company" autoFocus={!currentAssignment} disabled={!person.sex}/>
           <div className="housing-v5-room-choices">{visible.map(({ room, recommendation }, index) => {
             const selected = room.id === roomId;
@@ -190,21 +205,21 @@ export function AssignmentEditorV5({ sessionId, person, rooms, assignments = [],
               <span className="room-meta"><strong>{room.occupancy}/{room.capacity}</strong><small>{sexLabel(room.sex)} room</small></span>
               <span className="room-choice-end">{!isCurrent && index === 0 && recommendation.label ? <i>{recommendation.label}</i> : null}<CheckCircle size={23} weight={selected ? "fill" : "regular"}/></span>
             </button>;
-          })}{!visible.length ? <Empty icon={Bed} title={person.sex ? `No ${sexLabel(person.sex).toLowerCase()} rooms with space` : "Room assignment is blocked"} text={person.sex ? "Create a room for this person without leaving the assignment." : "Record the person's sex first so Housing can show only compatible rooms."} action={person.sex ? <button type="button" className="primary" onClick={() => setMode("create")}><Plus/>Create room</button> : null}/> : null}</div>
+          })}{!visible.length ? <Empty icon={Bed} title={person.sex ? `No compatible ${sexLabel(person.sex).toLowerCase()} rooms with space` : "Room assignment is blocked"} text={person.sex ? `Create a separate ${person.kind === "staff" ? "staff" : "youth"} room for this person without leaving the assignment.` : "Record the person's sex first so Housing can show only compatible rooms."} action={person.sex ? <button type="button" className="primary" onClick={() => setMode("create")}><Plus/>Create room</button> : null}/> : null}</div>
           {roomChanged ? <MoveReason value={moveReason} onChange={setMoveReason}/> : null}
           <details className="housing-v4-details"><summary><span><b>Bed / key</b><small>{bedLabel ? bedLabel : "Optional"}</small></span><span>+</span></summary><div><label><span className="housing-field-label"><b>Bed / key label</b><em>Optional</em></span><input value={bedLabel} onChange={(event) => setBedLabel(event.target.value)} placeholder="e.g. Bed B or Key 203-2"/></label></div></details>
         </> : <>
-          <div className="housing-v5-picker-head"><div><span className="kicker">Create & assign</span><h3>New room for {person.name.split(" ")[0]}</h3><p>Room use will be set to {person.sex ? sexLabel(person.sex).toLowerCase() : "the person's recorded sex"} automatically.</p></div><button type="button" className="secondary" onClick={() => setMode("choose")}>Back</button></div>
+          <div className="housing-v5-picker-head"><div><span className="kicker">Create & assign</span><h3>New {person.kind === "staff" ? "staff" : "youth"} room for {person.name.split(" ")[0]}</h3><p>Room use will be set to {person.sex ? sexLabel(person.sex).toLowerCase() : "the person's recorded sex"} automatically. Once occupied, Housing will keep youth and staff from being mixed in this room.</p></div><button type="button" className="secondary" onClick={() => setMode("choose")}>Back</button></div>
           <div className="housing-v4-form two"><label>Room name<input autoFocus required value={newRoom.name} onChange={(event) => setNewRoom({ ...newRoom, name: event.target.value })} placeholder="e.g. Room 105"/></label><label>Spaces<input type="number" min="1" max="50" value={newRoom.capacity} onChange={(event) => setNewRoom({ ...newRoom, capacity: event.target.value })}/></label></div>
           <div className="housing-wayfinding-fields"><label><span className="housing-field-label"><b>Location / building</b><em>Required</em></span><input required value={newRoom.building} onChange={(event) => setNewRoom({ ...newRoom, building: event.target.value })} placeholder="e.g. Republic Hall · Chapel Lane"/></label><label><span className="housing-field-label"><b>Floor / area</b><em>Optional</em></span><input value={newRoom.floor} onChange={(event) => setNewRoom({ ...newRoom, floor: event.target.value })} placeholder="e.g. Floor 1"/></label></div>
-          <div className="housing-v4-inferred"><Bed/><span><b>{person.sex ? `${sexLabel(person.sex)} room` : "Room type pending"}</b><small>Set from the person being assigned.</small></span></div>
+          <div className="housing-v4-inferred"><Bed/><span><b>{person.sex ? `${sexLabel(person.sex)} ${person.kind === "staff" ? "staff" : "youth"} room` : "Room type pending"}</b><small>Set from the person being assigned. Youth and staff sleep separately.</small></span></div>
           <details className="housing-v4-details"><summary><span><b>Operational note</b><small>Optional</small></span><span>+</span></summary><div><label>Note<textarea rows="2" value={newRoom.notes} onChange={(event) => setNewRoom({ ...newRoom, notes: event.target.value })}/></label></div></details>
           {currentAssignment ? <MoveReason value={moveReason} onChange={setMoveReason}/> : null}
         </>}
         {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
       </div>
-      <footer className="housing-v5-assignment-actions housing-v36-assignment-actions housing-v37-assignment-actions"><div>{mode === "choose" && selectedRoom && roomId !== currentAssignment?.roomId ? <><b>{selectedRoom.name}</b><small>{currentAssignment ? "Ready to move" : selectedRecommendation?.reason}</small></> : mode === "create" ? <><b>Create new room</b><small>Nothing is saved until you confirm.</small></> : currentAssignment ? <><b>{currentAssignment.roomName}</b><small>{bedChanged ? "Bed / key will be updated" : "Current room remains unchanged"}</small></> : <><b>No room selected</b><small>Choose a room above to continue.</small></>}</div>{mode === "choose" ? <div className="housing-v37-footer-buttons">{(roomChanged || (!currentAssignment && roomId)) ? <button type="button" className="secondary" disabled={busy} onClick={clearSelection}>{currentAssignment ? "Cancel move" : "Clear selection"}</button> : <button type="button" className="secondary" disabled={busy} onClick={onClose}>Cancel</button>}<button type="button" className="primary" disabled={busy || !hasChanges || !roomId} onClick={save}>{busy ? "Saving…" : roomChanged && selectedRoom ? `Move to ${selectedRoom.name}` : currentAssignment ? bedChanged ? "Save bed / key" : "No changes" : selectedRoom ? `Assign ${selectedRoom.name}` : "Select a room"}</button></div> : <button type="button" className="primary" disabled={busy || !person.sex || !newRoom.name.trim() || (!newRoom.building.trim() && !newRoom.floor.trim())} onClick={createAndAssign}>{busy ? "Creating…" : "Create room & assign"}</button>}</footer>
-      {confirmRemove ? <ConfirmActionSheet open title={`Unassign ${person.name} from ${currentAssignment?.roomName || "this room"}?`} description="This ends the current room assignment without deleting the person or their Housing history." impact="They will move back to the Needs room list. You can undo immediately if this was a mistake, provided the previous room is still available." confirmLabel="Unassign room" cancelLabel="Keep room" busy={busy} onClose={() => setConfirmRemove(false)} onConfirm={remove}/> : null}
+      <footer className="housing-v5-assignment-actions housing-v36-assignment-actions housing-v37-assignment-actions"><div>{mode === "choose" && selectedRoom && roomId !== currentAssignment?.roomId ? <><b>{selectedRoom.name}</b><small>{currentAssignment ? "Ready to move" : selectedRecommendation?.reason}</small></> : mode === "create" ? <><b>Create separate {person.kind === "staff" ? "staff" : "youth"} room</b><small>Nothing is saved until you confirm.</small></> : currentAssignment ? <><b>{currentAssignment.roomName}</b><small>{bedChanged ? "Bed / key will be updated" : "Current room remains unchanged"}</small></> : <><b>No room selected</b><small>Choose a compatible room above to continue.</small></>}</div>{mode === "choose" ? <div className="housing-v37-footer-buttons">{(roomChanged || (!currentAssignment && roomId)) ? <button type="button" className="secondary" disabled={busy} onClick={clearSelection}>{currentAssignment ? "Cancel move" : "Clear selection"}</button> : <button type="button" className="secondary" disabled={busy} onClick={onClose}>Cancel</button>}<button type="button" className="primary" disabled={busy || !hasChanges || !roomId} onClick={save}>{busy ? "Saving…" : roomChanged && selectedRoom ? `Move to ${selectedRoom.name}` : currentAssignment ? bedChanged ? "Save bed / key" : "No changes" : selectedRoom ? `Assign ${selectedRoom.name}` : "Select a room"}</button></div> : <button type="button" className="primary" disabled={busy || !person.sex || !newRoom.name.trim() || (!newRoom.building.trim() && !newRoom.floor.trim())} onClick={createAndAssign}>{busy ? "Creating…" : "Create room & assign"}</button>}</footer>
+      {confirmRemove ? <ConfirmActionSheet open title={`Unassign ${person.name} from ${currentAssignment?.roomName || "this room"}?`} description="This ends the current room assignment without deleting the person or their Housing history." impact="They will move back to the Needs room list. You can undo immediately if this was a mistake, provided the previous room is still available and still matches youth/staff separation rules." confirmLabel="Unassign room" cancelLabel="Keep room" busy={busy} onClose={() => setConfirmRemove(false)} onConfirm={remove}/> : null}
     </div>
   </DismissibleLayer>;
 }
