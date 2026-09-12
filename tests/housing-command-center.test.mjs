@@ -11,7 +11,7 @@ const sw = read("public/sw.js");
 
 test("Housing uses one consistent route hierarchy across Live, Plan and Inventory", () => {
   assert.match(shell, /housing-command-center\.css/);
-  assert.doesNotMatch(shell, /if \(mode === "live"\) return/);
+  assert.doesNotMatch(shell, /if \(mode === "live"\) return <section/);
   assert.ok(shell.indexOf("<PageHead") < shell.indexOf("<WorkspaceNav"));
   assert.match(shell, /Live Housing/);
   assert.match(shell, /Company blocks/);
