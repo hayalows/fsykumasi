@@ -9,6 +9,7 @@ import { HousingInventoryV8 } from "./HousingInventoryV8.jsx";
 import { HousingPlanningV8 } from "./HousingPlanningV8.jsx";
 import "./housing-v8.css";
 import "./housing-v10.css";
+import "./housing-command-center.css";
 
 function WorkspaceNav({ mode, onChange }) {
   const options = [
@@ -22,17 +23,21 @@ function WorkspaceNav({ mode, onChange }) {
   })}</nav>;
 }
 
+function workspaceDescription(mode) {
+  if (mode === "live") return "Plan rooms before the conference, then place checked-in arrivals quickly as they come in.";
+  if (mode === "plan") return "Plan youth Company × Sex room blocks and keep staff sleeping spaces separate.";
+  return "Maintain the physical room inventory and keep every room ready for live assignment.";
+}
+
 export function Housing(props) {
   const { sessionId, capabilities = [], sessionName } = props;
   const [mode, setMode] = useState("live");
   const canView = hasCapability(capabilities, "housing_view");
   const canManage = hasCapability(capabilities, "housing_manage");
 
-  if (mode === "live") return <div className="housing-v8-shell"><div className="housing-v8-mode-wrap"><WorkspaceNav mode={mode} onChange={setMode}/></div><HousingLiveV6 {...props}/></div>;
-
-  return <section className="page housing-v8-shell">
-    <PageHead title="Housing" sessionName={sessionName} description={mode === "plan" ? "Plan youth Company × Sex room blocks and keep staff sleeping spaces separate." : "Maintain the physical room inventory without changing application code."}/>
+  return <section className={`page housing-v8-shell housing-v8-${mode}`}>
+    <PageHead title="Housing" sessionName={sessionName} description={workspaceDescription(mode)}/>
     <WorkspaceNav mode={mode} onChange={setMode}/>
-    {!canView ? <article className="panel"><p>Housing access is not assigned to this account.</p></article> : mode === "plan" ? <HousingPlanningV8 sessionId={sessionId} canManage={canManage}/> : <HousingInventoryV8 sessionId={sessionId} canManage={canManage}/>} 
+    {!canView ? <article className="panel housing-v8-access"><p>Housing access is not assigned to this account.</p></article> : mode === "live" ? <div className="housing-v8-live"><HousingLiveV6 {...props}/></div> : mode === "plan" ? <HousingPlanningV8 sessionId={sessionId} canManage={canManage}/> : <HousingInventoryV8 sessionId={sessionId} canManage={canManage}/>} 
   </section>;
 }
