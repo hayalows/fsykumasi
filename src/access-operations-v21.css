@@ -1,0 +1,18 @@
+.access-v21-shell .access-v21-add-layer .access-v18-sheet-scroll{display:flex;flex-direction:column;gap:18px}
+.access-v21-shell .access-v21-new-person{padding:0 1px 4px}
+.access-v21-shell .access-v21-new-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.access-v21-shell .access-v21-new-options>button{min-height:92px;border:1px solid color-mix(in srgb,var(--line,#d7e3e8) 88%,transparent);border-radius:16px;background:#fff;padding:14px;text-align:left;display:grid;grid-template-columns:38px minmax(0,1fr);align-items:start;gap:11px;box-shadow:0 1px 2px rgba(12,49,64,.04);transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+.access-v21-shell .access-v21-new-options>button:hover{border-color:#8db8c8;box-shadow:0 8px 24px rgba(12,49,64,.08);transform:translateY(-1px)}
+.access-v21-shell .access-v21-new-options>button:focus-visible{outline:3px solid rgba(0,125,165,.18);outline-offset:2px}
+.access-v21-shell .access-v21-new-options>button span:last-child{display:flex;flex-direction:column;gap:4px;min-width:0}
+.access-v21-shell .access-v21-new-options>button b{font-size:14px;color:var(--ink,#173743)}
+.access-v21-shell .access-v21-new-options>button small{font-size:12px;line-height:1.45;color:var(--muted,#64777f)}
+.access-v21-shell .access-v21-existing{border-top:1px solid var(--line,#dfe9ed);padding-top:18px}
+.access-v21-shell .access-v21-committee-action{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 10px;border:0;background:transparent;color:var(--blue-30,#00698d);font:inherit;font-size:12px;font-weight:800;cursor:pointer;border-radius:9px}
+.access-v21-shell .access-v21-committee-action:hover{background:rgba(0,105,141,.07)}
+.access-v21-shell .access-v21-committee-action:focus-visible{outline:3px solid rgba(0,125,165,.18);outline-offset:1px}
+.account-choice-empty-v21{border:1px dashed #bdd4de;border-radius:14px;background:#f8fbfc;padding:15px;display:flex;flex-direction:column;gap:4px;color:#2c4c58}
+.account-choice-empty-v21 b{font-size:13px}
+.account-choice-empty-v21 small{font-size:12px;line-height:1.45;color:#667b83}
+@media(max-width:760px){.access-v21-shell .access-v21-new-options{grid-template-columns:1fr}.access-v21-shell .access-v21-new-options>button{min-height:82px}.access-v21-shell .access-v21-existing{padding-top:14px}.access-v21-shell .access-v21-committee-action{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.access-v21-shell .access-v21-new-options>button{transition:none}.access-v21-shell .access-v21-new-options>button:hover{transform:none}}
