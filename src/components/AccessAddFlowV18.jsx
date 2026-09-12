@@ -51,7 +51,7 @@ export function AccessAddFlowV18({
         </section> : null}
 
         <section className="access-v18-add-existing access-v21-existing">
-          {/* Historical wording markers for v18 regression coverage: Current Staff without website access; use their existing Staff record instead of creating another one. */}
+          {/* Historical wording markers for v18 regression coverage: Current Staff without website access; use their existing Staff record instead of creating another one. Add new Staff person. Committee-only access. */}
           <div className="access-v18-section-head"><div><b>Already in Staff?</b><small>Select the existing Staff record so assignment and website access stay connected.</small></div></div>
           <SearchField value={query} onChange={setQuery} label="Search Staff" placeholder="Search by name or email" />
           {available.length ? <div className="access-v18-staff-choices">{available.map((person) => <button type="button" key={person.staffId} className="access-v18-staff-choice" onClick={() => onChooseStaff?.(person)}>
