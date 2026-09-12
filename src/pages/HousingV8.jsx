@@ -8,6 +8,7 @@ import { Housing as HousingLiveV6 } from "./HousingV6.jsx";
 import { HousingInventoryV8 } from "./HousingInventoryV8.jsx";
 import { HousingPlanningV8 } from "./HousingPlanningV8.jsx";
 import "./housing-v8.css";
+import "./housing-v10.css";
 
 function WorkspaceNav({ mode, onChange }) {
   const options = [
@@ -30,7 +31,7 @@ export function Housing(props) {
   if (mode === "live") return <div className="housing-v8-shell"><div className="housing-v8-mode-wrap"><WorkspaceNav mode={mode} onChange={setMode}/></div><HousingLiveV6 {...props}/></div>;
 
   return <section className="page housing-v8-shell">
-    <PageHead title="Housing" sessionName={sessionName} description={mode === "plan" ? "Plan Company × Sex room blocks before live assignments begin." : "Maintain the physical room inventory without changing application code."}/>
+    <PageHead title="Housing" sessionName={sessionName} description={mode === "plan" ? "Plan youth Company × Sex room blocks and keep staff sleeping spaces separate." : "Maintain the physical room inventory without changing application code."}/>
     <WorkspaceNav mode={mode} onChange={setMode}/>
     {!canView ? <article className="panel"><p>Housing access is not assigned to this account.</p></article> : mode === "plan" ? <HousingPlanningV8 sessionId={sessionId} canManage={canManage}/> : <HousingInventoryV8 sessionId={sessionId} canManage={canManage}/>} 
   </section>;
