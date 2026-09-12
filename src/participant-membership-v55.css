@@ -1,0 +1,118 @@
+/* Membership check-in v55: use desktop width to remove unnecessary vertical scrolling.
+   The action area stays reachable on shorter laptop screens while mobile keeps
+   the single-column, touch-first choice layout. */
+
+@media (min-width: 761px) {
+  .participant-membership-layer-v53 {
+    width: min(720px, calc(100vw - 48px)) !important;
+    max-width: 720px !important;
+    max-height: calc(100dvh - 32px) !important;
+    overflow: auto !important;
+    scrollbar-gutter: stable;
+  }
+
+  .participant-membership-sheet-v53 {
+    gap: 14px;
+    padding: 22px 24px 20px;
+  }
+
+  .participant-membership-sheet-v53 header {
+    gap: 5px;
+  }
+
+  .participant-membership-sheet-v53 header h2 {
+    font-size: clamp(25px, 2.2vw, 30px);
+  }
+
+  .participant-membership-person-v53 {
+    padding: 11px 13px;
+  }
+
+  .participant-membership-options-v53 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .participant-membership-options-v53 > button {
+    min-height: 72px;
+    padding: 12px 14px;
+  }
+
+  .participant-membership-review-v54,
+  .participant-membership-privacy-v53 {
+    margin-block: 0;
+  }
+
+  .participant-membership-actions-v54 {
+    margin-top: 1px;
+    padding-top: 13px;
+    border-top: 1px solid rgba(203, 223, 231, .82);
+  }
+}
+
+@media (min-width: 761px) and (max-height: 760px) {
+  .participant-membership-layer-v53 {
+    max-height: calc(100dvh - 20px) !important;
+  }
+
+  .participant-membership-sheet-v53 {
+    gap: 10px;
+    padding: 17px 20px 16px;
+  }
+
+  .participant-membership-sheet-v53 header {
+    gap: 3px;
+  }
+
+  .participant-membership-sheet-v53 header h2 {
+    font-size: 25px;
+  }
+
+  .participant-membership-sheet-v53 header p {
+    font-size: 13.5px;
+    line-height: 1.4;
+  }
+
+  .participant-membership-person-v53 {
+    padding: 9px 12px;
+  }
+
+  .participant-membership-options-v53 {
+    gap: 8px;
+  }
+
+  .participant-membership-options-v53 > button {
+    min-height: 62px;
+    padding: 9px 12px;
+  }
+
+  .participant-membership-options-v53 small {
+    font-size: 12.5px;
+  }
+
+  .participant-membership-actions-v54 {
+    padding-top: 10px;
+  }
+
+  .participant-membership-actions-v54 > button {
+    min-height: 46px;
+  }
+
+  .participant-membership-review-v54,
+  .participant-membership-privacy-v53 {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+}
+
+@media (max-width: 760px) {
+  .participant-membership-layer-v53 {
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .participant-membership-options-v53 {
+    grid-template-columns: 1fr;
+  }
+}

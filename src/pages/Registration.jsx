@@ -11,6 +11,7 @@ import "./registration-readiness-v28.css";
 import "./registration-workspace.css";
 import "./registration-journey-v31.css";
 import "../participant-membership-v54.css";
+import "../participant-membership-v55.css";
 
 const MODE_META = {
   desk: {
