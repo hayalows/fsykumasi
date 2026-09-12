@@ -65,3 +65,12 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - This exception must not rebuild, rebalance, or renumber the settled final roster. Existing published companies, groups, placements and FSY IDs remain stable.
 - Parent/guardian phone is required for a newly added on-site participant; a second parent/guardian may be recorded. T-shirt size is selected from Small, Medium, Large, Extra Large, or Extra Extra Large.
 - The user explicitly approved fixing, merging and pushing this on-site registration release to production on 2026-09-10.
+
+## Interaction refinement direction — 2026-09-12
+
+- Keep FSY Ops task-first rather than copying decorative component-gallery styles. Borrow proven interaction patterns from Apple HIG, OpenSource UI, and OpenAI design-system practice only when they reduce thinking, errors, or repeated work.
+- Search and workspace context should be easy to discover. Preserve native controls where they are more reliable on phones, then style them to fit the product instead of replacing them with custom interaction code without a clear benefit.
+- Mobile controls must remain at least 44px, touch text-entry controls must render at 16px or larger to avoid iOS focus zoom, and pinch zoom must remain available.
+- System state should be calm and consistent: connection, training, stale data, and refresh errors use one compact status language with interruption proportional to severity.
+- Temporary successful actions should use lightweight feedback and Undo when safe; persistent banners are reserved for information the user must keep seeing.
+- Visual refinements should reduce dead or redundant controls, keep primary actions obvious, and preserve keyboard focus, contrast, safe-area handling, and responsive behavior.
