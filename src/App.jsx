@@ -64,9 +64,9 @@ function RouteLoading() {
 }
 
 function normalizeDemoGrouping(nextAssignment) {
-  const groups=(nextAssignment.groups||[]).map((group)=>({...group,displayName:group.displayName||group.name,memberCount:Number(group.memberCount||group.members?.length||0),counselorId:group.counselorId||null}));
+  const groups=(nextAssignment.groups||[]).map((group)=>({...group,displayName:group.displayName||group.name,memberCount:Number(group.memberCount||group.members?.length||0),counselorId:group.counselorId||null,state:group.state||"published"}));
   const groupMap=new Map(groups.map((group)=>[group.id,group]));
-  const companies=(nextAssignment.companies||[]).map((company)=>({...company,displayName:company.displayName||company.name,assistantCoordinatorIds:company.assistantCoordinatorIds||[],groups:(company.groups||[]).map((group)=>groupMap.get(group.id)||group)}));
+  const companies=(nextAssignment.companies||[]).map((company)=>({...company,displayName:company.displayName||company.name,assistantCoordinatorIds:company.assistantCoordinatorIds||[],groups:(company.groups||[]).map((group)=>groupMap.get(group.id)||{...group,state:group.state||"published"})}));
   return {...nextAssignment,groups,companies,published:true};
 }
 

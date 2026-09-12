@@ -4,6 +4,7 @@ import fs from "node:fs";
 
 const migration = fs.readFileSync("supabase/migrations/20260910081500_onsite_registration_flow_v31.sql", "utf8");
 const parts = fs.readFileSync("src/pages/RegistrationJourneyPartsV4.jsx", "utf8");
+const picker = fs.readFileSync("src/pages/RegistrationGroupPickerV55.jsx", "utf8");
 const journey = fs.readFileSync("src/pages/RegistrationJourneyV29.jsx", "utf8");
 const onsite = fs.readFileSync("src/lib/onsite.js", "utf8");
 const registration = fs.readFileSync("src/pages/Registration.jsx", "utf8");
@@ -39,8 +40,8 @@ test("placement loading does not look like an unsaved placement", () => {
   assert.match(journey, /placementLoading=\{placementLoading\}/);
   assert.doesNotMatch(journey, /busy=\{busyId===selectedRow\.participantId\|\|placementLoading\}/);
   assert.match(parts, /loading = false/);
-  assert.match(parts, /Loading groups…/);
-  assert.match(parts, /disabled=\{busy \|\| loading \|\| !selected\}/);
+  assert.match(picker, /Loading groups…/);
+  assert.match(picker, /disabled=\{busy \|\| groupLoading \|\| overflowBusy \|\| !selected\}/);
 });
 
 test("T-shirt sizes are selected from the approved five options", () => {

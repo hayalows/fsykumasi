@@ -10,6 +10,7 @@ import { X } from "@phosphor-icons/react/X";
 import { Empty, MutationFeedback, Status } from "../components/UI.jsx";
 import { NO_SHOW_CONFIRMATION_SOURCES } from "../lib/identity-arrival.js";
 import { uniqueUnitMatch } from "../lib/registration-lookup.js";
+import { GroupPickerV55 } from "./RegistrationGroupPickerV55.jsx";
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 const TSHIRT_SIZES = ["Small", "Medium", "Large", "Extra Large", "Extra Extra Large"];
@@ -82,53 +83,8 @@ function StepIndicator({ step, label }) {
   </div>;
 }
 
-function GroupPicker({ groups, companies, row, busy, loading = false, error, placementRefreshFailed = false, onRetry, onChoose }) {
-  const [query, setQuery] = useState("");
-  const [visibleLimit, setVisibleLimit] = useState(6);
-  const [selectedId, setSelectedId] = useState("");
-  const companyById = useMemo(() => new Map(companies.map((item) => [item.id, item])), [companies]);
-  const choices = useMemo(() => groups
-    .filter((group) => sexValue(group.sex) === sexValue(row.sex) && Number(group.memberCount || 0) < 10)
-    .sort((a, b) => Number(a.memberCount || 0) - Number(b.memberCount || 0) || collator.compare(a.name, b.name)), [groups, row.sex]);
-  const filtered = useMemo(() => {
-    const text = query.trim().toLowerCase();
-    if (!text) return choices;
-    return choices.filter((group) => {
-      const company = companyById.get(group.companyId);
-      return `${group.displayName || group.name} ${company?.displayName || company?.name || ""}`.toLowerCase().includes(text);
-    });
-  }, [choices, companyById, query]);
-  const visible = filtered.slice(0, visibleLimit);
-  const selected = choices.find((group) => group.id === selectedId) || null;
-  const selectedCompany = selected ? companyById.get(selected.companyId) : null;
-  const firstName = String(row.fullName || "participant").trim().split(/\s+/)[0] || "participant";
-
-  useEffect(() => {
-    if (selectedId && !choices.some((group) => group.id === selectedId)) setSelectedId("");
-  }, [choices, selectedId]);
-
-  return <div className="regjourney-group-picker regjourney-group-picker-v5">
-    <div className="regjourney-placement-guidance"><b>Available groups only</b><span>Lowest load groups are first. For new on-site arrivals, the ward or branch does not block placement.</span></div>
-    {choices.length > 6 ? <label className="regjourney-inline-search regjourney-inline-search-v5"><span className="sr-only">Find counselor group</span><MagnifyingGlass aria-hidden="true" /><input value={query} onChange={(event) => { setQuery(event.target.value); setVisibleLimit(6); }} placeholder="Search groups or companies" /></label> : null}
-    <div className="regjourney-choice-list" role="radiogroup" aria-label="Available counselor groups">
-      {visible.map((group, index) => {
-        const company = companyById.get(group.companyId);
-        const isSelected = group.id === selectedId;
-        const openSpots = Math.max(0, 10 - Number(group.memberCount || 0));
-        return <button type="button" key={group.id} className={`regjourney-choice regjourney-choice-v5${isSelected ? " selected" : ""}`} disabled={busy || loading} onClick={() => setSelectedId(group.id)} role="radio" aria-checked={isSelected}>
-          <span><b>{group.displayName || group.name}</b><small>{company?.displayName || company?.name || "Company"} · {Number(group.memberCount || 0)}/10 · {openSpots} {openSpots === 1 ? "place" : "places"} open</small></span>
-          <span className="regjourney-choice-end">{!query.trim() && index === 0 ? <em>Recommended</em> : null}{isSelected ? <CheckCircle weight="fill" /> : <span className="regjourney-choice-radio" aria-hidden="true" />}</span>
-        </button>;
-      })}
-      {!visible.length ? <Empty icon={UsersThree} title="No available counselor groups" text="Every matching group is full. Review group capacity before placing this participant." /> : null}
-    </div>
-    {filtered.length > visible.length ? <button type="button" className="text-action regjourney-show-groups" onClick={() => setVisibleLimit((value) => value + 14)}>Show {Math.min(14, filtered.length - visible.length)} more groups</button> : null}
-    {error ? <MutationFeedback tone="error" className="regjourney-placement-feedback">{placementRefreshFailed ? <>Placement was saved, but the latest roster could not be loaded. {onRetry ? <button type="button" className="text-action regjourney-placement-retry" disabled={busy} onClick={onRetry}>Retry roster</button> : null}</> : <>Placement was not saved. {error}</>}</MutationFeedback> : null}
-    <div className={`regjourney-placement-confirm${selected ? " ready" : ""}`} aria-live="polite">
-      <div>{selected ? <><b>{selected.displayName || selected.name}</b><small>{selectedCompany?.displayName || selectedCompany?.name || "Company"} · FSY ID will be created with this company when placement is saved.</small></> : <><b>Select a counselor group</b><small>The company follows the group. Nothing is saved until you confirm.</small></>}</div>
-      <button type="button" className="primary" disabled={busy || loading || !selected} aria-busy={busy || loading} onClick={() => selected && void onChoose(selected)}>{busy ? "Placing…" : loading ? "Loading groups…" : selected ? `Place ${firstName}` : "Select a group"}<ArrowRight /></button>
-    </div>
-  </div>;
+function GroupPicker(props) {
+  return <GroupPickerV55 {...props} />;
 }
 
 function UnitCombobox({ value, stake, options = [], onChange, onStakeChange }) {

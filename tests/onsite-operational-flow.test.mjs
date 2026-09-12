@@ -6,12 +6,14 @@ const migrationPath = new URL("../supabase/migrations/20260905143000_operational
 const partsPath = new URL("../src/pages/RegistrationJourneyPartsV4.jsx", import.meta.url);
 const journeyPath = new URL("../src/pages/RegistrationJourneyV4.jsx", import.meta.url);
 const journeyV29Path = new URL("../src/pages/RegistrationJourneyV29.jsx", import.meta.url);
+const pickerPath = new URL("../src/pages/RegistrationGroupPickerV55.jsx", import.meta.url);
 
-const [migration, parts, journey, journeyV29] = await Promise.all([
+const [migration, parts, journey, journeyV29, picker] = await Promise.all([
   readFile(migrationPath, "utf8"),
   readFile(partsPath, "utf8"),
   readFile(journeyPath, "utf8"),
   readFile(journeyV29Path, "utf8"),
+  readFile(pickerPath, "utf8"),
 ]);
 
 test("on-site group placement issues an FSY ID in the same transaction", () => {
@@ -23,7 +25,7 @@ test("on-site group placement issues an FSY ID in the same transaction", () => {
 test("on-site arrivals cannot bypass identity before check-in", () => {
   assert.match(migration, /On-site participant still needs an FSY ID before check-in/);
   assert.match(parts, /return "Needs FSY ID"/);
-  assert.match(parts, /FSY ID will be created with this company when placement is saved/);
+  assert.match(picker, /FSY ID will be created with this company when placement is saved/);
 });
 
 test("normal on-site placement is primary and confirmed vacancy is optional", () => {
@@ -38,8 +40,8 @@ test("placement refresh failures stay visible and recoverable in the placement s
   assert.match(journeyV29, /Placement was saved, but the roster could not refresh/);
   assert.match(journeyV29, /onRetry=\{retryRegistrationWorkspace\}/);
   assert.doesNotMatch(journeyV29, /void reload\(\)\.catch\(\(\)=>\{\}\)/);
-  assert.match(parts, /Retry roster/);
-  assert.match(parts, /placementRefreshFailed/);
+  assert.match(picker, /Retry roster/);
+  assert.match(picker, /placementRefreshFailed/);
 });
 
 test("vacancy success copy does not claim the retired participant ID transfers", () => {

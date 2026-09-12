@@ -5,13 +5,16 @@ import test from "node:test";
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("on-site registration uses compact step progress and explicit placement confirmation", async () => {
-  const parts = await read("src/pages/RegistrationJourneyPartsV4.jsx");
+  const [parts, picker] = await Promise.all([
+    read("src/pages/RegistrationJourneyPartsV4.jsx"),
+    read("src/pages/RegistrationGroupPickerV55.jsx"),
+  ]);
   assert.match(parts, /function StepIndicator/);
   assert.match(parts, /Step \{step\} of 4/);
-  assert.match(parts, /Lowest load/);
+  assert.match(picker, /Lowest load/);
   assert.doesNotMatch(parts, /Best fit/);
-  assert.match(parts, /Nothing is saved until you confirm/);
-  assert.match(parts, /Place \$\{firstName\}/);
+  assert.match(picker, /Nothing is saved until you confirm/);
+  assert.match(picker, /Place \$\{firstName\}/);
   assert.match(parts, /aria-busy=\{busy\}/);
 });
 
