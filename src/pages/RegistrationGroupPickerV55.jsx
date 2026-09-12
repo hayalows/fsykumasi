@@ -3,7 +3,11 @@ import { ArrowRight } from "@phosphor-icons/react/ArrowRight";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { UsersThree } from "@phosphor-icons/react/UsersThree";
 import { Empty, MutationFeedback } from "../components/UI.jsx";
-import { applyOnSiteOverflowPlacement, previewOnSiteOverflowPlacement } from "../lib/onsite.js";
+import {
+  applyOnSiteOverflowPlacement,
+  loadRegistrationPlacementGroups,
+  previewOnSiteOverflowPlacement,
+} from "../lib/onsite.js";
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
@@ -41,16 +45,25 @@ export function GroupPickerV55({ groups, companies, row, busy, loading = false, 
   const [overflowLoading, setOverflowLoading] = useState(false);
   const [overflowBusy, setOverflowBusy] = useState(false);
   const [overflowError, setOverflowError] = useState("");
-  const companyById = useMemo(() => new Map(companies.map((item) => [item.id, item])), [companies]);
-  const choices = useMemo(() => groups
+  const [liveOptions, setLiveOptions] = useState(null);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveError, setLiveError] = useState("");
+
+  const hasLiveSession = Boolean(row.sessionId);
+  const effectiveGroups = hasLiveSession ? (liveOptions?.groups || []) : groups;
+  const effectiveCompanies = hasLiveSession ? (liveOptions?.companies || []) : companies;
+  const groupLoading = Boolean(loading || (hasLiveSession && liveLoading));
+  const companyById = useMemo(() => new Map(effectiveCompanies.map((item) => [item.id, item])), [effectiveCompanies]);
+  const choices = useMemo(() => effectiveGroups
     .filter((group) => {
       const max = Number(group.maxSize || 10);
+      const counselorReady = hasLiveSession ? group.counselorReady === true : group.counselorReady !== false;
       return sexValue(group.sex) === sexValue(row.sex)
         && group.state === "published"
-        && group.counselorReady === true
+        && counselorReady
         && Number(group.memberCount || 0) < max;
     })
-    .sort((a, b) => Number(a.memberCount || 0) - Number(b.memberCount || 0) || collator.compare(a.name, b.name)), [groups, row.sex]);
+    .sort((a, b) => Number(a.memberCount || 0) - Number(b.memberCount || 0) || collator.compare(a.name, b.name)), [effectiveGroups, hasLiveSession, row.sex]);
   const filtered = useMemo(() => {
     const text = query.trim().toLowerCase();
     if (!text) return choices;
@@ -65,22 +78,51 @@ export function GroupPickerV55({ groups, companies, row, busy, loading = false, 
   const firstName = String(row.fullName || "participant").trim().split(/\s+/)[0] || "participant";
   const plan = planCopy(overflowPlan);
   const isOnSite = row.sourceKind === "on_site";
-  const noStandardSpace = !loading && choices.length === 0;
-  const noSearchMatch = !loading && choices.length > 0 && visible.length === 0;
+  const noStandardSpace = !groupLoading && !liveError && choices.length === 0;
+  const noSearchMatch = !groupLoading && !liveError && choices.length > 0 && visible.length === 0;
 
   useEffect(() => {
-    if (selectedId && !choices.some((group) => group.id === selectedId)) setSelectedId("");
-  }, [choices, selectedId]);
-  useEffect(() => {
+    let cancelled = false;
     setQuery("");
     setSelectedId("");
     setVisibleLimit(6);
     setOverflowPlan(null);
     setOverflowError("");
-  }, [row.participantId]);
+    setLiveError("");
+    if (!row.sessionId) {
+      setLiveOptions(null);
+      setLiveLoading(false);
+      return () => { cancelled = true; };
+    }
+    setLiveOptions(null);
+    setLiveLoading(true);
+    loadRegistrationPlacementGroups(row.sessionId)
+      .then((next) => { if (!cancelled) setLiveOptions(next); })
+      .catch(() => { if (!cancelled) setLiveError("Live group capacity could not be loaded. Try again before placing this participant."); })
+      .finally(() => { if (!cancelled) setLiveLoading(false); });
+    return () => { cancelled = true; };
+  }, [row.participantId, row.sessionId]);
+
+  useEffect(() => {
+    if (selectedId && !choices.some((group) => group.id === selectedId)) setSelectedId("");
+  }, [choices, selectedId]);
+
+  const retryLiveOptions = async () => {
+    if (!row.sessionId || liveLoading) return;
+    setLiveLoading(true);
+    setLiveError("");
+    setLiveOptions(null);
+    try {
+      setLiveOptions(await loadRegistrationPlacementGroups(row.sessionId));
+    } catch {
+      setLiveError("Live group capacity could not be loaded. Try again before placing this participant.");
+    } finally {
+      setLiveLoading(false);
+    }
+  };
 
   const reviewOverflow = async () => {
-    if (!row.participantId || overflowLoading || overflowBusy) return;
+    if (!row.participantId || overflowLoading || overflowBusy || liveError) return;
     setOverflowLoading(true);
     setOverflowError("");
     setOverflowPlan(null);
@@ -133,12 +175,13 @@ export function GroupPickerV55({ groups, companies, row, busy, loading = false, 
         const isSelected = group.id === selectedId;
         const max = Number(group.maxSize || 10);
         const openSpots = Math.max(0, max - Number(group.memberCount || 0));
-        return <button type="button" key={group.id} className={`regjourney-choice regjourney-choice-v5${isSelected ? " selected" : ""}`} disabled={busy || loading || overflowBusy} onClick={() => { setSelectedId(group.id); setOverflowPlan(null); setOverflowError(""); }} role="radio" aria-checked={isSelected}>
+        return <button type="button" key={group.id} className={`regjourney-choice regjourney-choice-v5${isSelected ? " selected" : ""}`} disabled={busy || groupLoading || overflowBusy} onClick={() => { setSelectedId(group.id); setOverflowPlan(null); setOverflowError(""); }} role="radio" aria-checked={isSelected}>
           <span><b>{group.displayName || group.name}</b><small>{company?.displayName || company?.name || "Company"} · {Number(group.memberCount || 0)}/{max} · {openSpots} {openSpots === 1 ? "place" : "places"} open</small></span>
           <span className="regjourney-choice-end">{!query.trim() && index === 0 ? <em>Recommended</em> : null}{isSelected ? <CheckCircle weight="fill" /> : <span className="regjourney-choice-radio" aria-hidden="true" />}</span>
         </button>;
       })}
-      {loading ? <Empty icon={UsersThree} title="Checking live group capacity" text="Loading published groups and counselor readiness." /> : null}
+      {groupLoading ? <Empty icon={UsersThree} title="Checking live group capacity" text="Loading published groups and counselor readiness." /> : null}
+      {liveError ? <Empty icon={UsersThree} title="Live placement data did not load" text={liveError} action={<button type="button" className="secondary" disabled={liveLoading} onClick={retryLiveOptions}>{liveLoading ? "Retrying…" : "Retry"}</button>} /> : null}
       {noSearchMatch ? <Empty icon={UsersThree} title="No matching groups" text="Try another group or company name. Available groups still have space." /> : null}
       {noStandardSpace ? <Empty icon={UsersThree} title="No standard counselor group has space" text={isOnSite ? "Registration can review one supplemental placement without reopening the full roster plan." : "Every compatible published group with a ready counselor is full. Review group capacity and staffing before placing this participant."} action={isOnSite ? <button type="button" className="secondary" disabled={busy || overflowLoading || overflowBusy} onClick={reviewOverflow}>{overflowLoading ? "Checking…" : "Review overflow option"}</button> : null} /> : null}
     </div>
@@ -149,7 +192,7 @@ export function GroupPickerV55({ groups, companies, row, busy, loading = false, 
     {error ? <MutationFeedback tone="error" className="regjourney-placement-feedback">{placementRefreshFailed ? <>Placement was saved, but the latest roster could not be loaded. {onRetry ? <button type="button" className="text-action regjourney-placement-retry" disabled={busy} onClick={onRetry}>Retry roster</button> : null}</> : <>Placement was not saved. {error}</>}</MutationFeedback> : null}
     {choices.length ? <div className={`regjourney-placement-confirm${selected ? " ready" : ""}`} aria-live="polite">
       <div>{selected ? <><b>{selected.displayName || selected.name}</b><small>{selectedCompany?.displayName || selectedCompany?.name || "Company"} · FSY ID will be created with this company when placement is saved.</small></> : <><b>Select a counselor group</b><small>The company follows the group. Nothing is saved until you confirm.</small></>}</div>
-      <button type="button" className="primary" disabled={busy || loading || overflowBusy || !selected} aria-busy={busy || loading || overflowBusy} onClick={() => selected && void onChoose(selected)}>{busy ? "Placing…" : loading ? "Loading groups…" : selected ? `Place ${firstName}` : "Select a group"}<ArrowRight /></button>
+      <button type="button" className="primary" disabled={busy || groupLoading || overflowBusy || !selected} aria-busy={busy || groupLoading || overflowBusy} onClick={() => selected && void onChoose(selected)}>{busy ? "Placing…" : groupLoading ? "Loading groups…" : selected ? `Place ${firstName}` : "Select a group"}<ArrowRight /></button>
     </div> : null}
   </div>;
 }
