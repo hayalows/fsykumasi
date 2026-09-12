@@ -18,6 +18,7 @@ export async function loadRegistrationWorkspaceV29(sessionId) {
   const checkinByParticipant = new Map((checkinStates || []).map((row) => [row.participant_id, row]));
 
   return (rows || []).map((row) => ({
+    sessionId,
     participantId: row.participant_id,
     id: row.participant_id,
     fsyId: row.fsy_id || "",
