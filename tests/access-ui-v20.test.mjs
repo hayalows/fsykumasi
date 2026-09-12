@@ -19,12 +19,14 @@ test("desktop Access removes repeated card hierarchy and groups scope with the p
   assert.match(css, /\.access-v17-meta>span:nth-child\(2\)\{display:none\}/);
 });
 
-test("uncommon Add access paths use progressive disclosure", async () => {
+test("Add access keeps new-person paths visible without making administrators scroll", async () => {
   const addFlow = await read("src/components/AccessAddFlowV18.jsx");
-  assert.match(addFlow, /<details className="access-v20-new-person">/);
-  assert.match(addFlow, /Can't find them\?/);
-  assert.match(addFlow, /Choose from Staff/);
+  assert.match(addFlow, /access-v21-new-person/);
+  assert.match(addFlow, /New Staff or leader/);
+  assert.match(addFlow, /Committee-only person/);
+  assert.match(addFlow, /Already in Staff\?/);
   assert.match(addFlow, /Search by name or email/);
+  assert.doesNotMatch(addFlow, /<details className="access-v20-new-person">/);
 });
 
 test("Access task sheets use one main scroll surface instead of nested company and committee scrollers", async () => {
