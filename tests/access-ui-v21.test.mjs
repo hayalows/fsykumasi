@@ -33,9 +33,9 @@ test("staff-level roles can carry additive committee responsibilities", async ()
   assert.match(access, /Primary assignment/);
 });
 
-test("desktop topbar gives Find person a readable labeled control", async () => {
+test("desktop topbar gives Search people a readable labeled control", async () => {
   const css = await read("src/components/session-switcher.css");
   assert.match(css, /\.global-search-button::after/);
-  assert.match(css, /content: "Find person"/);
+  assert.match(css, /content: "Search people"/);
   assert.match(css, /@media \(min-width: 901px\)/);
 });

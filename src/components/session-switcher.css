@@ -1,23 +1,21 @@
 .session-select {
   width: min(300px, 34vw);
-  min-height: 36px;
+  min-height: var(--ds-control, 44px);
   padding: 0 34px 0 10px;
-  border: 1px solid #cfe2e9;
-  border-radius: 10px;
-  background: #fff;
-  color: var(--blue-35);
+  border: 1px solid var(--ds-line, #d8e2e2);
+  border-radius: var(--ds-radius-sm, 10px);
+  background: var(--ds-surface, #fff);
+  color: var(--ds-text-strong, var(--blue-35));
   font: inherit;
-  font-size: 13px;
-  font-weight: 850;
+  font-size: var(--ds-text-sm, 13px);
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .session-select:focus-visible {
-  outline: 3px solid rgba(0, 125, 165, .16);
-  outline-offset: 1px;
-  border-color: var(--blue-25);
+  border-color: var(--ds-brand, var(--blue-25));
 }
 
 .session-badge.training {
@@ -41,10 +39,10 @@
   align-items: center;
   gap: 12px;
   border: 1px solid #efd7a8;
-  border-radius: 13px;
+  border-radius: var(--ds-radius-md, 12px);
   background: #fff8e9;
   color: #6a4c13;
-  box-shadow: 0 8px 24px rgba(103, 77, 20, .06);
+  box-shadow: none;
 }
 
 .training-banner b {
@@ -66,33 +64,32 @@
 @media (min-width: 901px) {
   .global-search-button {
     width: auto;
-    min-width: 126px;
-    min-height: 38px;
-    padding: 0 14px 0 11px;
+    min-width: 140px;
+    height: var(--ds-control, 44px);
+    min-height: var(--ds-control, 44px);
+    padding: 0 13px 0 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     gap: 8px;
-    border: 1px solid #d6e4e9;
-    border-radius: 999px;
-    background: #fff;
-    color: var(--blue-35);
-    box-shadow: 0 1px 2px rgba(14, 54, 69, .04);
+    border: 1px solid var(--ds-line-strong, #becdce);
+    border-radius: var(--ds-radius-sm, 10px);
+    background: var(--ds-surface, #fff);
+    color: var(--ds-text-strong, var(--blue-35));
+    box-shadow: none;
   }
 
   .global-search-button::after {
-    content: "Find person";
-    font-size: 12px;
-    font-weight: 800;
+    content: "Search people";
+    font-size: var(--ds-text-sm, 13px);
+    font-weight: 700;
     letter-spacing: -.005em;
     white-space: nowrap;
   }
 
   .global-search-button:hover {
-    border-color: #accbd6;
-    background: #f8fbfc;
-  }
-
-  .global-search-button:focus-visible {
-    outline: 3px solid rgba(0, 125, 165, .16);
-    outline-offset: 2px;
+    border-color: var(--ds-line-strong, #becdce);
+    background: var(--ds-surface-subtle, #f1f5f4);
   }
 }
 
@@ -105,7 +102,7 @@
 @media (max-width: 780px) {
   .session-select {
     width: min(190px, 46vw);
-    font-size: 12px;
+    font-size: 16px;
   }
 
   .training-banner {

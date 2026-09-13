@@ -24,7 +24,7 @@
 .session-select {
   width: auto;
   max-width: min(390px, 38vw);
-  min-height: 40px;
+  min-height: var(--ds-touch-target);
   padding: 0 10px;
   border: 1px solid transparent;
   border-radius: var(--ds-radius-sm);
@@ -49,7 +49,7 @@
     content: "";
     position: absolute;
     right: 11px;
-    top: 18px;
+    top: 20px;
     width: 7px;
     height: 7px;
     border-right: 1.5px solid var(--ds-text-secondary);
@@ -70,22 +70,30 @@
   }
 }
 
-/* Search is one of the most important operational actions. Make the existing
-   global People search discoverable on desktop while keeping it compact on phones. */
+/* Search is a routine operational action. It uses the same control grammar as
+   other secondary actions instead of reading as a status chip. */
 .global-search-button {
   width: auto;
-  min-width: var(--ds-touch-target);
-  padding-inline: 11px;
-  gap: 7px;
-  border: 1px solid var(--ds-line);
+  min-width: 140px;
+  height: var(--ds-touch-target);
+  min-height: var(--ds-touch-target);
+  padding-inline: 11px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--ds-line-strong);
+  border-radius: var(--ds-radius-sm);
   background: var(--ds-surface);
   color: var(--ds-text-strong);
+  box-shadow: none;
 }
 
 .global-search-button::after {
-  content: "Find person";
+  content: "Search people";
   font-size: var(--ds-text-sm);
-  font-weight: 680;
+  font-weight: 700;
+  letter-spacing: -.005em;
   white-space: nowrap;
 }
 
@@ -345,6 +353,7 @@ summary,
   .global-search-button {
     width: var(--ds-touch-target);
     min-width: var(--ds-touch-target);
+    height: var(--ds-touch-target);
     padding: 0;
     border-color: transparent;
     background: transparent;
