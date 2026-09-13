@@ -56,7 +56,7 @@ const Reports = lazyPage(() => import("./pages/Reports.jsx"), "Reports");
 
 function RouteLoading() {
   return <section className="page route-loading" role="status" aria-live="polite" aria-busy="true">
-    <p className="eyebrow">FSY Kumasi</p>
+    <p className="eyebrow">KCC FSY 2026</p>
     <h1>Opening this workspace…</h1>
     <p>Keeping the navigation available while this area loads.</p>
     <div className="route-loading-bar" aria-hidden="true" />
@@ -89,7 +89,7 @@ export function App() {
   const markUpdated=()=>setLastUpdatedAt(new Date().toISOString());
   const navigate=useCallback((nextView,options={})=>{const input=typeof nextView==="object"&&nextView?{...nextView,...options}:{view:nextView||"overview",...options};const currentScrollY=typeof window!=="undefined"?Math.max(0,Math.round(window.scrollY||0)):0;const view=input.view==="checkin"?"registration":input.view||"overview";const currentLocation=readWorkspaceLocation();const sameView=view===currentLocation.view;const suppliedReturn=input.returnTo&&typeof input.returnTo==="object"?{...input.returnTo,scrollY:Number.isFinite(Number(input.returnTo.scrollY))?Number(input.returnTo.scrollY):currentScrollY}:input.returnTo;const next={...input,returnTo:suppliedReturn,scrollY:input.scrollY!==undefined&&input.scrollY!==null?input.scrollY:(sameView?currentScrollY:null),view,mode:input.view==="checkin"?"desk":input.mode||""};const personId=view==="people"?(next.personId||next.person||""):"";setActive(view);setSelectedPersonId(personId);setWorkspaceContext({...next,personId});writeWorkspaceLocation({...next,personId},{replace:Boolean(options.replace)});const restoreY=Number.isFinite(Number(next.scrollY))?Number(next.scrollY):next.returnTo&&Number.isFinite(Number(next.returnTo.scrollY))?Number(next.returnTo.scrollY):0;if(typeof window!=="undefined")window.requestAnimationFrame(()=>window.scrollTo({top:restoreY,behavior:"auto"}));recordDiagnostic("NAVIGATE",{view,mode:next.mode||"",tab:next.tab||"",filter:next.filter||""});},[]);
   useEffect(()=>{if(initialWorkspace.legacyCheckin)writeWorkspaceLocation(initialWorkspace,{replace:true});},[]);
-  useEffect(()=>{const onPopState=()=>{const next=readWorkspaceLocation();setActive(next.view);setSelectedPersonId(next.personId);setWorkspaceContext(next);window.requestAnimationFrame(()=>window.scrollTo({top:Number.isFinite(Number(next.scrollY))?Number(next.scrollY):next.returnTo&&Number.isFinite(Number(next.returnTo.scrollY))?Number(next.returnTo.scrollY):0,behavior:"auto"}));recordDiagnostic("POPSTATE",{view:next.view,mode:next.mode||"",tab:next.tab||"",filter:next.filter||""});};window.addEventListener("popstate",onPopState);return()=>window.removeEventListener("popstate",onPopState);},[]);
+  useEffect(()=>{const onPopState=()=>{const next=readWorkspaceLocation();setActive(next.view);setSelectedPersonId(next.personId);setWorkspaceContext(next);window.requestAnimationFrame(()=>window.scrollTo({top:Number.isFinite(Number(next.scrollY))?Number(next.scrollY):next.returnTo&&Number.isFinite(Number(next.returnTo.scrollY))?Number(next.returnTo.scrollY):0,behavior:"auto"}));recordDiagnostic("POPSTATE",{view:next.view,mode:next.mode||"",tab:next.tab||"",filter:next.filter||""});};window.addEventListener("popstate",onPopState);return()=>{window.removeEventListener("popstate",onPopState);};},[]);
 
   const loadFieldData=useCallback(async(sessionId,capabilities=[],scope="all")=>{
     if(!sessionId)return [];
@@ -112,7 +112,7 @@ export function App() {
     return errors;
   },[]);
 
-  const clearWorkspace=()=>{setProfile(null);setAccessState([]);setSessionInfo(null);setImported([]);setAccessRequests([]);setLeaderInvites([]);setAccessRoster([]);setTeamCatalog([]);setCompanies([]);setHeadcount({round:null,submissions:[]});setCheckedIds([]);setBirthdays([]);setStaffBirthdays([]);setEligibilityMap(new Map());setIdentityMap(new Map());setHousingAssignments([]);setFoodNeeds([]);setWellnessEncounters([]);setStructureSettings(DEFAULT_STRUCTURE_SETTINGS);setLastUpdatedAt("");};
+  const clearWorkspace=()=>{setProfile(null);setAccessState([]);setSessionInfo(null);setImported([]);setAccessRequests([]);setLeaderInvites([]);setAccessRoster([]);setTeamCatalog([]);setCompanies([]);setHeadcount({round:null,submissions:[]});setCheckedIds([]);setBirthdays([]);setStaffBirthdays([]);setEligibilityMap(new Map());setIdentityMap(new Map());setStructureSettings(DEFAULT_STRUCTURE_SETTINGS);setLastUpdatedAt("");};
 
   const hydrateLive=useCallback(async(sessionOverride,requestedSessionOverride="",options={})=>{
     if(!isSupabaseConfigured)return;
@@ -138,7 +138,6 @@ export function App() {
     if(generation!==hydrateGeneration.current)return;
     setSessionInfo(nextSession);
     setRuntimeStatus("ready");setWorkspacePhase("refreshing");
-    // Let the signed-in shell and the first route paint before secondary workspace reads begin.
     await new Promise((resolve)=>setTimeout(resolve,120));
     if(generation!==hydrateGeneration.current)return;
 
@@ -173,7 +172,7 @@ export function App() {
   const returnToSignIn=async()=>{try{await signOutAccount();}catch{}navigate("overview",{replace:true});await hydrateLive(null,"",{reason:"recovery-return-signin"});};
 
   if(isSupabaseConfigured){
-    if(runtimeStatus==="loading")return <LoadingScreen text={authSession?"Signed in. Preparing your FSY workspace…":"Connecting to FSY Kumasi…"}/>;
+    if(runtimeStatus==="loading")return <LoadingScreen text={authSession?"Signed in. Preparing your FSY workspace…":"Connecting to KCC FSY 2026…"}/>;
     if(runtimeStatus==="signed-out")return <SignInScreen initialInvite={initialInvite} onSignIn={async(email,password)=>hydrateLive(await signInWithPassword(email,password),"",{reason:"sign-in"})} onActivate={async(values)=>hydrateLive(await activateLeaderAccount(values),"",{reason:"activation"})} onForgot={requestPasswordReset}/>;
     if(runtimeStatus==="password-recovery")return <PasswordRecoveryScreen onUpdate={updateRecoveredPassword} onCancel={async()=>{clearRecoveryUrl();await hydrateLive(authSession,"",{reason:"recovery-cancel"});}}/>;
     if(runtimeStatus==="error"){const friendly=friendlyRuntimeError(runtimeError);return authSession?<WorkspaceRecoveryScreen message={friendly.message} supportReference={friendly.supportReference} onRetry={()=>hydrateLive(authSession,"",{reason:"retry"})} onSignOut={returnToSignIn}/>:<main className="auth-page"><section className="auth-card runtime-recovery-card"><span className="kicker">Connection recovery</span><h1>{friendly.title}</h1><p>{friendly.message}</p><div className="runtime-recovery-actions"><button className="primary full" onClick={()=>hydrateLive(undefined,"",{reason:"retry"})}>Try again</button><button className="secondary full" onClick={returnToSignIn}>Return to sign in</button></div><small>Support reference: <b>{friendly.supportReference}</b></small></section></main>;}
