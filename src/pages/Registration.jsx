@@ -137,7 +137,7 @@ export function Registration(props) {
       </div> : null}
 
       {staffVisited ? <div role="tabpanel" aria-labelledby="registration-mode-staff" hidden={mode !== "staff"}>
-        <StaffCheckin sessionId={sessionId} live={live} />
+        <StaffCheckin sessionId={sessionId} live={live} capabilities={capabilities} />
       </div> : null}
 
       {readinessVisited ? <div role="tabpanel" aria-labelledby="registration-mode-readiness" hidden={mode !== "readiness"}>

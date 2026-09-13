@@ -33,6 +33,42 @@ export async function loadStaffArrivalRoster(sessionId) {
   }));
 }
 
+export async function addStaffFromCheckin({
+  sessionId,
+  firstName,
+  lastName,
+  preferredName,
+  sex,
+  birthday,
+  unit,
+  stake,
+  phone,
+  email,
+  tshirtSize,
+  medicalInformation,
+  dietaryInformation,
+  operationalRole,
+}) {
+  if (!sessionId) throw new Error("Choose a session first.");
+  return rpc("add_on_site_staff_from_checkin_v1", {
+    p_session_id: sessionId,
+    p_first_name: firstName,
+    p_last_name: lastName,
+    p_preferred_name: preferredName || null,
+    p_sex: sex,
+    p_date_of_birth: birthday,
+    p_unit_name: unit,
+    p_stake_name: stake || null,
+    p_phone: phone || null,
+    p_email: email || null,
+    p_tshirt_size: tshirtSize || null,
+    p_medical_information: medicalInformation || null,
+    p_dietary_information: dietaryInformation || null,
+    p_operational_role: operationalRole || "counselor",
+    p_search_confirmed: true,
+  });
+}
+
 export async function recordStaffArrival(person, arrival) {
   if (!person?.id) throw new Error("Choose a staff member first.");
   if (!["expected", "arrived"].includes(arrival)) throw new Error("Registration can only check staff in or undo that check-in.");
