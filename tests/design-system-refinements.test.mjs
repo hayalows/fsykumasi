@@ -20,7 +20,9 @@ test("touch inputs stay native-friendly without disabling zoom", async () => {
 
 test("shell refinements make search and workspace state easier to discover", async () => {
   const css = await read("src/design-system/refinements.css");
-  assert.match(css, /\.global-search-button::after[\s\S]*Find person/);
+  assert.match(css, /\.global-search-button::after[\s\S]*Search people/);
+  assert.match(css, /\.global-search-button[\s\S]*border-radius:\s*var\(--ds-radius-sm\)/);
+  assert.match(css, /\.global-search-button[\s\S]*min-height:\s*var\(--ds-touch-target\)/);
   assert.match(css, /\.session-select[\s\S]*border-radius:\s*var\(--ds-radius-sm\)/);
   assert.match(css, /\.connection::before/);
   assert.match(css, /\.training-banner,[\s\S]*\.sync-warning/);
