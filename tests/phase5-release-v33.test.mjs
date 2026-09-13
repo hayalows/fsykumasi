@@ -66,7 +66,7 @@ test("Shared UI announces routes and mutation outcomes without stealing normal f
   const main=await read("src/main.jsx");
   assert.match(main,/id="route-announcer"/);
   assert.match(main,/aria-live="polite"/);
-  assert.match(ui,/document\.title = `\$\{title\} · FSY Kumasi`/);
+  assert.match(ui,/document\.title = `\$\{title\} · \$\{APP_NAME\}`/);
   assert.match(ui,/document\.getElementById\("route-announcer"\)/);
   assert.match(ui,/aria-live=\{error \? "assertive" : "polite"\}/);
   assert.match(ui,/aria-atomic="true"/);
