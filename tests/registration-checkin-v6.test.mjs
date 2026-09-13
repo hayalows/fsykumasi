@@ -44,13 +44,13 @@ test("Registration workspace copy stays task-first while the focused flow layers
     read("src/main.jsx"),
     read("public/sw.js"),
   ]);
-  assert.match(registration, /Search, finish any one missing step, then check the participant in\./);
+  assert.match(registration, /Find the participant, confirm the right record, then check them in\. Use Needs attention only when something is missing\./);
   assert.match(registration, /See the settled roster and handle only new arrivals or real exceptions\./);
-  assert.match(registration, /description="Finish each participant's next step, then move on\."/);
+  assert.match(registration, /Find → confirm → check in\./);
   const v6 = main.indexOf('import "./registration-checkin-v6.css";');
   const modal = main.indexOf('import "./registration-modal-v4.css";');
   const v7 = main.indexOf('import "./registration-flow-v7.css";');
   assert.ok(v6 > modal, "Registration desk refinements should load after modal and legacy workspace layers");
   assert.ok(v7 > v6, "focused mobile flow refinements should load after desk refinements");
-  assert.match(sw, /fsy-kumasi-shell-v51/);
+  assert.match(sw, /fsy-kumasi-shell-v60/);
 });
