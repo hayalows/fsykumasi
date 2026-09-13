@@ -1,4 +1,6 @@
-const CACHE_NAME = "fsy-kumasi-shell-v60";
+const CACHE_NAME = "fsy-kumasi-shell-v61";
+// Housing live v61 keeps room selection and confirmation in one viewport-safe sheet,
+// preserves a reachable save action on phones, and makes queue/room states easier to scan.
 // Registration arrival v60 makes participant and staff check-in one calm task-first workspace,
 // broadens search across arrival states, and keeps safe Undo close to accidental staff check-ins.
 // Staff-only registration access v58 keeps the focused arrival desk reachable without participant tools.
@@ -32,7 +34,7 @@ const CACHE_NAME = "fsy-kumasi-shell-v60";
 // Access operations v20 remains intact; Access identity and permission behavior remains on v19.
 // Historical Access operations v19 used email-first identity reconciliation with automatic staff backfill.
 // Historical Access operations v18 and Access operations v17 remain covered by regressions.
-// Historical shell markers: fsy-kumasi-shell-v59, fsy-kumasi-shell-v58, fsy-kumasi-shell-v57,
+// Historical shell markers: fsy-kumasi-shell-v60, fsy-kumasi-shell-v59, fsy-kumasi-shell-v58, fsy-kumasi-shell-v57,
 // fsy-kumasi-shell-v56, fsy-kumasi-shell-v55, fsy-kumasi-shell-v54, fsy-kumasi-shell-v53,
 // fsy-kumasi-shell-v52, fsy-kumasi-shell-v51, fsy-kumasi-shell-v49, fsy-kumasi-shell-v48,
 // fsy-kumasi-shell-v47, fsy-kumasi-shell-v46, fsy-kumasi-shell-v45, fsy-kumasi-shell-v44,
