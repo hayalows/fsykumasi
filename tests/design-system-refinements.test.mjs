@@ -18,12 +18,13 @@ test("touch inputs stay native-friendly without disabling zoom", async () => {
   assert.doesNotMatch(css, /user-scalable\s*=\s*no|maximum-scale\s*=\s*1/i);
 });
 
-test("shell refinements make search and workspace state easier to discover", async () => {
+test("shell refinements keep search and workspace state quiet but discoverable", async () => {
   const css = await read("src/design-system/refinements.css");
-  assert.match(css, /\.global-search-button::after[\s\S]*Search people/);
-  assert.match(css, /\.global-search-button[\s\S]*border-radius:\s*var\(--ds-radius-sm\)/);
+  assert.match(css, /\.global-search-button::after[\s\S]*content:\s*none/);
+  assert.match(css, /\.global-search-button[\s\S]*border:\s*0/);
   assert.match(css, /\.global-search-button[\s\S]*min-height:\s*var\(--ds-touch-target\)/);
-  assert.match(css, /\.session-select[\s\S]*border-radius:\s*var\(--ds-radius-sm\)/);
+  assert.match(css, /\.session-select[\s\S]*border:\s*1px solid transparent/);
+  assert.match(css, /\.connection[\s\S]*background:\s*transparent/);
   assert.match(css, /\.connection::before/);
   assert.match(css, /\.training-banner,[\s\S]*\.sync-warning/);
 });

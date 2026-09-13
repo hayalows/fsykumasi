@@ -7,6 +7,7 @@ const source = await readFile(new URL("../src/pages/Overview.jsx", import.meta.u
 test("Overview does not dereference inbox before the live summary exists", () => {
   assert.match(source, /const scopeLabel=inbox\?\.scopeLabel\|\|\(loading\?"Loading scope":"Session scope"\)/);
   assert.doesNotMatch(source, /\{inbox\.scopeLabel\}/);
-  assert.match(source, /Preparing live overview/);
-  assert.match(source, /Loading live FSY information/);
+  assert.match(source, /!inbox\?<section className="overview-unavailable"/);
+  assert.match(source, /loading\?"Loading overview":"Overview is not available yet"/);
+  assert.match(source, /loading\?"Getting the latest session information\."/);
 });
