@@ -14,10 +14,26 @@ test("Overview primary work reads as page content rather than a rounded card", a
   assert.doesNotMatch(css, /\.overview-focus[^}]*linear-gradient/);
 });
 
+test("Overview secondary work aligns to a centered desktop content rail", async () => {
+  const css = await read("src/pages/overview-v3.css");
+  assert.match(css, /\.overview-home \.overview-followups[\s\S]*width:\s*min\(100%, 860px\)/);
+  assert.match(css, /\.overview-home \.overview-followups[\s\S]*margin:\s*18px auto 0/);
+  assert.match(css, /\.overview-scope-head[\s\S]*width:\s*min\(100%, 860px\)/);
+  assert.match(css, /\.overview-scope-head[\s\S]*margin:\s*0 auto 18px/);
+});
+
+test("Overview readiness metrics are balanced and centered on desktop", async () => {
+  const css = await read("src/pages/overview-v3.css");
+  assert.match(css, /\.overview-home \.overview-metrics[\s\S]*width:\s*min\(100%, 860px\)/);
+  assert.match(css, /\.overview-home \.overview-metrics[\s\S]*margin-inline:\s*auto/);
+  assert.match(css, /\.overview-metrics > div[\s\S]*align-items:\s*center/);
+  assert.match(css, /\.overview-metrics > div[\s\S]*text-align:\s*center/);
+});
+
 test("Overview metrics use typography and separators rather than metric cards", async () => {
   const css = await read("src/pages/overview-v3.css");
-  assert.match(css, /\.overview-metrics[\s\S]*border-top:\s*1px solid/);
-  assert.match(css, /\.overview-metrics[\s\S]*border-bottom:\s*1px solid/);
+  assert.match(css, /\.overview-home \.overview-metrics[\s\S]*border-top:\s*1px solid/);
+  assert.match(css, /\.overview-home \.overview-metrics[\s\S]*border-bottom:\s*1px solid/);
   assert.match(css, /\.overview-metrics > div[\s\S]*border-radius:\s*0/);
   assert.match(css, /\.overview-metrics > div[\s\S]*background:\s*transparent/);
   assert.match(css, /\.overview-metrics > div[\s\S]*box-shadow:\s*none/);
@@ -44,5 +60,6 @@ test("Connection state stays visible without becoming a status pill", async () =
 test("Overview keeps a compact phone hierarchy", async () => {
   const css = await read("src/pages/overview-v3.css");
   assert.match(css, /@media \(max-width:\s*760px\)[\s\S]*\.overview-focus[\s\S]*grid-template-columns:\s*18px minmax\(0, 1fr\)/);
-  assert.match(css, /@media \(max-width:\s*760px\)[\s\S]*\.overview-metrics[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(max-width:\s*760px\)[\s\S]*\.overview-home \.overview-metrics[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(max-width:\s*760px\)[\s\S]*\.overview-metrics > div[\s\S]*align-items:\s*flex-start/);
 });
