@@ -155,6 +155,11 @@ begin
     );
   end if;
 
+  if (p_arrival = 'arrived' and previous.arrival_state <> 'expected')
+     or (p_arrival = 'expected' and previous.arrival_state <> 'arrived') then
+    raise exception 'Staff arrival can only move between expected and arrived. Manage no-show or left in Staff status.';
+  end if;
+
   -- Registration is deliberately limited to arrival. Planning, clearance,
   -- responsibilities, and committee duties are untouched.
   update public.staff_operations

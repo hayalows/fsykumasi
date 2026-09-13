@@ -58,7 +58,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
     const canPeople = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"people_lookup");
     const canGroups = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"groups_view");
     const canCheckin = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"checkin_record");
-    const canRegistration = WHOLE_SESSION.has(currentRole) || has(currentCapabilities,"registration_view") || has(currentCapabilities,"registration_manage");
+    const canRegistration = WHOLE_SESSION.has(currentRole) || has(currentCapabilities,"registration_view") || has(currentCapabilities,"registration_manage") || has(currentCapabilities,"staff_manage");
     const canHeadcount = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"headcount_view") || has(currentCapabilities,"headcount_record");
     const canReports = currentRole === "assistant_coordinator" || REPORT_CAPABILITIES.some((capability) => has(currentCapabilities, capability));
     const canHousing = has(currentCapabilities,"housing_view");

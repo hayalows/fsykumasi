@@ -1,4 +1,5 @@
-const CACHE_NAME = "fsy-kumasi-shell-v57";
+const CACHE_NAME = "fsy-kumasi-shell-v58";
+// Staff-only registration access v58 keeps the focused arrival desk reachable without participant tools.
 // Staff check-in v59 adds a focused Registration staff-arrival desk, live arrival refresh,
 // and keeps physical presence separate from staff planning, clearance, and responsibilities.
 // Overview shell v57 removes card-like dashboard chrome, restores stronger typographic hierarchy,

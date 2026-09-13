@@ -49,7 +49,7 @@ test("Registration presents one Registration & check-in journey", async () => {
 
 test("legacy setup links open the new Readiness area", async () => {
   const source = await read("src/pages/Registration.jsx");
-  assert.match(source, /initialMode === "setup"\) return "readiness"/);
+  assert.match(source, /initialMode === "setup" && canUseParticipantRegistration\) return "readiness"/);
 });
 
 test("day-one journey resolves participants and hands Housing off after check-in", async () => {

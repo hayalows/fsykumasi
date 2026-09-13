@@ -31,6 +31,30 @@ test("Registration capability can check staff in without broad staff management"
   assert.match(migration, /'staff_checkin_undone'/);
 });
 
+test("Staff-only administrators land on a focused Staff workspace", async () => {
+  const [app, shell, registration] = await Promise.all([
+    read("src/App.jsx"),
+    read("src/components/AppShell.jsx"),
+    read("src/pages/Registration.jsx"),
+  ]);
+  assert.match(app, /const canUseStaffCheckin=!live\|\|hasCapability\(currentCapabilities,"registration_manage"\)\|\|hasCapability\(currentCapabilities,"staff_manage"\)/);
+  assert.match(app, /view===\"registration\"\).*canUseStaffCheckin/);
+  assert.match(shell, /has\(currentCapabilities,"staff_manage"\)/);
+  assert.match(registration, /const canUseParticipantRegistration =/);
+  assert.match(registration, /if \(canUseStaffCheckin\) return "staff"/);
+  assert.match(registration, /canUseParticipantDesk \? \[\{\s*value: "desk", label: "Live check-in"/);
+});
+
+test("Staff arrival edits cannot overwrite no-show or left lifecycle states", async () => {
+  const [migration, css] = await Promise.all([
+    read("supabase/migrations/20260913103000_staff_arrival_checkin_v59.sql"),
+    read("src/pages/staff-checkin.css"),
+  ]);
+  assert.match(migration, /p_arrival = 'arrived' and previous\.arrival_state <> 'expected'/);
+  assert.match(migration, /Manage no-show or left in Staff status/);
+  assert.match(css, /\.staff-checkin-undo \{[\s\S]*min-height: 44px/);
+});
+
 test("Staff arrival desk provides live refresh plus a network fallback", async () => {
   const client = await read("src/lib/staff-checkin.js");
   assert.match(client, /postgres_changes/);

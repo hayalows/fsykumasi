@@ -12,7 +12,7 @@ test("Registration v29 stays mounted while Live check-in and Solutions switch ar
   ]);
   assert.match(entry, /RegistrationJourneyV29 as RegistrationJourney/);
   assert.match(registration, /<RegistrationJourney view=\{journeyMode\}/);
-  assert.match(registration, /hidden=\{mode === "readiness"\}/);
+  assert.match(registration, /hidden=\{mode === "readiness" \|\| mode === "staff"\}/);
   assert.doesNotMatch(registration, /mode === "desk" \?[^\n]*<RegistrationJourney/);
   assert.doesNotMatch(registration, /mode === "roster" \?[^\n]*<RegistrationJourney/);
   assert.match(sw, /fsy-kumasi-shell-v46/);
