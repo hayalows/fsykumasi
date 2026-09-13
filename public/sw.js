@@ -1,4 +1,6 @@
-const CACHE_NAME = "fsy-kumasi-shell-v62";
+const CACHE_NAME = "fsy-kumasi-shell-v63";
+// Session-aware shell v63 gives KCC FSY 2026 one identity across browser and installed app,
+// surfaces Day 0 through checkout from session dates, and keeps the live task hierarchy stable.
 // Housing assignment v62 keeps the selected-room summary and confirmation controls visible together
 // on phones, stacks cramped picker actions earlier, and protects the final room cards from footer overlap.
 // Housing live v61 keeps room selection and confirmation in one viewport-safe sheet,
@@ -36,7 +38,7 @@ const CACHE_NAME = "fsy-kumasi-shell-v62";
 // Access operations v20 remains intact; Access identity and permission behavior remains on v19.
 // Historical Access operations v19 used email-first identity reconciliation with automatic staff backfill.
 // Historical Access operations v18 and Access operations v17 remain covered by regressions.
-// Historical shell markers: fsy-kumasi-shell-v61, fsy-kumasi-shell-v60, fsy-kumasi-shell-v59, fsy-kumasi-shell-v58, fsy-kumasi-shell-v57,
+// Historical shell markers: fsy-kumasi-shell-v62, fsy-kumasi-shell-v61, fsy-kumasi-shell-v60, fsy-kumasi-shell-v59, fsy-kumasi-shell-v58, fsy-kumasi-shell-v57,
 // fsy-kumasi-shell-v56, fsy-kumasi-shell-v55, fsy-kumasi-shell-v54, fsy-kumasi-shell-v53,
 // fsy-kumasi-shell-v52, fsy-kumasi-shell-v51, fsy-kumasi-shell-v49, fsy-kumasi-shell-v48,
 // fsy-kumasi-shell-v47, fsy-kumasi-shell-v46, fsy-kumasi-shell-v45, fsy-kumasi-shell-v44,
@@ -47,7 +49,6 @@ const NAVIGATION_TIMEOUT_MS = 8000;
 const CORE_ASSETS = [
   "/",
   "/manifest.webmanifest",
-  "/app-icon.svg",
   "/brand/2026-theme-identifier-full-color.png",
 ];
 
