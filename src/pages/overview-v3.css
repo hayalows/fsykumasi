@@ -1,4 +1,4 @@
-/* Overview v57 — hierarchy through type, spacing and alignment rather than card chrome. */
+/* Overview v58 — hierarchy through type, spacing and alignment rather than card chrome. */
 .overview-home {
   max-width: 1040px;
   margin-inline: auto;
@@ -154,17 +154,25 @@
   transform: none;
 }
 
-/* Secondary work stays a light, scannable list. */
-.overview-followups {
+/* Secondary work sits on the same centered content rail as the primary copy. */
+.overview-home .overview-followups {
+  width: min(100%, 860px);
+  margin: 18px auto 0;
+  border-top: 1px solid var(--ds-line, var(--line));
   border-bottom: 1px solid var(--ds-line, var(--line));
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .overview-followups > button {
   width: 100%;
-  min-height: 70px;
-  padding: 14px 0;
+  min-height: 72px;
+  padding: 15px 16px;
   display: grid;
-  grid-template-columns: 10px minmax(0, 1fr) auto;
+  grid-template-columns: 8px minmax(0, 1fr) 20px;
   align-items: center;
   gap: 14px;
   border: 0;
@@ -205,6 +213,11 @@
   line-height: 1.42;
 }
 
+.overview-followups > button > svg {
+  justify-self: end;
+  color: var(--ds-text-tertiary, var(--muted));
+}
+
 .overview-task-dot {
   width: 7px;
   height: 7px;
@@ -226,11 +239,14 @@
 }
 
 .overview-area {
-  margin-top: 48px;
+  margin-top: 54px;
+  padding-top: 28px;
+  border-top: 1px solid var(--ds-line, var(--line));
 }
 
 .overview-scope-head {
-  margin-bottom: 18px;
+  width: min(100%, 860px);
+  margin: 0 auto 18px;
 }
 
 .overview-scope-head > div {
@@ -239,39 +255,43 @@
 }
 
 .overview-scope-head p {
-  max-width: 640px;
+  max-width: 620px;
   margin: 0;
   color: var(--ds-text-secondary, var(--muted));
   font-size: var(--ds-text-sm, 13px);
   line-height: 1.5;
 }
 
-/* Metrics read as one line of facts, separated by hairlines rather than boxes. */
-.overview-metrics {
+/* Readiness facts share a centered rail and equal visual weight on desktop. */
+.overview-home .overview-metrics {
+  width: min(100%, 860px);
+  margin-inline: auto;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
   border-top: 1px solid var(--ds-line, var(--line));
   border-bottom: 1px solid var(--ds-line, var(--line));
-  background: transparent;
-}
-
-.overview-metrics > div {
-  min-width: 0;
-  min-height: 102px;
-  padding: 19px 20px 18px 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 10px;
-  border: 0;
-  border-right: 1px solid var(--ds-line, var(--line));
+  border-left: 0;
+  border-right: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
 }
 
-.overview-metrics > div + div {
-  padding-left: 20px;
+.overview-metrics > div {
+  min-width: 0;
+  min-height: 104px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-right: 1px solid var(--ds-line, var(--line));
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
 }
 
 .overview-metrics > div:last-child {
@@ -280,7 +300,7 @@
 
 .overview-metrics b {
   color: var(--ds-text-strong, var(--blue-35));
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 710;
   line-height: 1;
   letter-spacing: -.04em;
@@ -385,7 +405,8 @@
 }
 
 .overview-signoff {
-  margin-top: 44px;
+  width: min(100%, 860px);
+  margin: 44px auto 0;
   color: var(--ds-text-tertiary, var(--muted));
   font-size: var(--ds-text-xs, 12px);
 }
@@ -443,22 +464,37 @@
     font-size: 26px;
   }
 
+  .overview-home .overview-followups {
+    width: 100%;
+    margin-top: 14px;
+  }
+
   .overview-followups > button {
     min-height: 68px;
     padding: 13px 0;
+    grid-template-columns: 8px minmax(0, 1fr) 18px;
   }
 
   .overview-area {
     margin-top: 40px;
+    padding-top: 24px;
   }
 
-  .overview-metrics {
+  .overview-scope-head {
+    width: 100%;
+    margin-bottom: 18px;
+  }
+
+  .overview-home .overview-metrics {
+    width: 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .overview-metrics > div {
     min-height: 92px;
     padding: 16px 14px 16px 0;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .overview-metrics > div + div {
@@ -479,6 +515,10 @@
 
   .overview-refresh-note {
     align-items: flex-start;
+  }
+
+  .overview-signoff {
+    width: 100%;
   }
 }
 
