@@ -11,6 +11,7 @@ import "./housing-v8.css";
 import "./housing-v10.css";
 import "./housing-command-center.css";
 import "./housing-live-v61.css";
+import "./housing-live-v62.css";
 
 function WorkspaceNav({ mode, onChange }) {
   const options = [
