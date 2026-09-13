@@ -13,17 +13,18 @@ import "./registration-workspace.css";
 import "./registration-journey-v31.css";
 import "../participant-membership-v54.css";
 import "../participant-membership-v55.css";
+import "./registration-arrival-v60.css";
 
 const MODE_META = {
   desk: {
     phase: "Participant arrival",
     title: "Live check-in",
-    help: "Search, finish any one missing step, then check the participant in.",
+    help: "Find the participant, confirm the right record, then check them in. Use Needs attention only when something is missing.",
   },
   staff: {
     phase: "Staff arrival",
     title: "Staff check-in",
-    help: "Record who has physically arrived so operations can work from the people who are actually on site.",
+    help: "Find the staff member and record physical arrival. Planning, clearance and responsibilities stay in Staff status.",
   },
   roster: {
     phase: "Final roster",
@@ -114,14 +115,18 @@ export function Registration(props) {
     ] : []),
   ];
 
-  return <div className={`registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28 registration-v29 registration-workspace-v30 registration-mode-${mode}`}>
+  const arrivalGuide = mode === "desk"
+    ? <p className="registration-arrival-guide-v60"><b>Find → confirm → check in.</b><span>Search includes checked-in participants too, so an accidental check-in can be opened and undone.</span></p>
+    : mode === "staff"
+      ? <p className="registration-arrival-guide-v60"><b>Find → check in → next.</b><span>If you tap the wrong person, use Undo. No-show and left stay in Staff status.</span></p>
+      : null;
+
+  return <div className={`registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28 registration-v29 registration-workspace-v30 registration-arrival-v60 registration-mode-${mode}`}>
     <section className="page registration-workspace-intro registration-workspace-intro-v5 registration-unified-intro">
-      <PageHead title="Registration & check-in" sessionName={sessionName} description="Finish each participant's next step, then move on." />
+      <PageHead title="Registration & check-in" sessionName={sessionName} description={modeMeta.help} />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
         {canUseRegistrationTools && modeOptions.length > 1 ? <SegmentedControl className="registration-mode-switch registration-workspace-tabs registration-workspace-tabs-v5 registration-unified-tabs" label="Registration and check-in work area" value={mode} onChange={chooseMode} options={modeOptions} /> : null}
-        <div className="registration-mode-cue-v5 registration-mode-cue-compact" data-mode={mode} role="status" aria-label={`${modeMeta.title}. ${modeMeta.help}`}>
-          <div className="registration-mode-copy"><span className="kicker">{modeMeta.phase}</span><p>{modeMeta.help}</p></div>
-        </div>
+        {arrivalGuide}
       </div>
     </section>
 
