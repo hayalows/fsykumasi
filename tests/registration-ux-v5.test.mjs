@@ -10,7 +10,8 @@ test("Registration exposes one clear Live check-in, Final roster and Readiness j
   assert.match(registration, /value: "desk", label: "Live check-in"/);
   assert.match(registration, /value: "roster", label: "Final roster"/);
   assert.match(registration, /value: "readiness", label: "Readiness"/);
-  assert.match(registration, /registration-mode-cue-v5/);
+  assert.match(registration, /registration-arrival-guide-v60/);
+  assert.doesNotMatch(registration, /registration-mode-cue-v5/);
   assert.doesNotMatch(registration, /RegistrationReviewInbox/);
   assert.doesNotMatch(registration, /ArrivalOperations/);
 });
