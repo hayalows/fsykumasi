@@ -1,0 +1,78 @@
+/* Housing assignment hotfix v62.
+ * The legacy v36 mobile layer hides direct child divs in the assignment footer.
+ * The current footer wraps its confirmation buttons in a direct child div, so keep
+ * both the selected-room context and the actual actions visible on phones.
+ */
+
+@media (max-width: 700px) {
+  .housing-v5-assignment-actions.housing-v36-assignment-actions.housing-v37-assignment-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-rows: auto;
+    gap: 8px !important;
+    padding: 9px 14px calc(9px + env(safe-area-inset-bottom, 0px)) !important;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .housing-v5-assignment-actions.housing-v37-assignment-actions > div:first-child {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 2px 8px;
+    min-width: 0;
+  }
+
+  .housing-v5-assignment-actions.housing-v37-assignment-actions > .housing-v37-footer-buttons {
+    display: grid !important;
+    grid-template-columns: minmax(108px, .72fr) minmax(0, 1.28fr);
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    max-height: none;
+    position: static;
+    inset: auto;
+    visibility: visible;
+    opacity: 1;
+    overflow: visible;
+  }
+
+  .housing-v5-assignment-actions.housing-v37-assignment-actions > .housing-v37-footer-buttons > button,
+  .housing-v5-assignment-actions.housing-v36-assignment-actions > button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100% !important;
+    min-width: 0;
+    min-height: 52px !important;
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .housing-v5-assignment-body {
+    scroll-padding-bottom: 150px;
+  }
+
+  .housing-v5-picker-head.housing-v36-picker-head {
+    align-items: start;
+  }
+}
+
+@media (max-width: 480px) {
+  .housing-v5-picker-head.housing-v36-picker-head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .housing-v5-picker-head.housing-v36-picker-head > button {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 350px) {
+  .housing-v5-assignment-actions.housing-v37-assignment-actions > .housing-v37-footer-buttons {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
