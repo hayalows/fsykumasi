@@ -1,4 +1,4 @@
-/* Staff check-in v59 — fast arrival recording, not another admin dashboard. */
+/* Staff check-in v64 — fast arrival recording with safe on-site capture. */
 .staff-checkin {
   max-width: 940px;
   margin: 0 auto;
@@ -266,6 +266,86 @@
   text-align: right;
 }
 
+.staff-checkin-inactive {
+  margin-top: 18px;
+  border-top: 1px solid var(--ds-line, var(--line));
+  border-bottom: 1px solid var(--ds-line, var(--line));
+}
+
+.staff-checkin-inactive-heading {
+  display: grid;
+  gap: 4px;
+  padding: 14px 0;
+}
+
+.staff-checkin-inactive-heading > b {
+  color: var(--ds-warning, #8a5c12);
+  font-size: 13px;
+}
+
+.staff-checkin-inactive-heading > span {
+  max-width: 650px;
+  color: var(--ds-text-secondary, var(--muted));
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.staff-checkin-inactive-row {
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  border-top: 1px solid var(--ds-line, var(--line));
+}
+
+.staff-checkin-inactive-row > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.staff-checkin-inactive-row b {
+  color: var(--ds-text-strong, var(--ink));
+  font-size: 14px;
+}
+
+.staff-checkin-inactive-row small {
+  color: var(--ds-text-secondary, var(--muted));
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.staff-checkin-missing {
+  margin-top: 16px;
+  padding: 18px;
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--ds-line, var(--line));
+  border-radius: 12px;
+  background: var(--ds-surface-subtle, #f1f5f4);
+}
+
+.staff-checkin-missing > b {
+  color: var(--ds-text-strong, var(--ink));
+  font-size: 15px;
+}
+
+.staff-checkin-missing > span,
+.staff-checkin-missing > small {
+  max-width: 650px;
+  color: var(--ds-text-secondary, var(--muted));
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.staff-checkin-missing > .primary {
+  width: fit-content;
+  min-height: 44px;
+  margin-top: 4px;
+}
+
 .staff-checkin-loading {
   min-height: 180px;
   display: flex;
@@ -365,6 +445,10 @@
   .staff-checkin-action .primary svg {
     display: none;
   }
+
+  .staff-checkin-missing {
+    padding: 16px;
+  }
 }
 
 @media (max-width: 430px) {
@@ -381,6 +465,11 @@
   .staff-checkin-locked {
     max-width: none;
     text-align: left;
+  }
+
+  .staff-checkin-inactive-row {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 10px;
   }
 }
 
