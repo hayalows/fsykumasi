@@ -1,11 +1,11 @@
 -- DEVELOPMENT / LOCAL SEED ONLY.
--- This file creates synthetic rehearsal data at the expected FSY Kumasi scale.
+-- This file creates synthetic rehearsal data at the expected KCC FSY 2026 scale.
 -- Never add real participant or staff information to source control.
 
 insert into public.sessions(id, name, year, starts_on, ends_on, status)
 values (
   '00000000-0000-4000-8000-000000002026'::uuid,
-  'FSY Kumasi 2026 Development',
+  'KCC FSY 2026 Development',
   2026,
   '2026-12-14',
   '2026-12-19',
