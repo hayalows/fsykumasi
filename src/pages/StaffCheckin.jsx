@@ -3,6 +3,7 @@ import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { UserCheck } from "@phosphor-icons/react/UserCheck";
 import { OnSiteStaffSheet } from "../components/OnSiteStaffSheet.jsx";
 import { ActionToast, Empty, MutationFeedback, SearchField } from "../components/UI.jsx";
+import { searchPeople } from "../lib/person-search.js";
 import { addStaffFromCheckin, loadStaffArrivalRoster, recordStaffArrival, subscribeStaffArrivals } from "../lib/staff-checkin.js";
 import "./staff-checkin.css";
 
@@ -17,11 +18,8 @@ const ROLE_LABELS = {
   other: "Staff",
 };
 
-function searchable(person) {
-  return [person.name, person.preferredName, person.unit, person.stake, ROLE_LABELS[person.operationalRole], person.assignmentLabel, ...(person.committeeDuties || [])]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
+function searchContext(person) {
+  return [ROLE_LABELS[person.operationalRole], person.assignmentLabel, ...(person.committeeDuties || [])].filter(Boolean);
 }
 
 function initials(name = "FSY") {
@@ -96,25 +94,25 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
 
   const searching = Boolean(query.trim());
   const searchMatches = useMemo(() => {
-    const text = query.trim().toLowerCase();
-    if (!text) return [];
-    return staff.filter((person) => searchable(person).includes(text));
+    if (!query.trim()) return [];
+    return searchPeople(staff, query, searchContext);
   }, [staff, query]);
 
   const inactiveMatches = useMemo(() => searchMatches.filter((person) => !isActiveRosterRecord(person)), [searchMatches]);
 
   const visible = useMemo(() => {
     const text = query.trim().toLowerCase();
-    return staff
+    const source = text ? searchMatches : staff;
+    return source
       .filter(isActiveRosterRecord)
       .filter((person) => text || filter === "all" || person.arrivalState === filter)
-      .filter((person) => !text || searchable(person).includes(text))
       .sort((a, b) => {
+        if (text) return 0;
         const arrivalOrder = { expected: 0, arrived: 1, no_show: 2, left: 3 };
         const stateDiff = (arrivalOrder[a.arrivalState] ?? 9) - (arrivalOrder[b.arrivalState] ?? 9);
         return stateDiff || a.name.localeCompare(b.name);
       });
-  }, [staff, query, filter]);
+  }, [staff, searchMatches, query, filter]);
 
   const changeArrival = async (person, arrival) => {
     setBusyId(person.id);
@@ -213,7 +211,7 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
       <div className="staff-checkin-search-copy"><b>Find staff member</b><span>Search by name, ward, branch or responsibility.</span></div>
       <SearchField inputRef={searchRef} value={query} onChange={setQuery} label="Find staff member" placeholder="Name, ward, branch or responsibility" className="staff-checkin-search-field" />
     </div>
-    {searching ? <div className="staff-checkin-search-scope" role="status"><span><b>Searching all staff records</b><small>Expected, checked in, no-show and left records are included. Inactive records are checked too, so the same person is not added twice.</small></span><button type="button" className="text-action" onClick={() => { setQuery(""); focusSearch(); }}>Clear</button></div> : null}
+    {searching ? <div className="staff-checkin-search-scope" role="status"><span><b>Searching all staff records</b><small>Expected, checked in, no-show and left records are included. Name order and small spelling mistakes are handled too, and inactive records are checked so the same person is not added twice.</small></span><button type="button" className="text-action" onClick={() => { setQuery(""); focusSearch(); }}>Clear</button></div> : null}
 
     {error ? <MutationFeedback tone="error" className="staff-checkin-error">{error}</MutationFeedback> : null}
 
