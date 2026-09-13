@@ -1,5 +1,7 @@
-const CACHE_NAME = "fsy-kumasi-shell-v55";
-// Overview shell v56 aligns the command-centre hierarchy, grouped metrics and top search with the design system.
+const CACHE_NAME = "fsy-kumasi-shell-v56";
+// Overview shell v57 removes card-like dashboard chrome, restores stronger typographic hierarchy,
+// and quiets the shared toolbar so search, connection and session context read like native app controls.
+// Overview shell v56 aligned the command-centre hierarchy, grouped metrics and top search with the design system.
 // Membership check-in v55 uses desktop width for a two-column status choice layout,
 // keeps actions reachable on shorter laptops, and preserves the mobile single-column sheet.
 // Access operations v21 makes new-person setup immediate, loads committee choices inside Access,
@@ -25,11 +27,11 @@ const CACHE_NAME = "fsy-kumasi-shell-v55";
 // Access operations v20 remains intact; Access identity and permission behavior remains on v19.
 // Historical Access operations v19 used email-first identity reconciliation with automatic staff backfill.
 // Historical Access operations v18 and Access operations v17 remain covered by regressions.
-// Historical shell markers: fsy-kumasi-shell-v54, fsy-kumasi-shell-v53, fsy-kumasi-shell-v52,
-// fsy-kumasi-shell-v51, fsy-kumasi-shell-v49, fsy-kumasi-shell-v48, fsy-kumasi-shell-v47,
-// fsy-kumasi-shell-v46, fsy-kumasi-shell-v45, fsy-kumasi-shell-v44, fsy-kumasi-shell-v43,
-// fsy-kumasi-shell-v42, fsy-kumasi-shell-v41, fsy-kumasi-shell-v40, fsy-kumasi-shell-v39,
-// fsy-kumasi-shell-v38, fsy-kumasi-shell-v37 and fsy-kumasi-shell-v36.
+// Historical shell markers: fsy-kumasi-shell-v55, fsy-kumasi-shell-v54, fsy-kumasi-shell-v53,
+// fsy-kumasi-shell-v52, fsy-kumasi-shell-v51, fsy-kumasi-shell-v49, fsy-kumasi-shell-v48,
+// fsy-kumasi-shell-v47, fsy-kumasi-shell-v46, fsy-kumasi-shell-v45, fsy-kumasi-shell-v44,
+// fsy-kumasi-shell-v43, fsy-kumasi-shell-v42, fsy-kumasi-shell-v41, fsy-kumasi-shell-v40,
+// fsy-kumasi-shell-v39, fsy-kumasi-shell-v38, fsy-kumasi-shell-v37 and fsy-kumasi-shell-v36.
 // Access + Assignments v15 and Housing workflow v14 remain part of this release.
 const NAVIGATION_TIMEOUT_MS = 8000;
 const CORE_ASSETS = [
