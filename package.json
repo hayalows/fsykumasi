@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build && node scripts/prepare-sites-build.mjs",
     "preview": "vite preview",
-    "test": "node --test tests/registration-arrival-v60.test.mjs",
+    "test": "node --test tests/registration-*.test.mjs tests/staff-checkin-v59.test.mjs tests/service-worker-resilience.test.mjs",
     "test:sites": "node --test tests/sites-worker.test.mjs"
   },
   "dependencies": {
