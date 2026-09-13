@@ -36,6 +36,7 @@ test("Staff arrival returns to search and offers immediate Undo", async () => {
 test("Arrival refinements preserve touch and mobile search requirements", async () => {
   const css = await read("src/pages/registration-arrival-v60.css");
   assert.match(css, /staff-checkin-search \.search-field input \{[\s\S]*min-height: 48px;[\s\S]*font-size: 16px;/);
+  assert.match(css, /staff-checkin-search-scope button \{[\s\S]*min-height: 44px;/);
   assert.match(css, /staff-checkin-action \.primary,[\s\S]*staff-checkin-undo \{[\s\S]*min-height: 44px;/);
   assert.match(css, /max-height: 800px/);
   assert.match(css, /max-width: 430px/);
