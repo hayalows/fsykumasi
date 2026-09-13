@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle, MagnifyingGlass, UserCheck } from "@phosphor-icons/react";
+import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
+import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
+import { UserCheck } from "@phosphor-icons/react/UserCheck";
 import { ActionToast, Empty, MutationFeedback } from "../components/UI.jsx";
 import { loadStaffArrivalRoster, recordStaffArrival, subscribeStaffArrivals } from "../lib/staff-checkin.js";
 import "./staff-checkin.css";
