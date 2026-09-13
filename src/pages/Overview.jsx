@@ -4,9 +4,10 @@ import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { ArrowClockwise } from "@phosphor-icons/react/ArrowClockwise";
 import { supabase } from "../lib/supabase.js";
 import { buildOperationalInbox } from "../lib/overview-inbox.js";
-import { phaseLabel, preSessionArea, sessionPhase, shapeOverviewForPhase } from "../lib/overview-phase.js";
+import { preSessionArea, sessionDayContext, shapeOverviewForPhase } from "../lib/overview-phase.js";
 import { roleLabel } from "../lib/access.js";
 import "./overview-v3.css";
+import "./overview-session-v63.css";
 
 function demoSummary({ currentRole, companies, imported, checkedCount, fieldSummary }) {
   return {
@@ -18,13 +19,17 @@ function demoSummary({ currentRole, companies, imported, checkedCount, fieldSumm
 
 export function Overview({ live = false, sessionId, sessionInfo, setActive, currentRole, currentUser, capabilities = [], fieldSummary = {}, companies = [], imported = [], checkedCount = 0 }) {
   const fallback = useMemo(() => demoSummary({ currentRole, companies, imported, checkedCount, fieldSummary }), [currentRole, companies, imported, checkedCount, fieldSummary]);
-  const [summary, setSummary] = useState(live ? null : fallback); const [phase,setPhase]=useState("unknown"); const [loading,setLoading]=useState(Boolean(live)); const [error,setError]=useState("");
+  const [summary, setSummary] = useState(live ? null : fallback); const [loading,setLoading]=useState(Boolean(live)); const [error,setError]=useState(""); const [clock,setClock]=useState(()=>Date.now());
   const summaryRef = useRef(summary);
   const overviewRequestRef = useRef(0);
   const overviewInFlightRef = useRef(false);
   useEffect(() => { summaryRef.current = summary; }, [summary]);
   useEffect(() => { if (!live) setSummary(fallback); }, [live, fallback]);
-  useEffect(() => { overviewRequestRef.current += 1; overviewInFlightRef.current = false; setLoading(Boolean(live)); setError(""); setPhase("unknown"); }, [live, sessionId]);
+  useEffect(() => { overviewRequestRef.current += 1; overviewInFlightRef.current = false; setLoading(Boolean(live)); setError(""); }, [live, sessionId]);
+  useEffect(() => { const timer=window.setInterval(()=>setClock(Date.now()),60000); return()=>window.clearInterval(timer); }, []);
+
+  const dayContext=useMemo(()=>sessionDayContext({startsOn:sessionInfo?.starts_on,endsOn:sessionInfo?.ends_on,now:new Date(clock)}),[sessionInfo?.starts_on,sessionInfo?.ends_on,clock]);
+  const phase=dayContext.phase;
 
   const refresh = useCallback(async ({ quiet = false } = {}) => {
     if (!live || !sessionId || overviewInFlightRef.current) return;
@@ -46,8 +51,6 @@ export function Overview({ live = false, sessionId, sessionInfo, setActive, curr
         setLoading(false);
         return;
       }
-      const nextPhase = sessionPhase({ startsOn: sessionInfo?.starts_on, endsOn: sessionInfo?.ends_on });
-      setPhase(nextPhase);
       setSummary(data || null);
       setError("");
       setLoading(false);
@@ -60,7 +63,7 @@ export function Overview({ live = false, sessionId, sessionInfo, setActive, curr
       if (timeoutId !== null) globalThis.clearTimeout(timeoutId);
       if (requestId === overviewRequestRef.current) overviewInFlightRef.current = false;
     }
-  }, [live, sessionId, sessionInfo?.starts_on, sessionInfo?.ends_on]);
+  }, [live, sessionId]);
 
   useEffect(() => { if(!live||!sessionId)return undefined; let active=true; refresh().catch(()=>active&&setError("Overview could not refresh. Your workspaces are still available.")); const timer=window.setInterval(()=>{if(active&&document.visibilityState!=="hidden")refresh({quiet:true}).catch(()=>{});},20000); return()=>{active=false;window.clearInterval(timer);}; },[live,sessionId,refresh]);
 
@@ -72,7 +75,8 @@ export function Overview({ live = false, sessionId, sessionInfo, setActive, curr
   return <section className="page overview-home">
     <header className="overview-intro">
       <h1>{name?`Hello, ${name}`:"Overview"}</h1>
-      <p className="overview-context"><span>{roleLabel(currentRole)}</span><span aria-hidden="true">·</span><span>{scopeLabel}</span><span aria-hidden="true">·</span><span>{phaseLabel(phase)}</span></p>
+      <p className="overview-context"><span>{roleLabel(currentRole)}</span><span aria-hidden="true">·</span><span>{scopeLabel}</span></p>
+      <div className={`overview-session-context phase-${phase}`} role="status" aria-live="polite"><b>{dayContext.label}</b>{dayContext.detail?<span>{dayContext.detail}</span>:null}</div>
     </header>
     {error?<div className="overview-refresh-note" role="status"><span>{error}</span><button type="button" onClick={()=>refresh()} disabled={loading}><ArrowClockwise/>Retry</button></div>:null}
     {!inbox?<section className="overview-unavailable" aria-live="polite" aria-busy={loading}><div className="overview-unavailable-mark" aria-hidden="true">{loading?<span/>:<ArrowClockwise/>}</div><div><h2>{loading?"Loading overview":"Overview is not available yet"}</h2><p>{loading?"Getting the latest session information.":"The latest overview could not be loaded. Your other workspaces are still available."}</p>{!loading?<button type="button" className="secondary" onClick={()=>refresh()} disabled={loading}><ArrowClockwise/>Try again</button>:null}</div></section>:<>
