@@ -1,0 +1,496 @@
+/* Housing live operations v61
+ * Keep the event-day flow task-first: find the person, choose a compatible room,
+ * confirm the change, and return to the queue. The confirmation action must stay
+ * reachable on phones, short laptops, and desktop without nested scrolling.
+ */
+
+/* ------------------------- Live Housing shell ------------------------- */
+.housing-v8-live .housing-v6 {
+  --housing-control-height: 48px;
+}
+
+.housing-v8-live .housing-v5-panel,
+.housing-v8-live .housing-v5-person-controls,
+.housing-v8-live .housing-v5-room-controls,
+.housing-v8-live .housing-person-identity-row,
+.housing-v8-live .housing-v5-room-card {
+  min-width: 0;
+}
+
+.housing-v8-live .housing-v5-person-controls .search-field input,
+.housing-v8-live .housing-v5-room-controls .search-field input,
+.housing-v5-assignment-body .search-field input {
+  min-height: var(--housing-control-height);
+}
+
+/* Keep the three people states readable instead of clipping their labels. */
+.housing-v8-live .housing-v5-desktop-status {
+  min-width: 0;
+}
+
+.housing-v8-live .housing-v5-desktop-status .segmented {
+  min-width: 0;
+}
+
+.housing-v8-live .housing-v5-desktop-status .segmented > button {
+  min-height: 44px;
+}
+
+.housing-v8-live .housing-v5-desktop-status .segmented-label {
+  min-width: 0;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.15;
+}
+
+/* The assignment button is the row's operational next step. */
+.housing-v8-live .housing-person-identity-row .assignment {
+  min-height: 48px;
+  align-content: center;
+}
+
+.housing-v8-live .housing-person-identity-row .assignment:focus-visible,
+.housing-v8-live .housing-v5-room-card:focus-visible,
+.housing-v5-room-choice:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ds-brand, #007da5) 34%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---------------------- Participant assignment sheet ---------------------- */
+.housing-v5-assignment-layer.layer-panel {
+  width: min(880px, calc(100vw - 32px));
+  height: min(860px, calc(100dvh - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.housing-v5-assignment-modal.housing-v36-assignment-modal {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  width: 100%;
+  height: 100% !important;
+  max-height: none !important;
+  min-height: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.housing-v5-assignment-head {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  background: #fff;
+}
+
+.housing-v5-assignment-head .icon-button {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.housing-v5-assignment-body {
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-bottom: 24px;
+}
+
+.housing-v36-current-room,
+.housing-v36-next-room {
+  min-width: 0;
+}
+
+.housing-v36-current-room b,
+.housing-v36-current-room span,
+.housing-v36-next-room b {
+  overflow-wrap: anywhere;
+}
+
+.housing-v5-picker-head > div {
+  min-width: 0;
+}
+
+.housing-v5-picker-head > button {
+  min-width: 118px;
+  min-height: 44px;
+}
+
+.housing-v5-room-choices {
+  align-content: start;
+}
+
+.housing-v5-room-choice {
+  position: relative;
+  min-height: 92px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.housing-v5-room-choice.selected {
+  border-color: var(--ds-brand, #007da5);
+  background: color-mix(in srgb, var(--ds-brand, #007da5) 5%, #fff);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-brand, #007da5) 28%, transparent);
+}
+
+.housing-v5-room-choice.selected .room-choice-end svg {
+  color: var(--ds-brand, #007da5);
+}
+
+/* The footer is a dedicated grid row rather than part of the scrolling body.
+   This is the critical event-day guarantee: selecting a room always reveals a
+   visible confirmation action without making the operator scroll to the end. */
+.housing-v5-assignment-actions.housing-v36-assignment-actions,
+.housing-v5-assignment-actions.housing-v37-assignment-actions {
+  position: relative !important;
+  inset: auto !important;
+  bottom: auto !important;
+  z-index: 8;
+  flex: none;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 11px 16px max(11px, env(safe-area-inset-bottom, 0px)) !important;
+  border-top: 1px solid var(--ds-line, #dde7e3);
+  background: rgba(255, 255, 255, .985);
+  box-shadow: 0 -8px 22px rgba(17, 55, 43, .07);
+  backdrop-filter: blur(14px);
+}
+
+.housing-v5-assignment-actions > div:first-child {
+  min-width: 0;
+}
+
+.housing-v5-assignment-actions > div:first-child b,
+.housing-v5-assignment-actions > div:first-child small {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.housing-v37-footer-buttons {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.housing-v37-footer-buttons button,
+.housing-v5-assignment-actions > button {
+  min-height: 48px !important;
+  white-space: normal;
+}
+
+.housing-v37-footer-buttons .primary {
+  min-width: 150px;
+}
+
+/* Errors belong next to the decision, not behind it at the end of a long list. */
+.housing-v5-assignment-body .mutation-feedback {
+  scroll-margin-block: 12px;
+}
+
+/* --------------------------- Short laptops --------------------------- */
+@media (min-width: 761px) and (max-height: 760px) {
+  .housing-v5-assignment-layer.layer-panel {
+    width: min(900px, calc(100vw - 24px));
+    height: calc(100dvh - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+
+  .housing-v5-assignment-head {
+    padding-block: 12px 10px;
+  }
+
+  .housing-v5-assignment-body {
+    padding-block: 11px;
+    gap: 10px;
+  }
+
+  .housing-v5-room-choice {
+    min-height: 78px;
+  }
+
+  .housing-v5-assignment-actions.housing-v36-assignment-actions,
+  .housing-v5-assignment-actions.housing-v37-assignment-actions {
+    padding-block: 9px max(9px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* ----------------------------- Phones ----------------------------- */
+@media (max-width: 760px) {
+  /* Keep every state visible. Three short operational tabs fit an iPhone XR;
+     narrower phones may horizontally pan the control instead of clipping text. */
+  .housing-v8-live .housing-v5-desktop-status {
+    display: block !important;
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .housing-v8-live .housing-v5-desktop-status::-webkit-scrollbar {
+    display: none;
+  }
+
+  .housing-v8-live .housing-v5-desktop-status .segmented {
+    width: 100%;
+    min-width: 330px;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .housing-v8-live .housing-v5-desktop-status .segmented > button {
+    min-width: 0;
+    min-height: 52px;
+    padding: 7px 8px;
+    gap: 5px;
+  }
+
+  .housing-v8-live .housing-v5-desktop-status .segmented-label {
+    font-size: 11.5px;
+    font-weight: 760;
+  }
+
+  .housing-v8-live .housing-v5-desktop-status .segmented b {
+    flex: none;
+    font-size: 10.5px;
+  }
+
+  .housing-v8-live .housing-person-identity-row {
+    align-items: start;
+  }
+
+  .housing-v8-live .housing-person-identity-row .assignment {
+    grid-column: 2 !important;
+    width: 100%;
+    min-width: 0;
+    margin-left: 0 !important;
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  .housing-v8-live .housing-v6-availability {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .housing-v8-live .housing-v5-room-card {
+    min-height: 90px;
+  }
+
+  /* Full-screen sheet with one internal scroll surface and a persistent action row. */
+  .housing-v5-assignment-layer.layer-panel {
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .sheet-layer .housing-v5-assignment-layer.layer-panel::before {
+    display: none !important;
+  }
+
+  .housing-v5-assignment-modal.housing-v36-assignment-modal {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+  }
+
+  .housing-v5-assignment-head {
+    padding: max(12px, env(safe-area-inset-top, 0px)) 14px 10px !important;
+  }
+
+  .housing-v5-person {
+    gap: 10px;
+  }
+
+  .housing-v5-person .person-avatar {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+  }
+
+  .housing-v5-person h2 {
+    font-size: clamp(20px, 5.6vw, 24px);
+    line-height: 1.08;
+  }
+
+  .housing-v5-person p {
+    margin-top: 3px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .housing-v5-assignment-body {
+    padding: 12px 14px 16px !important;
+    gap: 12px;
+    scroll-padding-bottom: 18px;
+  }
+
+  .housing-v36-current-room {
+    padding: 11px 12px;
+  }
+
+  .housing-v36-next-room {
+    padding: 10px 12px;
+  }
+
+  .housing-v5-picker-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 10px;
+  }
+
+  .housing-v5-picker-head h3 {
+    font-size: 19px;
+  }
+
+  .housing-v5-picker-head p {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .housing-v5-picker-head > button {
+    min-width: 124px;
+    min-height: 48px;
+    align-self: end;
+  }
+
+  .housing-v5-assignment-body .search-field,
+  .housing-v5-assignment-body .search-field input {
+    min-height: 52px;
+  }
+
+  .housing-v5-assignment-body .search-field input,
+  .housing-v5-assignment-body input,
+  .housing-v5-assignment-body select,
+  .housing-v5-assignment-body textarea {
+    font-size: 16px !important;
+  }
+
+  .housing-v5-room-choices {
+    grid-template-columns: 1fr !important;
+    gap: 7px;
+  }
+
+  .housing-v5-room-choice {
+    min-height: 94px;
+    padding: 11px 12px;
+    border-radius: 13px;
+  }
+
+  .housing-v5-room-choice .room-copy b {
+    font-size: 15px;
+  }
+
+  .housing-v5-room-choice .room-copy em,
+  .housing-v5-room-choice .room-copy small,
+  .housing-v5-room-choice .room-meta small {
+    font-size: 11px;
+  }
+
+  .housing-v5-room-choice .room-meta strong {
+    font-size: 16px;
+  }
+
+  .housing-v5-assignment-actions.housing-v36-assignment-actions,
+  .housing-v5-assignment-actions.housing-v37-assignment-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .housing-v5-assignment-actions > div:first-child {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    column-gap: 7px;
+  }
+
+  .housing-v5-assignment-actions > div:first-child b {
+    font-size: 12px;
+  }
+
+  .housing-v5-assignment-actions > div:first-child small {
+    min-width: 0;
+    font-size: 10.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .housing-v37-footer-buttons {
+    display: grid;
+    grid-template-columns: minmax(104px, auto) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .housing-v37-footer-buttons button,
+  .housing-v5-assignment-actions > button {
+    width: 100%;
+    min-height: 52px !important;
+    padding-inline: 12px;
+  }
+
+  .housing-v37-footer-buttons .primary {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 390px) {
+  .housing-v8-live .housing-v6-availability {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .housing-v5-assignment-head {
+    padding-inline: 12px !important;
+  }
+
+  .housing-v5-person .person-avatar {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
+
+  .housing-v5-person h2 {
+    font-size: 20px;
+  }
+
+  .housing-v5-assignment-body {
+    padding-inline: 12px !important;
+  }
+
+  .housing-v5-picker-head {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .housing-v5-picker-head > button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .housing-v5-assignment-actions.housing-v36-assignment-actions,
+  .housing-v5-assignment-actions.housing-v37-assignment-actions {
+    padding-inline: 12px !important;
+  }
+
+  .housing-v37-footer-buttons {
+    grid-template-columns: 1fr 1.45fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .housing-v5-room-choice,
+  .housing-v8-live .housing-person-identity-row .assignment {
+    transition: none !important;
+  }
+}
