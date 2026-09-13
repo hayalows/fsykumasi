@@ -1,0 +1,432 @@
+/* Registration & check-in v60
+   Keep the arrival desk task-first: find the person, make one decision, save,
+   recover quickly if needed, then return to search. */
+
+.registration-arrival-v60 .registration-workspace-intro-v5 {
+  padding-top: 18px;
+}
+
+.registration-arrival-v60 .registration-workspace-intro-v5 .page-head {
+  max-width: 820px;
+  margin-bottom: 10px;
+}
+
+.registration-arrival-v60 .registration-workspace-intro-v5 .page-head h1 {
+  font-size: clamp(1.9rem, 2.35vw, 2.55rem);
+}
+
+.registration-arrival-v60 .registration-workspace-intro-v5 .page-head > div > p:last-child {
+  max-width: 760px;
+  font-size: .9rem;
+}
+
+.registration-arrival-v60 .registration-workspace-navigation-v5 {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 7px 0 8px;
+}
+
+.registration-arrival-v60 .registration-workspace-tabs-v5,
+.registration-arrival-v60 .registration-mode-switch.registration-workspace-tabs-v5 {
+  flex: 0 1 680px;
+  max-width: 680px;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+}
+
+.registration-arrival-v60 .registration-arrival-guide-v60 {
+  min-width: 0;
+  margin: 0 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 7px;
+  color: var(--ds-text-secondary, var(--muted));
+  font-size: 11.5px;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.registration-arrival-v60 .registration-arrival-guide-v60 b {
+  flex: none;
+  color: var(--ds-text-strong, var(--ink));
+  font-size: 11.5px;
+}
+
+.registration-arrival-v60 .registration-arrival-guide-v60 span {
+  max-width: 390px;
+}
+
+/* Participant arrival: search and the current work queue should dominate the page. */
+.registration-arrival-v60.registration-mode-desk .regjourney-worklist {
+  width: min(calc(100% - (var(--fsy-page-gutter, 24px) * 2)), 1280px);
+  max-width: 1280px;
+  margin: 12px auto 36px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.registration-arrival-v60.registration-mode-desk .regjourney-search-row {
+  gap: 10px;
+}
+
+.registration-arrival-v60.registration-mode-desk .regjourney-search-row .search-field input {
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.registration-arrival-v60.registration-mode-desk .regjourney-filter-system {
+  margin-top: 12px;
+}
+
+.registration-arrival-v60.registration-mode-desk .regjourney-primary-filter button,
+.registration-arrival-v60.registration-mode-desk .regjourney-more-filters summary {
+  min-height: 44px;
+}
+
+.registration-arrival-v60.registration-mode-desk .regjourney-cant-find-v28 {
+  margin-top: 10px;
+  padding-block: 11px;
+}
+
+.registration-arrival-v60.registration-mode-desk .regjourney-row {
+  min-height: 80px;
+}
+
+.registration-arrival-v60.registration-mode-desk .regjourney-row-action button {
+  min-height: 44px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.registration-arrival-v60.registration-mode-desk .regjourney-result-line {
+  min-height: 34px;
+}
+
+/* Staff arrival uses the same visual rhythm as participant arrival rather than
+   reading like a separate administrative dashboard. */
+.registration-arrival-v60 .staff-checkin {
+  width: min(calc(100% - (var(--fsy-page-gutter, 24px) * 2)), 1180px);
+  max-width: 1180px;
+  padding-top: 4px;
+}
+
+.registration-arrival-v60 .staff-checkin-heading {
+  padding: 16px 0 14px;
+}
+
+.registration-arrival-v60 .staff-checkin-heading > div {
+  max-width: 760px;
+}
+
+.registration-arrival-v60 .staff-checkin-heading h2 {
+  margin: 3px 0 5px;
+  font-size: clamp(21px, 2.25vw, 27px);
+  letter-spacing: -.025em;
+}
+
+.registration-arrival-v60 .staff-checkin-heading p {
+  max-width: 720px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.registration-arrival-v60 .staff-checkin-summary {
+  border: 1px solid var(--ds-line, var(--line));
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.registration-arrival-v60 .staff-checkin-summary > button,
+.registration-arrival-v60 .staff-checkin-summary > div {
+  min-height: 70px;
+  padding: 12px 15px;
+}
+
+.registration-arrival-v60 .staff-checkin-summary b {
+  font-size: 22px;
+}
+
+.registration-arrival-v60 .staff-checkin-summary > button.active {
+  background: color-mix(in srgb, var(--ds-brand, #007da5) 7%, var(--ds-surface, #fff));
+  box-shadow: inset 0 -2px 0 var(--ds-brand, #007da5);
+}
+
+.registration-arrival-v60 .staff-checkin-search {
+  margin: 20px 0 10px;
+}
+
+.registration-arrival-v60 .staff-checkin-search-copy {
+  margin-bottom: 7px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.registration-arrival-v60 .staff-checkin-search-copy b {
+  color: var(--ds-text-strong, var(--ink));
+  font-size: 12px;
+}
+
+.registration-arrival-v60 .staff-checkin-search-copy span {
+  color: var(--ds-text-tertiary, var(--muted));
+  font-size: 11px;
+}
+
+.registration-arrival-v60 .staff-checkin-search .search-field {
+  margin: 0;
+}
+
+.registration-arrival-v60 .staff-checkin-search .search-field input {
+  min-height: 48px;
+  padding-left: 44px;
+  padding-right: 46px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.registration-arrival-v60 .staff-checkin-search .search-field > svg {
+  left: 15px;
+}
+
+.registration-arrival-v60 .staff-checkin-search .search-clear {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.registration-arrival-v60 .staff-checkin-search-scope {
+  min-height: 42px;
+  margin: 0 0 10px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 10px;
+  background: var(--ds-surface-subtle, #f1f5f4);
+  color: var(--ds-text-secondary, var(--muted));
+}
+
+.registration-arrival-v60 .staff-checkin-search-scope > span {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.registration-arrival-v60 .staff-checkin-search-scope b {
+  color: var(--ds-text-strong, var(--ink));
+  font-size: 11.5px;
+}
+
+.registration-arrival-v60 .staff-checkin-search-scope small {
+  font-size: 11px;
+}
+
+.registration-arrival-v60 .staff-checkin-search-scope button {
+  min-height: 36px;
+  margin-left: auto;
+}
+
+.registration-arrival-v60 .staff-checkin-row {
+  min-height: 78px;
+  padding: 11px 4px;
+}
+
+.registration-arrival-v60 .staff-checkin-row.is-present {
+  background: color-mix(in srgb, var(--ds-success, #3f6f36) 3%, transparent);
+}
+
+.registration-arrival-v60 .staff-checkin-action .primary,
+.registration-arrival-v60 .staff-checkin-undo {
+  min-height: 44px;
+  border-radius: 10px;
+}
+
+.registration-arrival-v60 .staff-checkin-action .primary {
+  padding-inline: 14px;
+}
+
+.registration-arrival-v60 .staff-checkin-undo {
+  padding-inline: 12px;
+}
+
+/* Short laptops need the task in view before the operator starts scrolling. */
+@media (min-width: 900px) and (max-height: 800px) {
+  .registration-arrival-v60 .registration-workspace-intro-v5 {
+    padding-top: 12px;
+  }
+
+  .registration-arrival-v60 .registration-workspace-intro-v5 .page-head {
+    margin-bottom: 7px;
+  }
+
+  .registration-arrival-v60 .registration-workspace-intro-v5 .page-head h1 {
+    font-size: 1.85rem;
+  }
+
+  .registration-arrival-v60 .registration-workspace-navigation-v5 {
+    min-height: 52px;
+    padding-block: 5px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-heading {
+    padding-block: 10px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-summary > button,
+  .registration-arrival-v60 .staff-checkin-summary > div {
+    min-height: 62px;
+    padding-block: 9px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-search {
+    margin-top: 14px;
+  }
+}
+
+@media (max-width: 980px) {
+  .registration-arrival-v60 .registration-workspace-navigation-v5 {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .registration-arrival-v60 .registration-workspace-tabs-v5,
+  .registration-arrival-v60 .registration-mode-switch.registration-workspace-tabs-v5 {
+    width: 100%;
+    max-width: none;
+  }
+
+  .registration-arrival-v60 .registration-arrival-guide-v60 {
+    margin-left: 0;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .registration-arrival-v60 .registration-arrival-guide-v60 span {
+    max-width: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .registration-arrival-v60 .registration-workspace-intro-v5 {
+    padding-top: 14px;
+  }
+
+  .registration-arrival-v60 .registration-workspace-intro-v5 .page-head h1 {
+    font-size: clamp(1.75rem, 8vw, 2.05rem);
+  }
+
+  .registration-arrival-v60 .registration-workspace-intro-v5 .page-head > div > p:last-child {
+    font-size: .86rem;
+    line-height: 1.4;
+  }
+
+  .registration-arrival-v60 .registration-workspace-tabs-v5,
+  .registration-arrival-v60 .registration-mode-switch.registration-workspace-tabs-v5 {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(108px, 1fr);
+    grid-template-columns: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .registration-arrival-v60 .registration-workspace-tabs-v5::-webkit-scrollbar {
+    display: none;
+  }
+
+  .registration-arrival-v60 .registration-arrival-guide-v60 {
+    display: block;
+    font-size: 11px;
+  }
+
+  .registration-arrival-v60 .registration-arrival-guide-v60 b {
+    margin-right: 5px;
+    font-size: 11px;
+  }
+
+  .registration-arrival-v60.registration-mode-desk .regjourney-worklist,
+  .registration-arrival-v60 .staff-checkin {
+    width: min(calc(100% - 28px), 1280px);
+  }
+
+  .registration-arrival-v60.registration-mode-desk .regjourney-worklist {
+    margin-top: 9px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-heading {
+    padding: 12px 0 10px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-heading h2 {
+    font-size: 22px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-heading p {
+    font-size: 12.5px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-summary > button,
+  .registration-arrival-v60 .staff-checkin-summary > div {
+    min-height: 66px;
+    padding: 10px 11px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-search {
+    margin-top: 16px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-search-copy span {
+    display: none;
+  }
+
+  .registration-arrival-v60 .staff-checkin-search-scope > span {
+    display: grid;
+    gap: 1px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-row {
+    padding-block: 12px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-action .primary,
+  .registration-arrival-v60 .staff-checkin-undo {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 430px) {
+  .registration-arrival-v60 .registration-arrival-guide-v60 span {
+    display: none;
+  }
+
+  .registration-arrival-v60 .staff-checkin-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .registration-arrival-v60 .staff-checkin-summary b {
+    font-size: 20px;
+  }
+
+  .registration-arrival-v60 .staff-checkin-name-line > b {
+    white-space: normal;
+  }
+
+  .registration-arrival-v60 .staff-checkin-action {
+    width: 100%;
+  }
+
+  .registration-arrival-v60 .staff-checkin-action .primary,
+  .registration-arrival-v60 .staff-checkin-undo {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .registration-arrival-v60 * {
+    scroll-behavior: auto !important;
+  }
+}
