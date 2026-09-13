@@ -5,6 +5,7 @@ import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { X } from "@phosphor-icons/react/X";
 import { demoSession } from "../data/session.js";
+import { APP_NAME, canonicalSessionName } from "../lib/app-meta.js";
 
 export function SearchField({ value = "", onChange, placeholder, label = "Search", className = "", inputRef, autoFocus = false, disabled = false }) {
   const inputId = useId();
@@ -117,9 +118,10 @@ export function Empty({ icon: Icon, title, text, action }) {
 }
 
 export function PageHead({ eyebrow, sessionName = demoSession.name, title, description, action }) {
+  const visibleSessionName = canonicalSessionName(sessionName);
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
-    document.title = `${title} · FSY Kumasi`;
+    document.title = `${title} · ${APP_NAME}`;
     const announcer = document.getElementById("route-announcer");
     if (!announcer) return undefined;
     announcer.textContent = "";
@@ -132,7 +134,7 @@ export function PageHead({ eyebrow, sessionName = demoSession.name, title, descr
   return (
     <div className="page-head">
       <div>
-        <p className="eyebrow">{eyebrow || sessionName}</p>
+        <p className="eyebrow">{eyebrow || visibleSessionName}</p>
         <h1 tabIndex={-1}>{title}</h1>
         <p>{description}</p>
       </div>
