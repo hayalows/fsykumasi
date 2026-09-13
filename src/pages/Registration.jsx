@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { RegistrationJourneyV53 as RegistrationJourney } from "./RegistrationJourneyV53.jsx";
 import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
 import { SessionFinalization } from "./SessionFinalization.jsx";
+import { StaffCheckin } from "./StaffCheckin.jsx";
 import { PageHead, SegmentedControl } from "../components/UI.jsx";
 import { attemptParticipantMembershipCheckin, undoParticipantMembershipCheckin } from "../lib/participant-membership.js";
 import "./registration-review.css";
@@ -15,9 +16,14 @@ import "../participant-membership-v55.css";
 
 const MODE_META = {
   desk: {
-    phase: "Arrival desk",
+    phase: "Participant arrival",
     title: "Live check-in",
     help: "Search, finish any one missing step, then check the participant in.",
+  },
+  staff: {
+    phase: "Staff arrival",
+    title: "Staff check-in",
+    help: "Record who has physically arrived so operations can work from the people who are actually on site.",
   },
   roster: {
     phase: "Final roster",
@@ -31,30 +37,36 @@ const MODE_META = {
   },
 };
 
-function normalizeRegistrationMode(initialMode, canUseRegistrationTools) {
+function normalizeRegistrationMode(initialMode, canUseRegistrationTools, canUseStaffCheckin) {
   if (!canUseRegistrationTools) return "desk";
   if (initialMode === "setup") return "readiness";
-  return ["desk", "roster", "readiness"].includes(initialMode) ? initialMode : "desk";
+  if (initialMode === "staff" && !canUseStaffCheckin) return "desk";
+  return ["desk", "staff", "roster", "readiness"].includes(initialMode) ? initialMode : "desk";
 }
 
 export function Registration(props) {
   const { imported = [], live = false, sessionId, sessionName, capabilities = [], onOperationalDataChanged, initialMode = "desk", initialFilter = "", onNavigate } = props;
   const canUseRegistrationTools = capabilities.includes("registration_view") || capabilities.includes("registration_manage") || !live;
-  const normalizedMode = normalizeRegistrationMode(initialMode, canUseRegistrationTools);
+  const canUseStaffCheckin = capabilities.includes("registration_manage") || capabilities.includes("staff_manage") || !live;
+  const normalizedMode = normalizeRegistrationMode(initialMode, canUseRegistrationTools, canUseStaffCheckin);
   const [mode, setMode] = useState(normalizedMode);
   const [journeyMode, setJourneyMode] = useState(normalizedMode === "roster" ? "roster" : "desk");
   const [readinessVisited, setReadinessVisited] = useState(normalizedMode === "readiness");
+  const [staffVisited, setStaffVisited] = useState(normalizedMode === "staff");
 
   useEffect(() => {
     setMode(normalizedMode);
     if (normalizedMode === "desk" || normalizedMode === "roster") setJourneyMode(normalizedMode);
     if (normalizedMode === "readiness") setReadinessVisited(true);
+    if (normalizedMode === "staff") setStaffVisited(true);
   }, [normalizedMode]);
 
   const chooseMode = (next) => {
+    if (next === "staff" && !canUseStaffCheckin) return;
     setMode(next);
     if (next === "desk" || next === "roster") setJourneyMode(next);
     if (next === "readiness") setReadinessVisited(true);
+    if (next === "staff") setStaffVisited(true);
     onNavigate?.({ view: "registration", mode: next, filter: "" });
   };
 
@@ -87,15 +99,18 @@ export function Registration(props) {
     onSetOperationalStatus: props.onSetOperationalStatus,
   };
 
+  const modeOptions = [
+    { value: "desk", label: "Participants", id: "registration-mode-desk" },
+    ...(canUseStaffCheckin ? [{ value: "staff", label: "Staff", id: "registration-mode-staff" }] : []),
+    { value: "roster", label: "Final roster", id: "registration-mode-roster" },
+    { value: "readiness", label: "Readiness", id: "registration-mode-readiness" },
+  ];
+
   return <div className={`registration-enhanced registration-workspace registration-workspace-v5 registration-unified registration-v10 registration-v21 registration-v28 registration-v29 registration-workspace-v30 registration-mode-${mode}`}>
     <section className="page registration-workspace-intro registration-workspace-intro-v5 registration-unified-intro">
-      <PageHead title="Registration & check-in" sessionName={sessionName} description="Finish each participant's next step, then move on." />
+      <PageHead title="Registration & check-in" sessionName={sessionName} description="Record arrivals quickly, then move on to the next person." />
       <div className="registration-workspace-navigation registration-workspace-navigation-v5 registration-unified-navigation">
-        {canUseRegistrationTools ? <SegmentedControl className="registration-mode-switch registration-workspace-tabs registration-workspace-tabs-v5 registration-unified-tabs" label="Registration and check-in work area" value={mode} onChange={chooseMode} options={[
-          { value: "desk", label: "Live check-in", id: "registration-mode-desk" },
-          { value: "roster", label: "Final roster", id: "registration-mode-roster" },
-          { value: "readiness", label: "Readiness", id: "registration-mode-readiness" },
-        ]} /> : null}
+        {canUseRegistrationTools ? <SegmentedControl className="registration-mode-switch registration-workspace-tabs registration-workspace-tabs-v5 registration-unified-tabs" label="Registration and check-in work area" value={mode} onChange={chooseMode} options={modeOptions} /> : null}
         <div className="registration-mode-cue-v5 registration-mode-cue-compact" data-mode={mode} role="status" aria-label={`${modeMeta.title}. ${modeMeta.help}`}>
           <div className="registration-mode-copy"><span className="kicker">{modeMeta.phase}</span><p>{modeMeta.help}</p></div>
         </div>
@@ -103,10 +118,14 @@ export function Registration(props) {
     </section>
 
     <div className="registration-workspace-pane registration-workspace-pane-v5 registration-unified-pane">
-      <div role="tabpanel" aria-labelledby={journeyMode === "desk" ? "registration-mode-desk" : "registration-mode-roster"} hidden={mode === "readiness"}>
+      <div role="tabpanel" aria-labelledby={journeyMode === "desk" ? "registration-mode-desk" : "registration-mode-roster"} hidden={mode === "readiness" || mode === "staff"}>
         {mode === "roster" && live ? <SessionFinalization sessionId={sessionId} onChanged={onOperationalDataChanged} onNavigate={onNavigate} /> : null}
         <RegistrationJourney view={journeyMode} {...journeyProps} />
       </div>
+
+      {staffVisited ? <div role="tabpanel" aria-labelledby="registration-mode-staff" hidden={mode !== "staff"}>
+        <StaffCheckin sessionId={sessionId} live={live} />
+      </div> : null}
 
       {readinessVisited ? <div role="tabpanel" aria-labelledby="registration-mode-readiness" hidden={mode !== "readiness"}>
         <RegistrationReadinessV30 imported={imported} cohort={cohortSummary} live={live} sessionId={sessionId} capabilities={capabilities} canManage={props.canManage} setImported={props.setImported} onChanged={onOperationalDataChanged} onFinalBaselineChanged={handleFinalBaselineChanged} onNavigate={onNavigate} />
