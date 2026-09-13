@@ -1,21 +1,42 @@
+.topbar {
+  height: 64px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ds-line, #d8e2e2) 78%, transparent);
+  background: rgba(255, 255, 255, .82);
+  -webkit-backdrop-filter: saturate(170%) blur(18px);
+  backdrop-filter: saturate(170%) blur(18px);
+}
+
+.topbar .session {
+  gap: 0;
+}
+
+.topbar .session > small {
+  display: none;
+}
+
 .session-select {
-  width: min(300px, 34vw);
-  min-height: var(--ds-control, 44px);
-  padding: 0 34px 0 10px;
-  border: 1px solid var(--ds-line, #d8e2e2);
-  border-radius: var(--ds-radius-sm, 10px);
-  background: var(--ds-surface, #fff);
+  width: min(320px, 36vw);
+  min-height: 40px;
+  padding: 0 30px 0 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
   color: var(--ds-text-strong, var(--blue-35));
   font: inherit;
   font-size: var(--ds-text-sm, 13px);
-  font-weight: 700;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
 }
 
+.session-select:hover {
+  background: var(--ds-surface-subtle, #f1f5f4);
+}
+
 .session-select:focus-visible {
   border-color: var(--ds-brand, var(--blue-25));
+  background: var(--ds-surface, #fff);
 }
 
 .session-badge.training {
@@ -61,50 +82,90 @@
   line-height: 1.45;
 }
 
-@media (min-width: 901px) {
-  .global-search-button {
-    width: auto;
-    min-width: 140px;
-    height: var(--ds-control, 44px);
-    min-height: var(--ds-control, 44px);
-    padding: 0 13px 0 11px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border: 1px solid var(--ds-line-strong, #becdce);
-    border-radius: var(--ds-radius-sm, 10px);
-    background: var(--ds-surface, #fff);
-    color: var(--ds-text-strong, var(--blue-35));
-    box-shadow: none;
-  }
+.top-actions {
+  gap: 3px;
+}
 
-  .global-search-button::after {
-    content: "Search people";
-    font-size: var(--ds-text-sm, 13px);
-    font-weight: 700;
-    letter-spacing: -.005em;
-    white-space: nowrap;
-  }
+/* Toolbar actions stay visually quiet until interaction. */
+.global-search-button,
+.topbar .notification-button {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ds-text-strong, var(--blue-35));
+  box-shadow: none;
+}
 
-  .global-search-button:hover {
-    border-color: var(--ds-line-strong, #becdce);
-    background: var(--ds-surface-subtle, #f1f5f4);
-  }
+.global-search-button::after {
+  content: none;
+}
+
+.global-search-button:hover,
+.topbar .notification-button:hover {
+  background: var(--ds-surface-subtle, #f1f5f4);
+}
+
+.global-search-button svg,
+.topbar .notification-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Connection is status text, not another pill competing with toolbar actions. */
+.topbar .connection {
+  min-height: 44px;
+  padding: 0 7px;
+  gap: 7px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ds-text-secondary, var(--muted));
+  font-size: 11px;
+  font-weight: 620;
+}
+
+.topbar .connection.live,
+.topbar .connection.stale,
+.topbar .connection.updating,
+.topbar .connection.demo {
+  border: 0;
+  background: transparent;
+  color: var(--ds-text-secondary, var(--muted));
+}
+
+.connection-label-full {
+  display: none;
+}
+
+.connection-label-short {
+  display: inline;
 }
 
 @media (max-width: 900px) {
-  .global-search-button::after {
-    content: none;
+  .topbar {
+    height: 62px;
+  }
+
+  .session-select {
+    width: min(190px, 46vw);
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .global-search-button {
+    width: 44px;
+    min-width: 44px;
   }
 }
 
 @media (max-width: 780px) {
-  .session-select {
-    width: min(190px, 46vw);
-    font-size: 16px;
-  }
-
   .training-banner {
     margin: 10px 12px 0;
     align-items: flex-start;
@@ -116,6 +177,10 @@
 @media (max-width: 520px) {
   .session-select {
     width: min(155px, 42vw);
+  }
+
+  .topbar .connection {
+    padding-inline: 4px;
   }
 
   .training-banner span {
