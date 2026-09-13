@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
-import { MagnifyingGlass } from "@phosphor-icons/react/MagnifyingGlass";
 import { UserCheck } from "@phosphor-icons/react/UserCheck";
-import { ActionToast, Empty, MutationFeedback } from "../components/UI.jsx";
+import { ActionToast, Empty, MutationFeedback, SearchField } from "../components/UI.jsx";
 import { loadStaffArrivalRoster, recordStaffArrival, subscribeStaffArrivals } from "../lib/staff-checkin.js";
 import "./staff-checkin.css";
 
@@ -37,16 +36,24 @@ export function StaffCheckin({ sessionId, live = false }) {
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [undoTarget, setUndoTarget] = useState(null);
+  const searchRef = useRef(null);
+
+  const focusSearch = useCallback(() => {
+    window.requestAnimationFrame(() => searchRef.current?.focus?.());
+  }, []);
 
   const refresh = useCallback(async ({ quiet = false } = {}) => {
-    if (!sessionId) return;
+    if (!sessionId) return [];
     if (quiet) setRefreshing(true); else setLoading(true);
     try {
       const next = await loadStaffArrivalRoster(sessionId);
       setStaff(next);
       setError("");
+      return next;
     } catch (err) {
       setError(err.message || "Staff arrivals could not be loaded.");
+      return null;
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -73,11 +80,12 @@ export function StaffCheckin({ sessionId, live = false }) {
     };
   }, [staff]);
 
+  const searching = Boolean(query.trim());
   const visible = useMemo(() => {
     const text = query.trim().toLowerCase();
     return staff
       .filter((person) => person.isCurrent !== false && person.registrationStatus !== "cancelled")
-      .filter((person) => filter === "all" || person.arrivalState === filter)
+      .filter((person) => text || filter === "all" || person.arrivalState === filter)
       .filter((person) => !text || searchable(person).includes(text))
       .sort((a, b) => {
         const arrivalOrder = { expected: 0, arrived: 1, no_show: 2, left: 3 };
@@ -91,10 +99,16 @@ export function StaffCheckin({ sessionId, live = false }) {
     setError("");
     try {
       await recordStaffArrival(person, arrival);
-      await refresh({ quiet: true });
+      const next = await refresh({ quiet: true });
       if (arrival === "arrived") {
-        setNotice(`${person.name} is now marked present at the session.`);
+        const current = next?.find((item) => item.id === person.id) || { ...person, arrivalState: "arrived", operationsRevision: Number(person.operationsRevision || 0) + 1 };
+        setUndoTarget(current);
+        setNotice(`${person.name} checked in.`);
+        setQuery("");
+        setFilter("expected");
+        focusSearch();
       } else {
+        setUndoTarget(null);
         setNotice(`${person.name}'s staff check-in was undone.`);
       }
     } catch (err) {
@@ -112,24 +126,35 @@ export function StaffCheckin({ sessionId, live = false }) {
     }
   };
 
+  const dismissNotice = () => {
+    setNotice("");
+    setUndoTarget(null);
+  };
+
+  const undoLastCheckin = async () => {
+    if (!undoTarget) return;
+    await changeArrival(undoTarget, "expected");
+    focusSearch();
+  };
+
   return <section className="staff-checkin" aria-label="Staff check-in desk">
     <div className="staff-checkin-heading">
       <div>
         <span className="kicker">Staff arrival</span>
         <h2>Who is actually on site?</h2>
-        <p>Search a staff member and mark them present. Registration records arrival only. Staff readiness and responsibilities stay with session leadership.</p>
+        <p>Search, confirm the person, and check them in. Registration records arrival only. Staff readiness and responsibilities stay with session leadership.</p>
       </div>
       {refreshing ? <small role="status">Updating…</small> : null}
     </div>
 
     <div className="staff-checkin-summary" aria-label="Staff arrival summary">
-      <button type="button" className={filter === "arrived" ? "active" : ""} onClick={() => setFilter("arrived")}>
-        <b>{counts.arrived}</b><span>On site</span>
-      </button>
-      <button type="button" className={filter === "expected" ? "active" : ""} onClick={() => setFilter("expected")}>
+      <button type="button" className={filter === "expected" && !searching ? "active" : ""} aria-pressed={filter === "expected" && !searching} onClick={() => { setQuery(""); setFilter("expected"); }}>
         <b>{counts.expected}</b><span>Still expected</span>
       </button>
-      <button type="button" className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>
+      <button type="button" className={filter === "arrived" && !searching ? "active" : ""} aria-pressed={filter === "arrived" && !searching} onClick={() => { setQuery(""); setFilter("arrived"); }}>
+        <b>{counts.arrived}</b><span>Checked in</span>
+      </button>
+      <button type="button" className={filter === "all" && !searching ? "active" : ""} aria-pressed={filter === "all" && !searching} onClick={() => { setQuery(""); setFilter("all"); }}>
         <b>{counts.all}</b><span>Total staff</span>
       </button>
       <div className={counts.confirmation ? "attention" : ""}>
@@ -138,11 +163,10 @@ export function StaffCheckin({ sessionId, live = false }) {
     </div>
 
     <div className="staff-checkin-search">
-      <MagnifyingGlass aria-hidden="true" />
-      <label htmlFor="staff-checkin-query">Find staff member</label>
-      <input id="staff-checkin-query" type="search" inputMode="search" autoComplete="off" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, ward, branch or responsibility" />
-      {query ? <button type="button" onClick={() => setQuery("")}>Clear</button> : null}
+      <div className="staff-checkin-search-copy"><b>Find staff member</b><span>Search by name, ward, branch or responsibility.</span></div>
+      <SearchField inputRef={searchRef} value={query} onChange={setQuery} label="Find staff member" placeholder="Name, ward, branch or responsibility" className="staff-checkin-search-field" />
     </div>
+    {searching ? <div className="staff-checkin-search-scope" role="status"><span><b>Searching all staff</b><small>Expected, checked in, no-show and left records are included.</small></span><button type="button" className="text-action" onClick={() => { setQuery(""); focusSearch(); }}>Clear</button></div> : null}
 
     {error ? <MutationFeedback tone="error" className="staff-checkin-error">{error}</MutationFeedback> : null}
 
@@ -163,7 +187,7 @@ export function StaffCheckin({ sessionId, live = false }) {
             {blocked ? <small className="staff-checkin-confirmation">{person.arrivalState === "no_show" ? "Recorded as did not arrive" : "Recorded as left the session"}</small> : null}
           </div>
           <div className="staff-checkin-action">
-            {present ? <button type="button" className="staff-checkin-undo" disabled={busyId === person.id} onClick={() => changeArrival(person, "expected")}>{busyId === person.id ? "Saving…" : "Undo"}</button>
+            {present ? <button type="button" className="staff-checkin-undo" disabled={busyId === person.id} onClick={() => changeArrival(person, "expected")}>{busyId === person.id ? "Saving…" : "Undo check-in"}</button>
               : blocked ? <span className="staff-checkin-locked">Manage in Staff status</span>
                 : <button type="button" className="primary" disabled={busyId === person.id} onClick={() => changeArrival(person, "arrived")}><UserCheck aria-hidden="true" />{busyId === person.id ? "Checking in…" : "Check in"}</button>}
           </div>
@@ -172,6 +196,6 @@ export function StaffCheckin({ sessionId, live = false }) {
     </div> : <Empty title={query ? "No staff found" : filter === "expected" ? "Nobody is still expected" : filter === "arrived" ? "No staff checked in yet" : "No staff found"} text={query ? "Check the spelling or search by ward, branch, or responsibility." : filter === "expected" ? "Everyone in the current staff roster has an arrival status." : "Change the filter or refresh this desk."} />}
 
     {!live ? <p className="staff-checkin-demo-note">This desk is connected to the selected session when live data is available.</p> : null}
-    <ActionToast message={notice} onDismiss={() => setNotice("")} />
+    <ActionToast message={notice} actionLabel="Undo" onAction={undoTarget ? undoLastCheckin : undefined} onDismiss={dismissNotice} busy={Boolean(undoTarget && busyId === undoTarget.id)} />
   </section>;
 }
