@@ -9,6 +9,7 @@ import { LockKey } from "@phosphor-icons/react/LockKey";
 import { SignOut } from "@phosphor-icons/react/SignOut";
 import { UserPlus } from "@phosphor-icons/react/UserPlus";
 import { inspectLeaderInvite } from "../lib/auth.js";
+import { APP_NAME } from "../lib/app-meta.js";
 import { BrandMark } from "./BrandMark.jsx";
 import "./auth-password.css";
 
@@ -138,7 +139,7 @@ export function SignInScreen({ onSignIn, onActivate, onForgot, initialInvite = "
     <main className="auth-page">
       <section className="auth-card password-auth-card">
         <BrandMark />
-        <span className="kicker">FSY Kumasi 2026</span>
+        <span className="kicker">{APP_NAME}</span>
         <h1>{title}</h1>
         <p>{description}</p>
 
@@ -294,6 +295,6 @@ export function WorkspaceRecoveryScreen({ message, supportReference, onRetry, on
   return <main className="auth-page workspace-recovery-page"><section className="auth-card loading-card workspace-recovery-card"><BrandMark/><span className="kicker">Signed in</span><h2>Your FSY workspace needs another try</h2><p>{message || "Your account is signed in. Some workspace information did not load yet."}</p><div className="runtime-recovery-actions"><button className="primary full" onClick={onRetry}>Try loading workspace again</button><button className="secondary full" onClick={onSignOut}>Sign out</button></div>{supportReference?<small>Support reference: <b>{supportReference}</b></small>:null}</section></main>;
 }
 
-export function LoadingScreen({ text = "Connecting to FSY Kumasi…" }) {
+export function LoadingScreen({ text = `Connecting to ${APP_NAME}…` }) {
   return <main className="auth-page"><section className="auth-card loading-card"><BrandMark /><div className="loading-dot"/><h2>{text}</h2></section></main>;
 }

@@ -1,0 +1,57 @@
+.overview-home .overview-intro {
+  padding-bottom: 8px;
+}
+
+.overview-home .overview-context {
+  margin-bottom: 0;
+}
+
+.overview-session-context {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(25, 74, 88, .12);
+  color: var(--ink, #123d4b);
+}
+
+.overview-session-context b {
+  font-size: clamp(1.05rem, 2vw, 1.22rem);
+  line-height: 1.2;
+  letter-spacing: -.015em;
+}
+
+.overview-session-context span {
+  color: var(--muted, #6b7f84);
+  font-size: .94rem;
+  line-height: 1.35;
+}
+
+.overview-session-context.phase-pre_session b {
+  color: #8a5b0a;
+}
+
+.overview-session-context.phase-arrival b,
+.overview-session-context.phase-live b {
+  color: #005f7e;
+}
+
+.overview-session-context.phase-post_session b {
+  color: #365d52;
+}
+
+@media (max-width: 640px) {
+  .overview-session-context {
+    margin-top: 10px;
+    padding-top: 10px;
+    gap: 2px 8px;
+  }
+
+  .overview-session-context b,
+  .overview-session-context span {
+    display: block;
+    width: 100%;
+  }
+}

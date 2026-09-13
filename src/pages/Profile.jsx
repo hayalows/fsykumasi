@@ -8,6 +8,7 @@ import { AccountAvatar } from "../components/Avatar.jsx";
 import { MutationFeedback, PageHead, Status } from "../components/UI.jsx";
 import { demoSession } from "../data/session.js";
 import { roleLabel } from "../lib/access.js";
+import { canonicalSessionName } from "../lib/app-meta.js";
 import { recoverableWriteError, usePendingPageGuard, useSingleFlight } from "../lib/reliable-action.js";
 
 function accessScope(grantedAccess, companies, currentRole, live) {
@@ -44,7 +45,7 @@ export function Profile({ currentUser, currentRole, grantedAccess, companies = [
   useEffect(() => { setName(displayName); }, [displayName]);
 
   const scope = useMemo(() => accessScope(grantedAccess, companies, currentRole, live), [grantedAccess, companies, currentRole, live]);
-  const activeSessionName = sessionInfo?.name || sessionName;
+  const activeSessionName = canonicalSessionName(sessionInfo?.name || sessionName);
   const passwordTooShort = passwords.next.length > 0 && passwords.next.length < 10;
   const passwordMismatch = passwords.confirm.length > 0 && passwords.next !== passwords.confirm;
   const passwordUnchanged = passwords.current.length > 0 && passwords.next.length > 0 && passwords.current === passwords.next;

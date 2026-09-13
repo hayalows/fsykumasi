@@ -31,9 +31,9 @@ test("mobile Housing keeps room context, actions and final choices above the saf
   assert.match(css, /housing-v5-picker-head\.housing-v36-picker-head > button[\s\S]*min-height:\s*48px/);
 });
 
-test("Housing v62 refreshes the installed app shell", async () => {
+test("Housing v62 remains recorded in the current installed app shell", async () => {
   const sw = await read("public/sw.js");
-  assert.match(sw, /CACHE_NAME = "fsy-kumasi-shell-v62"/);
+  assert.match(sw, /CACHE_NAME = "fsy-kumasi-shell-v63"/);
   assert.match(sw, /Housing assignment v62/);
-  assert.match(sw, /fsy-kumasi-shell-v61/);
+  assert.match(sw, /fsy-kumasi-shell-v62/);
 });

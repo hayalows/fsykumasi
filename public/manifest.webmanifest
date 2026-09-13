@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "FSY Kumasi 2026 Operations",
-  "short_name": "FSY Kumasi",
-  "description": "A focused operations workspace for the FSY Kumasi 2026 session.",
+  "name": "KCC FSY 2026 · Operations",
+  "short_name": "KCC FSY 2026",
+  "description": "A focused operations workspace for KCC FSY 2026.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,13 +10,13 @@
   "background_color": "#f5fbfd",
   "theme_color": "#005175",
   "orientation": "any",
+  "lang": "en",
   "categories": ["productivity", "utilities"],
   "icons": [
     {
-      "src": "/app-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "/brand/2026-theme-identifier-full-color.png",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
