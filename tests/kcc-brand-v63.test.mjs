@@ -5,10 +5,13 @@ import test from "node:test";
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("KCC FSY 2026 is the canonical shell and authentication identity", async () => {
-  const [meta, shell, auth, html] = await Promise.all([
+  const [meta, shell, auth, app, ui, profile, html] = await Promise.all([
     read("src/lib/app-meta.js"),
     read("src/components/AppShell.jsx"),
     read("src/components/AuthGate.jsx"),
+    read("src/App.jsx"),
+    read("src/components/UI.jsx"),
+    read("src/pages/Profile.jsx"),
     read("index.html"),
   ]);
   assert.match(meta, /APP_NAME = "KCC FSY 2026"/);
@@ -16,7 +19,10 @@ test("KCC FSY 2026 is the canonical shell and authentication identity", async ()
   assert.match(shell, /canonicalSessionName/);
   assert.match(shell, /sessionDayContext/);
   assert.match(auth, /APP_NAME/);
-  assert.doesNotMatch(auth, /FSY Kumasi 2026/);
+  assert.match(ui, /canonicalSessionName\(sessionName\)/);
+  assert.match(ui, /document\.title = `\$\{title\} · \$\{APP_NAME\}`/);
+  assert.match(profile, /canonicalSessionName\(sessionInfo\?\.name \|\| sessionName\)/);
+  for (const surface of [auth, app, ui, profile, html]) assert.doesNotMatch(surface, /FSY Kumasi(?: 2026)?/);
   assert.match(html, /<title>KCC FSY 2026 · Operations<\/title>/);
   assert.match(html, /apple-mobile-web-app-title" content="KCC FSY 2026"/);
 });
