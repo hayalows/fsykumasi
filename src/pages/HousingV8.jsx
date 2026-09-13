@@ -10,6 +10,7 @@ import { HousingPlanningV8 } from "./HousingPlanningV8.jsx";
 import "./housing-v8.css";
 import "./housing-v10.css";
 import "./housing-command-center.css";
+import "./housing-live-v61.css";
 
 function WorkspaceNav({ mode, onChange }) {
   const options = [
