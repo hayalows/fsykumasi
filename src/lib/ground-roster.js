@@ -98,3 +98,26 @@ export async function moveParticipantOnGround({ participantId, groupId }) {
   if (error) throw error;
   return normalizeGroundResult(data);
 }
+
+export function subscribeParticipantGroundRoster(sessionId, onChange) {
+  if (!sessionId || !isSupabaseConfigured || !supabase) return () => {};
+  let closed = false;
+  let timer = null;
+  const emit = () => {
+    if (closed) return;
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => onChange?.(), 250);
+  };
+  const channel = supabase
+    .channel(`participant-ground-${sessionId}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "check_ins", filter: `session_id=eq.${sessionId}` }, emit)
+    .on("postgres_changes", { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${sessionId}` }, emit)
+    .subscribe();
+  const fallback = window.setInterval(emit, 15000);
+  return () => {
+    closed = true;
+    window.clearTimeout(timer);
+    window.clearInterval(fallback);
+    supabase.removeChannel(channel);
+  };
+}
