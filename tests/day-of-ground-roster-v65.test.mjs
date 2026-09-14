@@ -49,6 +49,6 @@ test("late staff are immediately usable and can be auto placed", async () => {
   assert.match(source, /place_ready_staff_if_open_v1/);
   assert.match(source, /record_staff_arrival_v1/);
   assert.match(source, /add_on_site_staff_from_checkin_v1/);
-  assert.match(source, /'primary','arrived','cleared'/);
+  assert.match(source, /'primary'\s*,\s*'arrived'\s*,\s*'cleared'/);
   assert.match(source, /staff_auto_placed_day_of/);
 });
