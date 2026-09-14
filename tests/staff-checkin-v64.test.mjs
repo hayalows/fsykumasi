@@ -12,7 +12,7 @@ test("staff check-in can add a genuinely missing staff member from the desk", as
   ]);
 
   assert.match(registration, /<StaffCheckin sessionId=\{sessionId\} live=\{live\} capabilities=\{capabilities\}/);
-  assert.match(source, /This person is not on the staff roster\./);
+  assert.match(source, /This person is not on the current ground roster\./);
   assert.match(source, /Add staff on site/);
   assert.match(source, /submitLabel="Add & check in"/);
   assert.match(client, /add_on_site_staff_from_checkin_v1/);
@@ -23,11 +23,11 @@ test("staff search exposes inactive matches instead of silently treating them as
   assert.match(source, /inactiveMatches/);
   assert.match(source, /Existing record needs review/);
   assert.match(source, /Do not add this person again/);
-  assert.match(source, /Cancelled registration/);
   assert.match(source, /Older or non-current staff record/);
+  assert.match(source, /Not in the active staff plan/);
 });
 
-test("check-in capture creates provisional staff without bypassing leadership confirmation", async () => {
+test("v64 capture kept source registration history and duplicate protection", async () => {
   const migration = await read("supabase/migrations/20260913191500_staff_checkin_onsite_capture_v64.sql");
   assert.match(migration, /has_capability\(p_session_id, 'registration_manage'\)/);
   assert.match(migration, /has_capability\(p_session_id, 'staff_manage'\)/);
@@ -45,9 +45,10 @@ test("on-site staff sheet supports the fast arrival context without forking the 
   assert.match(source, /I checked the results\. This person is not already listed\./);
 });
 
-test("newly captured staff are checked in as a separate arrival mutation", async () => {
+test("newly captured staff become ready for day-of service", async () => {
   const source = await read("src/pages/StaffCheckin.jsx");
   assert.match(source, /recordStaffArrival\(person, "arrived"\)/);
-  assert.match(source, /Leadership confirmation is still required/);
+  assert.match(source, /was added and is ready to serve/);
+  assert.match(source, /marks them present and ready/);
   assert.match(source, /The staff record was added, but check-in did not finish/);
 });

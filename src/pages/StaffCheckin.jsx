@@ -27,13 +27,20 @@ function initials(name = "FSY") {
 }
 
 function isActiveRosterRecord(person) {
-  return person.isCurrent !== false && person.registrationStatus !== "cancelled";
+  return person.isCurrent !== false && person.planningState !== "excluded";
 }
 
 function inactiveReason(person) {
-  if (person.registrationStatus === "cancelled") return "Cancelled registration";
   if (person.isCurrent === false) return "Older or non-current staff record";
-  return "Not in the current staff roster";
+  if (person.planningState === "excluded") return "Not in the active staff plan";
+  return "Not ready for this session";
+}
+
+function needsPlacement(person) {
+  if (person.arrivalState !== "arrived") return false;
+  if (person.operationalRole === "counselor") return !person.assignmentLabel || person.assignmentLabel === "Counselor";
+  if (person.operationalRole === "assistant_coordinator") return !person.assignmentLabel || person.assignmentLabel === "Assistant coordinator";
+  return false;
 }
 
 export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
@@ -88,7 +95,7 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
       all: current.length,
       arrived: current.filter((person) => person.arrivalState === "arrived").length,
       expected: current.filter((person) => person.arrivalState === "expected").length,
-      confirmation: current.filter((person) => person.arrivalState === "arrived" && person.serviceClearance !== "cleared").length,
+      unplaced: current.filter(needsPlacement).length,
     };
   }, [staff]);
 
@@ -123,7 +130,7 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
       if (arrival === "arrived") {
         const current = next?.find((item) => item.id === person.id) || { ...person, arrivalState: "arrived", operationsRevision: Number(person.operationsRevision || 0) + 1 };
         setUndoTarget(current);
-        setNotice(`${person.name} checked in.`);
+        setNotice(needsPlacement(current) ? `${person.name} checked in and is ready to serve. Placement is still open.` : `${person.name} checked in and is ready to serve.`);
         setQuery("");
         setFilter("expected");
         focusSearch();
@@ -159,7 +166,7 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
       const next = await refresh({ quiet: true });
       const current = next?.find((item) => item.id === staffId) || { ...person, arrivalState: "arrived", operationsRevision: Number(person.operationsRevision || 0) + 1 };
       setUndoTarget(current);
-      setNotice(`${person.name} was added and checked in. Leadership confirmation is still required.`);
+      setNotice(needsPlacement(current) ? `${person.name} was added and is ready to serve. Placement is still open.` : `${person.name} was added, checked in, and is ready to serve.`);
       setQuery("");
       setFilter("expected");
       focusSearch();
@@ -187,7 +194,7 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
       <div>
         <span className="kicker">Staff arrival</span>
         <h2>Who is actually on site?</h2>
-        <p>Search, confirm the person, and check them in. Registration records arrival only. Staff readiness and responsibilities stay with session leadership.</p>
+        <p>Search and check the person in. The ground roster is the operating source: people on it are ready to work. Staff who arrive later become ready when they are checked in.</p>
       </div>
       {refreshing ? <small role="status">Updating…</small> : null}
     </div>
@@ -200,10 +207,10 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
         <b>{counts.arrived}</b><span>Checked in</span>
       </button>
       <button type="button" className={filter === "all" && !searching ? "active" : ""} aria-pressed={filter === "all" && !searching} onClick={() => { setQuery(""); setFilter("all"); }}>
-        <b>{counts.all}</b><span>Total staff</span>
+        <b>{counts.all}</b><span>Active staff</span>
       </button>
-      <div className={counts.confirmation ? "attention" : ""}>
-        <b>{counts.confirmation}</b><span>Present, needs confirmation</span>
+      <div className={counts.unplaced ? "attention" : ""}>
+        <b>{counts.unplaced}</b><span>Present, needs placement</span>
       </div>
     </div>
 
@@ -229,13 +236,12 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
               <div className="staff-checkin-name-line"><b>{person.name}</b>{present ? <span className="staff-checkin-present"><CheckCircle weight="fill" /> Present</span> : null}</div>
               <span>{assignment}</span>
               {location ? <small>{location}</small> : null}
-              {present && person.serviceClearance !== "cleared" ? <small className="staff-checkin-confirmation">Needs leadership confirmation before active service</small> : null}
+              {needsPlacement(person) ? <small className="staff-checkin-confirmation">Ready to serve · placement still open</small> : null}
               {blocked ? <small className="staff-checkin-confirmation">{person.arrivalState === "no_show" ? "Recorded as did not arrive" : "Recorded as left the session"}</small> : null}
             </div>
             <div className="staff-checkin-action">
               {present ? <button type="button" className="staff-checkin-undo" disabled={busyId === person.id} onClick={() => changeArrival(person, "expected")}>{busyId === person.id ? "Saving…" : "Undo check-in"}</button>
-                : blocked ? <span className="staff-checkin-locked">Manage in Staff status</span>
-                  : <button type="button" className="primary" disabled={busyId === person.id} onClick={() => changeArrival(person, "arrived")}><UserCheck aria-hidden="true" />{busyId === person.id ? "Checking in…" : "Check in"}</button>}
+                : <button type="button" className="primary" disabled={busyId === person.id} onClick={() => changeArrival(person, "arrived")}><UserCheck aria-hidden="true" />{busyId === person.id ? "Checking in…" : blocked ? "Mark present" : "Check in"}</button>}
             </div>
           </article>;
         })}
@@ -244,7 +250,7 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
       {searching && inactiveMatches.length ? <section className="staff-checkin-inactive" aria-label="Matching inactive staff records">
         <div className="staff-checkin-inactive-heading">
           <b>Existing record needs review</b>
-          <span>Do not add this person again. A coordinator or staff administrator should correct the roster status first.</span>
+          <span>Do not add this person again. Use the existing record and make it current if they are serving.</span>
         </div>
         {inactiveMatches.map((person) => <div className="staff-checkin-inactive-row" key={person.id}>
           <span className="staff-checkin-avatar" aria-hidden="true">{initials(person.name)}</span>
@@ -253,13 +259,13 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
       </section> : null}
 
       {missingRosterMatch ? <div className="staff-checkin-missing">
-        <b>This person is not on the staff roster.</b>
-        <span>Check the spelling first. If they are physically here and should serve, add a provisional staff record and check them in from this desk.</span>
+        <b>This person is not on the current ground roster.</b>
+        <span>Check the spelling first. If they are physically here and should serve, add them. They will be marked present and ready immediately, with automatic placement when a suitable slot is open.</span>
         {canAddOnSite && query.trim().length >= 3 ? <button type="button" className="primary" onClick={() => setAddOpen(true)}>Add staff on site</button> : null}
         {!canAddOnSite ? <small>Ask a coordinator or staff administrator to add the staff record.</small> : null}
       </div> : null}
 
-      {!searching && !visible.length ? <Empty title={filter === "expected" ? "Nobody is still expected" : filter === "arrived" ? "No staff checked in yet" : "No staff found"} text={filter === "expected" ? "Everyone in the current staff roster has an arrival status." : "Change the filter or refresh this desk."} /> : null}
+      {!searching && !visible.length ? <Empty title={filter === "expected" ? "Nobody is still expected" : filter === "arrived" ? "No staff checked in yet" : "No staff found"} text={filter === "expected" ? "Everyone in the active staff roster has an arrival status." : "Change the filter or refresh this desk."} /> : null}
     </>}
 
     {!live ? <p className="staff-checkin-demo-note">This desk is connected to the selected session when live data is available.</p> : null}
@@ -270,7 +276,7 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
       createStaff={addStaffFromCheckin}
       title="Add staff on site"
       submitLabel="Add & check in"
-      helperText="This creates a provisional staff record and records the person as present. Leadership confirmation is still required before active service."
+      helperText="This adds the staff record, marks them present and ready, and automatically places a Counselor or Assistant Coordinator when a suitable open slot exists."
       onSaved={handleOnSiteSaved}
       onClose={() => setAddOpen(false)}
     /> : null}

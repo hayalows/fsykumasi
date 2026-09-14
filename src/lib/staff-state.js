@@ -21,21 +21,23 @@ function committeeLabel(value = '') {
 
 export function staffState(person) {
   return {
-    planning: person.planningState || (person.registrationStatus === 'cancelled' || person.isCurrent === false ? 'excluded' : person.registrationStatus === 'awaiting' ? 'provisional' : person.counselorGroupId || person.companyIds?.length ? 'primary' : 'reserve'),
+    planning: person.planningState || (person.isCurrent === false ? 'excluded' : person.counselorGroupId || person.companyIds?.length ? 'primary' : 'reserve'),
     arrival: person.arrivalState || 'expected',
-    clearance: person.serviceClearance || (person.registrationStatus === 'approved' ? 'cleared' : 'confirmation_required'),
+    clearance: person.serviceClearance || 'confirmation_required',
   };
 }
 
 export function canPlanStaff(person) {
   const state = staffState(person);
-  return person.isCurrent !== false && person.registrationStatus !== 'cancelled' && state.planning !== 'excluded' && state.clearance !== 'not_cleared' && !['no_show', 'left'].includes(state.arrival);
+  return person.isCurrent !== false
+    && state.planning !== 'excluded'
+    && state.clearance !== 'not_cleared'
+    && !['no_show', 'left'].includes(state.arrival);
 }
 
 export function isFinalStaff(person) {
   const state = staffState(person);
   return person.isCurrent !== false
-    && person.registrationStatus !== 'cancelled'
     && state.planning !== 'excluded'
     && state.clearance === 'cleared'
     && !['no_show', 'left'].includes(state.arrival);
@@ -51,8 +53,8 @@ export function staffResponsibilityLabel(person = {}) {
 export function staffException(person) {
   const state = staffState(person);
   if (['no_show', 'left'].includes(state.arrival)) return person.counselorGroupId || person.companyIds?.length ? 'Replacement needed' : state.arrival === 'left' ? 'Left' : 'No-show';
-  if (state.clearance === 'not_cleared') return 'Not cleared';
-  if (state.clearance === 'confirmation_required') return 'Needs confirmation';
-  if (state.planning === 'excluded') return 'Excluded from planning';
+  if (state.clearance === 'not_cleared') return 'Not ready to serve';
+  if (state.clearance === 'confirmation_required') return 'Needs staff confirmation';
+  if (state.planning === 'excluded') return 'Not in active plan';
   return '';
 }

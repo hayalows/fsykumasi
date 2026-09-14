@@ -12,7 +12,7 @@ test("Registration exposes staff arrival as a focused work area", async () => {
   assert.match(source, /capabilities\.includes\("staff_manage"\)/);
 });
 
-test("Registration staff check-in records only arrival", async () => {
+test("Registration staff check-in records only arrival in the v59 baseline", async () => {
   const client = await read("src/lib/staff-checkin.js");
   const migration = await read("supabase/migrations/20260913103000_staff_arrival_checkin_v59.sql");
   assert.match(client, /record_staff_arrival_v1/);
@@ -45,7 +45,7 @@ test("Staff-only administrators land on a focused Staff workspace", async () => 
   assert.match(registration, /canUseParticipantDesk \? \[\{\s*value: "desk", label: "Live check-in"/);
 });
 
-test("Staff arrival edits cannot overwrite no-show or left lifecycle states", async () => {
+test("v59 staff arrival edits cannot overwrite no-show or left lifecycle states", async () => {
   const [migration, css] = await Promise.all([
     read("supabase/migrations/20260913103000_staff_arrival_checkin_v59.sql"),
     read("src/pages/staff-checkin.css"),
@@ -62,11 +62,11 @@ test("Staff arrival desk provides live refresh plus a network fallback", async (
   assert.match(client, /setInterval\(emit, 15000\)/);
 });
 
-test("Staff check-in UI separates presence from leadership confirmation", async () => {
+test("Staff check-in UI treats the current ground roster as ready to work", async () => {
   const source = await read("src/pages/StaffCheckin.jsx");
   assert.match(source, /Who is actually on site\?/);
-  assert.match(source, /Registration records arrival only/);
-  assert.match(source, /Present, needs confirmation/);
-  assert.match(source, /Needs leadership confirmation before active service/);
+  assert.match(source, /ground roster is the operating source/i);
+  assert.match(source, /Present, needs placement/);
+  assert.match(source, /ready to serve/i);
   assert.match(source, /Check in/);
 });
