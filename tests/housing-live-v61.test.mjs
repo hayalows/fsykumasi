@@ -33,10 +33,10 @@ test("Live Housing keeps people states readable and operational actions touch fr
   assert.match(css, /housing-v6-availability[\s\S]*repeat\(3, minmax\(0, 1fr\)\)/);
 });
 
-test("Housing v61 remains in history while v72 refreshes the PWA shell", async () => {
+test("Housing v61 remains in history while v73 refreshes the PWA shell", async () => {
   const [pkg, sw] = await Promise.all([read("package.json"), read("public/sw.js")]);
   assert.match(pkg, /"test": "node --test tests\/\*\.test\.mjs"/);
-  assert.match(sw, /CACHE_NAME = "fsy-kumasi-shell-v72"/);
+  assert.match(sw, /CACHE_NAME = "fsy-kumasi-shell-v73"/);
   assert.match(sw, /Housing live v61/);
   assert.match(sw, /fsy-kumasi-shell-v61/);
 });
