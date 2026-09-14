@@ -1,11 +1,12 @@
 -- v69 regression: execute a full live-structure replacement inside a subtransaction
--- using the current published structure, then intentionally roll it back. This proves
--- the identity retirement/reissue path, foreign keys, staff reconnect path and rollback
--- snapshot path can all execute together without changing the live roster.
+-- using the current published Kumasi structure, then intentionally roll it back. This
+-- proves the identity retirement/reissue path, foreign keys, staff reconnect path and
+-- rollback snapshot path can all execute together without changing the live roster.
 
 do $test$
 declare
-  sid uuid := 'd6168b42-0d57-4e8d-a2ae-db1e97ec3308'::uuid;
+  sid uuid;
+  admin_uid uuid;
   payload jsonb;
   result jsonb;
   before_companies integer;
@@ -14,11 +15,34 @@ declare
   before_badges integer;
   before_checkins integer;
 begin
-  if not exists (select 1 from public.sessions where id = sid) then
+  select s.id into sid
+  from public.sessions s
+  where s.name = 'FSY Kumasi 2026'
+  order by s.created_at desc
+  limit 1;
+
+  if sid is null then
     return;
   end if;
 
-  perform set_config('request.jwt.claim.sub', '797685db-4e64-49f3-a346-12a3ff1b00c6', true);
+  select aa.user_id into admin_uid
+  from public.access_assignments aa
+  where aa.session_id = sid
+    and aa.active
+    and aa.role in (
+      'coordinator'::public.app_role,
+      'logistics_admin'::public.app_role,
+      'session_director'::public.app_role,
+      'area_advisory_couple'::public.app_role
+    )
+  order by aa.user_id
+  limit 1;
+
+  if admin_uid is null then
+    raise exception 'v69 dry-run could not resolve a full-session administrator';
+  end if;
+
+  perform set_config('request.jwt.claim.sub', admin_uid::text, true);
 
   select count(*)::integer into before_companies from public.companies where session_id = sid;
   select count(*)::integer into before_groups from public.counselor_groups where session_id = sid and state = 'published';
