@@ -27,3 +27,15 @@ test("live workspaces recover after backgrounding or a network reconnect", async
   assert.match(source, /window\.setInterval\(\(\) => refreshWhenSafe\(LIVE_REFRESH_INTERVAL_MS\), LIVE_REFRESH_TICK_MS\)/);
   assert.match(source, /await refresh\(\)/);
 });
+
+test("installed and long-lived clients check for a newer deployment after resume", async () => {
+  const source = await read("src/lib/pwa-runtime.js");
+
+  assert.match(source, /SERVICE_WORKER_UPDATE_COOLDOWN_MS = 60_000/);
+  assert.match(source, /SERVICE_WORKER_UPDATE_INTERVAL_MS = 5 \* 60_000/);
+  assert.match(source, /function requestLatestServiceWorker\(\)/);
+  assert.match(source, /registration\?\.update\?\.\(\)/);
+  assert.match(source, /window\.addEventListener\("online", onOnline\)/);
+  assert.match(source, /requestLatestServiceWorker\(\)/);
+  assert.match(source, /window\.setInterval\(\(\) => \{/);
+});
