@@ -5,12 +5,6 @@ function client() {
   return supabase;
 }
 
-async function rpc(name, args) {
-  const { data, error } = await client().rpc(name, args);
-  if (error) throw error;
-  return data;
-}
-
 export async function loadStaffArrivalRoster(sessionId) {
   if (!sessionId) return [];
   const { data, error } = await client().rpc("get_staff_arrival_roster_v1", { p_session_id: sessionId });
@@ -51,7 +45,7 @@ export async function addStaffFromCheckin({
   companyIds = [],
 }) {
   if (!sessionId) throw new Error("Choose a session first.");
-  return rpc("add_on_site_staff_from_checkin_v2", {
+  const { data, error } = await client().rpc("add_on_site_staff_from_checkin_v2", {
     p_session_id: sessionId,
     p_first_name: firstName,
     p_last_name: lastName,
@@ -69,16 +63,20 @@ export async function addStaffFromCheckin({
     p_company_ids: companyIds || [],
     p_search_confirmed: true,
   });
+  if (error) throw error;
+  return data;
 }
 
 export async function recordStaffArrival(person, arrival) {
   if (!person?.id) throw new Error("Choose a staff member first.");
   if (!["expected", "arrived"].includes(arrival)) throw new Error("Registration can only check staff in or undo that check-in.");
-  return rpc("record_staff_arrival_v1", {
+  const { data, error } = await client().rpc("record_staff_arrival_v1", {
     p_staff_id: person.id,
     p_arrival: arrival,
     p_revision: Number(person.operationsRevision || 0),
   });
+  if (error) throw error;
+  return data;
 }
 
 export function subscribeStaffArrivals(sessionId, onChange) {
