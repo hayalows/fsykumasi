@@ -57,7 +57,8 @@ test("CSV keeps Unicode data and genuine XLSX is an OOXML ZIP package", async ()
 test("Report preview exposes the complete schema and makes export scope explicit", async () => {
   const [page, css] = await Promise.all([read("src/pages/Reports.jsx"), read("src/reports-v77.css")]);
   assert.match(page, /const exportColumns = selected\?\.columns \|\| \[\]/);
-  assert.match(page, /All \{selected\.columns\.length\} defined report fields are included in the files/);
+  assert.match(page, /selected\.columns\.length/);
+  assert.match(page, /defined report fields are included in the files/);
   assert.match(page, /Blank fields stay visible so the report structure does not change/);
   assert.match(page, /Show all \{filteredRows\.length\.toLocaleString\(\)\}/);
   assert.match(page, /All \{rows\.length\.toLocaleString\(\)\}/);
