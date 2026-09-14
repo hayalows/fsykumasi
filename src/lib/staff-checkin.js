@@ -48,14 +48,15 @@ export async function addStaffFromCheckin({
   medicalInformation,
   dietaryInformation,
   operationalRole,
+  companyIds = [],
 }) {
   if (!sessionId) throw new Error("Choose a session first.");
-  return rpc("add_on_site_staff_from_checkin_v1", {
+  return rpc("add_on_site_staff_from_checkin_v2", {
     p_session_id: sessionId,
     p_first_name: firstName,
     p_last_name: lastName,
     p_preferred_name: preferredName || null,
-    p_sex: sex,
+    p_sex: String(sex || "").toLowerCase(),
     p_date_of_birth: birthday,
     p_unit_name: unit,
     p_stake_name: stake || null,
@@ -65,6 +66,7 @@ export async function addStaffFromCheckin({
     p_medical_information: medicalInformation || null,
     p_dietary_information: dietaryInformation || null,
     p_operational_role: operationalRole || "counselor",
+    p_company_ids: companyIds || [],
     p_search_confirmed: true,
   });
 }
