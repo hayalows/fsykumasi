@@ -176,7 +176,7 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
     return trackSessionPresence(sessionInfo.id, userId);
   }, [sessionInfo?.id, currentUser?.user_id, currentUser?.id]);
   useEffect(() => {
-    const onBeforeInstallPrompt = (event) => { event.preventDefault(); setInstallPrompt(null); };
+    const onBeforeInstallPrompt = (event) => { event.preventDefault(); setInstallPrompt(event); };
     const onInstalled = () => { setInstalled(true); setInstallPrompt(null); };
     const displayQuery = window.matchMedia?.("(display-mode: standalone)");
     const onDisplayChange = () => setInstalled(isStandaloneDisplay());
