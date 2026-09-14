@@ -16,6 +16,11 @@ const BUILTIN_PROJECTS = {
   },
 };
 
+const RETRYABLE_READ_STATUS = new Set([502, 503, 504]);
+const SAFE_READ_RPCS = new Set(["my_access_state"]);
+const READ_RETRY_BASE_MS = 850;
+const READ_RETRY_JITTER_MS = 450;
+
 function runtimeFallback() {
   if (typeof window === "undefined") return null;
   const host = window.location.hostname.toLowerCase();
@@ -34,6 +39,57 @@ function runtimeFallback() {
   return null;
 }
 
+function requestMethod(input, init) {
+  if (init?.method) return String(init.method).toUpperCase();
+  if (typeof Request !== "undefined" && input instanceof Request) return input.method.toUpperCase();
+  return "GET";
+}
+
+function requestUrl(input) {
+  if (typeof input === "string") return input;
+  if (input instanceof URL) return input.toString();
+  if (typeof Request !== "undefined" && input instanceof Request) return input.url;
+  return String(input || "");
+}
+
+function safeReadRequest(input, init) {
+  const method = requestMethod(input, init);
+  if (method === "GET" || method === "HEAD") return true;
+  if (method !== "POST") return false;
+  try {
+    const pathname = new URL(requestUrl(input), typeof window !== "undefined" ? window.location.origin : "http://localhost").pathname;
+    const marker = "/rest/v1/rpc/";
+    const index = pathname.indexOf(marker);
+    if (index < 0) return false;
+    return SAFE_READ_RPCS.has(pathname.slice(index + marker.length).split("/")[0]);
+  } catch {
+    return false;
+  }
+}
+
+function fetchAttempt(input, init) {
+  const target = typeof Request !== "undefined" && input instanceof Request ? input.clone() : input;
+  return fetch(target, init);
+}
+
+function retryDelay() {
+  return READ_RETRY_BASE_MS + Math.floor(Math.random() * READ_RETRY_JITTER_MS);
+}
+
+async function resilientReadFetch(input, init) {
+  const retryable = safeReadRequest(input, init);
+  try {
+    const response = await fetchAttempt(input, init);
+    if (!retryable || !RETRYABLE_READ_STATUS.has(response.status)) return response;
+    await new Promise((resolve) => setTimeout(resolve, retryDelay()));
+    return fetchAttempt(input, init);
+  } catch (error) {
+    if (!retryable) throw error;
+    await new Promise((resolve) => setTimeout(resolve, retryDelay()));
+    return fetchAttempt(input, init);
+  }
+}
+
 const fallback = runtimeFallback();
 const url = import.meta.env.VITE_SUPABASE_URL || fallback?.url;
 const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || fallback?.publishableKey;
@@ -47,6 +103,7 @@ export const supabaseEnvironment = localDemo ? "local-demo" : fallback === BUILT
 export const supabase = isSupabaseConfigured
   ? createClient(url, publishableKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      global: { fetch: resilientReadFetch },
     })
   : null;
 
