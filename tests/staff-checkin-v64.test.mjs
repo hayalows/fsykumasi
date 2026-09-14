@@ -15,7 +15,7 @@ test("staff check-in can add a genuinely missing staff member from the desk", as
   assert.match(source, /This person is not on the current ground roster\./);
   assert.match(source, /Add staff on site/);
   assert.match(source, /submitLabel="Add & check in"/);
-  assert.match(client, /add_on_site_staff_from_checkin_v1/);
+  assert.match(client, /add_on_site_staff_from_checkin_v2/);
 });
 
 test("staff search exposes inactive matches instead of silently treating them as missing", async () => {
