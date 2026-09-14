@@ -44,9 +44,9 @@ test("Registration workspace copy stays task-first while the focused flow layers
     read("src/main.jsx"),
     read("public/sw.js"),
   ]);
-  assert.match(registration, /Find the participant, confirm the right record, then check them in\. Use Needs attention only when something is missing\./);
+  assert.match(registration, /Work from the people who are physically here\. Find the participant, use live group capacity, and record arrival without letting no-shows consume places\./);
   assert.match(registration, /See the settled roster and handle only new arrivals or real exceptions\./);
-  assert.match(registration, /Find → confirm → check in\./);
+  assert.match(registration, /Find → place → check in\./);
   const v6 = main.indexOf('import "./registration-checkin-v6.css";');
   const modal = main.indexOf('import "./registration-modal-v4.css";');
   const v7 = main.indexOf('import "./registration-flow-v7.css";');

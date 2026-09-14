@@ -9,7 +9,7 @@ test("Registration keeps one compact arrival hierarchy", async () => {
   assert.match(source, /registration-arrival-v60\.css/);
   assert.match(source, /registration-arrival-v60 registration-mode-/);
   assert.match(source, /description=\{modeMeta\.help\}/);
-  assert.match(source, /Find → confirm → check in\./);
+  assert.match(source, /Find → place → check in\./);
   assert.match(source, /Search includes checked-in participants too/);
   assert.doesNotMatch(source, /registration-mode-cue-v5/);
 });

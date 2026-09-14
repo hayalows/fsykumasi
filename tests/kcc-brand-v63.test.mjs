@@ -54,9 +54,9 @@ test("Overview exposes session context without turning it into another dashboard
   assert.doesNotMatch(css, /overview-session-context[^}]*box-shadow/);
 });
 
-test("v65 refreshes installed clients while retaining v62 history", async () => {
+test("v72 refreshes installed clients while retaining v62 history", async () => {
   const sw = await read("public/sw.js");
-  assert.match(sw, /CACHE_NAME = "fsy-kumasi-shell-v65"/);
+  assert.match(sw, /CACHE_NAME = "fsy-kumasi-shell-v72"/);
   assert.match(sw, /Session-aware shell v63/);
   assert.match(sw, /fsy-kumasi-shell-v62/);
 });
