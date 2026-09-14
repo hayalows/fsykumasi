@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ParticipantGroundRoster } from "./ParticipantGroundRoster.jsx";
 import { RegistrationJourneyV53 as RegistrationJourney } from "./RegistrationJourneyV53.jsx";
 import { RegistrationReadinessV30 } from "./RegistrationReadinessV30.jsx";
 import { SessionFinalization } from "./SessionFinalization.jsx";
@@ -19,7 +20,7 @@ const MODE_META = {
   desk: {
     phase: "Participant arrival",
     title: "Live check-in",
-    help: "Find the participant, confirm the right record, then check them in. Use Needs attention only when something is missing.",
+    help: "Work from the people who are physically here. Find the participant, use live group capacity, and record arrival without letting no-shows consume places.",
   },
   staff: {
     phase: "Staff arrival",
@@ -53,6 +54,7 @@ export function Registration(props) {
   const canUseParticipantRegistration = capabilities.includes("registration_view") || capabilities.includes("registration_manage") || !live;
   const canUseParticipantDesk = canUseParticipantRegistration || capabilities.includes("checkin_record");
   const canUseStaffCheckin = capabilities.includes("registration_manage") || capabilities.includes("staff_manage") || !live;
+  const canUseGroundRoster = live && capabilities.includes("registration_manage");
   const canUseRegistrationTools = canUseParticipantDesk || canUseStaffCheckin;
   const normalizedMode = normalizeRegistrationMode(initialMode, canUseParticipantDesk, canUseParticipantRegistration, canUseStaffCheckin);
   const [mode, setMode] = useState(normalizedMode);
@@ -116,7 +118,7 @@ export function Registration(props) {
   ];
 
   const arrivalGuide = mode === "desk"
-    ? <p className="registration-arrival-guide-v60"><b>Find → confirm → check in.</b><span>Search includes checked-in participants too, so an accidental check-in can be opened and undone.</span></p>
+    ? <p className="registration-arrival-guide-v60"><b>Find → place → check in.</b><span>{canUseGroundRoster ? "Only participants who are physically checked in consume the live 15-person group capacity." : "Search includes checked-in participants too, so an accidental check-in can be opened and undone."}</span></p>
     : mode === "staff"
       ? <p className="registration-arrival-guide-v60"><b>Find → check in → next.</b><span>If you tap the wrong person, use Undo. No-show and left stay in Staff status.</span></p>
       : null;
@@ -133,7 +135,9 @@ export function Registration(props) {
     <div className="registration-workspace-pane registration-workspace-pane-v5 registration-unified-pane">
       {canUseParticipantDesk ? <div role="tabpanel" aria-labelledby={journeyMode === "desk" ? "registration-mode-desk" : "registration-mode-roster"} hidden={mode === "readiness" || mode === "staff"}>
         {mode === "roster" && live ? <SessionFinalization sessionId={sessionId} onChanged={onOperationalDataChanged} onNavigate={onNavigate} /> : null}
-        <RegistrationJourney view={journeyMode} {...journeyProps} />
+        {mode === "desk" && canUseGroundRoster
+          ? <ParticipantGroundRoster sessionId={sessionId} onOperationalDataChanged={onOperationalDataChanged} onNavigate={onNavigate} />
+          : <RegistrationJourney view={journeyMode} {...journeyProps} />}
       </div> : null}
 
       {staffVisited ? <div role="tabpanel" aria-labelledby="registration-mode-staff" hidden={mode !== "staff"}>
