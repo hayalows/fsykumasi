@@ -30,8 +30,8 @@ export function friendlyRuntimeError(error) {
 
   if (/failed to fetch|network|load failed|timeout|timed out|offline|connection/.test(lower)) {
     return {
-      title: "We could not reach live FSY data",
-      message: "Check your connection and try again. If you already loaded the app, some information on this device may be out of date.",
+      title: "Live FSY data is taking too long",
+      message: "The live data service or your connection did not respond in time. We will retry safe reads automatically. If this screen stays open, try again in a moment.",
       supportReference,
       transient: true,
     };
@@ -48,7 +48,7 @@ export function friendlyRuntimeError(error) {
 
   return {
     title: "Live FSY data did not load",
-    message: "Try again. If it keeps happening, share the support reference with the FSY administrator.",
+    message: "The live data service did not complete this request. Try again. If it keeps happening, share the support reference with the FSY administrator.",
     supportReference,
     transient: true,
   };
