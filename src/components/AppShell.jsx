@@ -34,10 +34,10 @@ import "./session-switcher.css";
 const BASE_OPERATIONAL = new Set(["assistant_coordinator","coordinator","logistics_admin","session_director","area_advisory_couple"]);
 const WHOLE_SESSION = new Set(["coordinator","logistics_admin","session_director","area_advisory_couple"]);
 const REPORT_CAPABILITIES = ["reports_export","housing_export","food_export","wellness_export","access_admin"];
-const LIVE_REFRESH_INTERVAL_MS = 45_000;
-const LIVE_REFRESH_TICK_MS = 15_000;
-const LIVE_REFRESH_RESUME_MIN_AGE_MS = 8_000;
-const LIVE_REFRESH_IDLE_MS = 3_000;
+const LIVE_REFRESH_INTERVAL_MS = 5 * 60_000;
+const LIVE_REFRESH_TICK_MS = 30_000;
+const LIVE_REFRESH_RESUME_MIN_AGE_MS = 90_000;
+const LIVE_REFRESH_IDLE_MS = 5_000;
 const LIVE_REFRESH_BLOCKING_SELECTOR = ".sidebar.open, .modal-backdrop";
 const LIVE_REFRESH_EDITABLE_SELECTOR = "input:not([type='button']):not([type='submit']):not([type='reset']), textarea, select, [contenteditable='true']";
 function has(caps, value) { return Array.isArray(caps) && caps.includes(value); }
