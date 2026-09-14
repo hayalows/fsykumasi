@@ -54,16 +54,36 @@ test("CSV keeps Unicode data and genuine XLSX is an OOXML ZIP package", async ()
   assert.match(source, /application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/);
 });
 
-test("Report preview stays responsive and makes filtered export scope explicit", async () => {
-  const [page, css] = await Promise.all([read("src/pages/Reports.jsx"), read("src/phase3-reports.css")]);
-  assert.match(page, /Exports include all/);
-  assert.match(page, /Exporting \$\{exportLabel\} rows matching this search/);
-  assert.match(page, /Show 120 more/);
+test("Report preview exposes the complete schema and makes export scope explicit", async () => {
+  const [page, css] = await Promise.all([read("src/pages/Reports.jsx"), read("src/reports-v77.css")]);
+  assert.match(page, /const exportColumns = selected\?\.columns \|\| \[\]/);
+  assert.match(page, /All \{selected\.columns\.length\} defined report fields are included in the files/);
+  assert.match(page, /Blank fields stay visible so the report structure does not change/);
+  assert.match(page, /Show all \{filteredRows\.length\.toLocaleString\(\)\}/);
+  assert.match(page, /All \{rows\.length\.toLocaleString\(\)\}/);
+  assert.match(page, /Matching \{filteredRows\.length\.toLocaleString\(\)\}/);
   assert.match(page, /Print \/ PDF/);
   assert.match(page, />Excel</);
-  assert.match(css, /@media\(max-width:620px\)/);
-  assert.match(css, /content:attr\(data-label\)/);
-  assert.match(css, /min-height:44px/);
+  assert.match(css, /@media \(max-width: 760px\)/);
+});
+
+test("Reports isolate cached snapshots by session and retry only transient read failures once", async () => {
+  const [page, loader] = await Promise.all([read("src/pages/Reports.jsx"), read("src/lib/reports-v53.js")]);
+  assert.match(page, /return `\$\{sessionId \|\| "demo"\}:\$\{reportKey \|\| "none"\}`/);
+  assert.match(page, /loadingByKey/);
+  assert.match(page, /errorsByKey/);
+  assert.match(loader, /error\.code === "57014"/);
+  assert.match(loader, /TRANSIENT_REPORT_STATUS = new Set\(\[502, 503, 504\]\)/);
+  assert.match(loader, /async function loadWithOneRetry/);
+  assert.match(loader, /setTimeout\(resolve, 450\)/);
+});
+
+test("Participant membership report builds rows and summary from one materialized projection", async () => {
+  const migration = await read("supabase/migrations/20260914215920_participant_membership_report_performance_v77.sql");
+  assert.match(migration, /membership_rows as materialized/);
+  assert.equal((migration.match(/private\.participant_report_rows\(p_session_id\)/g) || []).length, 1);
+  assert.match(migration, /count\(\*\) filter \(where mr\.membership_status_key = 'member_12_plus'\)/);
+  assert.match(migration, /'rows', report_rows/);
 });
 
 test("Housing exposes room occupants with server-derived check-in context", async () => {
