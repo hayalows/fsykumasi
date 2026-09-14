@@ -53,6 +53,27 @@ as $$
   select coalesce(nullif(substring(coalesce(p_name, '') from '([0-9]+)'), '')::integer, 999999);
 $$;
 
+-- Day-of readiness is operational. The preserved source approval value remains
+-- useful history, but it must not make a ground-roster staff member unavailable.
+create or replace function private.staff_can_plan(target_staff uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists(
+    select 1
+    from public.staff s
+    join public.staff_operations o on o.staff_id = s.id
+    where s.id = target_staff
+      and s.is_current
+      and o.planning_state <> 'excluded'
+      and o.service_clearance <> 'not_cleared'
+      and o.arrival_state not in ('no_show', 'left')
+  );
+$$;
+
 create or replace function private.place_ready_staff_if_open_v1(p_staff_id uuid)
 returns jsonb
 language plpgsql
@@ -74,6 +95,11 @@ begin
   if target.id is null then
     raise exception 'Staff member not found';
   end if;
+
+  -- Serialize automatic placement for every staff arrival in a session. In
+  -- particular, this prevents two Assistant Coordinators from selecting the
+  -- same unassigned company before either insert becomes visible.
+  perform pg_advisory_xact_lock(hashtextextended('fsy-staff-placement:' || target.session_id::text, 0));
 
   if target.operational_role = 'counselor' then
     select g.company_id into current_company
@@ -230,6 +256,8 @@ declare
   target_group uuid;
   max_size integer := 15;
   current_valid boolean := false;
+  caller_is_assistant boolean := false;
+  current_company uuid;
 begin
   perform pg_advisory_xact_lock(hashtextextended('fsy-arrival:' || p_session_id::text, 0));
 
@@ -240,6 +268,16 @@ begin
 
   if not found then
     raise exception 'Participant not found in this session';
+  end if;
+
+  caller_is_assistant := private.has_session_role(
+    p_session_id,
+    array['assistant_coordinator']::public.app_role[]
+  );
+  if caller_is_assistant and current_group is not null then
+    select g.company_id into current_company
+    from public.counselor_groups g
+    where g.id = current_group and g.session_id = p_session_id;
   end if;
 
   select coalesce(s.group_max_size, 15) into max_size
@@ -285,6 +323,13 @@ begin
             and ao.service_clearance = 'cleared'
         )
         and (
+          not caller_is_assistant
+          or (
+            g.company_id = current_company
+            and private.can_access_company(p_session_id, g.company_id)
+          )
+        )
+        and (
           select count(*)
           from public.participants gp
           join public.check_ins ci on ci.session_id = gp.session_id and ci.participant_id = gp.id and ci.status = 'arrived'
@@ -318,6 +363,13 @@ begin
         and ao.planning_state = 'primary'
         and ao.arrival_state = 'arrived'
         and ao.service_clearance = 'cleared'
+    )
+    and (
+      not caller_is_assistant
+      or (
+        g.company_id = current_company
+        and private.can_access_company(p_session_id, g.company_id)
+      )
     )
     and (
       select count(*)
@@ -947,9 +999,27 @@ security definer
 set search_path = ''
 as $$
 declare
+  caller_role public.app_role;
+  caller_is_assistant boolean := false;
   participant_company uuid;
+  participant_source text;
+  participant_group uuid;
+  active_badge public.participant_badge_assignments%rowtype;
 begin
-  select g.company_id into participant_company
+  select aa.role into caller_role
+  from public.access_assignments aa
+  where aa.session_id = p_session_id
+    and aa.user_id = auth.uid()
+    and aa.active
+  limit 1;
+
+  caller_is_assistant := private.has_session_role(
+    p_session_id,
+    array['assistant_coordinator']::public.app_role[]
+  );
+
+  select g.company_id, p.source_kind, p.group_id
+    into participant_company, participant_source, participant_group
   from public.participants p
   left join public.counselor_groups g on g.id=p.group_id and g.session_id=p.session_id
   where p.id=p_participant_id and p.session_id=p_session_id;
@@ -959,7 +1029,7 @@ begin
     or (
       private.has_capability(p_session_id,'checkin_record')
       and (
-        not private.has_session_role(p_session_id,array['assistant_coordinator']::public.app_role[])
+        not caller_is_assistant
         or (participant_company is not null and private.can_access_company(p_session_id,participant_company))
       )
     )
@@ -972,14 +1042,87 @@ begin
     raise exception 'This record is outside the current youth operational eligibility rules';
   end if;
 
-  if p_status='arrived'::public.check_in_status
-    and not private.has_session_role(p_session_id,array['assistant_coordinator']::public.app_role[]) then
+  if p_status='arrived'::public.check_in_status then
     perform private.assign_arriving_participant_to_ready_group_v1(p_session_id,p_participant_id);
   end if;
 
+  select p.group_id, g.company_id, p.source_kind
+    into participant_group, participant_company, participant_source
+  from public.participants p
+  left join public.counselor_groups g on g.id=p.group_id and g.session_id=p.session_id
+  where p.id=p_participant_id and p.session_id=p_session_id;
+
   if exists (select 1 from public.counselor_groups g where g.session_id=p_session_id and g.state='published')
-    and not exists (select 1 from public.participants p where p.id=p_participant_id and p.session_id=p_session_id and p.group_id is not null) then
+    and participant_group is null then
     raise exception 'Participant still needs a counselor group assignment';
+  end if;
+
+  -- Assistant Coordinator check-in stays inside the caller's company scope.
+  -- A pre-existing group is not enough: the group must have a present
+  -- counselor, present Assistant Coordinator coverage, and live capacity.
+  if caller_is_assistant and not exists (
+    select 1
+    from public.counselor_groups g
+    join public.staff_operations o on o.staff_id = g.counselor_id
+    where g.id = participant_group
+      and g.session_id = p_session_id
+      and g.state = 'published'
+      and g.sex = (select p.sex from public.participants p where p.id = p_participant_id)
+      and private.can_access_company(p_session_id, g.company_id)
+      and o.planning_state = 'primary'
+      and o.arrival_state = 'arrived'
+      and o.service_clearance = 'cleared'
+      and exists (
+        select 1
+        from public.staff_company_assignments sca
+        join public.staff_operations ao on ao.staff_id = sca.staff_id
+        where sca.session_id = p_session_id
+          and sca.company_id = g.company_id
+          and ao.planning_state = 'primary'
+          and ao.arrival_state = 'arrived'
+          and ao.service_clearance = 'cleared'
+      )
+      and (
+        select count(*)
+        from public.participants gp
+        join public.check_ins ci on ci.session_id = gp.session_id and ci.participant_id = gp.id and ci.status = 'arrived'
+        where gp.session_id = p_session_id
+          and gp.group_id = g.id
+          and gp.id <> p_participant_id
+      ) < coalesce((select ss.group_max_size from public.session_structure_settings ss where ss.session_id = p_session_id), 15)
+  ) then
+    raise exception 'This participant needs a staffed counselor group with space before check-in';
+  end if;
+
+  -- Moving an existing participant group fires the established audited
+  -- preserve_identity_group_change trigger. It updates the active badge for a
+  -- same-company move, or creates the replacement ID and ID-history row for a
+  -- company transfer. On-site/exception records without an ID use the same
+  -- allocator here, so placement and identity are committed together.
+  if p_status='arrived'::public.check_in_status then
+    if participant_source = 'on_site'
+      or exists (
+        select 1 from public.participant_operation_decisions od
+        where od.participant_id = p_participant_id and od.cohort_state = 'exception'
+      ) then
+      perform private.ensure_on_site_fsy_id(p_participant_id, auth.uid());
+    end if;
+
+    select b.* into active_badge
+    from public.participant_badge_assignments b
+    where b.session_id = p_session_id
+      and b.participant_id = p_participant_id
+      and b.state <> 'retired'
+    order by b.assigned_at desc
+    limit 1
+    for update;
+
+    if active_badge.id is not null and (
+      active_badge.group_id is distinct from participant_group
+      or active_badge.company_id is distinct from participant_company
+    ) then
+      raise exception 'Participant identity did not follow the arrival placement. Refresh and try again.';
+    end if;
   end if;
 
   insert into public.check_ins(session_id,participant_id,status,note,recorded_by,recorded_at)

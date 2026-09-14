@@ -12,6 +12,14 @@ test("staff service readiness no longer depends on source approval status", asyn
   assert.match(source, /staffState\(person\)\.arrival === 'arrived'/);
 });
 
+test("database staff planning uses operational readiness rather than source approval", async () => {
+  const source = await read("supabase/migrations/20260914103000_day_of_ground_roster_v65.sql");
+  assert.match(source, /create or replace function private\.staff_can_plan/);
+  assert.match(source, /o\.planning_state <> 'excluded'/);
+  assert.match(source, /o\.service_clearance <> 'not_cleared'/);
+  assert.doesNotMatch(source, /staff_can_plan[\s\S]{0,500}registration_status\s*<>\s*'cancelled'/i);
+});
+
 test("staff arrival desk treats on-ground staff as ready instead of awaiting approval", async () => {
   const source = await read("src/pages/StaffCheckin.jsx");
   assert.doesNotMatch(source, /registrationStatus !== "cancelled"/);
@@ -44,6 +52,22 @@ test("participant arrival is serialized and placed only into staffed capacity", 
   assert.match(source, /participant_rebalanced_at_arrival/);
 });
 
+test("arrival placement keeps badges and ID history atomic", async () => {
+  const source = await read("supabase/migrations/20260914103000_day_of_ground_roster_v65.sql");
+  assert.match(source, /preserve_identity_group_change/);
+  assert.match(source, /private\.ensure_on_site_fsy_id\(p_participant_id, auth\.uid\(\)\)/);
+  assert.match(source, /participant_badge_assignments/);
+  assert.match(source, /Participant identity did not follow the arrival placement/);
+});
+
+test("assistant coordinator arrivals cannot bypass staffed capacity", async () => {
+  const source = await read("supabase/migrations/20260914103000_day_of_ground_roster_v65.sql");
+  assert.match(source, /caller_role public\.app_role/);
+  assert.match(source, /if p_status='arrived'::public\.check_in_status then\s+perform private\.assign_arriving_participant_to_ready_group_v1/);
+  assert.match(source, /This participant needs a staffed counselor group with space before check-in/);
+  assert.match(source, /private\.can_access_company\(p_session_id, g\.company_id\)/);
+});
+
 test("late staff are immediately usable and can be auto placed", async () => {
   const source = await read("supabase/migrations/20260914103000_day_of_ground_roster_v65.sql");
   assert.match(source, /place_ready_staff_if_open_v1/);
@@ -51,4 +75,5 @@ test("late staff are immediately usable and can be auto placed", async () => {
   assert.match(source, /add_on_site_staff_from_checkin_v1/);
   assert.match(source, /'primary'\s*,\s*'arrived'\s*,\s*'cleared'/);
   assert.match(source, /staff_auto_placed_day_of/);
+  assert.match(source, /fsy-staff-placement:/);
 });

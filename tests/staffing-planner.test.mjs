@@ -16,7 +16,7 @@ test('source registration status does not decide day-of readiness',()=>{
 });
 
 test('preserve assignments, respect sex, rank cleared first, replace only gaps',()=>{
- const staff=[person('a'),person('b',{registrationStatus:'awaiting'}),person('c'),person('d',{sex:''}),person('e',{sex:'Male'})];
+ const staff=[person('a',{serviceClearance:'cleared'}),person('b',{registrationStatus:'awaiting'}),person('c',{serviceClearance:'cleared'}),person('d',{sex:''}),person('e',{sex:'Male'})];
  const groups=[{id:'g1',name:'Group 1',sex:'Female',counselorId:'a'},{id:'g2',name:'Group 2',sex:'Female'},{id:'g3',name:'Group 3',sex:'Male'}];
  const plan=buildStaffingPlan(staff,groups,[],4);
  assert.deepEqual(plan.counselors.map(p=>[p.groupId,p.staffId]),[['g2','c'],['g3','e']]);
