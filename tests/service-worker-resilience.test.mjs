@@ -6,10 +6,13 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const source = fs.readFileSync(path.join(root, "public/sw.js"), "utf8");
 
-assert.match(source, /CACHE_NAME = "fsy-kumasi-shell-v72"/);
+assert.match(source, /CACHE_NAME = "fsy-kumasi-shell-v73"/);
+assert.match(source, /fsy-kumasi-shell-v72/);
 assert.match(source, /fsy-kumasi-shell-v63/);
 assert.match(source, /NAVIGATION_TIMEOUT_MS = 8000/);
 assert.match(source, /fetchWithTimeout\(request, NAVIGATION_TIMEOUT_MS\)/);
 assert.match(source, /catch\(\(\) => caches\.match\("\/"\)/);
+assert.match(source, /self\.clients\.matchAll\(\{ type: "window", includeUncontrolled: true \}\)/);
+assert.match(source, /client\.navigate\(client\.url\)/);
 
 console.log("Service worker resilience checks passed.");
