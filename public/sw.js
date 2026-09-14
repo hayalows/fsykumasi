@@ -1,4 +1,6 @@
-const CACHE_NAME = "fsy-kumasi-shell-v65";
+const CACHE_NAME = "fsy-kumasi-shell-v72";
+// Participant ground roster v72 makes physical arrival the live youth capacity source,
+// auto-places arrivals into same-sex groups with space and keeps staff assignment non-blocking.
 // Day-of roster v65 makes the on-ground Staff roster operational truth, keeps source approval as history,
 // and prepares live participant arrival for staffed, sex-compatible group allocation up to the session cap.
 // Session-aware shell v63 gives KCC FSY 2026 one identity across browser and installed app,
@@ -40,7 +42,7 @@ const CACHE_NAME = "fsy-kumasi-shell-v65";
 // Access operations v20 remains intact; Access identity and permission behavior remains on v19.
 // Historical Access operations v19 used email-first identity reconciliation with automatic staff backfill.
 // Historical Access operations v18 and Access operations v17 remain covered by regressions.
-// Historical shell markers: fsy-kumasi-shell-v63, fsy-kumasi-shell-v62, fsy-kumasi-shell-v61, fsy-kumasi-shell-v60, fsy-kumasi-shell-v59, fsy-kumasi-shell-v58, fsy-kumasi-shell-v57,
+// Historical shell markers: fsy-kumasi-shell-v65, fsy-kumasi-shell-v63, fsy-kumasi-shell-v62, fsy-kumasi-shell-v61, fsy-kumasi-shell-v60, fsy-kumasi-shell-v59, fsy-kumasi-shell-v58, fsy-kumasi-shell-v57,
 // fsy-kumasi-shell-v56, fsy-kumasi-shell-v55, fsy-kumasi-shell-v54, fsy-kumasi-shell-v53,
 // fsy-kumasi-shell-v52, fsy-kumasi-shell-v51, fsy-kumasi-shell-v49, fsy-kumasi-shell-v48,
 // fsy-kumasi-shell-v47, fsy-kumasi-shell-v46, fsy-kumasi-shell-v45, fsy-kumasi-shell-v44,
