@@ -34,6 +34,12 @@ import "./session-switcher.css";
 const BASE_OPERATIONAL = new Set(["assistant_coordinator","coordinator","logistics_admin","session_director","area_advisory_couple"]);
 const WHOLE_SESSION = new Set(["coordinator","logistics_admin","session_director","area_advisory_couple"]);
 const REPORT_CAPABILITIES = ["reports_export","housing_export","food_export","wellness_export","access_admin"];
+const LIVE_REFRESH_INTERVAL_MS = 45_000;
+const LIVE_REFRESH_TICK_MS = 15_000;
+const LIVE_REFRESH_RESUME_MIN_AGE_MS = 8_000;
+const LIVE_REFRESH_IDLE_MS = 3_000;
+const LIVE_REFRESH_BLOCKING_SELECTOR = ".sidebar.open, .modal-backdrop";
+const LIVE_REFRESH_EDITABLE_SELECTOR = "input:not([type='button']):not([type='submit']):not([type='reset']), textarea, select, [contenteditable='true']";
 function has(caps, value) { return Array.isArray(caps) && caps.includes(value); }
 function focusableElements(container) { return [...container.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])')]; }
 function isStandaloneDisplay() {
@@ -55,6 +61,11 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
   const menuButtonRef = useRef(null);
   const sidebarRef = useRef(null);
   const moreButtonRef = useRef(null);
+  const refreshRef = useRef(onRefresh);
+  const workspacePhaseRef = useRef(workspacePhase);
+  const refreshInFlightRef = useRef(false);
+  const lastAutomaticRefreshRef = useRef(Date.now());
+  const lastInteractionRef = useRef(Date.now());
 
   const nav = useMemo(() => {
     const canPeople = BASE_OPERATIONAL.has(currentRole) || has(currentCapabilities,"people_lookup");
@@ -110,6 +121,55 @@ export function AppShell({ active, setActive, attentionCount = 0, currentUser, c
 
   useEffect(() => { const update=()=>setOnline(navigator.onLine); window.addEventListener("online",update); window.addEventListener("offline",update); return()=>{window.removeEventListener("online",update);window.removeEventListener("offline",update);}; }, []);
   useEffect(() => { const timer=window.setInterval(()=>setClock(Date.now()),15000); return()=>window.clearInterval(timer); }, []);
+  useEffect(() => { refreshRef.current = onRefresh; }, [onRefresh]);
+  useEffect(() => { workspacePhaseRef.current = workspacePhase; }, [workspacePhase]);
+  useEffect(() => { lastAutomaticRefreshRef.current = Date.now(); }, [sessionInfo?.id]);
+  useEffect(() => {
+    if (!isSupabaseConfigured || !sessionInfo?.id || sessionInfo?.status === "training") return undefined;
+    let disposed = false;
+    const markInteraction = () => { lastInteractionRef.current = Date.now(); };
+    const refreshWhenSafe = async (minimumAgeMs) => {
+      const now = Date.now();
+      const phase = workspacePhaseRef.current;
+      if (disposed || document.hidden || navigator.onLine === false || refreshInFlightRef.current) return;
+      if (phase === "loading" || phase === "refreshing") return;
+      if (now - lastInteractionRef.current < LIVE_REFRESH_IDLE_MS) return;
+      if (document.querySelector(LIVE_REFRESH_BLOCKING_SELECTOR)) return;
+      const focused = document.activeElement;
+      if (focused instanceof Element && focused.matches(LIVE_REFRESH_EDITABLE_SELECTOR)) return;
+      if (now - lastAutomaticRefreshRef.current < minimumAgeMs) return;
+      const refresh = refreshRef.current;
+      if (typeof refresh !== "function") return;
+      refreshInFlightRef.current = true;
+      lastAutomaticRefreshRef.current = now;
+      try {
+        await refresh();
+      } catch {
+        // App-level refresh state already reports recoverable connectivity failures.
+      } finally {
+        refreshInFlightRef.current = false;
+      }
+    };
+    const refreshAfterResume = () => { if (!document.hidden) refreshWhenSafe(LIVE_REFRESH_RESUME_MIN_AGE_MS); };
+    const refreshAfterReconnect = () => refreshWhenSafe(0);
+    const timer = window.setInterval(() => refreshWhenSafe(LIVE_REFRESH_INTERVAL_MS), LIVE_REFRESH_TICK_MS);
+    window.addEventListener("focus", refreshAfterResume);
+    window.addEventListener("pageshow", refreshAfterResume);
+    window.addEventListener("online", refreshAfterReconnect);
+    window.addEventListener("pointerdown", markInteraction, { passive: true });
+    window.addEventListener("keydown", markInteraction);
+    document.addEventListener("visibilitychange", refreshAfterResume);
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshAfterResume);
+      window.removeEventListener("pageshow", refreshAfterResume);
+      window.removeEventListener("online", refreshAfterReconnect);
+      window.removeEventListener("pointerdown", markInteraction);
+      window.removeEventListener("keydown", markInteraction);
+      document.removeEventListener("visibilitychange", refreshAfterResume);
+    };
+  }, [sessionInfo?.id, sessionInfo?.status]);
   useEffect(() => {
     const userId = currentUser?.user_id || currentUser?.id;
     if (!isSupabaseConfigured || !sessionInfo?.id || !userId) return undefined;
