@@ -4,13 +4,13 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("live workspaces refresh stale operational data without interrupting active edits", async () => {
+test("live workspaces refresh stale operational data without interrupting active edits or overloading the backend", async () => {
   const source = await read("src/components/AppShell.jsx");
 
-  assert.match(source, /LIVE_REFRESH_INTERVAL_MS = 45_000/);
-  assert.match(source, /LIVE_REFRESH_TICK_MS = 15_000/);
-  assert.match(source, /LIVE_REFRESH_RESUME_MIN_AGE_MS = 8_000/);
-  assert.match(source, /LIVE_REFRESH_IDLE_MS = 3_000/);
+  assert.match(source, /LIVE_REFRESH_INTERVAL_MS = 5 \* 60_000/);
+  assert.match(source, /LIVE_REFRESH_TICK_MS = 30_000/);
+  assert.match(source, /LIVE_REFRESH_RESUME_MIN_AGE_MS = 90_000/);
+  assert.match(source, /LIVE_REFRESH_IDLE_MS = 5_000/);
   assert.match(source, /document\.querySelector\(LIVE_REFRESH_BLOCKING_SELECTOR\)/);
   assert.match(source, /focused instanceof Element && focused\.matches\(LIVE_REFRESH_EDITABLE_SELECTOR\)/);
   assert.match(source, /workspacePhaseRef\.current/);
