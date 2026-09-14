@@ -3,6 +3,8 @@ const EDITABLE_SELECTOR = "input:not([type='button']):not([type='submit']):not([
 const STALE_CLIENT_RECOVERY_KEY = "fsy:pwa-stale-client-recovery:v73";
 const STALE_CLIENT_RECOVERY_WINDOW_MS = 45_000;
 const STABLE_CLIENT_CLEAR_MS = 12_000;
+const SERVICE_WORKER_UPDATE_COOLDOWN_MS = 60_000;
+const SERVICE_WORKER_UPDATE_INTERVAL_MS = 5 * 60_000;
 const STALE_ASSET_PATTERNS = [
   /failed to fetch dynamically imported module/i,
   /importing a module script failed/i,
@@ -13,6 +15,7 @@ const STALE_ASSET_PATTERNS = [
   /loading chunk .* failed/i,
   /preload.*failed/i,
 ];
+let lastServiceWorkerUpdateAt = 0;
 
 function hasBlockingLayer() {
   return Boolean(document.querySelector(BLOCKING_LAYER_SELECTOR));
@@ -65,6 +68,17 @@ function clearRecoveryMarker() {
   } catch {
     // No-op when storage is unavailable.
   }
+}
+
+function requestLatestServiceWorker() {
+  const serviceWorker = globalThis.navigator?.serviceWorker;
+  if (!serviceWorker?.getRegistration) return;
+  const now = Date.now();
+  if (lastServiceWorkerUpdateAt && now - lastServiceWorkerUpdateAt < SERVICE_WORKER_UPDATE_COOLDOWN_MS) return;
+  lastServiceWorkerUpdateAt = now;
+  Promise.resolve(serviceWorker.getRegistration())
+    .then((registration) => registration?.update?.())
+    .catch(() => null);
 }
 
 function reloadWithLatestServiceWorker() {
@@ -134,13 +148,16 @@ export function installPwaRuntimeGuards() {
       baselineViewportHeight = Math.max(window.innerHeight, visualViewport?.height || 0);
       updateVisualViewport();
       scheduleRepair();
+      requestLatestServiceWorker();
     }
   };
   const onPageShow = () => {
     baselineViewportHeight = Math.max(window.innerHeight, visualViewport?.height || 0);
     updateVisualViewport();
     scheduleRepair();
+    requestLatestServiceWorker();
   };
+  const onOnline = () => requestLatestServiceWorker();
   const onPreloadError = (event) => {
     if (!recoverFromStaleClient(event?.payload || event)) return;
     event.preventDefault?.();
@@ -167,6 +184,7 @@ export function installPwaRuntimeGuards() {
   document.addEventListener("visibilitychange", onVisibility);
   window.addEventListener("pageshow", onPageShow);
   window.addEventListener("orientationchange", onPageShow);
+  window.addEventListener("online", onOnline);
   window.addEventListener("vite:preloadError", onPreloadError);
   window.addEventListener("error", onWindowError);
   window.addEventListener("unhandledrejection", onUnhandledRejection);
@@ -174,6 +192,9 @@ export function installPwaRuntimeGuards() {
   visualViewport?.addEventListener("scroll", updateVisualViewport);
 
   const stableClientTimer = window.setTimeout(clearRecoveryMarker, STABLE_CLIENT_CLEAR_MS);
+  const serviceWorkerUpdateTimer = window.setInterval(() => {
+    if (!document.hidden && globalThis.navigator?.onLine !== false) requestLatestServiceWorker();
+  }, SERVICE_WORKER_UPDATE_INTERVAL_MS);
 
   updateVisualViewport();
   scheduleRepair();
@@ -181,12 +202,14 @@ export function installPwaRuntimeGuards() {
   return () => {
     window.cancelAnimationFrame(frame);
     window.clearTimeout(stableClientTimer);
+    window.clearInterval(serviceWorkerUpdateTimer);
     observer.disconnect();
     document.removeEventListener("focusin", onFocusIn);
     document.removeEventListener("focusout", onFocusOut);
     document.removeEventListener("visibilitychange", onVisibility);
     window.removeEventListener("pageshow", onPageShow);
     window.removeEventListener("orientationchange", onPageShow);
+    window.removeEventListener("online", onOnline);
     window.removeEventListener("vite:preloadError", onPreloadError);
     window.removeEventListener("error", onWindowError);
     window.removeEventListener("unhandledrejection", onUnhandledRejection);
