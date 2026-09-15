@@ -101,7 +101,7 @@
 }
 
 .assignments-live-v79-row.open {
-  background: linear-gradient(90deg, var(--ds-warning-soft), transparent 34%);
+  background: var(--ds-warning-soft);
 }
 
 .assignments-live-v79-company,
