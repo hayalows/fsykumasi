@@ -11,6 +11,8 @@ import "../access-operations-v21.css";
 // progressive disclosure for uncommon setup paths and mobile-safe task sheets.
 // Access v21 makes new-person entry immediate and loads committee choices inside Access itself so the
 // setup flow does not depend on another page having already hydrated the team catalog.
+// Access v22 opens on Everyone by default so a newly assigned Assistant Coordinator who chose
+// "set up later" remains immediately visible with their company scope and Invite action.
 // Full-session Access administrators can add staff-level website access because the server authorizes
 // coordinator, logistical administrator and session directing couple roles through can_manage_access.
 const FULL_SESSION_ACCESS_ADMINS = new Set(["coordinator", "logistics_admin", "session_director", "area_advisory_couple"]);
@@ -23,6 +25,7 @@ export function Access(props) {
   const currentCapabilities = FULL_SESSION_ACCESS_ADMINS.has(currentRole) && !suppliedCapabilities.includes("staff_manage")
     ? [...suppliedCapabilities, "staff_manage"]
     : suppliedCapabilities;
+  const initialFilter = props.initialFilter || "all";
   const [resolvedTeams, setResolvedTeams] = useState(props.teams || []);
 
   useEffect(() => {
@@ -41,5 +44,5 @@ export function Access(props) {
     return () => { active = false; };
   }, [props.live, props.sessionId, props.teams]);
 
-  return <div className="access-v20-shell access-v21-shell"><AccessV19 {...props} teams={resolvedTeams} currentCapabilities={currentCapabilities} /></div>;
+  return <div className="access-v20-shell access-v21-shell"><AccessV19 {...props} initialFilter={initialFilter} teams={resolvedTeams} currentCapabilities={currentCapabilities} /></div>;
 }
