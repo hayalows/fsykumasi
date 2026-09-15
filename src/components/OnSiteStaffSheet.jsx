@@ -28,7 +28,7 @@ export function OnSiteStaffSheet({
   title = "Add on-site staff",
   submitLabel = "Add staff",
   helperText = "This creates a current, approved staff record. Website access is prepared separately for leaders who need it.",
-  allowAssistantCoordinator = true,
+  allowAssistantCoordinator = false,
 }) {
   const prefill = namePrefill(initialQuery);
   const [query, setQuery] = useState(initialQuery);
