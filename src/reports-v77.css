@@ -1,0 +1,108 @@
+.reports-v77 .report-library-count {
+  display: block;
+  margin-top: 0.2rem;
+  font-weight: 650;
+  opacity: 0.78;
+}
+
+.reports-v77 .report-freshness {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.reports-v77-controls {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.75rem 0;
+}
+
+.reports-v77-view-controls,
+.reports-v77-export-mode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line, rgba(17, 24, 39, 0.12));
+  border-radius: 14px;
+  background: var(--surface-subtle, rgba(127, 127, 127, 0.045));
+}
+
+.reports-v77-view-controls > span,
+.reports-v77-export-mode > span {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.reports-v77-view-controls small,
+.reports-v77-export-mode small {
+  line-height: 1.35;
+  opacity: 0.72;
+}
+
+.reports-v77-export-mode > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  padding: 0.2rem;
+  border: 1px solid var(--line, rgba(17, 24, 39, 0.12));
+  border-radius: 11px;
+}
+
+.reports-v77-export-mode > div button {
+  min-height: 36px;
+  padding: 0.45rem 0.7rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.reports-v77-export-mode > div button.active {
+  background: var(--surface, Canvas);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reports-v77-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.reports-v77 .report-table-wrap {
+  overscroll-behavior-inline: contain;
+}
+
+@media (max-width: 760px) {
+  .reports-v77 .report-freshness {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-v77-view-controls,
+  .reports-v77-export-mode {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reports-v77-export-mode > div {
+    width: 100%;
+  }
+
+  .reports-v77-export-mode > div button {
+    flex: 1 1 0;
+  }
+
+  .reports-v77 .report-preview-foot {
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .reports-v77-row-actions {
+    justify-content: flex-start;
+  }
+}

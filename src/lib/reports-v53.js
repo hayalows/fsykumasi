@@ -6,6 +6,9 @@ import {
 } from "./reports.js";
 import { loadParticipantMembershipReport } from "./participant-membership.js";
 
+const TRANSIENT_REPORT_MESSAGE = /(statement timeout|canceling statement|timed out|timeout|failed to fetch|fetch failed|network error|load failed|connection.*(?:closed|reset|timeout))/i;
+const TRANSIENT_REPORT_STATUS = new Set([502, 503, 504]);
+
 export const PARTICIPANT_MEMBERSHIP_REPORT = {
   key: "participant_membership",
   title: "Participant Membership Summary",
@@ -39,11 +42,32 @@ export function getReportDefinition(key) {
   return getBaseReportDefinition(key);
 }
 
-export async function loadOperationalReport(sessionId, reportKey) {
-  if (reportKey !== PARTICIPANT_MEMBERSHIP_REPORT.key) return loadBaseOperationalReport(sessionId, reportKey);
+export function isTransientReportError(error) {
+  if (!error) return false;
+  if (error.code === "57014") return true;
+  const status = Number(error.status || error.statusCode || error?.context?.status || 0);
+  if (TRANSIENT_REPORT_STATUS.has(status)) return true;
+  return TRANSIENT_REPORT_MESSAGE.test([
+    error.message,
+    error.details,
+    error.hint,
+  ].filter(Boolean).join(" "));
+}
+
+async function loadWithOneRetry(loader) {
+  try {
+    return await loader();
+  } catch (error) {
+    if (!isTransientReportError(error)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    return loader();
+  }
+}
+
+async function loadParticipantMembership(sessionId) {
   const payload = await loadParticipantMembershipReport(sessionId);
   return {
-    key: payload.key || reportKey,
+    key: payload.key || PARTICIPANT_MEMBERSHIP_REPORT.key,
     title: payload.title || PARTICIPANT_MEMBERSHIP_REPORT.title,
     generatedAt: payload.generated_at || new Date().toISOString(),
     generatedBy: payload.generated_by || "FSY leader",
@@ -51,4 +75,10 @@ export async function loadOperationalReport(sessionId, reportKey) {
     rows: Array.isArray(payload.rows) ? payload.rows : [],
     summary: payload.summary && typeof payload.summary === "object" ? payload.summary : {},
   };
+}
+
+export async function loadOperationalReport(sessionId, reportKey) {
+  return loadWithOneRetry(() => reportKey === PARTICIPANT_MEMBERSHIP_REPORT.key
+    ? loadParticipantMembership(sessionId)
+    : loadBaseOperationalReport(sessionId, reportKey));
 }
