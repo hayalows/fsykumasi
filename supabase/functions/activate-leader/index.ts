@@ -56,7 +56,9 @@ Deno.serve(async (req: Request) => {
   const code = normalizeCode(String(body.code || ""));
   const password = String(body.password || "");
   if (!action) return json(req, 400, { error: "Invalid account setup request." });
-  if (code.length < 24) return json(req, 400, { error: "Enter the full invite or recovery code." });
+  // New onboarding codes are deliberately short and human-readable. Legacy and
+  // recovery codes remain longer, and both formats normalize to alphanumerics.
+  if (code.length < 12) return json(req, 400, { error: "Enter the full setup or recovery code." });
   if (action === "activate" && password.length < 10) return json(req, 400, { error: "Use at least 10 characters for your password." });
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -80,13 +82,31 @@ Deno.serve(async (req: Request) => {
   }
 
   if (action === "inspect") {
+    let companyNames: string[] = [];
+    const companyIds = Array.isArray(invite.company_ids) ? invite.company_ids.filter(Boolean) : [];
+    if (companyIds.length) {
+      const { data: companies, error: companyError } = await admin
+        .from("companies")
+        .select("id, name, custom_name, operational_number")
+        .in("id", companyIds);
+      if (companyError) {
+        console.error("activate-leader company preview", companyError);
+      } else {
+        companyNames = (companies || [])
+          .sort((a, b) => Number(a.operational_number ?? 9999) - Number(b.operational_number ?? 9999)
+            || String(a.name || "").localeCompare(String(b.name || "")))
+          .map((company) => company.custom_name || company.name || "Company");
+      }
+    }
+
     return json(req, 200, {
       ok: true,
       displayName: invite.display_name || "FSY leader",
       maskedEmail: maskEmail(invite.email),
       role: invite.role,
       purpose: invite.purpose,
-      companyCount: Array.isArray(invite.company_ids) ? invite.company_ids.length : 0,
+      companyCount: companyIds.length,
+      companyNames,
       committeeScope: Array.isArray(invite.committee_scope) ? invite.committee_scope : [],
       expiresAt: invite.expires_at,
     });

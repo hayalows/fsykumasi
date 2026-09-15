@@ -57,6 +57,7 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
   const searchRef = useRef(null);
 
   const canAddOnSite = live && (capabilities.includes("registration_manage") || capabilities.includes("staff_manage"));
+  const canAddAssistantCoordinator = live && capabilities.includes("access_admin");
 
   const focusSearch = useCallback(() => {
     window.requestAnimationFrame(() => searchRef.current?.focus?.());
@@ -157,23 +158,17 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
     const roster = await refresh({ quiet: true });
     const person = roster?.find((item) => item.id === staffId);
     if (!person) {
-      setError("The staff record was added, but this desk could not reload it. Search the name again and tap Check in.");
+      setError("The staff record was added, but this desk could not reload it. Search the name again to confirm the arrival.");
       return;
     }
 
-    try {
-      await recordStaffArrival(person, "arrived");
-      const next = await refresh({ quiet: true });
-      const current = next?.find((item) => item.id === staffId) || { ...person, arrivalState: "arrived", operationsRevision: Number(person.operationsRevision || 0) + 1 };
-      setUndoTarget(current);
-      setNotice(needsPlacement(current) ? `${person.name} was added and is ready to serve. Placement is still open.` : `${person.name} was added, checked in, and is ready to serve.`);
-      setQuery("");
-      setFilter("expected");
-      focusSearch();
-    } catch (err) {
-      await refresh({ quiet: true });
-      setError(`The staff record was added, but check-in did not finish. Search the name and tap Check in. ${err?.message || ""}`.trim());
-    }
+    // The v2 arrival RPC saves approval, placement and physical arrival in the
+    // same database transaction. Do not send a second arrival write here.
+    setUndoTarget(person);
+    setNotice(needsPlacement(person) ? `${person.name} was added, approved and checked in. Placement is still open.` : `${person.name} was added, approved and checked in.`);
+    setQuery("");
+    setFilter("expected");
+    focusSearch();
   };
 
   const dismissNotice = () => {
@@ -194,7 +189,7 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
       <div>
         <span className="kicker">Staff arrival</span>
         <h2>Who is actually on site?</h2>
-        <p>Search and check the person in. The ground roster is the operating source: people on it are ready to work. Staff who arrive later become ready when they are checked in.</p>
+        <p>Search first, then check the person in. If someone is truly serving but missing, add them here and they become approved and present in one action.</p>
       </div>
       {refreshing ? <small role="status">Updating…</small> : null}
     </div>
@@ -260,7 +255,7 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
 
       {missingRosterMatch ? <div className="staff-checkin-missing">
         <b>This person is not on the current ground roster.</b>
-        <span>Check the spelling first. If they are physically here and should serve, add them. They will be marked present and ready immediately, with automatic placement when a suitable slot is open.</span>
+        <span>Check the spelling first. If they are physically here and should serve, add them. Counselors can be placed automatically; a Full Session Administrator chooses companies before saving a new Assistant Coordinator.</span>
         {canAddOnSite && query.trim().length >= 3 ? <button type="button" className="primary" onClick={() => setAddOpen(true)}>Add staff on site</button> : null}
         {!canAddOnSite ? <small>Ask a coordinator or staff administrator to add the staff record.</small> : null}
       </div> : null}
@@ -276,7 +271,8 @@ export function StaffCheckin({ sessionId, live = false, capabilities = [] }) {
       createStaff={addStaffFromCheckin}
       title="Add staff on site"
       submitLabel="Add & check in"
-      helperText="This adds the staff record, marks them present and ready, and automatically places a Counselor or Assistant Coordinator when a suitable open slot exists."
+      helperText="This creates an approved staff record and marks the person present immediately."
+      allowAssistantCoordinator={canAddAssistantCoordinator}
       onSaved={handleOnSiteSaved}
       onClose={() => setAddOpen(false)}
     /> : null}

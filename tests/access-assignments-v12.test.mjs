@@ -29,15 +29,46 @@ test("leader setup completes responsibility, scope and sign-in without page swit
   assert.match(flow, /onCreateCommitteeInvite/);
   assert.match(flow, /Review/);
   assert.match(flow, /Access follows responsibility/);
+  assert.doesNotMatch(flow, /ACCOUNT_ROLES/);
+  assert.match(flow, /MutationFeedback tone="warn"/);
+  assert.doesNotMatch(flow, /MutationFeedback tone="warning"/);
   assert.doesNotMatch(flow, /view=access|view=assignments/);
 });
 
-test("existing leaders cannot back into the new-person identity step", async () => {
+test("existing leaders stay on the single website-access step", async () => {
   const flow = await read("src/components/LeaderSetupFlow.jsx");
   assert.match(flow, /const firstStep = existing \? 2 : 1/);
-  assert.match(flow, /const canGoBack = step > firstStep/);
+  assert.match(flow, /const canGoBack = !existing && step > firstStep/);
   assert.match(flow, /!existing && step === 1/);
-  assert.match(flow, /const totalSteps = existing \? 2 : 3/);
+  assert.match(flow, /const totalSteps = existing \? 1 : 3/);
+});
+
+test("active accounts can claim an additional-session invite from the setup link", async () => {
+  const [app, auth, flow] = await Promise.all([
+    read("src/App.jsx"),
+    read("src/components/AuthGate.jsx"),
+    read("src/components/LeaderSetupFlow.jsx"),
+  ]);
+  assert.match(app, /runtimeStatus==="ready"&&initialInvite/);
+  assert.match(app, /initialCode=\{initialInvite\}/);
+  assert.match(app, /handleInviteClaim/);
+  assert.match(app, /claimInviteWhileSignedIn\(code\)/);
+  assert.match(auth, /InviteClaimScreen\(\{ profile, onClaim, onSignOut, initialCode = "" \}\)/);
+  assert.match(auth, /useState\(formatInviteCode\(initialCode\)\)/);
+  assert.match(flow, /Send the setup link/);
+  assert.match(flow, /Copy setup link/);
+});
+
+test("Assistant Coordinator creation is exposed only to an onsite caller that persists company scope", async () => {
+  const [sheet, checkin, assignments] = await Promise.all([
+    read("src/components/OnSiteStaffSheet.jsx"),
+    read("src/pages/StaffCheckin.jsx"),
+    read("src/pages/AssignmentsV3.jsx"),
+  ]);
+  assert.match(sheet, /allowAssistantCoordinator = false/);
+  assert.match(checkin, /allowAssistantCoordinator=\{canAddAssistantCoordinator\}/);
+  assert.match(checkin, /createStaff=\{addStaffFromCheckin\}/);
+  assert.doesNotMatch(assignments, /allowAssistantCoordinator=/);
 });
 
 test("mobile leader setup remains one full-height task with safe actions", async () => {

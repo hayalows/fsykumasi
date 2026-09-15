@@ -25,9 +25,8 @@ test("staff arrival desk treats on-ground staff as ready instead of awaiting app
   assert.doesNotMatch(source, /registrationStatus !== "cancelled"/);
   assert.doesNotMatch(source, /Leadership confirmation is still required/);
   assert.doesNotMatch(source, /Needs leadership confirmation before active service/);
-  assert.match(source, /ground roster is the operating source/i);
+  assert.match(source, /become approved and present in one action/i);
   assert.match(source, /Present, needs placement/);
-  assert.match(source, /marks them present and ready/);
 });
 
 test("ground roster migration uses operational state and preserves source approval history", async () => {

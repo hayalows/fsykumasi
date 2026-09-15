@@ -14,9 +14,23 @@ import { BrandMark } from "./BrandMark.jsx";
 import "./auth-password.css";
 
 function formatInviteCode(value = "") {
-  const raw = value.toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^FSY/, "").slice(0, 24);
-  const parts = raw.match(/.{1,4}/g) || [];
-  return raw ? `FSY-${parts.join("-")}` : "";
+  const compact = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!compact) return "";
+
+  // Keep legacy and recovery FSY codes working exactly as before.
+  if (compact.startsWith("FSY")) {
+    const raw = compact.slice(3).slice(0, 24);
+    const parts = raw.match(/.{1,4}/g) || [];
+    return raw ? `FSY-${parts.join("-")}` : "FSY";
+  }
+
+  // New onboarding codes use a four-character human label (AC01, CMFO,
+  // CO01...) plus ten random characters. Formatting is visual only.
+  const raw = compact.slice(0, 14);
+  if (raw.length <= 4) return raw;
+  const prefix = raw.slice(0, 4);
+  const tail = raw.slice(4).match(/.{1,4}/g) || [];
+  return `${prefix}-${tail.join("-")}`;
 }
 
 function roleLabel(role) {
@@ -25,8 +39,16 @@ function roleLabel(role) {
     coordinator: "Coordinator",
     logistics_admin: "Logistical administrator",
     session_director: "Session directing couple",
-    committee_viewer: "Committee viewer",
+    area_advisory_couple: "FSY area advisory couple",
+    committee_viewer: "Committee member",
   })[role] || "FSY leader";
+}
+
+function inviteScope(info) {
+  if (!info) return "";
+  if (info.role === "assistant_coordinator" && info.companyNames?.length) return info.companyNames.join(" · ");
+  if (info.role === "committee_viewer" && info.committeeScope?.length) return info.committeeScope.join(" · ");
+  return "";
 }
 
 function PasswordField({ label, value, onChange, autoComplete = "current-password", hint }) {
@@ -89,7 +111,7 @@ export function SignInScreen({ onSignIn, onActivate, onForgot, initialInvite = "
   };
 
   const verifySetupCode = async () => {
-    if (!inviteCode) throw new Error("Enter the invite or recovery code from FSY leadership.");
+    if (!inviteCode) throw new Error("Enter the setup or recovery code from FSY leadership.");
     const info = await inspectLeaderInvite(inviteCode);
     setSetupInfo(info);
     return info;
@@ -123,7 +145,7 @@ export function SignInScreen({ onSignIn, onActivate, onForgot, initialInvite = "
 
   const setupTitle = setupInfo
     ? setupInfo.purpose === "recovery" ? "Choose a new password" : `Welcome, ${setupInfo.displayName}`
-    : "Use your setup code";
+    : "Use your FSY setup code";
   const title = mode === "signin" ? "Sign in" : mode === "setup" ? setupTitle : "Reset your password";
   const description = mode === "signin"
     ? "Use your email and password to continue."
@@ -131,9 +153,10 @@ export function SignInScreen({ onSignIn, onActivate, onForgot, initialInvite = "
       ? setupInfo
         ? setupInfo.purpose === "recovery"
           ? "Your account is verified. Create a new password and you will be signed in automatically."
-          : "Your invite is verified. Create your password once and you are ready to go."
-        : "Paste the one-time code or open the setup link sent by FSY leadership."
+          : "We found your FSY assignment. Create your password once and you are ready to go."
+        : "Enter the short code from FSY leadership, or open the setup link they sent you."
       : "We can email a reset link. If email is delayed or rate-limited, an FSY administrator can give you a recovery code instead.";
+  const scope = inviteScope(setupInfo);
 
   return (
     <main className="auth-page">
@@ -160,8 +183,8 @@ export function SignInScreen({ onSignIn, onActivate, onForgot, initialInvite = "
 
             {mode === "setup" && !setupInfo ? (
               <div className="setup-code-step">
-                <label>Invite or recovery code<input autoFocus required value={inviteCode} onChange={(event) => setInviteCode(formatInviteCode(event.target.value))} placeholder="FSY-1234-ABCD-5678-EF90-1234-5678" autoCapitalize="characters" autoComplete="one-time-code" /></label>
-                <small>You do not need to enter your email, name or role again. They are already attached to your invite.</small>
+                <label>Setup or recovery code<input autoFocus required value={inviteCode} onChange={(event) => setInviteCode(formatInviteCode(event.target.value))} placeholder="AC01-7F3A-9C2D-8B" autoCapitalize="characters" autoComplete="one-time-code" inputMode="text" /></label>
+                <small>Your name, role and assigned companies are already attached to the code. You do not need to enter them again.</small>
               </div>
             ) : null}
 
@@ -170,12 +193,13 @@ export function SignInScreen({ onSignIn, onActivate, onForgot, initialInvite = "
                 <div className="setup-identity" aria-label="Verified FSY account">
                   <span className="setup-identity-icon"><CheckCircle weight="fill" /></span>
                   <div className="setup-identity-copy">
-                    <span>Verified account</span>
+                    <span>FSY assignment found</span>
                     <b>{setupInfo.displayName}</b>
                     <small>{setupInfo.maskedEmail} · {roleLabel(setupInfo.role)}</small>
+                    {scope ? <small className="setup-identity-scope">{scope}</small> : null}
                   </div>
                 </div>
-                <PasswordField label={setupInfo.purpose === "recovery" ? "New password" : "Create password"} value={password} onChange={setPassword} autoComplete="new-password" hint="At least 10 characters. This is what you will use for future sign-ins." />
+                <PasswordField label={setupInfo.purpose === "recovery" ? "New password" : "Create password"} value={password} onChange={setPassword} autoComplete="new-password" hint="At least 10 characters. After this, your phone can stay signed in." />
                 <PasswordField label="Confirm password" value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" />
               </>
             ) : null}
@@ -198,21 +222,25 @@ export function SignInScreen({ onSignIn, onActivate, onForgot, initialInvite = "
 
         <div className="auth-mode-actions">
           {mode !== "signin" ? <button type="button" className="text-action" onClick={() => switchMode("signin")}><ArrowLeft />Back to sign in</button> : null}
-          {mode === "signin" ? <button type="button" className="text-action" onClick={() => switchMode("setup")}><Key />Have an invite or recovery code?</button> : null}
+          {mode === "signin" ? <button type="button" className="text-action" onClick={() => switchMode("setup")}><Key />First time here? Use a setup code</button> : null}
           {mode === "forgot" ? <button type="button" className="text-action" onClick={() => switchMode("setup")}><Key />Use a recovery code instead</button> : null}
           {mode === "setup" && setupInfo ? <button type="button" className="text-action" onClick={() => { setSetupInfo(null); setPassword(""); setConfirmPassword(""); setError(""); }}><UserPlus />Use a different code</button> : null}
         </div>
 
-        <div className="auth-note"><LockKey weight="fill"/><span>Your password proves who you are. Your FSY role separately controls what session information you can see.</span></div>
+        <div className="auth-note"><LockKey weight="fill"/><span>Your sign-in proves who you are. Your current FSY assignment controls what you can see and do.</span></div>
       </section>
     </main>
   );
 }
 
-export function InviteClaimScreen({ profile, onClaim, onSignOut }) {
-  const [code, setCode] = useState("");
+export function InviteClaimScreen({ profile, onClaim, onSignOut, initialCode = "" }) {
+  const [code, setCode] = useState(formatInviteCode(initialCode));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (initialCode) setCode(formatInviteCode(initialCode));
+  }, [initialCode]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -233,9 +261,9 @@ export function InviteClaimScreen({ profile, onClaim, onSignOut }) {
         <BrandMark />
         <span className="kicker">Signed in as {profile?.email || "FSY leader"}</span>
         <h1>Connect your FSY access</h1>
-        <p>This account is signed in but does not have session access yet. Enter the one-time invite code from FSY leadership.</p>
+        <p>Your sign-in is ready. Enter the one-time code from FSY leadership to connect this session.</p>
         <form className="auth-form" onSubmit={submit}>
-          <label>Invite code<input required value={code} onChange={(event) => setCode(formatInviteCode(event.target.value))} placeholder="FSY-1234-ABCD-5678-EF90-1234-5678" autoComplete="one-time-code" /></label>
+          <label>Setup code<input required value={code} onChange={(event) => setCode(formatInviteCode(event.target.value))} placeholder="AC01-7F3A-9C2D-8B" autoCapitalize="characters" autoComplete="one-time-code" /></label>
           {error ? <div className="form-error" role="alert">{error}</div> : null}
           <button className="primary full" disabled={busy}>{busy ? "Connecting…" : "Connect access"}<ArrowRight /></button>
         </form>

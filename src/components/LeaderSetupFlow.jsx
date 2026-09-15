@@ -10,7 +10,6 @@ import { TeamChoices } from "./AccountSetup.jsx";
 import { DismissibleLayer, MutationFeedback } from "./UI.jsx";
 import { loadOperationalStructure, loadStaff, loadStructureSettings } from "../lib/operations.js";
 import {
-  ACCOUNT_ROLES,
   createManualStaffLeader,
   createStaffLeaderInvite,
   setAssistantCoordinatorCompanies,
@@ -113,7 +112,7 @@ export function LeaderSetupFlow({
   const owners = useMemo(() => new Map(companies.map((company) => { const ownerId = company.assistantCoordinatorIds?.[0] || ""; return [company.id, staff.find((personRow) => personRow.id === ownerId) || null]; })), [companies, staff]);
   const filteredCompanies = useMemo(() => { const text = companyQuery.trim().toLowerCase(); return companies.filter((company) => !text || `${companyLabel(company)} ${owners.get(company.id)?.name || ""}`.toLowerCase().includes(text)); }, [companies, owners, companyQuery]);
   const isCommittee = role === "committee_viewer";
-  const emailRequired = requireEmail || isCommittee;
+  const emailRequired = requireEmail || isCommittee || existing;
   const normalizedEmail = normalizeEmail(email);
   const duplicateAccount = useMemo(() => !existing && normalizedEmail ? knownAccounts.find((account) => accountEmail(account) === normalizedEmail) : null, [knownAccounts, normalizedEmail, existing]);
   const duplicateInvite = useMemo(() => !existing && normalizedEmail ? pendingInvites.find((invite) => inviteEmail(invite) === normalizedEmail && ["pending", "activating"].includes(invite.status)) : null, [pendingInvites, normalizedEmail, existing]);
@@ -122,10 +121,10 @@ export function LeaderSetupFlow({
   const canAdvanceDetails = name.trim().length >= 2 && roleOptions.some((option) => option.value === role);
   const scopeReady = role === "assistant_coordinator" ? companyIds.length > 0 && companyIds.length <= maxLoad : isCommittee ? teamKeys.length > 0 : true;
   const canFinish = !loading && !busy && canAdvanceDetails && scopeReady && emailReady && !emailConflict && (!isCommittee || Boolean(onCreateCommitteeInvite));
-  const displayStep = existing ? step - 1 : step;
-  const totalSteps = existing ? 2 : 3;
-  const canGoBack = step > firstStep;
-  const flowLabel = allowCommittee && !existing ? "Access setup" : "Leader setup";
+  const displayStep = existing ? 1 : step;
+  const totalSteps = existing ? 1 : 3;
+  const canGoBack = !existing && step > firstStep;
+  const flowLabel = existing ? "Website access" : allowCommittee ? "Access setup" : "Leader setup";
 
   const toggleCompany = (companyId) => {
     setError("");
@@ -166,18 +165,23 @@ export function LeaderSetupFlow({
   const setupLink = created?.invite && typeof window !== "undefined" ? `${window.location.origin}/?invite=${encodeURIComponent(created.invite.code)}` : "";
   const roleName = isCommittee ? "Committee member" : staffRoleLabel(role);
   const selectedTeamNames = teamKeys.map((key) => teams.find((team) => team.key === key)?.name || key);
-  const secondaryTitle = role === "assistant_coordinator" ? "Companies and sign-in" : isCommittee ? "Committee and sign-in" : "Website sign-in";
-  const secondaryDescription = role === "assistant_coordinator" ? "Choose the companies this leader supports, then enter the email they will use." : isCommittee ? "Choose the committee work this person needs, then enter their sign-in email." : "Enter the email this leader will use to sign in.";
+  const selectedCompanyNames = companyIds.map((id) => companyLabel(companies.find((company) => company.id === id))).filter(Boolean);
+  const secondaryTitle = role === "assistant_coordinator" ? "Companies and first sign-in" : isCommittee ? "Committee and sign-in" : "First sign-in";
+  const secondaryDescription = existing
+    ? role === "assistant_coordinator"
+      ? "Confirm the companies this leader supports and the email tied to their sign-in. One action prepares the code."
+      : "Confirm the email tied to this leader. One action prepares their first sign-in."
+    : role === "assistant_coordinator" ? "Choose the companies this leader supports, then enter the email they will use." : isCommittee ? "Choose the committee work this person needs, then enter their sign-in email." : "Enter the email this leader will use to sign in.";
 
   return <DismissibleLayer open onClose={() => !busy && onClose()} title={flowLabel} sheet className="leader-setup-layer leader-setup-v15">
     <div className="leader-setup-flow">
       <header className="leader-setup-header">
         {canGoBack && !created ? <button type="button" className="icon-button leader-setup-back" onClick={() => setStep(step - 1)} aria-label="Back"><ArrowLeft /></button> : <span />}
-        <div><span className="kicker">{flowLabel}</span><h2>{created ? "Invite ready" : existing ? `Finish ${name}'s setup` : "Invite someone"}</h2></div>
+        <div><span className="kicker">{flowLabel}</span><h2>{created ? "Access ready" : existing ? `Prepare access for ${name}` : "Invite someone"}</h2></div>
         <button type="button" data-layer-close className="icon-button" onClick={onClose} disabled={busy} aria-label="Close"><X /></button>
       </header>
 
-      {!created ? <div className="leader-setup-progress" style={{ gridTemplateColumns: `repeat(${totalSteps}, minmax(0, 1fr))` }} aria-label={`Step ${displayStep} of ${totalSteps}`}>{Array.from({ length: totalSteps }, (_, index) => <i key={index} className={displayStep >= index + 1 ? "done" : ""} />)}</div> : null}
+      {!created && !existing ? <div className="leader-setup-progress" style={{ gridTemplateColumns: `repeat(${totalSteps}, minmax(0, 1fr))` }} aria-label={`Step ${displayStep} of ${totalSteps}`}>{Array.from({ length: totalSteps }, (_, index) => <i key={index} className={displayStep >= index + 1 ? "done" : ""} />)}</div> : null}
 
       <div className="leader-setup-scroll">
         {!existing && step === 1 && !created ? <section className="leader-setup-section">
@@ -189,6 +193,7 @@ export function LeaderSetupFlow({
 
         {step === 2 && !created ? <section className="leader-setup-section">
           <div className="leader-setup-section-title"><Buildings /><div><b>{secondaryTitle}</b><small>{secondaryDescription}</small></div></div>
+          {existing ? <div className="leader-setup-review"><div><span>Person</span><b>{name}</b></div><div><span>Responsibility</span><b>{roleName}</b></div></div> : null}
           {role === "assistant_coordinator" ? <>
             <div className="leader-setup-selection-head"><span><b>Companies</b><small>{companyIds.length}/{maxLoad} selected</small></span>{(!existing || !companyIds.length) ? <button type="button" className="text-action" onClick={applyBalancedSuggestion}>Use balanced suggestion</button> : null}</div>
             <input className="leader-setup-company-search" type="search" value={companyQuery} onChange={(event) => setCompanyQuery(event.target.value)} placeholder="Search companies" aria-label="Search companies" />
@@ -199,21 +204,25 @@ export function LeaderSetupFlow({
             {!companyIds.length ? <MutationFeedback tone="error">Choose at least one company before continuing.</MutationFeedback> : null}
           </> : null}
           {isCommittee ? <div className="leader-setup-committee-choice"><div className="leader-setup-selection-head"><span><b>Committee</b><small>{teamKeys.length ? `${teamKeys.length} selected` : "Choose at least one"}</small></span></div><TeamChoices teams={teams} selected={teamKeys} onChange={setTeamKeys} compact />{!teamKeys.length ? <MutationFeedback tone="error">Choose at least one committee before continuing.</MutationFeedback> : null}</div> : null}
-          <label>Email address {emailRequired ? <span className="required-hint">Required</span> : <span className="optional">Optional</span>}<input type="email" required={emailRequired} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="leader@example.com" /><small>{emailRequired ? "We will create a one-time setup link for this email." : email.trim() ? "A setup link will be created when you finish." : "Leave blank to save the FSY assignment without website access for now."}</small></label>
+          <label>Email address {emailRequired ? <span className="required-hint">Required</span> : <span className="optional">Optional</span>}<input type="email" required={emailRequired} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="leader@example.com" /><small>{existing ? "The leader will not need to type this email during first-time setup." : emailRequired ? "We will create a one-time setup link for this email." : email.trim() ? "A setup link will be created when you finish." : "Leave blank to save the FSY assignment without website access for now."}</small></label>
           {emailConflict ? <MutationFeedback tone="error">{emailConflict}</MutationFeedback> : null}
+          {existing ? <div className="leader-setup-note"><ShieldCheck /><span><b>Assignment stays in control</b><small>{role === "assistant_coordinator" ? "Changing this person's companies later will automatically change what they can see after sign-in." : "Future staff responsibility changes continue to update the linked website access."}</small></span></div> : null}
         </section> : null}
 
-        {step === 3 && !created ? <section className="leader-setup-section">
+        {!existing && step === 3 && !created ? <section className="leader-setup-section">
           <div className="leader-setup-section-title"><CheckCircle /><div><b>Review before inviting</b><small>Confirm what this person will be able to see before creating the link.</small></div></div>
-          <div className="leader-setup-review"><div><span>Person</span><b>{name}</b></div><div><span>Responsibility</span><b>{roleName}</b></div>{role === "assistant_coordinator" ? <div><span>Company scope</span><b>{companyIds.map((id) => companyLabel(companies.find((company) => company.id === id))).join(" · ") || "None"}</b></div> : null}{isCommittee ? <div><span>Committee scope</span><b>{selectedTeamNames.join(" · ") || "None"}</b></div> : null}<div><span>Sign-in email</span><b>{normalizedEmail || "Not prepared now"}</b></div></div>
+          <div className="leader-setup-review"><div><span>Person</span><b>{name}</b></div><div><span>Responsibility</span><b>{roleName}</b></div>{role === "assistant_coordinator" ? <div><span>Company scope</span><b>{selectedCompanyNames.join(" · ") || "None"}</b></div> : null}{isCommittee ? <div><span>Committee scope</span><b>{selectedTeamNames.join(" · ") || "None"}</b></div> : null}<div><span>Sign-in email</span><b>{normalizedEmail || "Not prepared now"}</b></div></div>
           <div className="leader-setup-note"><ShieldCheck /><span><b>Assignments and Access stay synchronized</b><small>{isCommittee ? "The committee choices on this invite become this person's website tools." : "Future staff role or company changes continue to update the linked website scope."}</small></span></div>
         </section> : null}
 
-        {created ? <section className="leader-setup-section leader-setup-success"><CheckCircle weight="fill" className="leader-setup-success-icon" /><div><span className="kicker">Ready to send</span><h3>{created.person.name}'s invite is ready</h3><p>{created.person.operationalRole === "committee_viewer" ? `Committee member · ${selectedTeamNames.join(" · ")}` : `${staffRoleLabel(created.person.operationalRole)}${created.person.companyIds?.length ? ` · ${created.person.companyIds.length} companies` : ""}`}</p></div>{created.invite ? <><div className="leader-setup-code"><span>One-time code</span><strong>{created.invite.code}</strong><small>{created.invite.expiresAt ? `Expires ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(created.invite.expiresAt))}` : "Use once to finish account setup"}</small></div><div className="leader-setup-copy-actions"><button className="primary" onClick={() => copy(setupLink, "link")}><Copy />{copied === "link" ? "Link copied" : "Copy setup link"}</button><button className="secondary" onClick={() => copy(created.invite.code, "code")}><Copy />{copied === "code" ? "Code copied" : "Copy code"}</button></div></> : <div className="leader-setup-note"><ShieldCheck /><span><b>Assignment saved</b><small>No website invite was created because no email was entered. Website access can be prepared later.</small></span></div>}</section> : null}
+        {created ? <section className="leader-setup-section leader-setup-success"><CheckCircle weight="fill" className="leader-setup-success-icon" /><div><span className="kicker">Ready to use</span><h3>{created.person.name}'s access is ready</h3><p>{created.person.operationalRole === "committee_viewer" ? `Committee member · ${selectedTeamNames.join(" · ")}` : `${staffRoleLabel(created.person.operationalRole)}${selectedCompanyNames.length ? ` · ${selectedCompanyNames.join(" · ")}` : ""}`}</p></div>{created.invite ? <><div className="leader-setup-code"><span>One-time setup code</span><strong>{created.invite.code}</strong><small>{created.invite.expiresAt ? `Use once · expires ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(created.invite.expiresAt))}` : "Use once to finish account setup"}</small></div>{created.invite.existingAccount ? <MutationFeedback tone="warn">This email already has an FSY sign-in. Send the setup link. When they open it, they can sign in and connect this session without creating a second account. Use account recovery if they do not remember the password.</MutationFeedback> : <div className="leader-setup-note"><ShieldCheck /><span><b>The link is easiest</b><small>Send the setup link when possible. The short code works if the leader needs to type it instead.</small></span></div>}<div className="leader-setup-copy-actions"><button className="primary" onClick={() => copy(setupLink, "link")}><Copy />{copied === "link" ? "Link copied" : "Copy setup link"}</button><button className="secondary" onClick={() => copy(created.invite.code, "code")}><Copy />{copied === "code" ? "Code copied" : "Copy code"}</button></div></> : <div className="leader-setup-note"><ShieldCheck /><span><b>Assignment saved</b><small>No website invite was created because no email was entered. Website access can be prepared later.</small></span></div>}</section> : null}
         {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
       </div>
 
-      {!created ? <footer className="leader-setup-footer">{canGoBack ? <button type="button" className="secondary" disabled={busy} onClick={() => setStep(step - 1)}>Back</button> : <button type="button" className="secondary" disabled={busy} onClick={onClose}>Cancel</button>}{step < 3 ? <button type="button" className="primary" disabled={loading || (step === 1 && !canAdvanceDetails) || (step === 2 && (!scopeReady || !emailReady || Boolean(emailConflict)))} onClick={() => setStep(step + 1)}>Continue</button> : <button type="button" className="primary" disabled={!canFinish} onClick={finish}>{busy ? "Creating invite…" : normalizedEmail ? "Create invite" : "Save assignment"}</button>}</footer> : <footer className="leader-setup-footer"><span /><button type="button" className="primary" onClick={onClose}>Done</button></footer>}
+      {!created ? existing
+        ? <footer className="leader-setup-footer"><button type="button" className="secondary" disabled={busy} onClick={onClose}>Cancel</button><button type="button" className="primary" disabled={!canFinish} onClick={finish}>{busy ? "Preparing access…" : "Prepare access"}</button></footer>
+        : <footer className="leader-setup-footer">{canGoBack ? <button type="button" className="secondary" disabled={busy} onClick={() => setStep(step - 1)}>Back</button> : <button type="button" className="secondary" disabled={busy} onClick={onClose}>Cancel</button>}{step < 3 ? <button type="button" className="primary" disabled={loading || (step === 1 && !canAdvanceDetails) || (step === 2 && (!scopeReady || !emailReady || Boolean(emailConflict)))} onClick={() => setStep(step + 1)}>Continue</button> : <button type="button" className="primary" disabled={!canFinish} onClick={finish}>{busy ? "Creating invite…" : normalizedEmail ? "Create invite" : "Save assignment"}</button>}</footer>
+        : <footer className="leader-setup-footer"><span /><button type="button" className="primary" onClick={onClose}>Done</button></footer>}
     </div>
   </DismissibleLayer>;
 }

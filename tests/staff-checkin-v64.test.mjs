@@ -15,7 +15,7 @@ test("staff check-in can add a genuinely missing staff member from the desk", as
   assert.match(source, /This person is not on the current ground roster\./);
   assert.match(source, /Add staff on site/);
   assert.match(source, /submitLabel="Add & check in"/);
-  assert.match(client, /add_on_site_staff_from_checkin_v1/);
+  assert.match(client, /add_on_site_staff_from_checkin_v2/);
 });
 
 test("staff search exposes inactive matches instead of silently treating them as missing", async () => {
@@ -41,14 +41,23 @@ test("on-site staff sheet supports the fast arrival context without forking the 
   const source = await read("src/components/OnSiteStaffSheet.jsx");
   assert.match(source, /initialQuery = ""/);
   assert.match(source, /createStaff = addOnSiteStaff/);
-  assert.match(source, /submitLabel = "Add Staff for confirmation"/);
-  assert.match(source, /I checked the results\. This person is not already listed\./);
+  assert.match(source, /submitLabel = "Add staff"/);
+  assert.match(source, /I checked the results/);
+  assert.match(source, /This person is not already listed\./);
 });
 
-test("newly captured staff become ready for day-of service", async () => {
-  const source = await read("src/pages/StaffCheckin.jsx");
-  assert.match(source, /recordStaffArrival\(person, "arrived"\)/);
-  assert.match(source, /was added and is ready to serve/);
-  assert.match(source, /marks them present and ready/);
-  assert.match(source, /The staff record was added, but check-in did not finish/);
+test("newly captured staff are approved and present in the same day-of transaction", async () => {
+  const [source, migration] = await Promise.all([
+    read("src/pages/StaffCheckin.jsx"),
+    read("supabase/migrations/20260914223000_simple_staff_access_v78.sql"),
+  ]);
+
+  assert.match(source, /v2 arrival RPC saves approval, placement and physical arrival/);
+  assert.match(source, /Do not send a second arrival write here/);
+  const handler = source.slice(source.indexOf("const handleOnSiteSaved"), source.indexOf("const dismissNotice"));
+  assert.doesNotMatch(handler, /recordStaffArrival/);
+  assert.match(source, /was added, approved and checked in/);
+  assert.match(source, /This creates an approved staff record and marks the person present immediately\./);
+  assert.match(migration, /registration_status[\s\S]{0,120}'approved'/);
+  assert.match(migration, /arrival_state\s*=\s*'arrived'/);
 });
