@@ -81,7 +81,7 @@ export function App() {
   const [selectedSessionId,setSelectedSessionId]=useState(()=>typeof window==="undefined"?"":new URLSearchParams(window.location.search).get("session")||"");
   const selectedSessionRef=useRef(selectedSessionId); const hydrateGeneration=useRef(0);
   const [runtimeStatus,setRuntimeStatus]=useState(isSupabaseConfigured?"loading":"demo"); const [runtimeError,setRuntimeError]=useState(""); const [lastUpdatedAt,setLastUpdatedAt]=useState(""); const [workspaceHydrating,setWorkspaceHydrating]=useState(Boolean(isSupabaseConfigured)); const [workspacePhase,setWorkspacePhase]=useState(isSupabaseConfigured?"loading":"demo");
-  const demoParticipants=useMemo(()=>createDemoParticipants(),[]); const initialInvite=useMemo(()=>typeof window==="undefined"?"":new URLSearchParams(window.location.search).get("invite")||"",[]);
+  const demoParticipants=useMemo(()=>createDemoParticipants(),[]); const [initialInvite,setInitialInvite]=useState(()=>typeof window==="undefined"?"":new URLSearchParams(window.location.search).get("invite")||"");
 
   useEffect(()=>{selectedSessionRef.current=selectedSessionId;},[selectedSessionId]);
   useEffect(()=>installLifecycleDiagnostics(),[]);
@@ -168,15 +168,17 @@ export function App() {
   const saveProfile=async(displayName)=>{const updated=await updateMyProfile(displayName);setProfile((current)=>({...current,display_name:updated?.display_name||displayName}));markUpdated();return updated;};
   const handleSignOut=async()=>{setRuntimeError("");try{await signOutAccount();navigate("overview",{replace:true});await hydrateLive(null,"",{reason:"local-signout"});}catch(error){setRuntimeError(error.message||"Unable to sign out. Please try again.");throw error;}};
   const handleSessionChange=async(sessionId)=>{const next=accessState.find((item)=>item.session_id===sessionId&&item.active&&item.role);if(!next||sessionId===sessionInfo?.id)return;selectedSessionRef.current=sessionId;setSelectedSessionId(sessionId);navigate("overview",{replace:true});if(typeof window!=="undefined"){const url=new URL(window.location.href);if(next.session_status==="training")url.searchParams.set("session",sessionId);else url.searchParams.delete("session");window.history.replaceState({},"",`${url.pathname}${url.search}${url.hash}`);}await hydrateLive(authSession,sessionId,{reason:"session-change"});};
+  const clearInviteUrl=()=>{if(typeof window!=="undefined"){const url=new URL(window.location.href);url.searchParams.delete("invite");window.history.replaceState({},"",`${url.pathname}${url.search}${url.hash}`);}setInitialInvite("");};
+  const handleInviteClaim=async(code)=>{await claimInviteWhileSignedIn(code);clearInviteUrl();await hydrateLive(authSession,"",{reason:"invite-claim"});};
   const clearRecoveryUrl=()=>{if(typeof window!=="undefined")window.history.replaceState({},"",window.location.pathname);};
   const returnToSignIn=async()=>{try{await signOutAccount();}catch{}navigate("overview",{replace:true});await hydrateLive(null,"",{reason:"recovery-return-signin"});};
 
   if(isSupabaseConfigured){
     if(runtimeStatus==="loading")return <LoadingScreen text={authSession?"Signed in. Preparing your FSY workspace…":"Connecting to KCC FSY 2026…"}/>;
-    if(runtimeStatus==="signed-out")return <SignInScreen initialInvite={initialInvite} onSignIn={async(email,password)=>hydrateLive(await signInWithPassword(email,password),"",{reason:"sign-in"})} onActivate={async(values)=>hydrateLive(await activateLeaderAccount(values),"",{reason:"activation"})} onForgot={requestPasswordReset}/>;
+    if(runtimeStatus==="signed-out")return <SignInScreen initialInvite={initialInvite} onSignIn={async(email,password)=>hydrateLive(await signInWithPassword(email,password),"",{reason:"sign-in"})} onActivate={async(values)=>{const session=await activateLeaderAccount(values);clearInviteUrl();await hydrateLive(session,"",{reason:"activation"});}} onForgot={requestPasswordReset}/>;
     if(runtimeStatus==="password-recovery")return <PasswordRecoveryScreen onUpdate={updateRecoveredPassword} onCancel={async()=>{clearRecoveryUrl();await hydrateLive(authSession,"",{reason:"recovery-cancel"});}}/>;
     if(runtimeStatus==="error"){const friendly=friendlyRuntimeError(runtimeError);return authSession?<WorkspaceRecoveryScreen message={friendly.message} supportReference={friendly.supportReference} onRetry={()=>hydrateLive(authSession,"",{reason:"retry"})} onSignOut={returnToSignIn}/>:<main className="auth-page"><section className="auth-card runtime-recovery-card"><span className="kicker">Connection recovery</span><h1>{friendly.title}</h1><p>{friendly.message}</p><div className="runtime-recovery-actions"><button className="primary full" onClick={()=>hydrateLive(undefined,"",{reason:"retry"})}>Try again</button><button className="secondary full" onClick={returnToSignIn}>Return to sign in</button></div><small>Support reference: <b>{friendly.supportReference}</b></small></section></main>;}
-    if(runtimeStatus==="awaiting-access")return <InviteClaimScreen profile={profile} onClaim={async(code)=>{await claimInviteWhileSignedIn(code);await hydrateLive(authSession,"",{reason:"invite-claim"});}} onSignOut={handleSignOut}/>;
+    if((runtimeStatus==="awaiting-access"||(runtimeStatus==="ready"&&initialInvite))&&authSession)return <InviteClaimScreen profile={profile} initialCode={initialInvite} onClaim={handleInviteClaim} onSignOut={handleSignOut}/>;
   }
 
   const live=isSupabaseConfigured&&runtimeStatus==="ready";const grantedAccess=live?accessState.find((item)=>item.session_id===sessionInfo?.id&&item.active&&item.role):null;const currentRole=grantedAccess?.role||"logistics_admin";const currentCapabilities=live?(grantedAccess?.capabilities||[]):DEMO_CAPABILITIES;
