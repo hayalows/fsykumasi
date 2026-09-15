@@ -35,7 +35,7 @@ test("leader setup completes responsibility, scope and sign-in without page swit
 test("existing leaders cannot back into the new-person identity step", async () => {
   const flow = await read("src/components/LeaderSetupFlow.jsx");
   assert.match(flow, /const firstStep = existing \? 2 : 1/);
-  assert.match(flow, /const canGoBack = step > firstStep/);
+  assert.match(flow, /const canGoBack = !existing && step > firstStep/);
   assert.match(flow, /!existing && step === 1/);
   assert.match(flow, /const totalSteps = existing \? 2 : 3/);
 });
