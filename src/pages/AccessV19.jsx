@@ -10,6 +10,7 @@ import { LeaderSetupFlow } from "../components/LeaderSetupFlow.jsx";
 import { ActionToast, ConfirmActionSheet, DismissibleLayer, Empty, MutationFeedback, PageHead, SearchField, Status } from "../components/UI.jsx";
 import { canApproveAccess, roleLabel } from "../lib/access.js";
 import { demoAccessRequests, demoUsers } from "../data/demo.js";
+import { writeWorkspaceLocation } from "../lib/navigation.js";
 import {
   accessStateLabel,
   loadSessionAccountActivity,
@@ -37,7 +38,7 @@ const ROLE_FILTERS = [
   ["area_advisory_couple", "FSY area advisory couples"],
   ["committee_viewer", "Committee members"],
 ];
-const STATUS_FILTERS = [["all", "All access states"], ["active", "Active"], ["invited", "Invite sent"], ["disabled", "Disabled"], ["online", "Online now"]];
+const STATUS_FILTERS = [["all", "All access states"], ["active", "Active"], ["invited", "Invite sent"], ["disabled", "Disabled"], ["not_ready", "Staff status needs review"], ["online", "Online now"]];
 
 function initials(name = "FSY") { return name.split(/\s+/).filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase(); }
 function normalizeEmail(value = "") { return String(value).trim().toLowerCase(); }
@@ -80,22 +81,26 @@ function accessStarted(person) {
     || person.legacyRequest
     || person.repairNeeded
     || person.accessEnabled
-    || ["active", "invited", "disabled"].includes(person.accessState),
+    || ["active", "invited", "disabled", "not_ready"].includes(person.accessState),
   );
 }
 
-function missingRequiredScope(person) {
+function hasMissingCompanyScope(person) {
   return Boolean(
     person.operationalRole === "assistant_coordinator"
     && person.staffId
     && !person.companyIds?.length
-    && accessStarted(person),
   );
+}
+
+function missingRequiredScope(person) {
+  return hasMissingCompanyScope(person) && accessStarted(person);
 }
 
 function needsAttention(person, now = Date.now()) {
   if (person.repairNeeded || person.legacyRequest || person.unmatchedLegacyInvite) return true;
   if (missingRequiredScope(person)) return true;
+  if (person.accessState === "not_ready") return true;
   return hasExpiredInvite(person, now);
 }
 
@@ -103,11 +108,18 @@ function accessLabel(person, now = Date.now()) {
   if (person.repairNeeded) return "Account repair needed";
   if (person.legacyRequest) return "Access request needs setup";
   if (person.unmatchedLegacyInvite) return "Invite needs current setup";
-  if (missingRequiredScope(person)) return "Choose companies";
+  if (hasMissingCompanyScope(person)) return "Choose companies";
+  if (person.accessState === "not_ready") return "Staff status needs review";
   if (person.accessState === "not_enabled") return "No website access";
   if (person.accessState === "invited") return hasExpiredInvite(person, now) ? "Setup link expired" : "Invite sent";
   if (person.accessState === "disabled") return "Sign-in disabled";
   return accessStateLabel(person.accessState);
+}
+
+function openStaffStatus(staffId) {
+  if (typeof window === "undefined" || !staffId) return;
+  writeWorkspaceLocation({ view: "assignments", tab: "people", staffId });
+  window.dispatchEvent(new Event("popstate"));
 }
 
 function accessTone(person, now = Date.now()) {
@@ -249,7 +261,7 @@ export function Access({ initialFilter = "", requests = [], invites = [], curren
   const [onlineUserIds, setOnlineUserIds] = useState(new Set());
   const [now, setNow] = useState(Date.now());
   const [view, setView] = useState(initialFilter === "all" ? "all" : "needs");
-  const [statusFilter, setStatusFilter] = useState(["active", "invited", "disabled", "online"].includes(initialFilter) ? initialFilter : "all");
+  const [statusFilter, setStatusFilter] = useState(["active", "invited", "disabled", "not_ready", "online"].includes(initialFilter) ? initialFilter : "all");
   const [roleFilter, setRoleFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [setupTarget, setSetupTarget] = useState(null);
@@ -259,7 +271,9 @@ export function Access({ initialFilter = "", requests = [], invites = [], curren
   const [recoveryResult, setRecoveryResult] = useState(null);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
+  const [syncError, setSyncError] = useState("");
   const [preparing, setPreparing] = useState(live);
+  const [syncing, setSyncing] = useState(false);
   const [confirmDisable, setConfirmDisable] = useState(null);
   const [confirmRevoke, setConfirmRevoke] = useState(null);
   const [confirmRetire, setConfirmRetire] = useState(null);
@@ -279,18 +293,31 @@ export function Access({ initialFilter = "", requests = [], invites = [], curren
     if (!live) return directory;
     const resolved = knownSessionId || await resolveCurrentAccessSessionId();
     if (!sessionId) setSessionId(resolved);
-    const [nextDirectory, nextActivity] = await Promise.all([loadStaffAccessDirectory(resolved), loadSessionAccountActivity(resolved)]);
+    const activityRequest = loadSessionAccountActivity(resolved).then((nextActivity) => setActivityByUser(nextActivity));
+    const nextDirectory = await loadStaffAccessDirectory(resolved);
     const staffRows = mapStaffRows(nextDirectory);
     setDirectory(staffRows);
-    setActivityByUser(nextActivity);
+    void activityRequest;
     return staffRows;
   };
 
   const reconcileNow = async (resolved = sessionId) => {
     const results = await reconcileExistingStaffAccounts(resolved);
-    await onRefreshRoster?.();
-    await refresh(resolved);
+    await Promise.all([onRefreshRoster?.(), refresh(resolved)]);
     return results;
+  };
+
+  const syncExistingAccounts = async (resolved = sessionId) => {
+    if (!resolved) return;
+    setSyncing(true);
+    setSyncError("");
+    try {
+      await reconcileNow(resolved);
+    } catch (err) {
+      setSyncError(err.message || "Existing sign-ins could not be checked.");
+    } finally {
+      setSyncing(false);
+    }
   };
 
   useEffect(() => {
@@ -303,12 +330,18 @@ export function Access({ initialFilter = "", requests = [], invites = [], curren
         const resolved = requestedSessionId || await resolveCurrentAccessSessionId();
         if (cancelled) return;
         setSessionId(resolved);
+        await refresh(resolved);
+        if (cancelled) return;
         if (canManage && !preparedSessions.current.has(resolved)) {
           preparedSessions.current.add(resolved);
-          try { await reconcileNow(resolved); }
-          catch (err) { preparedSessions.current.delete(resolved); throw err; }
-        } else {
-          await refresh(resolved);
+          setSyncing(true);
+          setSyncError("");
+          reconcileNow(resolved)
+            .catch((err) => {
+              preparedSessions.current.delete(resolved);
+              if (!cancelled) setSyncError(err.message || "Existing sign-ins could not be checked.");
+            })
+            .finally(() => { if (!cancelled) setSyncing(false); });
         }
       } catch (err) {
         if (!cancelled) setError(err.message || "Website access could not be synchronized.");
@@ -413,6 +446,7 @@ export function Access({ initialFilter = "", requests = [], invites = [], curren
     active: people.filter((person) => person.accessState === "active").length,
     invited: people.filter((person) => person.accessState === "invited").length,
     disabled: people.filter((person) => person.accessState === "disabled").length,
+    notReady: people.filter((person) => person.accessState === "not_ready").length,
     all: people.length,
   }), [people, onlineUserIds, now]);
   const shown = useMemo(() => {
@@ -425,6 +459,7 @@ export function Access({ initialFilter = "", requests = [], invites = [], curren
       return `${person.name} ${person.email || ""} ${person.accountEmail || ""} ${displayRole(person)} ${(person.companyNames || []).join(" ")} ${(person.committeeNames || []).join(" ")}`.toLowerCase().includes(text);
     }).sort((a, b) => sortPeople(a, b, onlineUserIds, now));
   }, [people, view, statusFilter, roleFilter, query, onlineUserIds, now]);
+  const filterCount = Number(statusFilter !== "all") + Number(roleFilter !== "all");
   const knownAccounts = useMemo(() => [...(roster || []), ...directory.filter((item) => item.userId).map((item) => ({ email: item.accountEmail || item.email, accountEmail: item.accountEmail || item.email }))], [roster, directory]);
   const setupKnownAccounts = useMemo(() => setupTarget?.newStaffOnly ? [] : knownAccounts, [knownAccounts, setupTarget]);
 
@@ -527,7 +562,8 @@ export function Access({ initialFilter = "", requests = [], invites = [], curren
     <PageHead title="Access" sessionName={sessionName} description="Manage who can sign in. Primary assignment controls their base scope; committee responsibilities can be added without replacing it." action={canInviteAnyone ? <button className="primary" onClick={() => setAddOpen(true)}><UserPlus />Add access</button> : null} />
     {!canManage ? <div className="notice"><WarningCircle /><div><b>View only</b><p>A whole-session administrator is required to change website access.</p></div></div> : null}
     {error ? <MutationFeedback tone="error">{error}</MutationFeedback> : null}
-    {preparing ? <div className="access-v18-preparing access-v19-sync"><span className="access-v18-spinner" /><div><b>Syncing access</b><p>Connecting existing staff sign-ins by email. No identity choices are required for routine accounts.</p></div></div> : counts.needs ? <div className="access-v17-attention"><WarningCircle /><div><b>{counts.needs} {counts.needs === 1 ? "person needs" : "people need"} attention</b><p>Only broken, expired, or incomplete access appears here. Staff who have never been invited are not treated as problems.</p></div>{view !== "needs" ? <button className="secondary" type="button" onClick={() => setView("needs")}>Review</button> : null}</div> : <div className="access-v17-ready"><CheckCircle weight="fill" /><div><b>Access is ready</b><p>No setup problem is waiting right now.</p></div></div>}
+    {syncError ? <div className="access-v17-attention access-v19-sync-error"><WarningCircle /><div><b>Access check needs another try</b><p>{syncError}</p></div><button className="secondary" type="button" disabled={syncing} onClick={() => syncExistingAccounts()}>{syncing ? "Checking…" : "Retry check"}</button></div> : null}
+    {preparing ? <div className="access-v18-preparing access-v19-sync"><span className="access-v18-spinner" /><div><b>Loading the access directory</b><p>Showing assigned people first. Existing sign-ins are checked in the background.</p></div></div> : syncing ? <div className="access-v18-preparing access-v19-sync"><span className="access-v18-spinner" /><div><b>Syncing access</b><p>The directory is ready. Connecting older sign-ins by exact email now.</p></div></div> : counts.needs ? <div className="access-v17-attention"><WarningCircle /><div><b>{counts.needs} {counts.needs === 1 ? "person needs" : "people need"} attention</b><p>Broken access, incomplete scope, expired invites, and staff status blockers appear here. Staff who have never been invited are not treated as problems; people who have never been invited stay visible in Everyone.</p></div>{view !== "needs" ? <button className="secondary" type="button" onClick={() => setView("needs")}>Review</button> : null}</div> : <div className="access-v17-ready"><CheckCircle weight="fill" /><div><b>Access is ready</b><p>No setup problem is waiting right now.</p></div></div>}
 
     <div className="access-v17-toolbar">
       <div className="access-v17-tabs" role="tablist" aria-label="Access views">
@@ -536,7 +572,7 @@ export function Access({ initialFilter = "", requests = [], invites = [], curren
       </div>
       <div className="access-v17-search"><SearchField value={query} onChange={setQuery} label="Search people" placeholder="Search name, email, assignment, company or committee" /></div>
       <details className="access-v17-filters">
-        <summary>Filters{statusFilter !== "all" || roleFilter !== "all" ? <b>1</b> : null}</summary>
+        <summary>Filters{filterCount ? <b>{filterCount}</b> : null}</summary>
         <div className="access-v17-filter-popover">
           <label><span>Access state</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>{STATUS_FILTERS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
           <label><span>Primary assignment</span><select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>{ROLE_FILTERS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
@@ -544,14 +580,14 @@ export function Access({ initialFilter = "", requests = [], invites = [], curren
         </div>
       </details>
     </div>
-    <div className="access-v17-meta" aria-label="Access activity summary"><span><i className="online-dot" />{counts.online} online now</span><span>{counts.active} active</span><span>{counts.invited} invite{counts.invited === 1 ? "" : "s"} waiting</span>{counts.disabled ? <span>{counts.disabled} disabled</span> : null}</div>
+    <div className="access-v17-meta" aria-label="Access activity summary"><span><i className="online-dot" />{counts.online} online now</span><span>{counts.active} active</span><span>{counts.invited} invite{counts.invited === 1 ? "" : "s"} waiting</span>{counts.disabled ? <span>{counts.disabled} disabled</span> : null}{counts.notReady ? <span>{counts.notReady} staff status blocker{counts.notReady === 1 ? "" : "s"}</span> : null}</div>
 
     <article className="panel access-v17-directory">
       <header className="access-v17-directory-head"><div><span className="kicker">People</span><h2>{view === "needs" ? "Needs attention" : "Everyone"}</h2><p>{view === "needs" ? "Only access that needs a real correction appears here." : "One person, one sign-in. Committee work can sit on top of a person's primary assignment."}</p></div><strong>{shown.length}</strong></header>
       {preparing ? <div className="access-v18-directory-loading"><span /><span /><span /></div> : shown.length ? <div className="access-v17-list">{shown.map((person) => {
         const key = personKey(person);
         const rowBusy = busyId === key;
-        const incomplete = missingRequiredScope(person);
+        const incomplete = hasMissingCompanyScope(person);
         const rosterUser = (roster || []).find((user) => sourceUserId(user) === person.userId);
         const expired = hasExpiredInvite(person, now);
         const teamUser = rosterUser || { userId: person.userId, name: person.name, teamKeys: person.committeeKeys || [] };
@@ -559,7 +595,9 @@ export function Access({ initialFilter = "", requests = [], invites = [], curren
           ? <button className="primary" disabled={!canManage || rowBusy} onClick={() => repairAccount(person)}>{rowBusy ? "Repairing…" : "Retry repair"}</button>
           : incomplete
             ? <button className="primary" disabled={!canManage || rowBusy} onClick={() => setSetupTarget(person)}>Choose companies</button>
-            : person.staffId && person.accessState === "not_enabled"
+            : person.staffId && person.accessState === "not_ready"
+              ? <button className="primary" disabled={!canManage || rowBusy} onClick={() => openStaffStatus(person.staffId)}>Review staff status</button>
+              : person.staffId && person.accessState === "not_enabled"
               ? <button className="primary" disabled={!canManage || rowBusy} onClick={() => setSetupTarget(person)}>Invite</button>
               : person.staffId && person.accessState === "disabled"
                 ? <button className="primary" disabled={!canManage || rowBusy} onClick={() => toggleAccess(person, true)}>Enable</button>

@@ -15,6 +15,7 @@ function accessTone(state) {
   if (state === "active") return "good";
   if (state === "invited") return "warn";
   if (state === "disabled") return "danger";
+  if (state === "not_ready") return "warn";
   return "neutral";
 }
 

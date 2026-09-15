@@ -35,7 +35,7 @@ function inviteEmail(invite) { return normalizeEmail(invite?.email || ""); }
 
 function balancedCompanyIds(companies, staff, maxLoad, currentStaffId = "") {
   if (!companies.length) return [];
-  const assistants = staff.filter((person) => person.operationalRole === "assistant_coordinator" && person.isCurrent !== false && person.registrationStatus === "approved");
+  const assistants = staff.filter((person) => person.operationalRole === "assistant_coordinator" && person.isCurrent !== false && person.registrationStatus !== "cancelled");
   const assistantCount = Math.max(1, assistants.length + (currentStaffId ? 0 : 1));
   const target = Math.min(maxLoad, Math.max(1, Math.ceil(companies.length / assistantCount)));
   return [...companies]

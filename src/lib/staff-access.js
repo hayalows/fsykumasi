@@ -36,6 +36,7 @@ export function accessStateLabel(state) {
     active: "Access active",
     invited: "Invite sent",
     disabled: "Access disabled",
+    not_ready: "Staff status needs review",
     not_enabled: "No website access",
   })[state] || "No website access";
 }
