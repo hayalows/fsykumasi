@@ -233,10 +233,14 @@ export function SignInScreen({ onSignIn, onActivate, onForgot, initialInvite = "
   );
 }
 
-export function InviteClaimScreen({ profile, onClaim, onSignOut }) {
-  const [code, setCode] = useState("");
+export function InviteClaimScreen({ profile, onClaim, onSignOut, initialCode = "" }) {
+  const [code, setCode] = useState(formatInviteCode(initialCode));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (initialCode) setCode(formatInviteCode(initialCode));
+  }, [initialCode]);
 
   const submit = async (event) => {
     event.preventDefault();
