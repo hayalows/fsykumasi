@@ -54,6 +54,8 @@ test("newly captured staff are approved and present in the same day-of transacti
 
   assert.match(source, /v2 arrival RPC saves approval, placement and physical arrival/);
   assert.match(source, /Do not send a second arrival write here/);
+  const handler = source.slice(source.indexOf("const handleOnSiteSaved"), source.indexOf("const dismissNotice"));
+  assert.doesNotMatch(handler, /recordStaffArrival/);
   assert.match(source, /was added, approved and checked in/);
   assert.match(source, /This creates an approved staff record and marks the person present immediately\./);
   assert.match(migration, /registration_status[\s\S]{0,120}'approved'/);
