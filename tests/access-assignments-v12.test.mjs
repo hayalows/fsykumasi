@@ -32,12 +32,12 @@ test("leader setup completes responsibility, scope and sign-in without page swit
   assert.doesNotMatch(flow, /view=access|view=assignments/);
 });
 
-test("existing leaders cannot back into the new-person identity step", async () => {
+test("existing leaders stay on the single website-access step", async () => {
   const flow = await read("src/components/LeaderSetupFlow.jsx");
   assert.match(flow, /const firstStep = existing \? 2 : 1/);
   assert.match(flow, /const canGoBack = !existing && step > firstStep/);
   assert.match(flow, /!existing && step === 1/);
-  assert.match(flow, /const totalSteps = existing \? 2 : 3/);
+  assert.match(flow, /const totalSteps = existing \? 1 : 3/);
 });
 
 test("mobile leader setup remains one full-height task with safe actions", async () => {
