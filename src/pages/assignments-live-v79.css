@@ -128,7 +128,8 @@
   min-width: 108px;
 }
 
-.assignments-live-v79-layer .dismissible-layer-panel {
+/* className is applied directly to DismissibleLayer's .layer-panel. */
+.assignments-live-v79-layer {
   width: min(760px, calc(100vw - 24px));
 }
 
@@ -278,6 +279,26 @@
   flex-wrap: wrap;
 }
 
+/* The review can be taller than the viewport. Keep the decision controls in view
+   while the panel scrolls so saving never depends on finding the bottom edge. */
+.assignments-live-v79-actions {
+  position: sticky;
+  bottom: -28px;
+  z-index: 7;
+  margin: var(--ds-space-2) -28px -28px;
+  padding: 14px 28px 20px;
+  border-top: 1px solid var(--ds-line);
+  background: color-mix(in srgb, var(--ds-surface) 96%, transparent);
+  box-shadow: 0 -10px 24px rgba(0, 40, 57, .07);
+  backdrop-filter: blur(14px) saturate(1.08);
+  -webkit-backdrop-filter: blur(14px) saturate(1.08);
+}
+
+.assignments-live-v79-actions .primary,
+.assignments-live-v79-actions .secondary {
+  min-height: 46px;
+}
+
 .assignments-live-v79-success {
   display: grid;
   gap: var(--ds-space-4);
@@ -313,6 +334,18 @@
     grid-column: 2;
     grid-row: 1 / span 3;
     align-self: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .assignments-live-v79-layer {
+    width: 100%;
+  }
+
+  .assignments-live-v79-actions {
+    bottom: calc(-20px - env(safe-area-inset-bottom));
+    margin: var(--ds-space-2) -18px calc(-20px - env(safe-area-inset-bottom));
+    padding: 13px 18px calc(14px + env(safe-area-inset-bottom));
   }
 }
 
@@ -367,5 +400,9 @@
   .assignments-live-v79-actions button,
   .assignments-live-v79-success-actions button {
     width: 100%;
+  }
+
+  .assignments-live-v79-actions {
+    gap: var(--ds-space-2);
   }
 }
