@@ -65,7 +65,7 @@ test("Staff arrival desk provides live refresh plus a network fallback", async (
 test("Staff check-in UI treats the current ground roster as ready to work", async () => {
   const source = await read("src/pages/StaffCheckin.jsx");
   assert.match(source, /Who is actually on site\?/);
-  assert.match(source, /ground roster is the operating source/i);
+  assert.match(source, /current ground roster/i);
   assert.match(source, /Present, needs placement/);
   assert.match(source, /ready to serve/i);
   assert.match(source, /Check in/);
