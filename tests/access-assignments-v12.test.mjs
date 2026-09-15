@@ -5,14 +5,17 @@ import test from "node:test";
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("Access and Assignments both use the connected leader setup flow", async () => {
-  const [accessWrapper, assignmentsWrapper, access, assignments] = await Promise.all([
+  const [accessWrapper, assignmentsWrapper, assignmentsLive, access, assignments] = await Promise.all([
     read("src/pages/Access.jsx"),
     read("src/pages/Assignments.jsx"),
+    read("src/pages/AssignmentsLiveV79.jsx"),
     read("src/pages/AccessV5.jsx"),
     read("src/pages/AssignmentsV3.jsx"),
   ]);
   assert.match(accessWrapper, /AccessV5/);
-  assert.match(assignmentsWrapper, /AssignmentsV3/);
+  assert.match(assignmentsWrapper, /AssignmentsLiveV79/);
+  assert.match(assignmentsLive, /AssignmentsV3/);
+  assert.match(assignmentsLive, /LeaderSetupFlow/);
   assert.match(access, /LeaderSetupFlow/);
   assert.match(assignments, /LeaderSetupFlow/);
   assert.match(access, /Invite someone/);

@@ -10,6 +10,7 @@ const legacyMigration = read("supabase/migrations/20260907103000_access_v16_lega
 const accessPage = read("src/pages/AccessV5.jsx");
 const accessWrapper = read("src/pages/Access.jsx");
 const assignmentsPage = read("src/pages/AssignmentsV3.jsx");
+const assignmentsLive = read("src/pages/AssignmentsLiveV79.jsx");
 const assignmentsWrapper = read("src/pages/Assignments.jsx");
 const leaderSetup = read("src/components/LeaderSetupFlow.jsx");
 const roleTransitionSheet = read("src/components/StaffRoleTransitionSheet.jsx");
@@ -124,8 +125,10 @@ test("committee website access remains part of the main directory", () => {
   assert.doesNotMatch(accessPage, /Committee & older accounts/);
 });
 
-test("active Assignments keeps three workspaces and links unfinished website work to Access", () => {
-  assert.match(assignmentsWrapper, /AssignmentsV3/);
+test("active Assignments keeps three workspaces beneath the live AC desk and links unfinished website work to Access", () => {
+  assert.match(assignmentsWrapper, /AssignmentsLiveV79/);
+  assert.match(assignmentsLive, /AssignmentsV3/);
+  assert.match(assignmentsLive, /LeaderSetupFlow/);
   assert.match(assignmentsPage, /value: "people", label: "People"/);
   assert.match(assignmentsPage, /value: "groups", label: "Counselor groups"/);
   assert.match(assignmentsPage, /value: "companies", label: "Companies"/);
