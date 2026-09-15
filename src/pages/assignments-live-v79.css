@@ -1,0 +1,371 @@
+.assignments-live-v79 {
+  padding-bottom: 0;
+}
+
+.assignments-live-v79-panel {
+  display: grid;
+  gap: var(--ds-space-5);
+  border: 1px solid var(--ds-line);
+  background: var(--ds-surface);
+}
+
+.assignments-live-v79-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--ds-space-5);
+  align-items: end;
+}
+
+.assignments-live-v79-head h2,
+.assignments-live-v79-sheet h2,
+.assignments-live-v79-success h3 {
+  margin: var(--ds-space-1) 0 var(--ds-space-2);
+  color: var(--ds-text-strong);
+}
+
+.assignments-live-v79-head p,
+.assignments-live-v79-sheet header p,
+.assignments-live-v79-success p {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--ds-text-secondary);
+}
+
+.assignments-live-v79-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(116px, 1fr));
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-md);
+  overflow: hidden;
+}
+
+.assignments-live-v79-summary > span {
+  display: grid;
+  gap: 2px;
+  min-height: 72px;
+  padding: var(--ds-space-3) var(--ds-space-4);
+  align-content: center;
+  background: var(--ds-surface-subtle);
+}
+
+.assignments-live-v79-summary > span + span {
+  border-left: 1px solid var(--ds-line);
+}
+
+.assignments-live-v79-summary b {
+  font-size: 20px;
+  color: var(--ds-text-strong);
+}
+
+.assignments-live-v79-summary small,
+.assignments-live-v79-tools small,
+.assignments-live-v79-row small,
+.assignments-live-v79-review small,
+.assignments-live-v79-replacement small,
+.assignments-live-v79-candidates small {
+  color: var(--ds-text-secondary);
+}
+
+.assignments-live-v79-summary .attention {
+  background: var(--ds-warning-soft);
+}
+
+.assignments-live-v79-tools {
+  display: grid;
+  grid-template-columns: minmax(260px, 520px) minmax(220px, 1fr);
+  gap: var(--ds-space-4);
+  align-items: end;
+}
+
+.assignments-live-v79-tools > small {
+  padding-bottom: 10px;
+}
+
+.assignments-live-v79-list {
+  display: grid;
+  border-top: 1px solid var(--ds-line);
+}
+
+.assignments-live-v79-row {
+  display: grid;
+  grid-template-columns: minmax(150px, .7fr) minmax(220px, 1.25fr) minmax(150px, .7fr) auto;
+  gap: var(--ds-space-4);
+  align-items: center;
+  min-height: 76px;
+  padding: var(--ds-space-3) 0;
+  border-bottom: 1px solid var(--ds-line);
+}
+
+.assignments-live-v79-row:last-child {
+  border-bottom: 0;
+}
+
+.assignments-live-v79-row.open {
+  background: linear-gradient(90deg, var(--ds-warning-soft), transparent 34%);
+}
+
+.assignments-live-v79-company,
+.assignments-live-v79-owner,
+.assignments-live-v79-access {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.assignments-live-v79-company b,
+.assignments-live-v79-owner b {
+  overflow-wrap: anywhere;
+  color: var(--ds-text-strong);
+}
+
+.assignments-live-v79-owner span,
+.assignments-live-v79-access > span {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-secondary);
+}
+
+.assignments-live-v79-row > button {
+  min-width: 108px;
+}
+
+.assignments-live-v79-layer .dismissible-layer-panel {
+  width: min(760px, calc(100vw - 24px));
+}
+
+.assignments-live-v79-sheet {
+  display: grid;
+  gap: var(--ds-space-5);
+  min-height: 0;
+}
+
+.assignments-live-v79-candidates {
+  display: grid;
+  gap: 0;
+  max-height: min(52dvh, 520px);
+  overflow-y: auto;
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface);
+  overscroll-behavior: contain;
+}
+
+.assignments-live-v79-candidates > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--ds-space-4);
+  align-items: center;
+  min-height: 68px;
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border: 0;
+  border-bottom: 1px solid var(--ds-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ds-text);
+  text-align: left;
+}
+
+.assignments-live-v79-candidates > button:last-child {
+  border-bottom: 0;
+}
+
+.assignments-live-v79-candidates > button:not(:disabled):hover,
+.assignments-live-v79-candidates > button:not(:disabled):focus-visible {
+  background: var(--ds-brand-soft);
+}
+
+.assignments-live-v79-candidates > button:disabled {
+  opacity: .62;
+  cursor: not-allowed;
+}
+
+.assignments-live-v79-candidates > button > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.assignments-live-v79-candidates strong {
+  color: var(--ds-brand-strong);
+  font-size: var(--ds-text-sm);
+}
+
+.assignments-live-v79-back {
+  justify-self: start;
+}
+
+.assignments-live-v79-review {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-md);
+  overflow: hidden;
+}
+
+.assignments-live-v79-review > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: var(--ds-space-4);
+  background: var(--ds-surface-subtle);
+}
+
+.assignments-live-v79-review > div + div {
+  border-left: 1px solid var(--ds-line);
+}
+
+.assignments-live-v79-review b,
+.assignments-live-v79-review span {
+  overflow-wrap: anywhere;
+}
+
+.assignments-live-v79-review span {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-secondary);
+}
+
+.assignments-live-v79-replacement {
+  display: grid;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-4);
+  border: 1px solid var(--ds-warning);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-warning-soft);
+}
+
+.assignments-live-v79-replacement > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.assignments-live-v79-choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ds-space-3);
+}
+
+.assignments-live-v79-choice label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ds-space-3);
+  align-items: start;
+  min-height: 76px;
+  padding: var(--ds-space-3);
+  border: 1px solid var(--ds-line-strong);
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface);
+}
+
+.assignments-live-v79-choice label span {
+  display: grid;
+  gap: 3px;
+}
+
+.assignments-live-v79-replacement > label {
+  display: grid;
+  gap: var(--ds-space-2);
+}
+
+.assignments-live-v79-replacement select {
+  min-height: var(--ds-control);
+  font-size: 16px;
+}
+
+.assignments-live-v79-actions,
+.assignments-live-v79-success-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ds-space-3);
+  flex-wrap: wrap;
+}
+
+.assignments-live-v79-success {
+  display: grid;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-5);
+  border: 1px solid var(--ds-success);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-success-soft);
+}
+
+@media (max-width: 860px) {
+  .assignments-live-v79-head,
+  .assignments-live-v79-tools {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .assignments-live-v79-tools > small {
+    padding-bottom: 0;
+  }
+
+  .assignments-live-v79-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--ds-space-3) var(--ds-space-4);
+  }
+
+  .assignments-live-v79-company,
+  .assignments-live-v79-owner,
+  .assignments-live-v79-access {
+    grid-column: 1;
+  }
+
+  .assignments-live-v79-row > button {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+  }
+}
+
+@media (max-width: 560px) {
+  .assignments-live-v79 {
+    padding-left: var(--ds-space-3);
+    padding-right: var(--ds-space-3);
+  }
+
+  .assignments-live-v79-panel {
+    gap: var(--ds-space-4);
+  }
+
+  .assignments-live-v79-summary,
+  .assignments-live-v79-review,
+  .assignments-live-v79-choice {
+    grid-template-columns: 1fr;
+  }
+
+  .assignments-live-v79-summary > span + span,
+  .assignments-live-v79-review > div + div {
+    border-left: 0;
+    border-top: 1px solid var(--ds-line);
+  }
+
+  .assignments-live-v79-row {
+    grid-template-columns: 1fr;
+    padding: var(--ds-space-4) 0;
+  }
+
+  .assignments-live-v79-row > button {
+    grid-column: 1;
+    grid-row: auto;
+    width: 100%;
+  }
+
+  .assignments-live-v79-candidates {
+    max-height: 48dvh;
+  }
+
+  .assignments-live-v79-candidates > button {
+    min-height: 76px;
+    padding: var(--ds-space-3);
+  }
+
+  .assignments-live-v79-actions,
+  .assignments-live-v79-success-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .assignments-live-v79-actions button,
+  .assignments-live-v79-success-actions button {
+    width: 100%;
+  }
+}
