@@ -1,0 +1,67 @@
+/* Leader setup v83
+   Existing staff skip the progress row. Keep the long company list as the only
+   scroll surface so the action footer remains visible after async data loads. */
+
+.dismissible-layer .layer-panel.leader-setup-layer {
+  padding: 0;
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
+.dismissible-layer .layer-panel.leader-setup-layer .leader-setup-flow {
+  display: grid;
+  height: min(720px, calc(100dvh - 32px));
+  max-height: calc(100dvh - 32px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* New invites render a progress bar. Existing staff and the completed state do not. */
+.leader-setup-flow:has(.leader-setup-progress) {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.leader-setup-flow:not(:has(.leader-setup-progress)) {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.leader-setup-v15 .leader-setup-scroll {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.leader-setup-v15 .leader-setup-footer {
+  position: relative;
+  z-index: 6;
+  flex: none;
+  box-shadow: 0 -10px 24px rgba(0, 40, 57, .06);
+}
+
+@media (max-width: 760px) {
+  .dismissible-layer .layer-panel.leader-setup-layer {
+    width: 100%;
+    max-width: none;
+    height: calc(100dvh - max(8px, env(safe-area-inset-top)));
+    max-height: calc(100dvh - max(8px, env(safe-area-inset-top)));
+    border-radius: 20px 20px 0 0;
+  }
+
+  .dismissible-layer .layer-panel.leader-setup-layer .leader-setup-flow {
+    height: 100%;
+    max-height: none;
+  }
+
+  .leader-setup-v15 .leader-setup-footer {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-height: 720px) and (min-width: 761px) {
+  .dismissible-layer .layer-panel.leader-setup-layer,
+  .dismissible-layer .layer-panel.leader-setup-layer .leader-setup-flow {
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+}
