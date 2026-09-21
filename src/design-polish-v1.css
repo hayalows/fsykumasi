@@ -1,0 +1,614 @@
+/* FSY Operations visual convergence layer.
+   This file is deliberately last in the cascade. The product has several
+   feature-specific release layers; these rules give their shared surfaces,
+   controls, states and responsive behavior one dependable visual grammar. */
+
+:root {
+  --ds-canvas: #f6f8f7;
+  --ds-surface: #ffffff;
+  --ds-surface-subtle: #f2f6f5;
+  --ds-text: #163944;
+  --ds-text-strong: #0b2f3b;
+  --ds-text-secondary: #60757c;
+  --ds-text-tertiary: #819197;
+  --ds-brand: #007da5;
+  --ds-brand-strong: #005175;
+  --ds-brand-soft: #e8f5f8;
+  --ds-line: #d8e2e2;
+  --ds-line-strong: #b9ccce;
+  --ds-warning: #8a5c12;
+  --ds-warning-soft: #fff4da;
+  --ds-danger: #9a4037;
+  --ds-danger-soft: #faeae6;
+  --ds-success: #3f6f36;
+  --ds-success-soft: #edf5ea;
+  --ds-radius-control: 10px;
+  --ds-radius-card: 16px;
+  --ds-shadow-card: 0 1px 2px rgba(10, 44, 55, .04);
+  --ds-shadow-float: 0 18px 50px rgba(10, 44, 55, .16), 0 2px 8px rgba(10, 44, 55, .08);
+}
+
+/* Canvas and shell ----------------------------------------------------- */
+html,
+body,
+#root,
+.app-shell {
+  min-height: 100%;
+  background: var(--ds-canvas);
+}
+
+body {
+  color: var(--ds-text);
+  font-family: var(--ds-font, Inter, ui-sans-serif, system-ui, sans-serif);
+}
+
+.sidebar {
+  width: 252px;
+  padding: 20px 13px 14px;
+  background: #063c50;
+  border-right: 1px solid rgba(255, 255, 255, .08);
+}
+
+.brand {
+  min-height: 46px;
+  padding: 0 8px 17px;
+  gap: 10px;
+}
+
+.brand > div {
+  min-width: 0;
+}
+
+.brand b,
+.brand small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand b {
+  color: #fff;
+  font-size: 15px;
+  letter-spacing: -.01em;
+}
+
+.brand small {
+  color: rgba(255, 255, 255, .63);
+  font-size: 10px;
+}
+
+.session-badge {
+  margin: 0 5px 17px;
+  padding: 10px 11px;
+  border: 1px solid rgba(196, 233, 245, .16);
+  border-radius: 12px;
+  background: rgba(196, 233, 245, .07);
+}
+
+.session-badge span {
+  color: #f7c56d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.session-badge small {
+  color: rgba(255, 255, 255, .66);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.sidebar-nav,
+.sidebar nav {
+  gap: 3px;
+}
+
+.nav-group + .nav-group {
+  margin-top: 11px;
+}
+
+.nav-group-label,
+.sidebar-more-label {
+  padding: 8px 11px 5px;
+  color: rgba(255, 255, 255, .46);
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.sidebar nav button,
+.sidebar-more-trigger {
+  min-height: 42px;
+  padding: 0 11px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, .76);
+  font-size: 13px;
+  font-weight: 620;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.sidebar nav button:hover,
+.sidebar-more-trigger:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .08);
+}
+
+.sidebar nav button.active,
+.sidebar-more-trigger.active {
+  color: #fff;
+  background: rgba(196, 233, 245, .14);
+  box-shadow: inset 3px 0 0 #c4e9f5;
+}
+
+.sidebar nav button.active svg,
+.sidebar-more-trigger.active svg {
+  color: #c4e9f5;
+}
+
+.sidebar-more-items {
+  margin: 4px 0 4px 14px;
+  padding-left: 9px;
+  border-left-color: rgba(255, 255, 255, .14);
+}
+
+.sidebar-foot {
+  padding: 14px 4px 0;
+  border-top-color: rgba(255, 255, 255, .13);
+}
+
+.sidebar-profile {
+  min-height: 48px;
+  border-radius: 11px;
+}
+
+.sidebar-profile:hover,
+.sidebar-profile.active {
+  background: rgba(255, 255, 255, .08);
+}
+
+.workspace {
+  margin-left: 252px;
+  background: var(--ds-canvas);
+}
+
+.topbar {
+  height: 66px;
+  padding: 0 clamp(20px, 3.2vw, 44px);
+  border-bottom: 1px solid var(--ds-line);
+  background: rgba(246, 248, 247, .94);
+  box-shadow: none;
+  backdrop-filter: blur(16px) saturate(120%);
+}
+
+.session {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.session > span,
+.session-select {
+  color: var(--ds-text-strong);
+  font-size: 13.5px;
+  font-weight: 760;
+}
+
+.session small {
+  color: var(--ds-text-secondary);
+  font-size: 11px;
+}
+
+.top-actions {
+  gap: 3px;
+}
+
+.top-profile-button {
+  border-radius: 50%;
+}
+
+.connection {
+  min-height: 36px;
+  padding-inline: 7px;
+  color: var(--ds-text-secondary);
+  font-size: 11px;
+}
+
+/* Page rhythm ---------------------------------------------------------- */
+.page {
+  max-width: 1280px;
+  padding: 32px clamp(20px, 3.2vw, 44px) 84px;
+}
+
+.page-head {
+  align-items: flex-end;
+  gap: 18px 28px;
+  margin-bottom: 24px;
+}
+
+.page-head h1 {
+  color: var(--ds-text-strong);
+  font-size: clamp(30px, 3.3vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -.038em;
+}
+
+.page-head p:last-child {
+  color: var(--ds-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.eyebrow,
+.kicker {
+  color: var(--ds-brand);
+  font-size: 10px;
+  font-weight: 780;
+  letter-spacing: .1em;
+}
+
+/* Shared surfaces ------------------------------------------------------ */
+:where(
+  .panel,
+  .journey-card,
+  .metric,
+  .overview-focus,
+  .overview-metrics,
+  .quality-queue-card,
+  .regjourney-worklist,
+  .headcount-round-card,
+  .headcount-company-card,
+  .housing-v5-live,
+  .housing-location-banner,
+  .food-v3-service,
+  .wellness-workspace,
+  .access-v17-directory,
+  .access-v4-directory,
+  .assignments-v3-workspace,
+  .people-v2-search-card
+) {
+  border-color: var(--ds-line);
+  border-radius: var(--ds-radius-card);
+  box-shadow: var(--ds-shadow-card);
+}
+
+.panel {
+  background: var(--ds-surface);
+}
+
+.panel-head,
+.section-title,
+.overview-section-head {
+  gap: 16px;
+}
+
+.panel-head h2,
+.section-title h2 {
+  color: var(--ds-text-strong);
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.panel-head p,
+.section-title p,
+.overview-section-head p {
+  color: var(--ds-text-secondary);
+  line-height: 1.45;
+}
+
+.panel-actions {
+  border-top-color: var(--ds-line);
+}
+
+/* Controls ------------------------------------------------------------- */
+.primary,
+.secondary {
+  min-height: 44px;
+  border-radius: var(--ds-radius-control);
+  padding-inline: 14px;
+  font-size: 13px;
+  font-weight: 720;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+
+.primary {
+  border-color: var(--ds-brand);
+  background: var(--ds-brand);
+  color: #fff;
+}
+
+.primary:hover {
+  border-color: var(--ds-brand-strong);
+  background: var(--ds-brand-strong);
+}
+
+.secondary {
+  border-color: var(--ds-line-strong);
+  background: var(--ds-surface);
+  color: var(--ds-text-strong);
+}
+
+.secondary:hover {
+  border-color: #90adb1;
+  background: var(--ds-surface-subtle);
+}
+
+.primary svg,
+.secondary svg,
+.text-action svg,
+.icon-button svg {
+  flex: 0 0 auto;
+}
+
+.text-action {
+  min-height: 36px;
+  color: var(--ds-brand-strong);
+  font-weight: 700;
+}
+
+.icon-button {
+  color: var(--ds-text-secondary);
+  border-radius: 10px;
+}
+
+.icon-button:hover {
+  color: var(--ds-brand-strong);
+  background: var(--ds-brand-soft);
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea,
+.search,
+.search-field {
+  border-color: var(--ds-line-strong);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  box-shadow: none;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus,
+.search:focus-within,
+.search-field:focus-within {
+  border-color: var(--ds-brand);
+  box-shadow: 0 0 0 3px rgba(0, 125, 165, .12);
+}
+
+/* State and list grammar ---------------------------------------------- */
+.status {
+  min-height: 25px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.notice,
+.compact-notice,
+.access-v17-attention,
+.access-v17-ready,
+.training-banner,
+.sync-warning {
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.notice b,
+.compact-notice b,
+.access-v17-attention b,
+.access-v17-ready b {
+  color: inherit;
+}
+
+.empty {
+  min-height: 220px;
+}
+
+:where(
+  .overview-followups,
+  .people-v2-list,
+  .assignments-v3-people,
+  .assignments-v3-coverage,
+  .housing-v5-person-list,
+  .food-meal-list,
+  .food-dietary-list,
+  .wellness-queue-list,
+  .wellness-day-list,
+  .birthday-list,
+  .assignment-queue,
+  .field-person-list,
+  .regjourney-list
+) {
+  border-color: var(--ds-line);
+  border-radius: 14px;
+  background: var(--ds-surface);
+}
+
+:where(
+  .overview-followups > button,
+  .people-v2-list > *,
+  .assignments-v3-people > *,
+  .assignments-v3-coverage > *,
+  .housing-v5-person-list > *,
+  .food-meal-list > *,
+  .food-dietary-list > *,
+  .wellness-queue-list > *,
+  .wellness-day-list > *,
+  .birthday-list > *,
+  .assignment-queue > *,
+  .field-person-list > *,
+  .regjourney-row
+) {
+  border-bottom-color: var(--ds-line) !important;
+}
+
+/* Selected filters keep their meaning in every state, including text and icons. */
+:where(
+  .regjourney-primary-filter button.active,
+  .regjourney-solutions-queues-v30 > button.active,
+  .filter-chips button.active,
+  .registration-workspace-tabs button.active,
+  .registration-mode-switch button.active
+) {
+  border-color: #a7d5df !important;
+  background: var(--ds-brand-soft) !important;
+  color: var(--ds-brand-strong) !important;
+}
+
+:where(
+  .regjourney-primary-filter button.active *,
+  .regjourney-solutions-queues-v30 > button.active *,
+  .filter-chips button.active *,
+  .registration-workspace-tabs button.active *,
+  .registration-mode-switch button.active *
+) {
+  color: inherit !important;
+}
+
+/* Overlays ------------------------------------------------------------- */
+.modal-backdrop,
+.dismissible-layer {
+  background: rgba(6, 60, 80, .52);
+  backdrop-filter: blur(3px);
+}
+
+.modal,
+.layer-panel {
+  border: 1px solid var(--ds-line);
+  border-radius: 18px;
+  box-shadow: var(--ds-shadow-float);
+}
+
+/* Mobile --------------------------------------------------------------- */
+@media (max-width: 760px) {
+  .workspace {
+    margin-left: 0;
+  }
+
+  .topbar {
+    height: 62px;
+    padding-inline: 10px;
+  }
+
+  .page {
+    padding: 20px 14px calc(104px + env(safe-area-inset-bottom));
+  }
+
+  .page-head {
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .page-head h1 {
+    font-size: clamp(29px, 8.5vw, 36px);
+  }
+
+  .panel {
+    padding-inline: 16px;
+  }
+
+  .mobile-nav {
+    min-height: 70px;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top-color: var(--ds-line);
+    background: rgba(255, 255, 255, .97);
+    box-shadow: 0 -8px 24px rgba(10, 44, 55, .08);
+    backdrop-filter: blur(16px) saturate(120%);
+  }
+
+  .mobile-nav button {
+    min-height: 58px;
+    color: var(--ds-text-secondary);
+    font-size: 10px;
+    font-weight: 650;
+  }
+
+  .mobile-nav button.active {
+    color: var(--ds-brand-strong) !important;
+    background: var(--ds-brand-soft);
+    font-weight: 760;
+  }
+
+  .mobile-nav button.active svg {
+    color: inherit !important;
+  }
+
+  /* The drawer has a dark surface, so its selected state must stay readable. */
+  .sidebar nav button.active,
+  .sidebar-more-trigger.active,
+  .sidebar-more-items button.active {
+    color: #fff !important;
+    background: rgba(196, 233, 245, .14) !important;
+  }
+
+  .sidebar nav button.active svg,
+  .sidebar-more-trigger.active svg,
+  .sidebar-more-items button.active svg {
+    color: #c4e9f5 !important;
+  }
+
+  .primary,
+  .secondary,
+  .text-action,
+  .icon-button,
+  summary {
+    min-height: 44px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .search input,
+  .search-field input {
+    min-height: 48px;
+    font-size: 16px !important;
+  }
+
+  .page-head > .primary,
+  .page-head > .secondary,
+  .page-head-actions > button {
+    width: 100%;
+  }
+
+  .modal-backdrop,
+  .dismissible-layer {
+    padding: 0;
+  }
+
+  .modal,
+  .layer-panel {
+    width: 100%;
+    max-height: calc(100dvh - 10px);
+    border-radius: 18px 18px 0 0;
+  }
+}
+
+@media (max-width: 390px) {
+  .page {
+    padding-inline: 12px;
+  }
+
+  .topbar {
+    padding-inline: 8px;
+  }
+
+  .mobile-nav button {
+    font-size: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
